@@ -23,4 +23,6 @@ public class ErrorConstants {
     public static final String INVALID_TRANSPORT_MODE = "Selected Transport Mode %s is not allowed.";
     public static final String ERROR_WHILE_CREATING_EVENT = "Error occurred while creating event: with exception: %s";
     public static final String JSON_INT_ERROR = "Error: Value for {} is not an integer.";
+    public static final String SAME_SHIPPER_CONSIGNEE = "Shipper & Consignee parties can't be selected as same.";
+    public static final String CONSOLE_ALREADY_EXISTS = "A consolidation already exists in the shipment. Please detach it before updating the shipment.";
 }

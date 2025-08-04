@@ -159,6 +159,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Transactional
     public PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
+        updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
         if (packingRequest.getContainerId() != null) {
@@ -264,6 +265,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
+        updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
@@ -361,6 +363,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+        updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
@@ -548,7 +551,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Delete packings from DB
         packingDao.deleteByIdIn(packingIds);
-
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequestList.iterator().next().getBookingId());
+        }
         // Record audit logs for the deletion operation
         recordAuditLogs(packingsToDelete, null, DBOperationType.DELETE, parentResult);
 
@@ -1479,4 +1484,31 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
+    private void updatePackingRequestOnDgAndTemperatureFlag(List<PackingV3Request> packingV3RequestList) {
+        for(PackingV3Request packingRequest: packingV3RequestList) {
+            if(Boolean.FALSE.equals(packingRequest.getHazardous())) {
+                updatePackingRequestWithDgFalse(packingRequest);
+            }
+            if(Boolean.FALSE.equals(packingRequest.getIsTemperatureControlled())) {
+                updatePackingRequestWithTemperatureFalse(packingRequest);
+            }
+        }
+    }
+
+    private void updatePackingRequestWithDgFalse(PackingV3Request packingV3Request) {
+        packingV3Request.setDgClassAir(null);
+        packingV3Request.setDgClassAirDescription(null);
+        packingV3Request.setUnNumberAir(null);
+        packingV3Request.setDGClass(null);
+        packingV3Request.setUnNumber(null);
+        packingV3Request.setProperShippingName(null);
+        packingV3Request.setPackingGroup(null);
+        packingV3Request.setMinimumFlashPoint(null);
+        packingV3Request.setMarinePollutant(null);
+    }
+
+    private void updatePackingRequestWithTemperatureFalse(PackingV3Request packingV3Request) {
+        packingV3Request.setMinTemp(null);
+        packingV3Request.setMaxTemp(null);
+    }
 }

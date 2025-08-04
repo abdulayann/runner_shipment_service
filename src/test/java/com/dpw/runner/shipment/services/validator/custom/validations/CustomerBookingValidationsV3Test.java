@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.dpw.runner.shipment.services.CommonMocks;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,133 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
 
     @InjectMocks
     CustomerBookingValidationsV3 customerBookingValidationsV3;
+
+    @Test
+    void testEtaBeforeEtd_shouldThrowException() {
+        CustomerBooking booking = new CustomerBooking();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.of(2025, 7, 25, 10, 0));
+        carrierDetails.setEtd(LocalDateTime.of(2025, 7, 28, 10, 0));
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void testCargoReadinessAfterEtd_shouldThrowException() {
+        CustomerBooking booking = new CustomerBooking();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.of(2025, 7, 25, 10, 0));
+        booking.setCargoReadinessDate(LocalDateTime.of(2025, 7, 26, 10, 0));
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void testCargoReadinessAfterEta_shouldThrowException() {
+        CustomerBooking booking = new CustomerBooking();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.of(2025, 7, 25, 10, 0));
+        booking.setCargoReadinessDate(LocalDateTime.of(2025, 7, 26, 10, 0));
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void testDeliveryAtDestinationBeforeEta_shouldThrowException() {
+        CustomerBooking booking = new CustomerBooking();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.of(2025, 7, 25, 10, 0));
+        booking.setDeliveryAtDestinationDate(LocalDateTime.of(2025, 7, 24, 10, 0));
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void shouldThrowIfPickupAtOriginIsAfterETD() {
+        CustomerBooking booking = new CustomerBooking();
+        booking.setPickupAtOriginDate(LocalDateTime.of(2025, 8, 10, 10, 0)); // Aug 10, 2025
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.of(2025, 8, 5, 10, 0)); // Aug 5, 2025
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void shouldThrowIfETDBeforeCargoReadyDate() {
+        LocalDateTime cargoReadyDate = LocalDateTime.now();
+        LocalDateTime etd = cargoReadyDate.minusDays(1);
+        LocalDateTime eta = etd.plusHours(12);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        CustomerBooking booking = new CustomerBooking();
+        booking.setCargoReadinessDate(cargoReadyDate);
+        carrierDetails.setEtd(etd);
+        carrierDetails.setEta(eta);
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> {
+            customerBookingValidationsV3.onSave(null, booking);
+        });
+    }
+
+    @Test
+    void shouldThrowIfETDAfterEtaPlus24Hours() {
+        LocalDateTime eta = LocalDateTime.now();
+        LocalDateTime etd = eta.plusHours(25);
+        LocalDateTime cargoReadyDate = eta.minusDays(1);
+        CarrierDetails carrierDetails = new CarrierDetails();
+        CustomerBooking booking = new CustomerBooking();
+        carrierDetails.setEta(eta);
+        carrierDetails.setEtd(etd);
+        booking.setCargoReadinessDate(cargoReadyDate);
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> {
+            customerBookingValidationsV3.onSave(null, booking);
+        });
+    }
+
+    @Test
+    void shouldThrowIfETAMoreThan24HoursBeforeETD() {
+        CustomerBooking booking = new CustomerBooking();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.of(2025, 8, 18, 10, 0)); // ETD Aug 18, 10 AM
+        carrierDetails.setEta(LocalDateTime.of(2025, 8, 16, 9, 0));  // ETA more than 24h before ETD
+
+        booking.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
+    }
+
+    @Test
+    void testValidBookingDates_shouldNotThrow() {
+        CustomerBooking booking = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").orgData(Collections.emptyMap()).build())
+                .isCustomerFreeText(true)
+                .isCustomerAddressFreeText(false)
+                .cargoType("FCL")
+                .transportType("SEA")
+                .consignee(Parties.builder().orgCode("code").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .build();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.of(2025, 7, 25, 10, 0));
+        carrierDetails.setEta(LocalDateTime.of(2025, 7, 28, 10, 0));
+        booking.setCargoReadinessDate(LocalDateTime.of(2025, 7, 24, 10, 0));
+        booking.setDeliveryAtDestinationDate(LocalDateTime.of(2025, 7, 30, 10, 0));
+        booking.setCarrierDetails(carrierDetails);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+
+        assertDoesNotThrow(() ->customerBookingValidationsV3.onSave(null, booking));
+    }
 
     @Test
     void testOnSave_differentBookingNumber_throwsException() {

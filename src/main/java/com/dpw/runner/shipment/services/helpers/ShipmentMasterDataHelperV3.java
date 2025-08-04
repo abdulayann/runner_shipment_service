@@ -29,8 +29,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ShipmentMasterDataHelperV3 {
 
-    @Value("${include.master.data}")
-    private Boolean includeMasterData;
+
     private final MasterDataUtils masterDataUtils;
     ExecutorService executorServiceMasterData;
 
@@ -44,7 +43,7 @@ public class ShipmentMasterDataHelperV3 {
     }
 
     public void getMasterDataForList(List<ShipmentDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
-        if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
+        if(getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);

@@ -1,23 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVNO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KNOWN_CONSIGNOR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REGULATED_AGENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TWO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
@@ -70,6 +56,7 @@ import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -135,6 +122,10 @@ class FreightCertificationReportTest extends CommonMocks {
     @Mock
     private V1ServiceUtil v1ServiceUtil;
 
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @Mock
@@ -177,6 +168,13 @@ class FreightCertificationReportTest extends CommonMocks {
         mockedTenantMap.put("100", origin);
         mockedTenantMap.put("200", dest);
         mockedTenantMap.put("300", triang);
+
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(FreightCertificationModel freightCertificationModel) {
@@ -371,6 +369,7 @@ class FreightCertificationReportTest extends CommonMocks {
         UUID randomUUID = UUID.randomUUID();
         freightCertificationModel.shipmentDetails.setGuid(randomUUID);
 
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockTenantSettings();
@@ -405,6 +404,7 @@ class FreightCertificationReportTest extends CommonMocks {
         billChargesBaseResponse.setChargeTypeDetails(ChargeTypeBaseResponse.builder()
                 .guId(randomUUID).build());
 
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(billingServiceAdapter.fetchBill(any())).thenReturn(billFromBilling);

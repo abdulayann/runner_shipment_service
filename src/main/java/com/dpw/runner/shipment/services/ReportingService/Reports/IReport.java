@@ -131,7 +131,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_CHARGES;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACK_DETAILS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HS_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IMP;
@@ -269,7 +268,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PASSED_BY_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PICKUP_AT_ORIGIN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_REEFER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_SHIPMENT_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_REEFER_FLAG;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_SI;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TERMINAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRAILER_NO;
@@ -455,6 +454,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -462,6 +462,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -565,6 +566,8 @@ public abstract class IReport {
     @Autowired
     private IPackingService packingService;
 
+    @Autowired
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
     @Autowired
     private CommonUtils commonUtils;
 
@@ -824,6 +827,8 @@ public abstract class IReport {
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
+        populateShippedOnboardFields(shipment, dictionary);
+
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
@@ -865,6 +870,18 @@ public abstract class IReport {
             dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
                     pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
                     pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
+        }
+    }
+
+    public void populateShippedOnboardFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel) || Objects.isNull(shipmentModel.getAdditionalDetails())) return;
+
+        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
+        if (Objects.nonNull(shippedOnboardDate)) {
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                    shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
         }
     }
 
@@ -2724,6 +2741,39 @@ public abstract class IReport {
         return null;
     }
 
+    /**
+     * Formats and returns a list of address details in a structured line-by-line format.
+     * <p>
+     * The returned list will include:
+     * <ul>
+     *   <li>Name</li>
+     *   <li>Address line 1</li>
+     *   <li>Address line 2 (if present)</li>
+     *   <li>A single line combining state, city, and country (in that order, separated by commas)</li>
+     *   <li>Zip code (if present)</li>
+     *   <li>Phone number (if present)</li>
+     * </ul>
+     * <p>
+     * Example output:
+     * <pre>
+     * John Doe
+     * 123 Main Street
+     * Apt 4B
+     * California, Los Angeles, USA
+     * 90001
+     * +1-123-456-7890
+     * </pre>
+     *
+     * @param name     Name of the person or entity
+     * @param address1 Primary address line (required if name is empty)
+     * @param address2 Secondary address line (optional)
+     * @param country  Country name or code (optional)
+     * @param state    State or region (optional)
+     * @param city     City (optional)
+     * @param zipCode  Postal or ZIP code (optional)
+     * @param phone    Phone number (optional)
+     * @return A list of formatted address lines or {@code null} if both name and address1 are empty
+     */
     public static List<String> getFormattedDetails(String name, String address1,String address2, String country, String state, String city, String zipCode, String phone)
     {
         if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
@@ -2756,6 +2806,82 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(phone)) details.add(phone);
         return details;
     }
+
+    /**
+     * Formats and returns a list of address details in a human-readable structure.
+     *
+     * <p><strong>Output Format:</strong></p>
+     * <pre>
+     * Name
+     * Address1
+     * Address2            (only if present)
+     * City, State, Zip, Country
+     * Phone               (only if present)
+     * </pre>
+     *
+     * @param name      the name or party name (mandatory if address1 is empty)
+     * @param address1  the first line of address (mandatory if name is empty)
+     * @param address2  the second line of address (optional)
+     * @param country   the country (optional)
+     * @param state     the state or region (optional)
+     * @param city      the city (optional)
+     * @param zipCode   the zip/postal code (optional)
+     * @param phone     the contact phone number (optional)
+     * @return List of formatted address lines, or {@code null} if both name and address1 are empty
+     */
+    public static List<String> getFormattedDetailsV2(String name, String address1, String address2,
+            String country, String state, String city,
+            String zipCode, String phone) {
+
+        if (StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
+            return null;
+        }
+
+        List<String> details = new ArrayList<>();
+
+        // Add name and primary address line
+        details.add(name);
+        details.add(address1);
+
+        // Add secondary address line if present
+        if (!StringUtility.isEmpty(address2)) {
+            details.add(address2);
+        }
+
+        // Compose the city/state/zip/country line
+        StringBuilder locationLine = new StringBuilder();
+
+        if (!Strings.isNullOrEmpty(city)) {
+            locationLine.append(city);
+        }
+
+        if (!Strings.isNullOrEmpty(state)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(state);
+        }
+
+        if (!Strings.isNullOrEmpty(zipCode)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(zipCode);
+        }
+
+        if (!Strings.isNullOrEmpty(country)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(country);
+        }
+
+        if (!locationLine.isEmpty()) {
+            details.add(locationLine.toString());
+        }
+
+        // Add phone if present
+        if (!Strings.isNullOrEmpty(phone)) {
+            details.add(phone);
+        }
+
+        return details;
+    }
+
 
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
@@ -3680,7 +3806,7 @@ public abstract class IReport {
         Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         List<Map<String, List<Map<String, Object>>>> groupedDict = new ArrayList<>();
-        groupPacksDetails(shipment.getPackingList(), groupedDict, v1TenantSettingsResponse);
+        groupPacksDetails(shipment.getPackingList(), groupedDict, v1TenantSettingsResponse, dictionary);
         dictionary.put(SHIPMENT_PACKS, groupedDict);
         for(var pack : shipment.getPackingList()) {
             packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
@@ -3743,7 +3869,7 @@ public abstract class IReport {
 
     public void groupPacksDetails(List<PackingModel> packingList,
                                   List<Map<String, List<Map<String, Object>>>> groupedSummaryList,
-                                  V1TenantSettingsResponse v1TenantSettingsResponse) {
+                                  V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
 
         Map<String, List<Map<String, Object>>> finalContainerNumberMap = new HashMap<>();
         Map<String, List<Map<String, Object>>> finalContainerTypeMap = new HashMap<>();
@@ -3758,7 +3884,7 @@ public abstract class IReport {
                         .computeIfAbsent(pack.getContainerNumber(), k -> new ArrayList<>())
                         .add(dict);
             } else if (container != null && container.getContainerCode() != null) {
-                populateFromContainer(container, dict);
+                populateFromContainer(container, dict, dictionary);
                 finalContainerTypeMap
                         .computeIfAbsent(container.getContainerCode(), k -> new ArrayList<>())
                         .add(dict);
@@ -3767,9 +3893,9 @@ public abstract class IReport {
             }
         }
 
-        processGroupedMap(finalContainerNumberMap, groupedSummaryList, v1TenantSettingsResponse);
-        processGroupedMap(finalContainerTypeMap, groupedSummaryList, v1TenantSettingsResponse);
-        processGroupedMap(Collections.singletonMap("", unassignedPacksList), groupedSummaryList, v1TenantSettingsResponse);
+        processGroupedMap(finalContainerNumberMap, groupedSummaryList, v1TenantSettingsResponse, dictionary);
+        processGroupedMap(finalContainerTypeMap, groupedSummaryList, v1TenantSettingsResponse, dictionary);
+        processGroupedMap(Collections.singletonMap("", unassignedPacksList), groupedSummaryList, v1TenantSettingsResponse, dictionary);
     }
 
     private Map<String, Object> createBaseDict(PackingModel pack, Containers container) {
@@ -3794,31 +3920,52 @@ public abstract class IReport {
         return dict;
     }
 
-    private void populateFromContainer(Containers container, Map<String, Object> dict) {
+    private void populateFromContainer(Containers container, Map<String, Object> dict, Map<String, Object> dictionary) {
         dict.put(MARKS_N_NUMS, container.getMarksNums());
         dict.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
         dict.put(PACKS, container.getPacks());
         dict.put(GROSS_WEIGHT, container.getGrossWeight());
         dict.put(GROSS_VOLUME, container.getGrossVolume());
         dict.put(PACKS_UNIT, container.getPacksType());
+        populateDictionaryFromContainer(jsonHelper.convertValue(container, ContainerModel.class), dictionary);
+    }
+
+    public void getContainerDetails(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        List<ContainerModel> containerModelList = shipmentModel.getContainersList();
+        for(ContainerModel containerModel: containerModelList) {
+            populateDictionaryFromContainer(containerModel, dictionary);
+        }
+    }
+
+    private void populateDictionaryFromContainer(ContainerModel container, Map<String, Object> dictionary) {
+        dictionary.put(MARKS_N_NUMS, container.getMarksNums());
+        dictionary.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
+        dictionary.put(PACKS, container.getPacks());
+        dictionary.put(GROSS_WEIGHT, container.getGrossWeight());
+        dictionary.put(GROSS_VOLUME, container.getGrossVolume());
+        dictionary.put(PACKS_UNIT, container.getPacksType());
+        dictionary.put(CONTAINER_NUM, container.getContainerNumber());
+        dictionary.put(CONTAINER_TYPE_CODE, container.getContainerCode());
+        dictionary.put(CARRIER_SEAL_NUMBER, container.getCarrierSealNumber());
     }
 
 
     private void processGroupedMap(Map<String, List<Map<String, Object>>> groupedMap,
                                    List<Map<String, List<Map<String, Object>>>> outputList,
-                                   V1TenantSettingsResponse settings) {
+                                   V1TenantSettingsResponse settings, Map<String, Object> dictionary) {
 
         Map<String, List<Map<String, Object>>> outputMap = new HashMap<>();
 
         for (Map.Entry<String, List<Map<String, Object>>> entry : groupedMap.entrySet()) {
-            Map<String, Object> summary = buildSummaryForGroup(entry.getKey(), entry.getValue(), settings);
+            Map<String, Object> summary = buildSummaryForGroup(entry.getKey(), entry.getValue(), settings, dictionary);
             outputMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(summary);
         }
 
         outputList.add(outputMap);
     }
 
-    private Map<String, Object> buildSummaryForGroup(String groupKey, List<Map<String, Object>> groupList, V1TenantSettingsResponse settings) {
+    private Map<String, Object> buildSummaryForGroup(String groupKey, List<Map<String, Object>> groupList, V1TenantSettingsResponse settings, Map<String, Object> dictionary) {
         Set<String> marksSet = new LinkedHashSet<>();
         Set<String> descSet = new LinkedHashSet<>();
         BigDecimal totalPacks = BigDecimal.ZERO;
@@ -3844,14 +3991,36 @@ public abstract class IReport {
 
         Map<String, Object> summary = new HashMap<>();
         summary.put(CONTAINER_NUM, groupKey);
+        dictionary.put(CONTAINER_NUM, groupKey);
+
         summary.put(CARRIER_SEAL_NUMBER, sealNumber);
+        dictionary.put(CARRIER_SEAL_NUMBER, sealNumber);
+
         summary.put(CONTAINER_TYPE_CODE, containerType);
+        dictionary.put(CONTAINER_TYPE_CODE, containerType);
+
         summary.put(PACKS_MARKS_NUMBERS, String.join(", ", marksSet));
-        summary.put(PACKS_GOODS_DESCRIPTION, String.join(", ", descSet));
+        dictionary.put(PACKS_MARKS_NUMBERS, String.join(", ", marksSet));
+
+        summary.put(PACKS_GOODS_DESCRIPTION, String.join(",\n", descSet));
+        dictionary.put(PACKS_GOODS_DESCRIPTION, String.join(",\n", descSet));
+
         summary.put(PACKS, getDPWWeightVolumeFormat(totalPacks, 0, settings));
+        dictionary.put(PACKS, getDPWWeightVolumeFormat(totalPacks, 0, settings));
+
         summary.put(GROSS_WEIGHT, getDPWWeightVolumeFormat(totalWeight, 2, settings));
+        dictionary.put(GROSS_WEIGHT, getDPWWeightVolumeFormat(totalWeight, 2, settings));
+
         summary.put(GROSS_VOLUME, getDPWWeightVolumeFormat(totalVolume, 2, settings));
-        summary.put(PACKS_UNIT, packUnit);
+        dictionary.put(GROSS_VOLUME, getDPWWeightVolumeFormat(totalVolume, 2, settings));
+
+        if(groupList.size() > 1) {
+            summary.put(PACKS_UNIT, Constants.PACKAGES);
+            dictionary.put(PACKS_UNIT, Constants.PACKAGES);
+        } else {
+            summary.put(PACKS_UNIT, packUnit);
+            dictionary.put(PACKS_UNIT, packUnit);
+        }
 
         return summary;
     }
@@ -5094,10 +5263,15 @@ public abstract class IReport {
         String city = addressData != null ? (String) addressData.get(PartiesConstants.CITY) : null;
         String state = addressData != null ? (String) addressData.get(PartiesConstants.STATE) : null;
         String zip = addressData != null ? (String) addressData.get(PartiesConstants.ZIP_POST_CODE) : null;
-        String country = addressData != null ? (String) addressData.get(PartiesConstants.COUNTRY) : null;
+        String country = null;
+        if (addressData != null) {
+            String countryCode = (String) addressData.get(PartiesConstants.COUNTRY);
+            String countryName = ISO3166.getCountryNameByCode(countryCode);
+            country = !Constants.EMPTY_STRING.equals(countryName) ? countryName : countryCode;
+        }
 
         // Use getFormattedDetails to format all values
-        List<String> formatted = getFormattedDetails(
+        List<String> formatted = getFormattedDetailsV2(
                 orgName, address1, address2, country, state,
                 city, zip, null
         );
@@ -5188,37 +5362,108 @@ public abstract class IReport {
 
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
+        Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(details.getId(), SHIPMENT);
+        Map<String, String> orderDpwMap = extractOrderDpwMap(masterDataMap);
+        Map<String, String> orgMap = extractOrgMap(masterDataMap);
+
+        addControlFields(dictionary, details);
+        addPartnerFields(dictionary, details, orderDpwMap, orgMap);
+        addCutoffFields(dictionary, details);
+        addAdditionalFields(dictionary, details);
+    }
+
+    private Map<String, String> extractOrderDpwMap(Map<String, Object> masterDataMap) {
+        if (masterDataMap == null) return null;
+
+        Map<String, Map<String, String>> masterList =
+                (Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST);
+
+        return masterList != null ? masterList.get(CacheConstants.ORDER_DPW) : null;
+    }
+
+    private Map<String, String> extractOrgMap(Map<String, Object> masterDataMap) {
+        return masterDataMap != null
+                ? (Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)
+                : null;
+    }
+
+    private void addControlFields(Map<String, Object> dictionary, ShipmentDetails details) {
         dictionary.put(S_CONTROLLED, details.getControlled());
         dictionary.put(S_CONTROLLED_REF_NO, details.getControlledReferenceNumber());
         dictionary.put(S_INCOTERM_LOCATION, details.getIncotermsLocation());
-        dictionary.put(S_PARTNER_DROP_DOWN, details.getPartner());
-        dictionary.put(S_CO_LOADER_NAME, details.getCoLoadCarrierName());
+        dictionary.put(S_REEFER_FLAG, details.getIsReefer());
+    }
+
+    private void addPartnerFields(Map<String, Object> dictionary, ShipmentDetails details,
+                                  Map<String, String> orderDpwMap, Map<String, String> orgMap) {
+        dictionary.put(S_PARTNER_DROP_DOWN,
+                orderDpwMap != null ? orderDpwMap.get(details.getPartner()) : null);
+
+        String bookingAgentName = getOrgValue(orgMap, details.getBookingAgent());
+        dictionary.put(S_CO_LOADER_NAME, bookingAgentName);
+        dictionary.put(S_BOOKING_AGENT, bookingAgentName);
+
+        // Co-loader fields
         dictionary.put(S_CO_LOADER_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_CO_LOADER_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_CO_LOADER_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_BOOKING_AGENT, details.getBookingAgent());
+
+        // Booking agent fields (same values as co-loader)
         dictionary.put(S_BOOKING_AGENT_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_BOOKING_AGENT_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_BOOKING_AGENT_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_PICKUP_AT_ORIGIN, details.getPickupAtOrigin());
-        dictionary.put(S_DELIVERY_AT_DESTINATION, details.getDeliveryAtDestination());
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, details.getBrokerageAtOrigin());
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, details.getBrokerageAtDestination());
+
+        // Location fields
+        dictionary.put(S_PICKUP_AT_ORIGIN,
+                getOrgValue(orgMap, details.getPickupAtOrigin()));
+        dictionary.put(S_DELIVERY_AT_DESTINATION,
+                getOrgValue(orgMap, details.getDeliveryAtDestination()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN,
+                getOrgValue(orgMap, details.getBrokerageAtOrigin()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION,
+                getOrgValue(orgMap, details.getBrokerageAtDestination()));
+    }
+
+    private String getOrgValue(Map<String, String> orgMap, Object id) {
+        return orgMap != null && id != null ? orgMap.get(id.toString()) : null;
+    }
+
+    private void addCutoffFields(Map<String, Object> dictionary, ShipmentDetails details) {
         dictionary.put(S_TERMINAL, details.getTerminalCutoff());
         dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
         dictionary.put(S_SI, details.getShippingInstructionCutoff());
         dictionary.put(S_EAR_EPY_EQ_PICK, details.getEarliestEmptyEquipmentPickUp());
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
-        dictionary.put(S_REEFER, details.getIsReefer());
-        dictionary.put(S_LAT, details.getLatestArrivalTime());
-        dictionary.put(S_BOE_NUMBER, details.getAdditionalDetails().getBOENumber());
-        dictionary.put(S_BOE_DATE, details.getAdditionalDetails().getBOEDate());
-        dictionary.put(S_OWNERSHIP, details.getAdditionalDetails().getOwnership() != null ? details.getAdditionalDetails().getOwnership().getDescription() : null);
-        dictionary.put(S_OWNERSHIP_NAME, details.getAdditionalDetails().getOwnershipName());
-        dictionary.put(S_PASSED_BY, details.getAdditionalDetails().getPassedBy() != null ? details.getAdditionalDetails().getPassedBy().getDescription() : null);
-        dictionary.put(S_PASSED_BY_PERSON, details.getAdditionalDetails().getPassedByPerson());
+        dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff()));
+        dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime()));
+    }
 
+    private void addAdditionalFields(Map<String, Object> dictionary, ShipmentDetails details) {
+        AdditionalDetails additional = details.getAdditionalDetails();
+        if (additional == null) {
+            addNullAdditionalFields(dictionary);
+            return;
+        }
+
+        dictionary.put(S_BOE_NUMBER, additional.getBOENumber());
+        dictionary.put(S_BOE_DATE, additional.getBOEDate());
+        dictionary.put(S_OWNERSHIP_NAME, additional.getOwnershipName());
+        dictionary.put(S_PASSED_BY_PERSON, additional.getPassedByPerson());
+
+        dictionary.put(S_OWNERSHIP,
+                additional.getOwnership() != null ? additional.getOwnership().getDescription() : null);
+        dictionary.put(S_PASSED_BY,
+                additional.getPassedBy() != null ? additional.getPassedBy().getDescription() : null);
+    }
+
+    private void addNullAdditionalFields(Map<String, Object> dictionary) {
+        dictionary.put(S_BOE_NUMBER, null);
+        dictionary.put(S_BOE_DATE, null);
+        dictionary.put(S_OWNERSHIP, null);
+        dictionary.put(S_OWNERSHIP_NAME, null);
+        dictionary.put(S_PASSED_BY, null);
+        dictionary.put(S_PASSED_BY_PERSON, null);
     }
 
     // Adds reference numbers into the map using their type as a key suffix
@@ -5339,24 +5584,5 @@ public abstract class IReport {
                 }
             }
         }
-    }
-
-    public List<Map<String, Object>> populatePacksAndContainerTags(ShipmentModel shipment, Map<String, Object> dictionary) {
-            if(shipment.getPackingList() == null || shipment.getPackingList().isEmpty()) {
-                dictionary.put(HAS_PACKS, false);
-                return null;
-            }
-
-            List<Map<String, Object>> packsDictionary = new ArrayList<>();
-            Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
-            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-            for(var pack : shipment.getPackingList()) {
-                packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
-            }
-
-            dictionary.put(HAS_PACKS, true);
-            dictionary.put(S_SHIPMENT_PACKS, packsDictionary);
-            return packsDictionary;
-
     }
 }

@@ -4,15 +4,30 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
-import javax.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Setter
@@ -609,4 +624,8 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "enable_domestic_mawb_mbl_validations")
     private Boolean enableDomesticMawbMblValidations;
+
+    @Column(name = "allow_unassigned_bl_inv_generation")
+    private Boolean allowUnassignedBlInvGeneration;
+
 }

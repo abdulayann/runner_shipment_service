@@ -212,6 +212,7 @@ import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -223,6 +224,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
@@ -11092,5 +11094,82 @@ ShipmentServiceTest extends CommonMocks {
         var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
         assertNotNull(eventsResponse);
     }
+
+    @Test
+    void testSetTenantAndDefaultAgent_withUnlocationsAndSeaTransport_setsPlaceOfIssuePaidPlace() {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        AdditionalDetailResponse additionalDetails = new AdditionalDetailResponse();
+        response.setAdditionalDetails(additionalDetails);
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setDirection(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsRunnerV3Enabled(Boolean.TRUE);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+        EntityTransferAddress address = new EntityTransferAddress();
+        address.setCity("Chennai");
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setUnloco(123456);
+        tenantModel.currencyCode = "INR";
+        UnlocationsResponse unloc = new UnlocationsResponse();
+        unloc.setLocationsReferenceGUID("LOC123");
+        PartiesResponse partiesResponse = new PartiesResponse();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", "1001");
+        partiesResponse.setOrgData(orgData);
+        V1RetrieveResponse v1RetrieveResponse = mock(V1RetrieveResponse.class);
+        when(v1RetrieveResponse.getEntity()).thenReturn(address);
+        when(masterDataUtils.fetchUnlocationByOneIdentifier("Id","123456"))
+                .thenReturn(List.of(unloc));
+        when(modelMapper.map(any(EntityTransferAddress.class), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        when(commonUtils.getEntityTransferAddress(tenantModel)).thenReturn(address);
+        when(v1ServiceUtil.getDefaultAgentOrg(tenantModel)).thenReturn(partiesResponse);
+        shipmentService.setTenantAndDefaultAgent(response);
+        assertEquals("Chennai", response.getAdditionalDetails().getPlaceOfIssue());
+        assertEquals("LOC123", response.getAdditionalDetails().getPaidPlace());
+        assertEquals("LOC123", response.getAdditionalDetails().getPlaceOfSupply());
+        assertEquals("INR", response.getFreightLocalCurrency());
+        assertEquals(partiesResponse, response.getAdditionalDetails().getExportBroker());
+        assertEquals(1001L, response.getOriginBranch());
+    }
+
+    @Test
+    void testSetTenantAndDefaultAgent_withUnlocationsAndRailTransport_setsPlaceOfIssuePaidPlace() {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        AdditionalDetailResponse additionalDetails = new AdditionalDetailResponse();
+        response.setAdditionalDetails(additionalDetails);
+        response.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        response.setDirection(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsRunnerV3Enabled(Boolean.TRUE);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+        EntityTransferAddress address = new EntityTransferAddress();
+        address.setCity("Mumbai");
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setUnloco(789012);
+        tenantModel.currencyCode = "INR";
+        UnlocationsResponse unloc = new UnlocationsResponse();
+        unloc.setLocationsReferenceGUID("RAIL_LOC456");
+        PartiesResponse partiesResponse = new PartiesResponse();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", "1002");
+        partiesResponse.setOrgData(orgData);
+        V1RetrieveResponse v1RetrieveResponse = mock(V1RetrieveResponse.class);
+        when(v1RetrieveResponse.getEntity()).thenReturn(address);
+        when(masterDataUtils.fetchUnlocationByOneIdentifier("Id", "789012"))
+                .thenReturn(List.of(unloc));
+        when(modelMapper.map(any(EntityTransferAddress.class), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        when(commonUtils.getEntityTransferAddress(tenantModel)).thenReturn(address);
+        when(v1ServiceUtil.getDefaultAgentOrg(tenantModel)).thenReturn(partiesResponse);
+        shipmentService.setTenantAndDefaultAgent(response);
+        assertEquals("Mumbai", response.getAdditionalDetails().getPlaceOfIssue());
+        assertEquals("RAIL_LOC456", response.getAdditionalDetails().getPaidPlace());
+        assertEquals("RAIL_LOC456", response.getAdditionalDetails().getPlaceOfSupply());
+        assertEquals("INR", response.getFreightLocalCurrency());
+        assertEquals(partiesResponse, response.getAdditionalDetails().getExportBroker());
+        assertEquals(1002L, response.getOriginBranch());
+    }
+
 
 }

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +31,7 @@ public class CustomerBookingValidationsV3 {
             log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
             throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
         }
+        validateDateFields(newEntity);
         validateConsigneeConsignor(newEntity);
         var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
 
@@ -76,7 +78,7 @@ public class CustomerBookingValidationsV3 {
     private void validateConsigneeConsignor(CustomerBooking newEntity) {
         if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor()) && newEntity.getConsignee().getOrgCode() != null
                 && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode())) {
-            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+            throw new ValidationException(ErrorConstants.SAME_SHIPPER_CONSIGNEE);
         }
     }
 
@@ -91,7 +93,7 @@ public class CustomerBookingValidationsV3 {
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
         if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
-            validateParty(entity.getConsignor(), "Consignor detail");
+            validateParty(entity.getConsignor(), "Shipper detail");
         }
         if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
             validateParty(entity.getConsignee(), "Consignee detail");
@@ -148,6 +150,67 @@ public class CustomerBookingValidationsV3 {
         }
         if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one Package"));
+        }
+    }
+
+    private void validateDateFields(CustomerBooking entity) {
+        LocalDateTime cargoReadyDate = entity.getCargoReadinessDate();
+        LocalDateTime pickupAtOriginDate = entity.getPickupAtOriginDate();
+        LocalDateTime deliveryAtDestinationDate = entity.getDeliveryAtDestinationDate();
+        CarrierDetails carrier = entity.getCarrierDetails();
+        LocalDateTime etd = carrier != null ? carrier.getEtd() : null;
+        LocalDateTime eta = carrier != null ? carrier.getEta() : null;
+
+        validateCargoReadyDate(cargoReadyDate, etd, eta);
+        validateEtdAndEta(etd, eta, cargoReadyDate);
+        validatePickupAndDeliveryDates(pickupAtOriginDate, deliveryAtDestinationDate, etd, eta);
+    }
+
+    private void validateCargoReadyDate(LocalDateTime cargoReadyDate, LocalDateTime etd, LocalDateTime eta) {
+        if (cargoReadyDate == null) return;
+
+        if (etd != null && cargoReadyDate.isAfter(etd)) {
+            throw new ValidationException("Cargo Ready Date must be less than or equal to ETD");
+        }
+
+        if (etd == null && eta != null && !cargoReadyDate.isBefore(eta)) {
+            throw new ValidationException("Cargo Ready Date must be less than ETA");
+        }
+    }
+
+    private void validateEtdAndEta(LocalDateTime etd, LocalDateTime eta, LocalDateTime cargoReadyDate) {
+        if (etd == null) return;
+
+        if (eta != null) {
+            if (etd.isAfter(eta.plusHours(24))) {
+                throw new ValidationException("ETD cannot be more than ETA");
+            }
+
+            if (eta.isBefore(etd.minusHours(24))) {
+                throw new ValidationException("ETA cannot be less than ETD");
+            }
+
+            if (cargoReadyDate != null && (etd.isBefore(cargoReadyDate) || etd.isAfter(eta.plusHours(24)))) {
+                throw new ValidationException("ETD cannot be more than ETA & less than Cargo Ready Date");
+            }
+        }
+
+        if (cargoReadyDate != null && etd.isBefore(cargoReadyDate)) {
+            throw new ValidationException("ETD cannot be less than Cargo Ready Date");
+        }
+    }
+
+    private void validatePickupAndDeliveryDates(LocalDateTime pickup, LocalDateTime delivery, LocalDateTime etd, LocalDateTime eta) {
+        if (pickup != null && etd != null && pickup.isAfter(etd)) {
+            throw new ValidationException("Est. Origin Transport Date should be less than or equal to ETD");
+        }
+
+        if (delivery != null && eta != null && delivery.isBefore(eta)) {
+            throw new ValidationException("Est. Destination Transport Date should be more than or equal to ETA");
+        }
+
+        if (pickup != null && delivery != null && delivery.isBefore(pickup)) {
+            throw new ValidationException("Destination Transport Date must be greater than or equal to Origin Transport Date");
         }
     }
 }

@@ -40,6 +40,19 @@ public class ReportConstants {
     public static final String DELIVERY_ORDER_V3 = "DeliveryOrderV3";
     public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
     public static final String CONTACT = "Contact";
+    public static final String TI_TRANSPORTER_NAME = "TI_TransporterName";
+    public static final String EXA_TYPE = "EXA";
+    public static final String TI_EXPORT_AGENT_NAME = "TI_ExportAgentName";
+    public static final String IMA_TYPE = "IMA";
+    public static final String TI_IMPORT_AGENT_NAME = "TI_ImportAgentName";
+    public static final String TI_TRANSPORTER_EMAIL = "TI_TransporterEmail";
+    public static final String TI_IMPORT_AGENT_EMAIL = "TI_ImportAgentEmail";
+    public static final String TI_EXPORT_AGENT_EMAIL = "TI_ExportAgentEmail";
+    public static final String ADDRESS_LABEL = "label";
+    public static final String TI_TRANSPORTER_ADDRESS = "TI_TransporterAddress";
+    public static final String CONTACT_KEY = "ContactPhone";
+    public static final String TI_TRANSPORTER_CONTACT = "TI_TransporterContact";
+
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
@@ -212,6 +225,9 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
     public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
+    public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
+    public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -1460,9 +1476,11 @@ public class ReportConstants {
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
-    public static final String S_OWNERSHIP_NAME = "S_Ownership Name";
+    public static final String S_OWNERSHIP_NAME = "S_OwnershipName";
     public static final String S_PASSED_BY = "S_PassedBy";
     public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
+    public static final String S_BORROWED_FROM = "S_BorrowedFrom";
+    public static final String S_REEFER_FLAG = "S_ReeferFlag";
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";
@@ -1476,4 +1494,11 @@ public class ReportConstants {
 
     public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
     public static final String HAS_PACKS = "HasPacks1";
+
+    public static final String NOT_VALID_RELEASE_TYPE = "Release Type is not Valid";
+    public static final String SEAWAY_BILL_RELEASE_TYPE = "SWB";
+    public static final String SURRENDER_RELEASE_TYPE = "OBO";
+    public static final String HOUSE_BILL_RELEASE_TYPE = "OBL";
+
+    public static final String CARRIER_BOOKING_NUMBER = "CarrierBookingNumber";
 }

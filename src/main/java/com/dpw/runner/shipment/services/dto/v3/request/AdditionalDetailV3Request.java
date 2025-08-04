@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,17 +31,25 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private Long id;
     private LocalDateTime customsNoIssueDate;
     private LocalDateTime expiryDate;
+    @Size(max=3, message = "max size is 3 for inspection")
     private String inspection;
+    @Size(max=3, message = "max size is 3 for airway bill dims")
     private String airwayBillDims;
     private BigDecimal shipperCOD;
+    @Size(max = 3, message = "max size is 3 for shipper cod pm")
     private String shipperCODPM;
+    @Size(max=3, message = "max size is 3 for phase")
     private String phase;
     private BigDecimal spotRate;
+    @Size(max=3, message = "max size is 3 for spot rate type")
     private String spotRateType;
+    @Size(max=3, message = "max size is 3 for efreight status")
     private String efreightStatus;
     private String sci;
     private Boolean importExportShipmentLock;
+    @Size(max=20, message = "max size is 20 for cha job number")
     private String CHAJobNumber;
+    @Size(max=10, message = "max size is 10 for ad code")
     private String ADCode;
     private String BEType;
     private AirAuthorisingEntity securityStatusReceivedFrom;
@@ -70,6 +79,7 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
+    @Size(max=10, message = "max size is 10 for smtp igm number")
     @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
     @JsonProperty("SMTPIGMDate")
@@ -91,10 +101,14 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private BigDecimal assessValue;
     private BigDecimal CIFValue;
     private BigDecimal totalDuty;
+    @Size(max=256, message = "max size is 256 for external notes")
     private String externalNotes;
     private Long bondedWarehouseId;
+    @Size(max=3, message = "max size is 3 for release type")
     private String releaseType;
+    @Size(max=3, message = "max size is 3 for house bill type")
     private String houseBillType;
+    @Size(max=3, message = "max size is 3 for on board")
     private String onBoard;
     private LocalDateTime onBoardDate;
     private String deliveryMode;
@@ -129,22 +143,33 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private PartiesRequest receivingAgent;
     private String customDeclType;
     private String agentReference;
+    @Size(max=16, message = "max size is 16 for bl terms and conditions id")
     private String bLTermsandConditionsId;
+    @Size(max=2500, message = "max size is 2500 for bl comments")
     private String blComments;
+    @Size(max=16, message = "max size is 16 for cargo terms")
     private String cargoTerms;
+    @Size(max=2500, message = "max size is 2500 for cargo terms description")
     private String cargoTermsDescription;
+    @Size(max=16, message = "max size is 16 for bl remarks")
     private String bLRemarks;
+    @Size(max=2500, message = "max size is 2500 for bl remarks description")
     private String bLRemarksDescription;
+    @Size(max = 2048, message = "max size is 2048 for summary")
     private String summary;
     private Boolean isSummaryUpdated;
     private String exemptionCodes;
     private String aomFreeText;
+    @Size(max=31, message = "max size is 31 for emergency contact number")
     private String emergencyContactNumber;
+    @Size(max=31, message = "max size is 31 for emergency contact number code")
     private String emergencyContactNumberCode;
     @ExcludeTimeZone
     private LocalDateTime pickupDate;
     @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
     private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
     private LocalDateTime proofOfDeliveryDate;

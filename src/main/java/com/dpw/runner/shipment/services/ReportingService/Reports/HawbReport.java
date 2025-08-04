@@ -182,6 +182,8 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
+        populateShippedOnboardFields(hawbModel.shipmentDetails, dictionary);
+
         populateUserFields(hawbModel.usersDto, dictionary);
 
         // Get the shipmentInforRow
@@ -218,6 +220,7 @@ public class HawbReport extends IReport{
 
         if (hawbModel.getShipmentDetails() != null) {
             this.populateShipmentReportData(dictionary, null, hawbModel.getShipmentDetails().getId());
+            this.getContainerDetails(hawbModel.getShipmentDetails(), dictionary);
             this.getPackingDetails(hawbModel.getShipmentDetails(), dictionary);
         }
         return dictionary;
