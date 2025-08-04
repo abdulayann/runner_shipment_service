@@ -530,7 +530,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Transactional
     public RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
-        routingValidationUtil.checkIfMainCarriageAllowed(request);
         routingValidationUtil.validateUpdateRequest(request);
         routingValidationUtil.validateModule(request, module);
         Optional<Routings> oldEntity = routingsDao.findById(request.getId());
