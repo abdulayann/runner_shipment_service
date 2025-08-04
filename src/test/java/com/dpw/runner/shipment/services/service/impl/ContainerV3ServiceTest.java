@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -57,7 +58,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -1716,7 +1720,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testProcessDGShipmentDetailsFromContainer_MixedHazardousValues() {
+    void testProcessDGShipmentDetailsFromContainer_MixedHazardousValues() throws RunnerException {
         // Arrange
         ContainerV3Request hazardousContainer = new ContainerV3Request();
         hazardousContainer.setId(1L);
@@ -1837,6 +1841,14 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request nullIdContainer = new ContainerV3Request();
         nullIdContainer.setId(null);
         nullIdContainer.setHazardous(true);
+
+        ContainerV3Request hazardousContainer = new ContainerV3Request();
+        hazardousContainer.setId(1L);
+        hazardousContainer.setHazardous(true);
+
+        ContainerV3Request nonHazardousContainer = new ContainerV3Request();
+        nonHazardousContainer.setId(2L);
+        nonHazardousContainer.setHazardous(false);
 
         List<ContainerV3Request> containerRequestList = List.of(hazardousContainer, nonHazardousContainer, nullIdContainer);
 

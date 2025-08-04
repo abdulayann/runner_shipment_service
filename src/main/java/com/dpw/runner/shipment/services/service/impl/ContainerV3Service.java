@@ -543,25 +543,31 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    public void processDGShipmentDetailsFromContainer(List<ContainerV3Request> containerRequestList) throws RunnerException {
-        for(ContainerV3Request containerV3Request : containerRequestList) {
-            if (containerV3Request.getId() != null && Boolean.TRUE.equals(containerV3Request.getHazardous())) {
-                List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
-
-                for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                    Long shipmentId = shipmentsContainersMapping.getShipmentId();
-                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
-                    if (optionalShipmentDetails.isPresent()) {
-                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                        List<Containers> containersList = containerDao.findByShipmentId(shipmentId);
-                        updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
-                    }
-                }
-            }
-        }
-    }
+//    public void processDGShipmentDetailsFromContainer(List<ContainerV3Request> containerRequestList) throws RunnerException {
+//        for(ContainerV3Request containerV3Request : containerRequestList) {
+//            if (containerV3Request.getId() != null && Boolean.TRUE.equals(containerV3Request.getHazardous())) {
+//                List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
+//
+//                for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+//                    Long shipmentId = shipmentsContainersMapping.getShipmentId();
+//                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+//                    if (optionalShipmentDetails.isPresent()) {
+//                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+//                        List<Containers> containersList = containerDao.findByShipmentId(shipmentId);
+//                        updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<Containers> containersList) {
+        if (shipmentDetails == null) return false;
+        if (CommonUtils.listIsNullOrEmpty(containersList)) return false;
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
+    }
+
+    private boolean isUpdateDGStatusRequired1(ShipmentDetails shipmentDetails, List<ContainerV3Request> containersList) {
         if (shipmentDetails == null) return false;
         if (CommonUtils.listIsNullOrEmpty(containersList)) return false;
         return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
@@ -632,12 +638,6 @@ public class ContainerV3Service implements IContainerV3Service {
                 .anyMatch(request -> Boolean.TRUE.equals(request.getHazardous()));
     }
 
-    private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList) {
-        if (shipmentDetails == null) return false;
-        if (CommonUtils.listIsNullOrEmpty(containerRequestList)) return false;
-        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
-    }
-
     private void updateOceanDGStatusCreate(ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList) throws RunnerException {
         boolean isDG = false;
         boolean isDGClass1Added = false;
@@ -682,7 +682,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
     protected void updateOceanDgStatus(ShipmentDetails shipmentDetails, List<Containers> oldContainers
             , List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
-        if(!isUpdateDGStatusRequired(shipmentDetails, containerRequestList)) return;
+        if(!isUpdateDGStatusRequired1(shipmentDetails, containerRequestList)) return;
         if(isCreate){
             updateOceanDGStatusCreate(shipmentDetails, containerRequestList);
         }else{
