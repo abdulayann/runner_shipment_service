@@ -132,6 +132,32 @@ class CreateValidateAspectTest {
     }
 
     @Test
+    void testCreateShipmentAspectV3() throws ValidationException {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Creation:Air Shipment:ImportAirShipmentCreate")));
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        mockShipment.setTransportMode("AIR");
+        mockShipment.setIsDomestic(false);
+        mockShipment.setDirection("EXP");
+        mockShipment.setShipmentType("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        createValidateAspect = new CreateValidateAspect();
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreateV3(joinPoint, commonRequestModel));
+    }
+
+    @Test
     void testCreateShipmentAspect4() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
@@ -230,7 +256,7 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel);
         assert (true);
     }
 
@@ -257,7 +283,7 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -283,7 +309,7 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -309,7 +335,34 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel);
+        assertNotNull(commonRequestModel);
+    }
+
+    @Test
+    void testCreateConsolidationAspectV3() throws ValidationException {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Creation:Air Consolidation:ImportAirConsolidationCreate")));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockConsolidation.setConsolidationNumber("AIR-CAN-00001");
+        mockConsolidation.setId(1L).setGuid(UUID.randomUUID());
+        mockConsolidation.setTransportMode("AIR");
+        mockConsolidation.setIsDomestic(false);
+        mockConsolidation.setShipmentType("IMP");
+        mockConsolidation.setContainerCategory("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
+        createValidateAspect = new CreateValidateAspect();
+        createValidateAspect.validateConsolidationCreateV3(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
@@ -332,7 +385,7 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
@@ -359,6 +412,6 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreateV2(joinPoint, commonRequestModel));
     }
 }

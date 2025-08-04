@@ -69,7 +69,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         permissionsAspect = new PermissionsAspect();
-        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepositoryV2(joinPoint, commonRequestModel, true));
     }
 
     @Test
@@ -94,7 +94,33 @@ class PermissionsAspectTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepositoryV2(joinPoint, commonRequestModel, true));
+        assert (true);
+    }
+
+    @Test
+    void testListShipmentAspect2V3() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:List:All Shipment:AllShipmentList")));
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        mockShipment.setTransportMode("SEA");
+        mockShipment.setIsDomestic(false);
+        mockShipment.setDirection("EXP");
+        mockShipment.setShipmentType("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
+        permissionsAspect = new PermissionsAspect();
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepositoryV3(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
@@ -120,7 +146,7 @@ class PermissionsAspectTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
+        assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepositoryV2(joinPoint, commonRequestModel, true));
     }
 
     @Test
@@ -145,7 +171,7 @@ class PermissionsAspectTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepositoryV2(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
@@ -172,7 +198,34 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         permissionsAspect = new PermissionsAspect();
-        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
+        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationListV2(joinPoint, commonRequestModel, true));
+        assert (true);
+    }
+
+    @Test
+    void testListConsolidationAspectV3(){
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:List:All Consolidation:AllConsolidationList")));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockConsolidation.setConsolidationNumber("AIR-CAN-00001");
+        mockConsolidation.setId(1L).setGuid(UUID.randomUUID());
+        mockConsolidation.setTransportMode("SEA");
+        mockConsolidation.setIsDomestic(false);
+        mockConsolidation.setShipmentType("EXP");
+        mockConsolidation.setContainerCategory("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
+        permissionsAspect = new PermissionsAspect();
+        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationListV3(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
