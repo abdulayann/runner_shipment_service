@@ -33,6 +33,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -219,8 +221,14 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void transformContainerAndPacks(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        if (Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && !shipmentDetails.getContainersList().isEmpty()) {
+        if (Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
             createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
+        }
+        if(!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList())) {
+            shipmentDetails.getPackingList().forEach(pack -> {
+                pack.setVolume(pack.getVolume() == null? BigDecimal.ZERO: pack.getVolume());
+                pack.setVolumeUnit(Strings.isNullOrEmpty(pack.getVolumeUnit())? Constants.VOLUME_UNIT_M3: pack.getVolumeUnit());
+            });
         }
 //        if (Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
 //            if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
@@ -329,6 +337,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 //        String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
         packing.setPacks("0");
         packing.setPacksType(PackingConstants.PKG);
+        packing.setVolume(BigDecimal.ZERO);
+        packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
 //        packing.setWeight(container.getGrossWeight());
 //        packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
 //        packing.setVolume(container.getGrossVolume());
@@ -416,7 +426,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         // Business Logic for transformation
         // need to add shipment details transformation logic
-        shipmentDetails.setAutoUpdateWtVol(false);
+        shipmentDetails.setAutoUpdateWtVol(true);
         shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
         shipmentDetails.setCargoReadyDate(shipmentDetails.getCargoReadinessDate());
 
