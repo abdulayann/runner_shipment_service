@@ -10,6 +10,8 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -593,6 +595,104 @@ class ContainerValidationUtilTest extends CommonMocks {
                 () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
 
         assertTrue(exception.getMessage().contains("Expected: Transport mode must be SEA/ROAD"));
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenFCLShipmentAndConsolidationModule_ThrowsValidationException() {
+        Long shipmentId = 101L;
+        ShipmentDetails fclShipment = new ShipmentDetails();
+        fclShipment.setTransportMode("SEA");
+        fclShipment.setShipmentType("FCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L))); // mock some pack IDs
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, fclShipment));
+        String module = Constants.CONSOLIDATION_CONTAINER;
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL")).thenReturn(true);
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+        );
+        assertEquals("Use Shipment screen to unassign value to FCL container.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenAttachmentNotAllowed_ThrowsValidationException() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false); // not open
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(999L);
+        params.setConsolidationDetails(consolidationDetails);
+        String module = "OTHER_MODULE";
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+        );
+        assertEquals("Allow Shipment Attachment is Off, Please enable to proceed further.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenValidConditions_NoExceptionThrown() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(true);
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(999L);
+        params.setConsolidationDetails(consolidationDetails);
+        String module = "OTHER_MODULE";
+        Mockito.when(consolidationDetailsDao.getAllowAttachMentFromConsol(999L)).thenReturn(true);
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenConsolidationIdIsNull_NoExceptionThrown() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(null);
+        params.setConsolidationDetails(null);
+        String module = "OTHER_MODULE";
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+    }
+
+    @Test
+    void testCheckIfShipmentIsFclOrFtl_ReturnsTrue_WhenCommonUtilsReturnsTrue() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setShipmentType("FCL");
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL")).thenReturn(true);
+        boolean result = containerValidationUtil.checkIfShipmentIsFclOrFtl(shipmentDetails);
+        assertTrue(result);
+        Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("SEA", "FCL");
+    }
+
+    @Test
+    void testCheckIfShipmentIsFclOrFtl_ReturnsFalse_WhenCommonUtilsReturnsFalse() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        shipmentDetails.setShipmentType("LCL");
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("AIR", "LCL")).thenReturn(false);
+        boolean result = containerValidationUtil.checkIfShipmentIsFclOrFtl(shipmentDetails);
+        assertFalse(result);
+        Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("AIR", "LCL");
     }
 
 }

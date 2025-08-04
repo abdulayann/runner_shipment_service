@@ -500,11 +500,9 @@ public class ContainerV3Service implements IContainerV3Service {
         processContainerDG(containerRequestList, module, shipmentDetails, isCreate);
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
     }
-
     protected void processContainerDG(List<ContainerV3Request> containerRequestList, String module, ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         if(!containsHazardousContainer(containerRequestList)) return;
-
         if (SHIPMENT.equalsIgnoreCase(module)) {
             List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
             validateAndSaveDGShipment(oldShipmentContainers, shipmentDetails, containerRequestList, isCreate);
@@ -624,12 +622,12 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
+    public void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
         updateOceanDgStatus(shipmentDetails, shipmentContainers, containerRequestList, isCreate);
     }
 
 
-    private boolean containsHazardousContainer(List<ContainerV3Request> containerRequestList) {
+    public boolean containsHazardousContainer(List<ContainerV3Request> containerRequestList) {
         return containerRequestList.stream()
                 .anyMatch(request -> Boolean.TRUE.equals(request.getHazardous()));
     }
@@ -655,38 +653,21 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void updateOceanDGStatusUpdate(ShipmentDetails shipmentDetails, List<Containers> oldContainers, List<ContainerV3Request> containerRequestList) throws RunnerException{
-
+    private void updateOceanDGStatusUpdate(ShipmentDetails shipmentDetails, List<Containers> oldContainers, List<ContainerV3Request> containerRequestList) throws RunnerException {
         Set<Long> containerIds = oldContainers.stream().map(Containers::getId).collect(Collectors.toSet());
-
-        Set<Long> requestIds = containerRequestList.stream()
-                .map(ContainerV3Request::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
+        Set<Long> requestIds = containerRequestList.stream().map(ContainerV3Request::getId).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<Long, ContainerV3Request> updatedContainerRequestMap = containerRequestList.stream()
                 .filter(Objects::nonNull)
                 .filter(container -> container.getId() != null)
-                .collect(Collectors.toMap(
-                        ContainerV3Request::getId,
-                        Function.identity()
-                ));
-
+                .collect(Collectors.toMap(ContainerV3Request::getId, Function.identity()));
         Map<Long, Containers> oldContainerMap = oldContainers.stream()
                 .filter(Objects::nonNull)
                 .filter(container -> container.getId() != null)
-                .collect(Collectors.toMap(
-                        Containers::getId,
-                        Function.identity()
-                ));
-
-        // as containerRequest can be from consolidation
+                .collect(Collectors.toMap(Containers::getId, Function.identity()));
         Set<Long> commonIds = new HashSet<>(containerIds);
         commonIds.retainAll(requestIds); // intersection
-
         boolean isDG = false;
         boolean isDGClass1Added = false;
-
         for(Long containerId : commonIds){
             Containers oldContainer = oldContainerMap.get(containerId);
             ContainerV3Request updatedContainer = updatedContainerRequestMap.get(containerId);
@@ -695,23 +676,19 @@ public class ContainerV3Service implements IContainerV3Service {
                 isDG = true;
             }
         }
-
         if(isDG){
             saveOceanDgStatus(shipmentDetails, isDGClass1Added);
         }
     }
-
     protected void updateOceanDgStatus(ShipmentDetails shipmentDetails, List<Containers> oldContainers
             , List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
         if(!isUpdateDGStatusRequired(shipmentDetails, containerRequestList)) return;
-
         if(isCreate){
             updateOceanDGStatusCreate(shipmentDetails, containerRequestList);
         }else{
             updateOceanDGStatusUpdate(shipmentDetails, oldContainers, containerRequestList);
         }
     }
-
     private void saveOceanDgStatus(ShipmentDetails shipmentDetails, boolean isDGClass1Added) throws RunnerException {
         boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
         if(saveShipment) {
