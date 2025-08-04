@@ -1424,47 +1424,38 @@ void testValidateSealNumberWarning_containersMissingSeals() {
     }
 
     @Test
-     void testValidateSealNumberWarning_NoContainers() {
-        ShipmentDetails shipment = mock(ShipmentDetails.class);
-        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
-        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
-        when(shipment.getContainersList()).thenReturn(Collections.emptySet());
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-
-        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
-        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertNull(responseBody.getWarning()); // No warning expected
-    }
-
-    @Test
-     void testImportShipment() {
+     void testNegativeCasesForSelaVal() {
         Containers container = new Containers();
-        container.setContainerNumber("CTN123");
-        ShipmentDetails shipment = mock(ShipmentDetails.class);
-        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
-        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_IMP); // Import
-        shipment.setContainersList(new HashSet<>(Arrays.asList(container)));
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
-        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
-        assertEquals(200, response.getStatusCodeValue());
-        assertNull(responseBody.getWarning());
-    }
+        container.setContainerNumber("CTN000");
+        // IMPORT direction
+        ShipmentDetails importShipment = mock(ShipmentDetails.class);
+        when(importShipment.getTransportMode()).thenReturn("SEA");
+        when(importShipment.getDirection()).thenReturn("IMP");
+        importShipment.setContainersList(new HashSet<>(Arrays.asList(container)));
 
-    @Test
-     void testNullContainersList() {
-        ShipmentDetails shipment = mock(ShipmentDetails.class);
-        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
-        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
-        when(shipment.getContainersList()).thenReturn(null);
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
-        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+        // No containers
+        ShipmentDetails emptyShipment = mock(ShipmentDetails.class);
+        when(emptyShipment.getTransportMode()).thenReturn("SEA");
+        when(emptyShipment.getDirection()).thenReturn("EXP");
+        when(emptyShipment.getContainersList()).thenReturn(Collections.emptySet());
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertNull(responseBody.getWarning());
+        //  Null containers
+        ShipmentDetails nullShipment = mock(ShipmentDetails.class);
+        when(nullShipment.getTransportMode()).thenReturn("SEA");
+        when(nullShipment.getDirection()).thenReturn("EXP");
+        when(nullShipment.getContainersList()).thenReturn(null);
+
+        // Common mock
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mock(ShipmentDetails.class)));
+
+        // Execute and verify all negative cases
+        Arrays.asList( importShipment, emptyShipment, nullShipment).forEach(shipment -> {
+            when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+            ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+            RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+            assertEquals(200, response.getStatusCodeValue());
+            assertNull(responseBody.getWarning());
+        });
     }
 
 }
