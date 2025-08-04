@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -13,7 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 

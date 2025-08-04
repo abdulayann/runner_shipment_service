@@ -38,4 +38,6 @@ public interface IRoutingsV3Service{
     List<Routings> getRoutingsByConsolidationId(Long consolidationId);
 
     BulkRoutingResponse updateTransportInfoStatus(UpdateTransportStatusRequest request) throws RunnerException;
+
+     void validateBeforeBulkUpdate(BulkUpdateRoutingsRequest request,String module);
 }

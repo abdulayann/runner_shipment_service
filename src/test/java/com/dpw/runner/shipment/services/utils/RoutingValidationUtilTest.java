@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;

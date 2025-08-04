@@ -99,6 +99,7 @@ public class RoutingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT_API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> shipmentUpdateBulk(@RequestBody BulkUpdateRoutingsRequest request) throws RunnerException {
+        routingService.validateBeforeBulkUpdate(request,Constants.SHIPMENT);
         return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.SHIPMENT));
     }
 
