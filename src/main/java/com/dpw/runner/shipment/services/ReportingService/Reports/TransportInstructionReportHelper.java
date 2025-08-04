@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TILegsContainersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TILegsModel;
@@ -75,13 +76,13 @@ public class TransportInstructionReportHelper {
         if (destination != null) {
             Map<String, Object> orgData = destination.getOrgData();
             if (orgData != null) {
-                legsDictionary.put(ReportConstants.TI_DESINATION_EMAIL, orgData.get(EMAIL));
+                legsDictionary.put(ReportConstants.TI_DESTINATION_EMAIL, orgData.get(EMAIL));
                 legsDictionary.put(ReportConstants.TI_DESTINATION, orgData.get(FULL_NAME));
             }
             Map<String, Object> addressData = destination.getAddressData();
             if (addressData != null) {
                 legsDictionary.put(ReportConstants.TI_DESTINATION_CONTACT, addressData.get(CONTACT_KEY));
-                String address = commonUtils.getAddress(addressData);
+                String address = String.join(", ", ReportHelper.getCompleteAddress(addressData));
                 legsDictionary.put(ReportConstants.TI_DESTINATION_ADDRESS, address);
             }
         }
@@ -98,7 +99,7 @@ public class TransportInstructionReportHelper {
             Map<String, Object> addressData = origin.getAddressData();
             if (addressData != null) {
                 legsDictionary.put(ReportConstants.TI_ORIGIN_CONTACT, addressData.get(CONTACT_KEY));
-                String address = commonUtils.getAddress(addressData);
+                String address = String.join(", ", ReportHelper.getCompleteAddress(addressData));
                 legsDictionary.put(ReportConstants.TI_ORIGIN_ADDRESS, address);
             }
         }

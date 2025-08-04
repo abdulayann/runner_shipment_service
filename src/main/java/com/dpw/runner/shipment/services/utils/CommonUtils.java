@@ -2488,7 +2488,7 @@ public class CommonUtils {
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
-        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && DIRECTION_EXP.equals(customerBooking.getDirection())) {
             return UserContext.isAirSecurityUser();
         }
         return true;
