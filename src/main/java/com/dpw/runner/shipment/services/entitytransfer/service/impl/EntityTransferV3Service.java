@@ -887,6 +887,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         consolidationDetailsRequest.setHazardous(false); // setting it to false as it will be changed to true once attachment API is called
         ConsolidationDetailsResponse consolidationDetailsResponse;
         consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
+        removeFlightNumberInRoutings(consolidationDetailsRequest.getRoutingsList());
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
@@ -989,6 +990,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             commonUtils.setInterBranchContextForHub();
             TenantContext.setCurrentTenant(entityTransferShipmentDetails.getSendToBranch());
         }
+
+        removeFlightNumberInRoutings(shipmentRequest.getRoutingsList());
 
         ShipmentDetailsResponse shipmentDetailsResponse = null;
         if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
@@ -1255,6 +1258,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         tenantIds.add(consolidationDetails.getTenantId());
         tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
         var tenantMap = getTenantMap(tenantIds);
+        setFlightNumberInRoutings(consolidationDetails.getRoutingsList());
         EntityTransferV3ConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferV3ConsolidationDetails.class);
 
         // Map container guid vs List<shipmentGuid>
@@ -1325,11 +1329,32 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private EntityTransferV3ShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) {
+        setFlightNumberInRoutings(shipmentDetails.getRoutingsList());
         EntityTransferV3ShipmentDetails payload = jsonHelper.convertValue(shipmentDetails, EntityTransferV3ShipmentDetails.class);
         // populate master data and other fields
         payload.setMasterData(getShipmentMasterData(shipmentDetails));
 
         return payload;
+    }
+
+    private void setFlightNumberInRoutings(List<Routings> routingsList) {
+        if(routingsList!=null && !routingsList.isEmpty()) {
+            for(Routings routing: routingsList) {
+                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(routing.getMode())) {
+                    routing.setVoyage(routing.getFlightNumber());
+                }
+            }
+        }
+    }
+
+    private void removeFlightNumberInRoutings(List<RoutingsRequest> routingsList) {
+        if(routingsList!=null && !routingsList.isEmpty()) {
+            for(RoutingsRequest routing: routingsList) {
+                if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(routing.getMode())) {
+                    routing.setVoyage(null);
+                }
+            }
+        }
     }
 
     private Map<String, Object> getShipmentMasterData(ShipmentDetails shipmentDetails) {
