@@ -1501,8 +1501,6 @@ public class EntityTransferService implements IEntityTransferService {
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
 
-        validateV2toV3Shipment(consolidationDetails.get());
-
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && validDirectionForNetworkTransfer.contains(consolidationDetails.get().getShipmentType())) {
             processNTEValidations(consolidationDetails.get());
@@ -1539,17 +1537,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
         ValidationResponse response = ValidationResponse.builder().success(true).build();
         return ResponseHelper.buildSuccessResponse(response);
-    }
-
-    private void validateV2toV3Shipment(ConsolidationDetails consolidationDetails) {
-        if(consolidationDetails.getShipmentsList()!=null && !consolidationDetails.getShipmentsList().isEmpty()){
-            boolean isV3TenantPresent =  getIsV3TenantPresent(null, consolidationDetails);
-            if(isV3TenantPresent) {
-                for (var shipmentDetails : consolidationDetails.getShipmentsList()) {
-                    validateV2ToV3ShipmentValidations(shipmentDetails);
-                }
-            }
-        }
     }
 
     private ConsoleValidation processConsoleShipments(ConsolidationDetails consolidationDetails, Long receivingBranch, boolean sendConsolidationError, boolean hblGenerationError, List<String> shipmentIds) {
@@ -2050,56 +2037,6 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
-    private void validateV2ToV3ShipmentValidations(ShipmentDetails shipmentDetails) {
-
-        String transportMode = shipmentDetails.getTransportMode();
-
-        if (TRANSPORT_MODE_AIR.equals(transportMode) && !Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
-                throw new ValidationException("Transfer not allowed for the Shipment as Auto Update flag is Off. Please amend the same for further action.");
-        }
-
-
-        if (TRANSPORT_MODE_SEA.equals(transportMode)) {
-            boolean isAutoUpdateWtVol = Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol());
-            boolean isAutoUpdateContainers = Boolean.TRUE.equals(shipmentDetails.getContainerAutoWeightVolumeUpdate());
-
-            if(!isAutoUpdateWtVol && !isAutoUpdateContainers){
-                throw new ValidationException("Transfer not allowed for the Consolidation as Auto Update flag is Off in Container and Shipment section. Please amend the same for further action.");
-            }
-            if(isAutoUpdateWtVol && !isAutoUpdateContainers){
-                throw new ValidationException("Transfer not allowed for the Consolidation as Auto Update flag is Off in Container section. Please amend the same for further action.");
-            }
-            if(!isAutoUpdateWtVol){
-                throw new ValidationException("Transfer not allowed for the Consolidation as Auto Update flag is Off in Shipment Details section. Please amend the same for further action.");
-            }
-            validatePackingAndContainer(shipmentDetails);
-        }
-    }
-
-    private void validatePackingAndContainer(ShipmentDetails shipmentDetails) {
-        List<Packing> packingList = shipmentDetails.getPackingList();
-        Set<Containers> containersList = shipmentDetails.getContainersList();
-        HashSet<Long> packContainerMap = new HashSet<>();
-        String errorMsg = "Transfer not allowed for the multiple containers without Package information. Please amend the same for further action.";
-
-        if((packingList==null || packingList.isEmpty()) && !containersList.isEmpty()){
-            throw new ValidationException(errorMsg);
-        }
-        if(packingList!=null) {
-            for (Packing packing : packingList) {
-                if (packing.getContainerId() == null) {
-                    throw new ValidationException(errorMsg);
-                } else {
-                    packContainerMap.add(packing.getContainerId());
-                }
-            }
-        }
-
-        if (!containersList.isEmpty() && packContainerMap.size() != containersList.size()) {
-            throw new ValidationException(errorMsg);
-        }
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel) {
         ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
@@ -2109,11 +2046,6 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        boolean isV3TenantPresent =  getIsV3TenantPresent(shipmentDetails.get(), null);
-
-        if(isV3TenantPresent){
-            validateV2ToV3ShipmentValidations(shipmentDetails.get());
-        }
 
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && validDirectionForNetworkTransfer.contains(shipmentDetails.get().getDirection())) {
             validateNteSendShipmentValidations(shipmentDetails.get());

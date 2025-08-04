@@ -258,5 +258,6 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     private Integer dgPacksCount;
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 
 }
