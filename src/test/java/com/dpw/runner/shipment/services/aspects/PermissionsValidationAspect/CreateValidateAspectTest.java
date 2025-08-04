@@ -75,7 +75,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel);
         assert (true);
     }
 
@@ -102,7 +102,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -128,7 +128,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -154,7 +154,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
@@ -177,7 +177,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel);
+        createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
@@ -204,7 +204,7 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreateV2(joinPoint, commonRequestModel));
     }
 
     @Test
