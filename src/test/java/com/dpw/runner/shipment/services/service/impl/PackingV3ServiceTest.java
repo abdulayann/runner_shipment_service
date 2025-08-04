@@ -1123,6 +1123,7 @@ class PackingV3ServiceTest extends CommonMocks {
         ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
         AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
         assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(new HashMap<>());
         request.setPackingIds(Collections.emptyList());
         ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
         assertEquals("No Shipment/Packing Ids provided.", exception.getMessage());
