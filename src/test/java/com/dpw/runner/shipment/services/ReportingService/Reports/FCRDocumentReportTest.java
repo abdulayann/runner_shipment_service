@@ -73,6 +73,7 @@ class FCRDocumentReportTest {
     @Mock
     private PackingService packingService;
 
+
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails shipmentDetails;
 

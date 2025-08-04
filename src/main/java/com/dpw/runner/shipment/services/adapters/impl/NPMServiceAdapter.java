@@ -194,6 +194,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             if (npmContractsResponse != null) {
                 npmContractsResponse.setContracts(filteredContracts);
             }
+
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
             return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
         } catch (HttpStatusCodeException ex) {
