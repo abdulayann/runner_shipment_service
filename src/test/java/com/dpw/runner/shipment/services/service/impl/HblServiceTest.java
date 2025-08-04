@@ -1372,36 +1372,6 @@ class HblServiceTest extends CommonMocks {
         shipment.setConsolidationList(Set.of(consolidationDetails));
     }
 
-@Test
-void testValidateSealNumberWarning_containersMissingSeals() {
-    Long shipmentId = 4L;
-    ShipmentDetails shipment = new ShipmentDetails();
-    shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-    shipment.setDirection(Constants.DIRECTION_EXP);
-
-    Containers container1 = new Containers();
-    container1.setContainerNumber("CONT001");
-    container1.setCarrierSealNumber(null);
-    container1.setCustomsSealNumber(null);
-    container1.setShipperSealNumber(null);
-    container1.setVeterinarySealNumber(null);
-    Containers container2 = new Containers();
-    container2.setContainerNumber("CONT002");
-    container2.setCarrierSealNumber("SealX"); // Has at least one seal
-
-    shipment.setContainersList(new HashSet<>(Arrays.asList(container1, container2)));
-
-    when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
-
-    ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(shipmentId);
-    RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
-
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(responseBody.getWarning());
-    assertTrue(responseBody.getWarning().contains("CONT001"));
-    assertFalse(responseBody.getWarning().contains("CONT002"));
-}
-
     @Test
      void testValidateSealNumberWarning_ShipmentNotFound() {
         Long shipmentId = 1L;
@@ -1411,20 +1381,36 @@ void testValidateSealNumberWarning_containersMissingSeals() {
         });
         assertEquals("Shipment not found", exception.getMessage());
     }
-
-
     @Test
-     void testValidateSealNumberWarning_NoContainers() {
-        ShipmentDetails shipment = mock(ShipmentDetails.class);
-        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
-        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
-        when(shipment.getContainersList()).thenReturn(Collections.emptySet());
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+    void testValidateSealNumberWarning_containersMissingSeals() {
+        Long shipmentId = 4L;
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setDirection(Constants.DIRECTION_EXP);
 
-        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        Containers container1 = new Containers();
+        container1.setContainerNumber("CONT001");
+        container1.setCarrierSealNumber(null);
+        container1.setCustomsSealNumber(null);
+        container1.setShipperSealNumber(null);
+        container1.setVeterinarySealNumber(null);
+        // All seals empty
+
+        Containers container2 = new Containers();
+        container2.setContainerNumber("CONT002");
+        container2.setCarrierSealNumber("SealX"); // Has at least one seal
+
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container1, container2)));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(shipmentId);
         RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
-        assertEquals(200, response.getStatusCodeValue());
-        assertNull(responseBody.getWarning()); // No warning expected
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(responseBody.getWarning());
+        assertTrue(responseBody.getWarning().contains("CONT001"));
+        assertFalse(responseBody.getWarning().contains("CONT002"));
     }
 
     @Test
@@ -1432,21 +1418,48 @@ void testValidateSealNumberWarning_containersMissingSeals() {
         Containers container = new Containers();
         container.setContainerNumber("CTN789");
         container.setCarrierSealNumber("SEAL789");
-        container.setCustomsSealNumber("CUSTOM789");
-        container.setShipperSealNumber("SHIPPER789");
-        container.setVeterinarySealNumber("VET789");
-        Set<Containers> containers = new HashSet<>();
-        containers.add(container);
+
         ShipmentDetails shipment = mock(ShipmentDetails.class);
         when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
         when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
-        when(shipment.getContainersList()).thenReturn(containers); // Now returns Set
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container)));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNull(responseBody.getWarning()); // No warning expected
+    }
+@Test
+    void testNegativeCasesForSelaVal() {
+        Containers container = new Containers();
+        container.setContainerNumber("CTN000");
+        // IMPORT direction
+        ShipmentDetails importShipment = mock(ShipmentDetails.class);
+        when(importShipment.getTransportMode()).thenReturn("SEA");
+        when(importShipment.getDirection()).thenReturn("IMP");
+        importShipment.setContainersList(new HashSet<>(Arrays.asList(container)));
+    // No containers
+    ShipmentDetails emptyShipment = mock(ShipmentDetails.class);
+    when(emptyShipment.getTransportMode()).thenReturn("SEA");
+    when(emptyShipment.getDirection()).thenReturn("EXP");
+    when(emptyShipment.getContainersList()).thenReturn(Collections.emptySet());
+    //  Null containers
+    ShipmentDetails nullShipment = mock(ShipmentDetails.class);
+    when(nullShipment.getTransportMode()).thenReturn("SEA");
+    when(nullShipment.getDirection()).thenReturn("EXP");
+    when(nullShipment.getContainersList()).thenReturn(null);
+    // Common mock
+    when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mock(ShipmentDetails.class)));
+    // Execute and verify all negative cases
+    Arrays.asList( importShipment, emptyShipment, nullShipment).forEach(shipment -> {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
         ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
         RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
         assertEquals(200, response.getStatusCodeValue());
-        assertNull(responseBody.getWarning(),
-                "No warning should be generated when all containers have seals");
-    }
+        assertNull(responseBody.getWarning());
+    });
+}
 
 }
