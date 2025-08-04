@@ -158,5 +158,8 @@ public class ConsolidationEtV3Request extends CommonRequest implements IRunnerRe
     private String bookingId;
     private String bookingStatus;
     private String bookingNumber;
+    private String incoterms;
+    private String incotermsLocation;
+    private Boolean reefer;
 
 }

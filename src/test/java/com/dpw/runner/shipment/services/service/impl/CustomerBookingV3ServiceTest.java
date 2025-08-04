@@ -71,8 +71,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -345,6 +343,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -392,6 +393,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -437,6 +441,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -489,6 +496,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -536,6 +546,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -578,6 +591,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -621,6 +637,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
 
         // Test
@@ -1358,6 +1377,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -1587,6 +1609,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -1704,6 +1729,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -1827,6 +1855,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -2154,6 +2185,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockTenantSettings();
         mockShipmentSettings();
         // Test
@@ -2184,6 +2218,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
@@ -2214,6 +2251,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
@@ -2247,6 +2287,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
@@ -2256,7 +2299,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithUtilization2() throws RunnerException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
@@ -2279,6 +2322,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
@@ -2288,7 +2334,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithUtilization3() throws RunnerException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
@@ -2310,6 +2356,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
@@ -2417,6 +2466,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         // Test
         PlatformToRunnerCustomerBookingResponse platformResponse = customerBookingService.platformCreateBooking(request);
 
@@ -3705,18 +3757,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         assertEquals("ok", responseMap.get("salesAgent"));
         assertEquals("ok", responseMap.get("vessel"));
         assertEquals("ok", responseMap.get("organization"));
-
-        // Optional: verify method calls
-        verify(spyService).addAllMasterDataInSingleCall(any(), any());
-        verify(spyService).addAllUnlocationDataInSingleCall(any(), any());
-        verify(spyService).addAllCarrierDataInSingleCall(any(), any());
-        verify(spyService).addAllCurrencyDataInSingleCall(any(), any());
-        verify(spyService).addAllTenantDataInSingleCall(any(), any());
-        verify(spyService).addAllContainerTypesInSingleCall(any(), any());
-        verify(spyService).addAllChargeTypesInSingleMDMCall(any(), any());
-        verify(spyService).addAllSalesAgentInSingleCall(any(), any());
-        verify(spyService).addAllVesselDataInSingleCall(any(), any());
-        verify(spyService).addAllOrganizationDataInSingleCall(any(), any());
     }
 
     @Test

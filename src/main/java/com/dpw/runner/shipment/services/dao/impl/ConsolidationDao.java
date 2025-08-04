@@ -771,6 +771,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails) {
+        return saveV3(consolidationDetails, false);
+    }
+
+    @Override
+    public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
@@ -785,7 +790,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSaveV3(consolidationDetails, errors, oldConsole, false);
+        onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
     }
 

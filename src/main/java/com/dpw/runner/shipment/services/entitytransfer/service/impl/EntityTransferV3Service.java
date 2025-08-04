@@ -859,7 +859,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if(!CommonUtils.listIsNullOrEmpty(oldConsolidationDetailsList)) {
             Set<Long> detachShipIds = oldConsolidationDetailsList.get(0).getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
             if(!detachShipIds.isEmpty()) {
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(oldConsolidationDetailsList.get(0).getId()).shipmentIds(detachShipIds).build();
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(oldConsolidationDetailsList.get(0).getId()).isFromEt(true).shipmentIds(detachShipIds).build();
                 consolidationService.detachShipments(request);
             }
         }
@@ -929,13 +929,14 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     private void attachConsolidationToShipment(List<Long> shipmentIds, List<Long> interBranchShipment, ConsolidationDetailsResponse consolidationDetailsResponse) throws RunnerException {
         Set<Long> shipmentIdSet = new HashSet<>(shipmentIds);
         if(!shipmentIdSet.isEmpty()) {
+            ConsolidationDetails consolidationDetails = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
             if (!interBranchShipment.isEmpty()) {
                 commonUtils.setInterBranchContextForHub();
                 createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().shipmentRequestedType(ShipmentRequestedType.APPROVE).consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().shipmentRequestedType(ShipmentRequestedType.APPROVE).consolidationDetails(consolidationDetails).consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
                 consolidationService.attachShipments(request);
             } else {
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsResponse.getId()).consolidationDetails(consolidationDetails).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
                 consolidationService.attachShipments(request);
             }
         }
@@ -1725,18 +1726,18 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             }
             fieldMap.put("{SD_ToBranchName}", nullSafe(toBranchName));
         }
-        populatedBlock = getPopulatedBlock(fieldMap, populatedBlock);
+        populatedBlock = updatePopulatedBlock(fieldMap, populatedBlock);
         return populatedBlock;
     }
 
-    private String getPopulatedBlock(Map<String, String> fieldMap, String populatedBlock) {
+    private String updatePopulatedBlock(Map<String, String> fieldMap, String populatedBlock) {
         for (Map.Entry<String, String> entry : fieldMap.entrySet()) {
             String placeholder = entry.getKey();
             String value = entry.getValue();
 
             if (value.isEmpty()) {
                 // Remove the full line (e.g., <strong>Consignor:</strong> {SD_ConsignorName}<br />)
-                populatedBlock = populatedBlock.replaceAll("(?i).*<strong>[^<]*:</strong>\\s*" + Pattern.quote(placeholder) + "<br\\s*/?>\\s*", "");
+                populatedBlock = populatedBlock.replaceAll("(?i)<strong>[^<]*:</strong>\\s*" + Pattern.quote(placeholder) + "<br\\s*/?>", "");
             } else {
                 populatedBlock = populatedBlock.replace(placeholder, value);
             }

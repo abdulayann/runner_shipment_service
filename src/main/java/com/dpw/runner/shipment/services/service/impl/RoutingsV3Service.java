@@ -209,6 +209,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     int offset = 0;
                     insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
 
+                    //update flight no back to voyage in case of air
+                    populateVoyageFromFlightNumberInAir(updatedRoutings);
                     // Step 5: Push to update
                     BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                     bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
@@ -218,6 +220,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 }
             }
         }
+    }
+
+    private static void populateVoyageFromFlightNumberInAir(List<Routings> updatedRoutings) {
+        updatedRoutings.forEach(routings -> {
+            if (Constants.TRANSPORT_MODE_AIR.equals(routings.getMode())) {
+                routings.setVoyage(routings.getFlightNumber());
+            }
+        });
     }
 
     private String getMessageValue(List<Routings> mainCarriageList, CarrierDetails carrierDetails) {
@@ -231,13 +241,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             StringBuilder description = new StringBuilder();
             checkIfVoyageVesselOrFlightNumberChanged(carrierDetails, mainCarriageLeg, description);
-            if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier()) && !Objects.equals(mainCarriageLeg.getCarrier(), carrierDetails.getShippingLine())) {
-                if (StringUtility.isEmpty(description.toString())) {
-                    description.append("Carrier");
-                } else {
-                    description.append("/Carrier");
-                }
-            }
             if (!StringUtility.isEmpty(description.toString())) {
                 description.append(" are updated as per Routing Leg");
                 return "Route(s) updated successfully. " + description;
@@ -247,6 +250,18 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     private static void checkIfVoyageVesselOrFlightNumberChanged(CarrierDetails carrierDetails, Routings mainCarriageLeg, StringBuilder description) {
+        if (Constants.TRANSPORT_MODE_SEA.equals(mainCarriageLeg.getMode())) {
+            getWarningMessageForSea(carrierDetails, mainCarriageLeg, description);
+        } else if (Constants.TRANSPORT_MODE_AIR.equals(mainCarriageLeg.getMode()) && StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber()) && !Objects.equals(mainCarriageLeg.getFlightNumber(), carrierDetails.getFlightNumber())) {
+            if (StringUtility.isEmpty(description.toString())) {
+                description.append("Flight No.");
+            } else {
+                description.append("/Flight No.");
+            }
+        }
+    }
+
+    private static void getWarningMessageForSea(CarrierDetails carrierDetails, Routings mainCarriageLeg, StringBuilder description) {
         if (StringUtility.isNotEmpty(mainCarriageLeg.getVesselName()) && !Objects.equals(mainCarriageLeg.getVesselName(), carrierDetails.getVessel())) {
             description.append("Vessel");
         }
@@ -256,15 +271,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             } else {
                 description.append("/Voyage");
             }
-
         }
-        if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber()) && !Objects.equals(mainCarriageLeg.getFlightNumber(), carrierDetails.getFlightNumber())) {
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier()) && !Objects.equals(mainCarriageLeg.getCarrier(), carrierDetails.getShippingLine())) {
             if (StringUtility.isEmpty(description.toString())) {
-                description.append("Flight Number");
+                description.append("Carrier");
             } else {
-                description.append("/Flight Number");
+                description.append("/Carrier");
             }
-
         }
     }
 
@@ -429,7 +442,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             locationCodes.add(firstLeg.getPol());
         }
         if (!StringUtility.isEmpty(lastLeg.getPod())) {
-            locationCodes.add(firstLeg.getPod());
+            locationCodes.add(lastLeg.getPod());
         }
         if (!CollectionUtils.isEmpty(locationCodes)) {
             Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
@@ -444,7 +457,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             if (!StringUtility.isEmpty(lastLeg.getPod())) {
                 carrierDetails.setDestinationPort(lastLeg.getPod());
                 carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
-                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(firstLeg.getPod());
+                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(lastLeg.getPod());
                 if (!Objects.isNull(entityTransferUnLocations)) {
                     carrierDetails.setDestinationPortCountry(entityTransferUnLocations.Country);
                 }

@@ -170,6 +170,7 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Boolean reefer = false;
     private Long bookingAgent; //booking agent
     private Boolean borrowed;
+    private String coLoadCarrierName; // Coloader
     private Boolean isMigratedToV3 = false;
 
     private MigrationStatus migrationStatus;

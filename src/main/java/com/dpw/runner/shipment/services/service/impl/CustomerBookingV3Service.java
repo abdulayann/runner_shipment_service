@@ -448,10 +448,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(optionalCustomerBooking.isPresent()) {
             CustomerBooking customerBooking = optionalCustomerBooking.get();
             List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
-            if (!packingList.isEmpty()) {
-                calculateCargoDetails(packingList, customerBooking);
-                customerBooking.setPackingList(packingList);
-            }
+            calculateCargoDetails(packingList, customerBooking);
+            customerBooking.setPackingList(packingList);
             customerBookingDao.save(customerBooking);
         }
     }
@@ -2329,22 +2327,17 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         booking.setContainers(null);
         booking.setTeuCount(null);
-        if (!containers.isEmpty()) {
-            updateContainerInBooking(booking, codeTeuMap);
-        }
-        if (!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking);
-        }
+        updateContainerInBooking(containers, codeTeuMap, booking);
+        calculateCargoDetails(packings, booking);
         calculateVW(booking);
         customerBookingDao.save(booking);
     }
 
-    private void updateContainerInBooking(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        List<Containers> containersList = customerBooking.getContainersList();
+    private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking) {
         for(Containers containers: containersList) {
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        customerBooking.setContainers(getTotalContainerCount(customerBooking.getContainersList()));
+        customerBooking.setContainers(getTotalContainerCount(containersList));
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
     }
 
