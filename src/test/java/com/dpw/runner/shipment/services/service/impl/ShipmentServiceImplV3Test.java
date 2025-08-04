@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
@@ -93,7 +94,26 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
@@ -134,9 +154,14 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.v3.*;
+import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
+import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
@@ -189,7 +214,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -333,6 +361,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IMDMServiceAdapter mdmServiceAdapter;
     @Mock
     private INotificationService notificationService;
+    @Mock
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     private ShipmentDetails shipmentDetailsEntity;
     private ConsolidationDetails consolidationDetailsEntity;
@@ -6701,5 +6731,58 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testValidateRequiredParams_BothNotNull_DoesNotThrow() {
         assertDoesNotThrow(() -> ShipmentServiceImplV3.validateRequiredParams(456L, "guid-456"));
+    }
+
+    @Test
+    void cancel_shouldThrowException_whenShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        RunnerException ex = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cancel(shipmentId));
+        assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, ex.getMessage());
+    }
+
+    @Test
+    void cancel_shouldCancelShipment_andDeleteMappingAndTriggerAll_whenMAWBEnabledAndP100BranchEnabled() throws RunnerException {
+        Long shipmentId = 2L;
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setShipmentId("SHIP123");
+
+        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+        settings.setIsMAWBColoadingEnabled(true);
+        settings.setP100Branch(false);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(existingShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        shipmentServiceImplV3.cancel(shipmentId);
+
+        verify(shipmentDao).update(existingShipment, false);
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(shipmentId);
+    }
+
+    @Test
+    void cancel_shouldSkipMappingDeleteAndAsyncUpdate_whenMAWBDisabledAndP100Disabled() throws RunnerException {
+        Long shipmentId = 3L;
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setShipmentId("SHIP999");
+
+        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+        settings.setIsMAWBColoadingEnabled(false);
+        settings.setP100Branch(false);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(existingShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        shipmentServiceImplV3.cancel(shipmentId);
+
+        verify(shipmentDao).update(existingShipment, false);
+        verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(any());
     }
 }
