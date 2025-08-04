@@ -1460,13 +1460,19 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public ContainerResponse assignShipmentPackagesContainers(ShipmentPackAssignmentRequest request) throws RunnerException {
-        if(listIsNullOrEmpty(request.getPackingIds())) {
-            throw new ValidationException("No Packing Ids provided.");
+    public ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException {
+        if(setIsNullOrEmpty(request.getShipmentPackIds().keySet())) {
+            throw new ValidationException("No Shipment/Packing Ids provided.");
         }
-        List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
+        request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
+                )));
+        List<Long> packingIds = request.getShipmentPackIds().values().stream().flatMap(List::stream).toList();
+        List<Packing> packingList = packingDao.findByIdIn(packingIds);
         if(listIsNullOrEmpty(packingList)) {
-            throw new ValidationException("No Packing found with Ids: " + request.getPackingIds());
+            throw new ValidationException("No Packing found with Ids: " + packingIds);
         }
         if(packingList.stream().map(Packing::getShipmentId).distinct().count() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
@@ -1476,10 +1482,7 @@ public class PackingV3Service implements IPackingV3Service {
         if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
             throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
         }
-        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
-        assignContainerRequest.setContainerId(request.getContainerId());
-        assignContainerRequest.setShipmentPackIds(Map.of(shipmentId, request.getPackingIds()));
-        return containerV3Service.assignContainers(assignContainerRequest, SHIPMENT_PACKING);
+        return containerV3Service.assignContainers(request, SHIPMENT_PACKING);
     }
 
     @Override

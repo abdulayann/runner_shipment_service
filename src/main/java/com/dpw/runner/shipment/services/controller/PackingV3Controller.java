@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPackAssignmentRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -213,7 +212,7 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
     @PostMapping(ASSIGN_PACKAGES_SHIPMENT)
-    public ResponseEntity<IRunnerResponse> assignContainersAtShipmentLevel(@RequestBody @Valid ShipmentPackAssignmentRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> assignContainersAtShipmentLevel(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.assignShipmentPackagesContainers(request));
     }
 
