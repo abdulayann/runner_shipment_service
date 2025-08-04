@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -165,7 +166,6 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PACKAGES;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -446,10 +446,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(optionalCustomerBooking.isPresent()) {
             CustomerBooking customerBooking = optionalCustomerBooking.get();
             List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
-            if (!packingList.isEmpty()) {
-                calculateCargoDetails(packingList, customerBooking);
-                customerBooking.setPackingList(packingList);
-            }
+            calculateCargoDetails(packingList, customerBooking);
+            customerBooking.setPackingList(packingList);
             customerBookingDao.save(customerBooking);
         }
     }
@@ -2330,22 +2328,17 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         booking.setContainers(null);
         booking.setTeuCount(null);
-        if (!containers.isEmpty()) {
-            updateContainerInBooking(booking, codeTeuMap);
-        }
-        if (!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking);
-        }
+        updateContainerInBooking(containers, codeTeuMap, booking);
+        calculateCargoDetails(packings, booking);
         calculateVW(booking);
         customerBookingDao.save(booking);
     }
 
-    private void updateContainerInBooking(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        List<Containers> containersList = customerBooking.getContainersList();
+    private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking) {
         for(Containers containers: containersList) {
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        customerBooking.setContainers(getTotalContainerCount(customerBooking.getContainersList()));
+        customerBooking.setContainers(getTotalContainerCount(containersList));
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
         customerBooking.setPackages(getTotalContainerPackages(containersList));
         customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
@@ -2448,7 +2441,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private String getPackUnit(Set<String> packTypes) {
-        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PackingConstants.PKG;
     }
 
     private void calculateVW(CustomerBooking customerBooking) throws RunnerException {
