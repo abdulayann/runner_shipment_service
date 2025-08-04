@@ -39,5 +39,5 @@ public interface IRoutingsV3Service{
 
     BulkRoutingResponse updateTransportInfoStatus(UpdateTransportStatusRequest request) throws RunnerException;
 
-     void validateBeforeBulkUpdate(BulkUpdateRoutingsRequest request,String module);
+    BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request,String module)  throws RunnerException;
 }

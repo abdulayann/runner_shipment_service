@@ -664,12 +664,15 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return routingsListResponses;
     }
 
-    public void validateBeforeBulkUpdate(BulkUpdateRoutingsRequest request, String module) {
+    @Override
+    @Transactional
+    public BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         if (module.equalsIgnoreCase(Constants.SHIPMENT)) {
             for (RoutingsRequest routingsRequest : request.getRoutings()) {
                 routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest);
             }
         }
+        return this.updateBulk(request, module);
     }
 
     @Override
