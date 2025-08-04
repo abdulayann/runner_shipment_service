@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeSerializer;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
@@ -21,11 +22,13 @@ public class ServiceDetailsResponse implements IRunnerResponse {
     private PartiesResponse contractor;
     private String srvLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime bookingDate;
     private Long serviceCount;
     @JsonSerialize(using = CustomLocalTimeSerializer.class)
     private LocalTime serviceDuration;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;

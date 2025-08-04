@@ -24,14 +24,69 @@ import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -51,9 +106,18 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.*;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.exceptions.InvalidPdfException;
-import com.itextpdf.text.pdf.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfGState;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +130,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.*;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -85,26 +154,99 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POD_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POL_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_CONSOLIDATION_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -202,6 +344,7 @@ class CommonUtilsTest {
                 Arguments.of(Map.of("foo", "42"), Set.of("foo"), "Response")
         );
     }
+
     @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
@@ -427,7 +570,7 @@ class CommonUtilsTest {
         inOrder.verify(dc).restoreState();
     }
 
-    private byte[] createSamplePdf() throws DocumentException{
+    private byte[] createSamplePdf() throws DocumentException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -614,7 +757,7 @@ class CommonUtilsTest {
         assertEquals("Generic exception message", result);
     }
 
-    private byte[] createSamplePdfWithMultiplePages() throws DocumentException{
+    private byte[] createSamplePdfWithMultiplePages() throws DocumentException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -658,7 +801,7 @@ class CommonUtilsTest {
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
         when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
         when(mockTenantSettingsResponse.getIsColoadingMAWBStationEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
+        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1, 2));
 
         assertNotNull(mockTenantSettingsResponse.getColoadingBranchIds());
 
@@ -670,7 +813,7 @@ class CommonUtilsTest {
         InterBranchDto interBranchContext = InterBranchContext.getContext();
         assertNotNull(interBranchContext);
         assertTrue(interBranchContext.isHub());
-        assertEquals(List.of(1,2), interBranchContext.getColoadStationsTenantIds());
+        assertEquals(List.of(1, 2), interBranchContext.getColoadStationsTenantIds());
     }
 
     @Test
@@ -709,7 +852,7 @@ class CommonUtilsTest {
         V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
         when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
+        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1, 2));
 
         List<CoLoadingMAWBDetailsResponse> mockDetails = Arrays.asList(
                 new CoLoadingMAWBDetailsResponse(1L, 1, 1),
@@ -1442,7 +1585,7 @@ class CommonUtilsTest {
         TenantModel tenantModel = new TenantModel();
         tenantModel.setCode("Code");
         tenantModel.setTenantName("TenantName");
-        tenantModelMap.put(1,tenantModel);
+        tenantModelMap.put(1, tenantModel);
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
                         .shipmentId("2")
@@ -1478,7 +1621,7 @@ class CommonUtilsTest {
         TenantModel tenantModel = new TenantModel();
         tenantModel.setCode("Code");
         tenantModel.setTenantName("TenantName");
-        tenantModelMap.put(1,tenantModel);
+        tenantModelMap.put(1, tenantModel);
         tenantModelMap.put(null, tenantModel);
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
@@ -2017,7 +2160,9 @@ class CommonUtilsTest {
     @Test
     void getUnLocationsData_Value() {
         Map<String, UnlocationsResponse> map = new HashMap<>();
-        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>() {{ put("unloc", UnlocationsResponse.builder().build()); }});
+        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>() {{
+            put("unloc", UnlocationsResponse.builder().build());
+        }});
         commonUtils.getUnLocationsData(List.of("unloc"), map);
         assertFalse(map.isEmpty());
     }
@@ -2039,7 +2184,9 @@ class CommonUtilsTest {
     @Test
     void getCarriersData_Value() {
         Map<String, CarrierMasterData> map = new HashMap<>();
-        when(masterDataUtils.getCarriersData(any())).thenReturn(new HashMap<>() {{ put("carrier", CarrierMasterData.builder().build()); }});
+        when(masterDataUtils.getCarriersData(any())).thenReturn(new HashMap<>() {{
+            put("carrier", CarrierMasterData.builder().build());
+        }});
         commonUtils.getCarriersData(List.of("carrier"), map);
         assertFalse(map.isEmpty());
     }
@@ -2163,7 +2310,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testCheckIfAnyDGClass3(){
+    void testCheckIfAnyDGClass3() {
         assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
     }
 
@@ -2248,7 +2395,8 @@ class CommonUtilsTest {
     }
 
     private Runnable mockRunnable() {
-        return () -> {};
+        return () -> {
+        };
     }
 
     @Test
@@ -2332,8 +2480,8 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testPopulateDictionaryForOceanDGCommercialApproval(){
-        Map<String,Object> dictionary = new HashMap<>();
+    void testPopulateDictionaryForOceanDGCommercialApproval() {
+        Map<String, Object> dictionary = new HashMap<>();
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
 
         Set<Containers> containersList = new HashSet<>();
@@ -2348,10 +2496,10 @@ class CommonUtilsTest {
         packingList.add(packing);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-            .carrierDetails(carrierDetails)
-            .containersList(containersList)
-            .packingList(packingList)
-            .build();
+                .carrierDetails(carrierDetails)
+                .containersList(containersList)
+                .packingList(packingList)
+                .build();
 
         shipmentDetails.setId(1l);
         VesselsResponse vesselsResponse = new VesselsResponse();
@@ -2367,51 +2515,51 @@ class CommonUtilsTest {
         auditLogList.add(AuditLog.builder().changes(changes).build());
 
         when(iAuditLogDao.findByOperationAndParentId(
-            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
+                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
         commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
 
     @Test
-    void testGetDGEmailTemplate(){
+    void testGetDGEmailTemplate() {
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities("entities").build();
 
         when(iv1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
         List<EmailTemplatesRequest> emailTemplates = new ArrayList<>();
         EmailTemplatesRequest templateReq1 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq1);
 
         EmailTemplatesRequest templateReq2 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq2);
 
         EmailTemplatesRequest templateReq3 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq3);
 
         EmailTemplatesRequest templateReq4 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq4);
 
         EmailTemplatesRequest templateReq5 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq5);
 
         EmailTemplatesRequest templateReq6 = EmailTemplatesRequest.builder()
-            .type(OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE)
-            .build();
+                .type(OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE)
+                .build();
         emailTemplates.add(templateReq6);
 
         EmailTemplatesRequest templateReqOther = EmailTemplatesRequest.builder()
-            .type("OTHER_EMAIL_TYPE")
-            .build();
+                .type("OTHER_EMAIL_TYPE")
+                .build();
         emailTemplates.add(templateReqOther);
 
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class)).thenReturn(emailTemplates);
@@ -2422,20 +2570,20 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testGetRoleId(){
+    void testGetRoleId() {
         OceanDGStatus oceanDGStatus = OCEAN_DG_REQUESTED;
         when(iv1Service.getRoleIdsByRoleName(any())).thenReturn(10);
-        Integer roleId =  commonUtils.getRoleId(oceanDGStatus);
+        Integer roleId = commonUtils.getRoleId(oceanDGStatus);
         assertEquals(10, roleId);
     }
 
     @Test
-    void testGetUserEmailsByRoleId(){
+    void testGetUserEmailsByRoleId() {
         List<UsersRoleListResponse> userEmailResponse = new ArrayList<>();
         userEmailResponse.add(UsersRoleListResponse.builder().email("abc").build());
         when(iv1Service.getUserEmailsByRoleId(any())).thenReturn(userEmailResponse);
 
-        List<String>  response = commonUtils.getUserEmailsByRoleId(1);
+        List<String> response = commonUtils.getUserEmailsByRoleId(1);
         assertNotNull(response);
     }
 
@@ -2444,7 +2592,7 @@ class CommonUtilsTest {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(1l);
         TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
-        when( iv1Service.createTask(any())).thenReturn(taskCreateResponse);
+        when(iv1Service.createTask(any())).thenReturn(taskCreateResponse);
 
         TaskCreateResponse response = commonUtils.createTask(shipmentDetails, 1);
         assertNotNull(response);
@@ -2452,7 +2600,7 @@ class CommonUtilsTest {
 
 
     @Test
-    void testGetVesselsData(){
+    void testGetVesselsData() {
         CarrierDetails carrierDetails = CarrierDetails.builder().vessel("vess").build();
         VesselsResponse vesselsResponse = new VesselsResponse();
         vesselsResponse.setName("Name");
@@ -2472,14 +2620,14 @@ class CommonUtilsTest {
     void testsendEmailResponseToDGRequester() throws RunnerException {
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new HashMap<>();
         EmailTemplatesRequest emailTemplatesRequest = EmailTemplatesRequest.builder()
-            .body("body")
-            .subject("subject")
-            .build();
+                .body("body")
+                .subject("subject")
+                .build();
         emailTemplates.put(OCEAN_DG_REQUESTED, emailTemplatesRequest);
         OceanDGRequest request = OceanDGRequest.builder().userEmail("ac").build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
-        commonUtils.sendEmailResponseToDGRequester(emailTemplatesRequest,request, shipmentDetails);
+        commonUtils.sendEmailResponseToDGRequester(emailTemplatesRequest, request, shipmentDetails);
         assertEquals("ac", request.getUserEmail());
     }
 
@@ -2762,8 +2910,8 @@ class CommonUtilsTest {
         when(consolidationDetails.getConsolidationNumber()).thenReturn("CONSOL123");
 
         // Mock carrier details
-        when(carrierDetailsMock.getEtd()).thenReturn(LocalDate.parse( "2024-09-20").atTime(LocalTime.MIDNIGHT));
-        when(carrierDetailsMock.getEta()).thenReturn(LocalDate.parse( "2024-09-25").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getEtd()).thenReturn(LocalDate.parse("2024-09-20").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getEta()).thenReturn(LocalDate.parse("2024-09-25").atTime(LocalTime.MIDNIGHT));
         when(carrierDetailsMock.getShippingLine()).thenReturn("LINE123");
         when(carrierDetailsMock.getFlightNumber()).thenReturn("FLIGHT001");
         when(carrierDetailsMock.getOriginPort()).thenReturn("ORIG001");
@@ -3644,37 +3792,44 @@ class CommonUtilsTest {
         assertNull(eventsRequest.getContainerNumber());
         assertNotNull(eventsRequest.getActual());
     }
+
     @ParameterizedTest
     @MethodSource("pTestCases")
     void testSetIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object expectedResponse) {
         assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
     }
+
     @Test
     void testSetIncludedFieldsToResponseInvalidColumn() {
         ShipmentDetailsResponse response = new ShipmentDetailsResponse();
         assertEquals(response, commonUtils.setIncludedFieldsToResponse(new ShipmentDetails(), Set.of("invalidColumns"), response));
     }
+
     @Test
     void testMapListToDTO_EmptyList() {
         List<Containers> emptyList = new ArrayList<>();
         Object result = commonUtils.mapListToDTO(emptyList);
         assertEquals(emptyList, result);
     }
+
     @Test
     void testCheckForTriangulationPartnerList() {
         List<TriangulationPartner> triangulationPartnerList = List.of(new TriangulationPartner());
         List<TriangulationPartnerResponse> triangulationPartnerResponseList = List.of(new TriangulationPartnerResponse());
-        when(modelMapper.map(triangulationPartnerList, new TypeToken<List<TriangulationPartnerResponse>>() {}.getType()))
+        when(modelMapper.map(triangulationPartnerList, new TypeToken<List<TriangulationPartnerResponse>>() {
+        }.getType()))
                 .thenReturn(triangulationPartnerResponseList);
         Object result = commonUtils.mapListToDTO(triangulationPartnerList);
         assertEquals(triangulationPartnerResponseList, result);
     }
+
     @Test
     void testMapListToDTO_Containers() {
         List<Containers> containerList = List.of(new Containers());
         List<ContainerResponse> containerResponseList = List.of(new ContainerResponse());
 
-        when(modelMapper.map(containerList, new TypeToken<List<ContainerResponse>>() {}.getType()))
+        when(modelMapper.map(containerList, new TypeToken<List<ContainerResponse>>() {
+        }.getType()))
                 .thenReturn(containerResponseList);
 
         Object result = commonUtils.mapListToDTO(containerList);
@@ -3688,7 +3843,8 @@ class CommonUtilsTest {
         List<BookingCarriage> bookingCarriageList = List.of(new BookingCarriage());
         List<BookingCarriageResponse> bookingCarriageResponseList = List.of(new BookingCarriageResponse());
 
-        when(modelMapper.map(bookingCarriageList, new TypeToken<List<BookingCarriageResponse>>() {}.getType()))
+        when(modelMapper.map(bookingCarriageList, new TypeToken<List<BookingCarriageResponse>>() {
+        }.getType()))
                 .thenReturn(bookingCarriageResponseList);
 
         Object result = commonUtils.mapListToDTO(bookingCarriageList);
@@ -3702,12 +3858,14 @@ class CommonUtilsTest {
         Object result = commonUtils.mapListToDTO(stringList);
         assertEquals(stringList, result);
     }
+
     @Test
     void testMapListToDTO_ELDetails() {
         List<ELDetails> elDetailsList = List.of(new ELDetails());
         List<ELDetailsResponse> elDetailsResponseList = List.of(new ELDetailsResponse());
 
-        when(modelMapper.map(elDetailsList, new TypeToken<List<ELDetailsResponse>>() {}.getType()))
+        when(modelMapper.map(elDetailsList, new TypeToken<List<ELDetailsResponse>>() {
+        }.getType()))
                 .thenReturn(elDetailsResponseList);
 
         Object result = commonUtils.mapListToDTO(elDetailsList);
@@ -3719,64 +3877,75 @@ class CommonUtilsTest {
     void testMapListToDTO_Events() {
         List<Events> eventsList = List.of(new Events());
         List<EventsResponse> eventsResponseList = List.of(new EventsResponse());
-        when(modelMapper.map(eventsList, new TypeToken<List<EventsResponse>>() {}.getType()))
+        when(modelMapper.map(eventsList, new TypeToken<List<EventsResponse>>() {
+        }.getType()))
                 .thenReturn(eventsResponseList);
 
         Object result = commonUtils.mapListToDTO(eventsList);
         assertEquals(eventsResponseList, result);
     }
+
     @Test
     void testMapListToDTO_Packing() {
         List<Packing> packings = List.of(new Packing());
         List<PackingResponse> packingResponseList = List.of(new PackingResponse());
-        when(modelMapper.map(packings, new TypeToken<List<PackingResponse>>() {}.getType()))
+        when(modelMapper.map(packings, new TypeToken<List<PackingResponse>>() {
+        }.getType()))
                 .thenReturn(packingResponseList);
 
         Object result = commonUtils.mapListToDTO(packings);
         assertEquals(packingResponseList, result);
     }
+
     @Test
     void testMapListToDTO_ReferenceNumbers() {
         List<ReferenceNumbers> referenceNumbersList = List.of(new ReferenceNumbers());
         List<ReferenceNumbersResponse> referenceNumbersResponseList = List.of(new ReferenceNumbersResponse());
 
-        when(modelMapper.map(referenceNumbersList, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType()))
+        when(modelMapper.map(referenceNumbersList, new TypeToken<List<ReferenceNumbersResponse>>() {
+        }.getType()))
                 .thenReturn(referenceNumbersResponseList);
 
         Object result = commonUtils.mapListToDTO(referenceNumbersList);
 
         assertEquals(referenceNumbersResponseList, result);
     }
+
     @Test
     void testMapListToDTO_Routings() {
         List<Routings> routingList = List.of(new Routings());
         List<RoutingsResponse> routingResponseList = List.of(new RoutingsResponse());
 
-        when(modelMapper.map(routingList, new TypeToken<List<RoutingsResponse>>() {}.getType()))
+        when(modelMapper.map(routingList, new TypeToken<List<RoutingsResponse>>() {
+        }.getType()))
                 .thenReturn(routingResponseList);
 
         Object result = commonUtils.mapListToDTO(routingList);
 
         assertEquals(routingResponseList, result);
     }
+
     @Test
     void testMapListToDTO_ServiceDetails() {
         List<ServiceDetails> serviceDetailsList = List.of(new ServiceDetails());
         List<ServiceDetailsResponse> serviceDetailsResponseList = List.of(new ServiceDetailsResponse());
 
-        when(modelMapper.map(serviceDetailsList, new TypeToken<List<ServiceDetailsResponse>>() {}.getType()))
+        when(modelMapper.map(serviceDetailsList, new TypeToken<List<ServiceDetailsResponse>>() {
+        }.getType()))
                 .thenReturn(serviceDetailsResponseList);
 
         Object result = commonUtils.mapListToDTO(serviceDetailsList);
 
         assertEquals(serviceDetailsResponseList, result);
     }
+
     @Test
     void testMapListToDTO_Notes() {
         List<Notes> notesList = List.of(new Notes());
         List<NotesResponse> notesResponseList = List.of(new NotesResponse());
 
-        when(modelMapper.map(notesList, new TypeToken<List<NotesResponse>>() {}.getType()))
+        when(modelMapper.map(notesList, new TypeToken<List<NotesResponse>>() {
+        }.getType()))
                 .thenReturn(notesResponseList);
 
         Object result = commonUtils.mapListToDTO(notesList);
@@ -3789,7 +3958,8 @@ class CommonUtilsTest {
         List<Jobs> jobsList = List.of(new Jobs());
         List<JobResponse> jobResponseList = List.of(new JobResponse());
 
-        when(modelMapper.map(jobsList, new TypeToken<List<JobResponse>>() {}.getType()))
+        when(modelMapper.map(jobsList, new TypeToken<List<JobResponse>>() {
+        }.getType()))
                 .thenReturn(jobResponseList);
 
         Object result = commonUtils.mapListToDTO(jobsList);
@@ -3802,7 +3972,8 @@ class CommonUtilsTest {
         List<ConsolidationDetails> consolidationDetailsList = List.of(new ConsolidationDetails());
         List<ConsolidationListResponse> consolidationResponseList = List.of(new ConsolidationListResponse());
 
-        when(modelMapper.map(consolidationDetailsList, new TypeToken<List<ConsolidationListResponse>>() {}.getType()))
+        when(modelMapper.map(consolidationDetailsList, new TypeToken<List<ConsolidationListResponse>>() {
+        }.getType()))
                 .thenReturn(consolidationResponseList);
 
         Object result = commonUtils.mapListToDTO(consolidationDetailsList);
@@ -3815,7 +3986,8 @@ class CommonUtilsTest {
         List<Parties> partiesList = List.of(new Parties());
         List<PartiesResponse> partiesResponseList = List.of(new PartiesResponse());
 
-        when(modelMapper.map(partiesList, new TypeToken<List<PartiesResponse>>() {}.getType()))
+        when(modelMapper.map(partiesList, new TypeToken<List<PartiesResponse>>() {
+        }.getType()))
                 .thenReturn(partiesResponseList);
 
         Object result = commonUtils.mapListToDTO(partiesList);
@@ -3828,42 +4000,47 @@ class CommonUtilsTest {
         List<ShipmentOrder> shipmentOrderList = List.of(new ShipmentOrder());
         List<ShipmentOrderResponse> shipmentOrderResponseList = List.of(new ShipmentOrderResponse());
 
-        when(modelMapper.map(shipmentOrderList, new TypeToken<List<ShipmentOrderResponse>>() {}.getType()))
+        when(modelMapper.map(shipmentOrderList, new TypeToken<List<ShipmentOrderResponse>>() {
+        }.getType()))
                 .thenReturn(shipmentOrderResponseList);
 
         Object result = commonUtils.mapListToDTO(shipmentOrderList);
 
         assertEquals(shipmentOrderResponseList, result);
     }
+
     @Test
     void testMapListToDTO_TruckDriverDetails() {
         List<TruckDriverDetails> truckDriverDetailsList = List.of(new TruckDriverDetails());
         List<TruckDriverDetailsResponse> truckDriverDetailsResponseList = List.of(new TruckDriverDetailsResponse());
 
-        when(modelMapper.map(truckDriverDetailsList, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType()))
+        when(modelMapper.map(truckDriverDetailsList, new TypeToken<List<TruckDriverDetailsResponse>>() {
+        }.getType()))
                 .thenReturn(truckDriverDetailsResponseList);
 
         Object result = commonUtils.mapListToDTO(truckDriverDetailsList);
 
         assertEquals(truckDriverDetailsResponseList, result);
     }
+
     @Test
     void testMapToDTO_CarrierDetails() {
         CarrierDetails carrierDetails = new CarrierDetails();
-        CarrierDetailResponse carrierDetailResponse =new CarrierDetailResponse();
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
 
-        when(modelMapper.map(carrierDetails,CarrierDetailResponse.class)).thenReturn(carrierDetailResponse);
+        when(modelMapper.map(carrierDetails, CarrierDetailResponse.class)).thenReturn(carrierDetailResponse);
 
         Object result = commonUtils.mapToDTO(carrierDetails);
 
         assertEquals(carrierDetailResponse, result);
     }
+
     @Test
     void testMapToDTO_AdditionalDetails() {
         AdditionalDetails additionalDetails = new AdditionalDetails();
-        AdditionalDetailResponse additionalDetailResponse =new AdditionalDetailResponse();
+        AdditionalDetailResponse additionalDetailResponse = new AdditionalDetailResponse();
 
-        when(modelMapper.map(additionalDetails,AdditionalDetailResponse.class)).thenReturn(additionalDetailResponse);
+        when(modelMapper.map(additionalDetails, AdditionalDetailResponse.class)).thenReturn(additionalDetailResponse);
 
         Object result = commonUtils.mapToDTO(additionalDetails);
 
@@ -3873,36 +4050,39 @@ class CommonUtilsTest {
     @Test
     void testMapToDTO_PickupDeliveryDetails() {
         PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
-        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse =new PickupDeliveryDetailsResponse();
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
 
-        when(modelMapper.map(pickupDeliveryDetails,PickupDeliveryDetailsResponse.class)).thenReturn(pickupDeliveryDetailsResponse);
+        when(modelMapper.map(pickupDeliveryDetails, PickupDeliveryDetailsResponse.class)).thenReturn(pickupDeliveryDetailsResponse);
 
         Object result = commonUtils.mapToDTO(pickupDeliveryDetails);
 
         assertEquals(pickupDeliveryDetailsResponse, result);
     }
+
     @Test
     void testMapToDTO_Parties() {
         Parties parties = new Parties();
-        PartiesResponse partiesResponse =new PartiesResponse();
+        PartiesResponse partiesResponse = new PartiesResponse();
 
-        when(modelMapper.map(parties,PartiesResponse.class)).thenReturn(partiesResponse);
+        when(modelMapper.map(parties, PartiesResponse.class)).thenReturn(partiesResponse);
 
         Object result = commonUtils.mapToDTO(parties);
 
         assertEquals(partiesResponse, result);
     }
+
     @Test
     void testMapToDTO_ArrivalDepartureDetails() {
         ArrivalDepartureDetails arrivalDepartureDetails = new ArrivalDepartureDetails();
-        ArrivalDepartureDetailsResponse arrivalDepartureDetailsResponse =new ArrivalDepartureDetailsResponse();
+        ArrivalDepartureDetailsResponse arrivalDepartureDetailsResponse = new ArrivalDepartureDetailsResponse();
 
-        when(modelMapper.map(arrivalDepartureDetails,ArrivalDepartureDetailsResponse.class)).thenReturn(arrivalDepartureDetailsResponse);
+        when(modelMapper.map(arrivalDepartureDetails, ArrivalDepartureDetailsResponse.class)).thenReturn(arrivalDepartureDetailsResponse);
 
         Object result = commonUtils.mapToDTO(arrivalDepartureDetails);
 
         assertEquals(arrivalDepartureDetailsResponse, result);
     }
+
     @Test
     void testSetNestedFieldValue_SimpleField() throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
         Parties obj = new Parties();
@@ -3933,28 +4113,33 @@ class CommonUtilsTest {
         assertThrows(NoSuchMethodException.class, () ->
                 commonUtils.setNestedFieldValue(obj, "invalidField", "test"));
     }
+
     @Test
     void testMapListToDTOSet_Containers() {
         Set<Containers> containersList = Set.of(new Containers());
         Set<ContainerResponse> containerResponseList = Set.of(new ContainerResponse());
-        when(modelMapper.map(containersList, new TypeToken<Set<ContainerResponse>>() {}.getType()))
+        when(modelMapper.map(containersList, new TypeToken<Set<ContainerResponse>>() {
+        }.getType()))
                 .thenReturn(containerResponseList);
 
         Object result = commonUtils.mapToDTO(containersList);
 
         assertEquals(containerResponseList, result);
     }
+
     @Test
     void testMapListToDTOSet_ConsolidationDetails() {
         Set<ConsolidationDetails> consolidationDetailsSet = Set.of(new ConsolidationDetails());
         Set<ConsolidationListResponse> consolidationListResponseSet = Set.of(new ConsolidationListResponse());
-        when(modelMapper.map(consolidationDetailsSet, new TypeToken<Set<ConsolidationListResponse>>() {}.getType()))
+        when(modelMapper.map(consolidationDetailsSet, new TypeToken<Set<ConsolidationListResponse>>() {
+        }.getType()))
                 .thenReturn(consolidationListResponseSet);
 
         Object result = commonUtils.mapToDTO(consolidationDetailsSet);
 
         assertEquals(consolidationListResponseSet, result);
     }
+
     @Test
     void testSetIncludedFields_validField() throws Exception {
         // Given
@@ -4038,6 +4223,7 @@ class CommonUtilsTest {
         // Then
         assertNotNull(result); // Ensure it still returns a non-null response even with empty fields
     }
+
     @Test
     void testSetIncludedFields_withInvalidFieldType() {
         // Given
@@ -4050,11 +4236,13 @@ class CommonUtilsTest {
         assertNotNull(result);
         // Ensure that it doesn't throw exceptions for invalid fields, just logs an error
     }
+
     @Test
     void testGetDtoValue_withList() {
         // Given
         List<CarrierDetails> carrierDetailsList = Collections.singletonList(new CarrierDetails());
-        TypeToken<List<CarrierDetailResponse>> typeToken = new TypeToken<>() {};
+        TypeToken<List<CarrierDetailResponse>> typeToken = new TypeToken<>() {
+        };
         when(modelMapper.map(carrierDetailsList, typeToken.getType())).thenReturn(List.of(new CarrierDetails()));
         // When
         Object result = commonUtils.getDtoValue(carrierDetailsList);
@@ -4551,10 +4739,11 @@ class CommonUtilsTest {
         settings.setDPWDateFormat("yyyy-MM-dd HH:mm:ss");
         return settings;
     }
+
     @Test
     void testSetTransportInfoStatusMessage_PolWarning() {
-         CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
-         List<Routings> mockMainCarriageRoutings= mock(List.class);
+        CarrierDetails mockCarrierDetails = mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
         // Setup mock data
         Routings firstLeg = mock(Routings.class);
         Routings lastLeg = mock(Routings.class);
@@ -4574,8 +4763,8 @@ class CommonUtilsTest {
 
     @Test
     void testSetTransportInfoStatusMessage_PodWarning() {
-        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
-        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        CarrierDetails mockCarrierDetails = mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
         // Setup mock data
         Routings firstLeg = mock(Routings.class);
         Routings lastLeg = mock(Routings.class);
@@ -4595,8 +4784,8 @@ class CommonUtilsTest {
 
     @Test
     void testSetTransportInfoStatusMessage_PolPodWarning() {
-        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
-        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        CarrierDetails mockCarrierDetails = mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
         // Setup mock data
         Routings firstLeg = mock(Routings.class);
         Routings lastLeg = mock(Routings.class);
@@ -4616,8 +4805,8 @@ class CommonUtilsTest {
 
     @Test
     void testSetTransportInfoStatusMessage_Empty() {
-        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
-        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        CarrierDetails mockCarrierDetails = mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
         // Setup mock data
         Routings firstLeg = mock(Routings.class);
         Routings lastLeg = mock(Routings.class);
@@ -4634,9 +4823,10 @@ class CommonUtilsTest {
         // Verify the result
         assertEquals(Constants.EMPTY_STRING, result);
     }
+
     @Test
     void testIsVesselVoyageAvailable_SeaMode() {
-        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
 
         // Setup mock data for sea mode
         Routings routing = mock(Routings.class);
@@ -4654,7 +4844,7 @@ class CommonUtilsTest {
 
     @Test
     void testIsVesselVoyageAvailable_MissingVesselName() {
-        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        List<Routings> mockMainCarriageRoutings = mock(List.class);
 
         // Setup mock data for sea mode
         Routings routing = mock(Routings.class);
@@ -4713,13 +4903,13 @@ class CommonUtilsTest {
     }
 
     @Test
-    void getTaskIdHyperLinkV3Test(){
+    void getTaskIdHyperLinkV3Test() {
         String url = commonUtils.getTaskIdHyperLinkV3("a", "b");
         assertNotNull(url);
     }
 
     @Test
-     void testGetRAKCDetailsMap_WithEmptyAddressIds() {
+    void testGetRAKCDetailsMap_WithEmptyAddressIds() {
         // Given
         List<String> addressIds = Collections.emptyList();
 
@@ -4731,7 +4921,7 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testGetRAKCDetailsMap_WithNullAddressIds() {
+    void testGetRAKCDetailsMap_WithNullAddressIds() {
         // Given
         List<String> addressIds = null;
 
@@ -4743,11 +4933,11 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testGetRAKCDetailsMap_WithValidAddressIds() {
+    void testGetRAKCDetailsMap_WithValidAddressIds() {
         // Given
         List<String> addressIds = Arrays.asList("1", "2");
         V1DataResponse addressResponse = mock(V1DataResponse.class);
-        List<RAKCDetailsResponse> rakcDetailsList = Arrays.asList( RAKCDetailsResponse.builder().id(1L).orgId(1L).kCRANumber("Data1").build(), RAKCDetailsResponse.builder().id(2L).orgId(2L).kCRANumber("Data2").build());
+        List<RAKCDetailsResponse> rakcDetailsList = Arrays.asList(RAKCDetailsResponse.builder().id(1L).orgId(1L).kCRANumber("Data1").build(), RAKCDetailsResponse.builder().id(2L).orgId(2L).kCRANumber("Data2").build());
 
         when(iv1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class)).thenReturn(rakcDetailsList);
@@ -4764,7 +4954,7 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testGetRAKCDetailsMap_WithEmptyRAKCDetailsResponse() {
+    void testGetRAKCDetailsMap_WithEmptyRAKCDetailsResponse() {
         // Given
         List<String> addressIds = Arrays.asList("1", "2");
         V1DataResponse addressResponse = mock(V1DataResponse.class);
@@ -4781,7 +4971,7 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testConvertV1InCriteriaRequest() {
+    void testConvertV1InCriteriaRequest() {
         // Given
         List<String> addressIds = Arrays.asList("1", "2");
 
@@ -4891,5 +5081,311 @@ class CommonUtilsTest {
         response.setCode(code);
         response.setIsQuoted(isQuoted);
         return response;
+    }
+
+    @Test
+    void testGetAddress_withAllFields() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, "Company XYZ");
+        addressData.put(ReportConstants.ADDRESS1, "123 Main St");
+        addressData.put(ReportConstants.CITY, "Metropolis");
+        addressData.put(ReportConstants.STATE, "NY");
+        addressData.put(ReportConstants.COUNTRY, "USA");
+        addressData.put(ReportConstants.ZIP_POST_CODE, "12345");
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "Company XYZ,123 Main St,Metropolis,NY,USA,12345";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGetAddress_withEmptyValues() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, "");
+        addressData.put(ReportConstants.ADDRESS1, "123 Main St");
+        addressData.put(ReportConstants.CITY, "");
+        addressData.put(ReportConstants.STATE, "NY");
+        addressData.put(ReportConstants.COUNTRY, "");
+        addressData.put(ReportConstants.ZIP_POST_CODE, "12345");
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "123 Main St,NY,12345";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGetAddress_withNullValues() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, null);
+        addressData.put(ReportConstants.ADDRESS1, "123 Main St");
+        addressData.put(ReportConstants.CITY, null);
+        addressData.put(ReportConstants.STATE, "NY");
+        addressData.put(ReportConstants.COUNTRY, null);
+        addressData.put(ReportConstants.ZIP_POST_CODE, "12345");
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "123 Main St,NY,12345";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGetAddress_withOnlyEmptyStrings() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, "");
+        addressData.put(ReportConstants.ADDRESS1, "");
+        addressData.put(ReportConstants.CITY, "");
+        addressData.put(ReportConstants.STATE, "");
+        addressData.put(ReportConstants.COUNTRY, "");
+        addressData.put(ReportConstants.ZIP_POST_CODE, "");
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGetAddress_withOnlyNullValues() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, null);
+        addressData.put(ReportConstants.ADDRESS1, null);
+        addressData.put(ReportConstants.CITY, null);
+        addressData.put(ReportConstants.STATE, null);
+        addressData.put(ReportConstants.COUNTRY, null);
+        addressData.put(ReportConstants.ZIP_POST_CODE, null);
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGetAddress_withSingleField() {
+        // Arrange
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.COMPANY_NAME, "Company XYZ");
+
+        // Act
+        String result = commonUtils.getAddress(addressData);
+
+        // Assert
+        String expected = "Company XYZ";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_NoChanges() {
+        // Test case when all fields are identical - should return false
+        Packing oldPack = createTestPacking();
+        Packing newPack = createTestPacking();
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_HazardousChanged() {
+        // Test case when Hazardous field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideDGClassChangeCases")
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassChanges(String oldDGClass, String newDGClass) {
+        Packing oldPack = createDGTestPacking();
+        oldPack.setDGClass(oldDGClass);
+
+        Packing newPack = createDGTestPacking();
+        newPack.setDGClass(newDGClass);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+        assertTrue(result);
+    }
+
+    private static Stream<Arguments> provideDGClassChangeCases() {
+        return Stream.of(
+                Arguments.of("Class1", "Class2"), // value change
+                Arguments.of(null, "Class1"),     // null to value
+                Arguments.of("Class1", null)      // value to null
+        );
+    }
+
+    // Mocked or test utility method
+    private Packing createDGTestPacking() {
+        Packing packing = new Packing();
+        packing.setDGClass("Class1"); // default, can be overridden
+        // set other default fields if needed
+        return packing;
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_UnNumberChanged() {
+        // Test case when UnNumber field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setUnNumber("UN1001");
+
+        Packing newPack = createTestPacking();
+        newPack.setUnNumber("UN1002");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_ProperShippingNameChanged() {
+        // Test case when ProperShippingName field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setProperShippingName("Old Name");
+
+        Packing newPack = createTestPacking();
+        newPack.setProperShippingName("New Name");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_PackingGroupChanged() {
+        // Test case when PackingGroup field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setPackingGroup("I");
+
+        Packing newPack = createTestPacking();
+        newPack.setPackingGroup("II");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointChanged() {
+        // Test case when MinimumFlashPoint field changes - should return true
+        // Assuming compareBigDecimals returns false when values are different
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPoint(new BigDecimal("10.5"));
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPoint(new BigDecimal("15.5"));
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointUnitChanged() {
+        // Test case when MinimumFlashPointUnit field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPointUnit("C");
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPointUnit("F");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MarinePollutantChanged() {
+        // Test case when MarinePollutant field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMarinePollutant(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setMarinePollutant(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_AllFieldsNull() {
+        // Test case when all nullable fields are null in both objects - should return false
+        Packing oldPack = new Packing();
+        oldPack.setHazardous(false);
+        oldPack.setMarinePollutant(false);
+        oldPack.setDGClass(null);
+        oldPack.setUnNumber(null);
+        oldPack.setProperShippingName(null);
+        oldPack.setPackingGroup(null);
+        oldPack.setMinimumFlashPoint(null);
+        oldPack.setMinimumFlashPointUnit(null);
+
+        Packing newPack = new Packing();
+        newPack.setHazardous(false);
+        newPack.setMarinePollutant(false);
+        newPack.setDGClass(null);
+        newPack.setUnNumber(null);
+        newPack.setProperShippingName(null);
+        newPack.setPackingGroup(null);
+        newPack.setMinimumFlashPoint(null);
+        newPack.setMinimumFlashPointUnit(null);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MultipleFieldsChanged() {
+        // Test case when multiple fields change - should return true (early return on first change)
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+        oldPack.setDGClass("Class1");
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false); // This will cause early return
+        newPack.setDGClass("Class2"); // This won't be evaluated due to early return
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    // Helper method to create a test packing object with default values
+    private Packing createTestPacking() {
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+        packing.setDGClass("TestClass");
+        packing.setUnNumber("UN1234");
+        packing.setProperShippingName("Test Shipping Name");
+        packing.setPackingGroup("I");
+        packing.setMinimumFlashPoint(new BigDecimal("20.0"));
+        packing.setMinimumFlashPointUnit("C");
+        packing.setMarinePollutant(false);
+        return packing;
     }
 }

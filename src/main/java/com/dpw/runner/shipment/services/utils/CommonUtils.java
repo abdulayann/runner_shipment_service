@@ -101,7 +101,9 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.COUNTRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EMPTY_STRING;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
@@ -1529,23 +1531,51 @@ public class CommonUtils {
         return false;
     }
 
+
     public boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
-        if (!oldPack.getHazardous().equals(newPack.getHazardous()))
-            return true;
-        if (!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
-            return true;
-        if (!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
-            return true;
-        if (!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
-            return true;
-        if (!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
-            return true;
-        if (!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
-            return true;
-        if (!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
-            return true;
-        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+        return isDGChanged(
+                newPack.getHazardous(), oldPack.getHazardous(),
+                newPack.getDGClass(), oldPack.getDGClass(),
+                newPack.getUnNumber(), oldPack.getUnNumber(),
+                newPack.getProperShippingName(), oldPack.getProperShippingName(),
+                newPack.getPackingGroup(), oldPack.getPackingGroup(),
+                newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint(),
+                newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit(),
+                newPack.getMarinePollutant(), oldPack.getMarinePollutant()
+        );
     }
+
+    public boolean checkIfDGFieldsChangedInPackingV3(Packing newPack, Packing oldPack) {
+        return isDGChanged(
+                newPack.getHazardous(), oldPack.getHazardous(),
+                newPack.getDGClass(), oldPack.getDGClass(),
+                newPack.getUnNumber(), oldPack.getUnNumber(),
+                newPack.getProperShippingName(), oldPack.getProperShippingName(),
+                newPack.getPackingGroup(), oldPack.getPackingGroup(),
+                newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint(),
+                newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit(),
+                newPack.getMarinePollutant(), oldPack.getMarinePollutant()
+        );
+    }
+
+    private boolean isDGChanged(Boolean newHaz, Boolean oldHaz,
+                                String newClass, String oldClass,
+                                String newUn, String oldUn,
+                                String newName, String oldName,
+                                String newGroup, String oldGroup,
+                                BigDecimal newFlash, BigDecimal oldFlash,
+                                String newFlashUnit, String oldFlashUnit,
+                                Boolean newPollutant, Boolean oldPollutant) {
+        if (!Objects.equals(oldHaz, newHaz)) return true;
+        if (!Objects.equals(newClass, oldClass)) return true;
+        if (!Objects.equals(newUn, oldUn)) return true;
+        if (!Objects.equals(newName, oldName)) return true;
+        if (!Objects.equals(newGroup, oldGroup)) return true;
+        if (!compareBigDecimals(newFlash, oldFlash)) return true;
+        if (!Objects.equals(newFlashUnit, oldFlashUnit)) return true;
+        return !Objects.equals(oldPollutant, newPollutant);
+    }
+
 
     public boolean compareBigDecimals(BigDecimal bd1, BigDecimal bd2) {
         // Check if both are null, they are considered equal
@@ -2461,7 +2491,7 @@ public class CommonUtils {
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
-        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && DIRECTION_EXP.equals(customerBooking.getDirection())) {
             return UserContext.isAirSecurityUser();
         }
         return true;
@@ -2855,8 +2885,8 @@ public class CommonUtils {
         if (TransportInfoStatus.IH.equals(transportInfoStatus) && !CommonUtils.listIsNullOrEmpty(mainCarriageRoutings)) {
             Routings firstLeg = mainCarriageRoutings.get(0);
             Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
-            String polMessage = Constants.EMPTY_STRING;
-            String podMessage = Constants.EMPTY_STRING;
+            String polMessage = EMPTY_STRING;
+            String podMessage = EMPTY_STRING;
             if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
                 polMessage = Constants.POL_WARNING_MESSAGE;
             }
@@ -2871,7 +2901,7 @@ public class CommonUtils {
                 return Constants.POD_WARNING_MESSAGE;
             }
         }
-        return Constants.EMPTY_STRING;
+        return EMPTY_STRING;
     }
     public static Boolean isVesselVoyageOrCarrierFlightNumberAvailable(List<Routings> mainCarriageRoutings) {
         Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
@@ -2930,5 +2960,20 @@ public class CommonUtils {
             return addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
         }
         return null;
+    }
+    public String getAddress(Map<String, Object> addressData) {
+        StringBuilder address = new StringBuilder(EMPTY_STRING);
+        String[] keys = {COMPANY_NAME, ADDRESS1, CITY, STATE, ReportConstants.COUNTRY, ZIP_POST_CODE};
+
+        for (String key : keys) {
+            String value = (String) addressData.getOrDefault(key, EMPTY_STRING);
+            if (StringUtility.isNotEmpty(value)) {
+                address.append(value).append(ReportConstants.COMM);
+            }
+        }
+
+        if (address.toString().endsWith(ReportConstants.COMM))
+            address = new StringBuilder(address.substring(0, address.length() - COMM.length()));
+        return address.toString();
     }
 }

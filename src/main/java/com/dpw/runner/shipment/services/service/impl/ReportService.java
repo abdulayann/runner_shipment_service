@@ -517,6 +517,7 @@ public class ReportService implements IReportService {
         Optional<PickupDeliveryDetails> pickupDeliveryDetailsEntity = pickupDeliveryDetailsService.findById(Long.valueOf(reportRequest.getTransportInstructionId()));
        if (pickupDeliveryDetailsEntity.isPresent()) {
            PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
+           setTiReferenceTag(pickupDeliveryDetails, dictionary);
            setTransporterPartyTags(pickupDeliveryDetails, dictionary);
            setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
            setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
@@ -550,6 +551,13 @@ public class ReportService implements IReportService {
         }
     }
 
+    private void setTiReferenceTag(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        dictionary.put(TI_REFERENCE_NUMBER, Constants.EMPTY_STRING);
+        if (Objects.nonNull(pickupDeliveryDetails.getTiReferenceNumber())) {
+            dictionary.put(TI_REFERENCE_NUMBER, pickupDeliveryDetails.getTiReferenceNumber());
+        }
+    }
+
     private void setTransporterPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
         Parties transporterDetail = pickupDeliveryDetails.getTransporterDetail();
         if (!Objects.isNull(transporterDetail)) {
@@ -561,7 +569,8 @@ public class ReportService implements IReportService {
             Map<String, Object> addressData = transporterDetail.getAddressData();
             if (addressData != null) {
                 dictionary.put(ReportConstants.TI_TRANSPORTER_CONTACT, addressData.get(CONTACT_KEY));
-                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                String address = String.join(", ", ReportHelper.getCompleteAddress(addressData));
+                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, address);
             }
         }
     }
@@ -580,7 +589,8 @@ public class ReportService implements IReportService {
                 Map<String, Object> addressData = importAgent.get().getAddressData();
                 if (addressData != null) {
                     dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
-                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                    String address = String.join(", ", ReportHelper.getCompleteAddress(addressData));
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, address);
                 }
             }
         }
@@ -600,7 +610,8 @@ public class ReportService implements IReportService {
                 Map<String, Object> addressData = exportAgent.get().getAddressData();
                 if (addressData != null) {
                     dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
-                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                    String address =  String.join(", ", ReportHelper.getCompleteAddress(addressData));
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, address);
                 }
             }
         }

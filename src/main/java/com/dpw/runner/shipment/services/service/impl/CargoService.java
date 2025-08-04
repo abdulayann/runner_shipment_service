@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -171,7 +172,7 @@ public class CargoService implements ICargoService {
     }
 
     private String getPackUnit(Set<String> packTypes) {
-        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PackingConstants.PKG;
     }
 
     private void calculateVW(CargoDetailsResponse response) throws RunnerException {
