@@ -812,4 +812,138 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         newShipment.getCarrierDetails().setDestinationPort("abc");
         assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
     }
+
+    @Test
+    void testValidationForCarrierDetailsDates_Success() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now().plusDays(1));
+        carrierDetails.setAtd(LocalDateTime.now().plusDays(2));
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        carrierDetails.setAta(LocalDateTime.now().plusDays(6));
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now());
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(5));
+
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setAdditionalDetails(additionalDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(5));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_NullAdditionalDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now().plusDays(1));
+        carrierDetails.setAtd(LocalDateTime.now().plusDays(2));
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        carrierDetails.setAta(LocalDateTime.now().plusDays(6));
+
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setAdditionalDetails(null);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_NullCarrierDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now());
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(7));
+
+        shipment.setCarrierDetails(null);
+        shipment.setAdditionalDetails(additionalDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(6));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_EstimatedPickupDateAfterETD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now().plusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Est. Origin Transport Date should be less than or equal to ETD",
+                validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_ActualPickupDateAfterATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(LocalDateTime.now());
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Act. Origin Transport Date should be less than or equal to ATD", validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_EstimatedCargoDeliveryDateBeforeETA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(3));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Est. Destination Transport Date should be more than or equal to ETA", validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_ActualCargoDeliveredDateBeforeATA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAta(LocalDateTime.now().plusDays(1));
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(5));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Act. Destination Transport Date should be less than or equal to ATA",
+                validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_AllDateFieldsNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setAdditionalDetails(new AdditionalDetails());
+        shipment.setCarrierDetails(new CarrierDetails());
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
 }

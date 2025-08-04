@@ -124,6 +124,48 @@ public class ShipmentValidationV3Util {
         }
     }
 
+    public void validateCarrierDetailsDates(ShipmentDetails shipmentDetails) {
+
+        LocalDateTime actualPickupDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getPickupDate() : null;
+
+        LocalDateTime actualCargoDeliveredDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() : null;
+
+        LocalDateTime estimatedPickupDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getEstimatedPickupDate() : null;
+
+        LocalDateTime estimatedCargoDeliveryDate = shipmentDetails.getCargoDeliveryDate();
+
+        LocalDateTime etd = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getEtd() : null;
+
+        LocalDateTime atd = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getAtd() : null;
+
+        LocalDateTime eta = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getEta() : null;
+
+        LocalDateTime ata = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getAta() : null;
+
+        if (Objects.nonNull(estimatedPickupDate) && Objects.nonNull(etd) && estimatedPickupDate.isAfter(etd)) {
+            throw new ValidationException("Est. Origin Transport Date should be less than or equal to ETD");
+        }
+
+        if (Objects.nonNull(actualPickupDate) && Objects.nonNull(atd) && actualPickupDate.isAfter(atd)) {
+            throw new ValidationException("Act. Origin Transport Date should be less than or equal to ATD");
+        }
+
+        if (Objects.nonNull(estimatedCargoDeliveryDate) && Objects.nonNull(eta) && estimatedCargoDeliveryDate.isBefore(eta)) {
+            throw new ValidationException("Est. Destination Transport Date should be more than or equal to ETA");
+        }
+
+        if (Objects.nonNull(actualCargoDeliveredDate) && Objects.nonNull(ata) && actualCargoDeliveredDate.isAfter(ata)) {
+            throw new ValidationException("Act. Destination Transport Date should be less than or equal to ATA");
+        }
+    }
+
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
             throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
