@@ -162,11 +162,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -211,6 +207,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
@@ -239,6 +236,7 @@ import static org.mockito.Mockito.when;
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentServiceImplV3Test extends CommonMocks {
 
+    @Spy
     @InjectMocks
     private ShipmentServiceImplV3 shipmentServiceImplV3;
     @Mock
@@ -7083,5 +7081,138 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
         assertEquals(expected, result);
+    }
+
+    @Test
+    void testSetColoadingStation_WhenAirAndMAWBColoadingEnabled_ShouldSetContext() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR); // "AIR"
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setIsMAWBColoadingEnabled(true);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        shipmentServiceImplV3.setColoadingStation(shipmentDetails);
+        verify(commonUtils).setInterBranchContextForColoadStation();
+    }
+
+    @Test
+    void testSendEmailForNonImportShipment_WithPullAndPushRequests_ShouldProcessBoth() {
+        Long shipId = 1L;
+        Long consoleId = 2L;
+        String remarks = "Test Remarks";
+        ConsoleShipmentMapping pullRequest = new ConsoleShipmentMapping();
+        pullRequest.setConsolidationId(101L);
+        pullRequest.setShipmentId(201L);
+        ConsoleShipmentMapping pushRequest = new ConsoleShipmentMapping();
+        pushRequest.setConsolidationId(102L);
+        pushRequest.setShipmentId(202L);
+        List<ConsoleShipmentMapping> pullRequests = List.of(pullRequest);
+        List<ConsoleShipmentMapping> pushRequests = List.of(pushRequest);
+        Set<ShipmentRequestedType> shipmentRequestedTypes = Set.of(ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED);
+        doNothing().when(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(anyLong(), anyLong());
+        doNothing().when(shipmentServiceImplV3).sendEmailForPullRequestReject(anyLong(), anyList(), anySet(), anyString(), anyList());
+        doNothing().when(shipmentServiceImplV3).sendEmailForPushRequestWithdrawl(anyLong(), anyList(), anySet(), anyString());
+        doNothing().when(shipmentServiceImplV3).sendEmailForPushRequested(anyLong(), anyLong(), anySet());
+        shipmentServiceImplV3.sendEmailForNonImportShipment(shipId, consoleId, remarks, pullRequests, shipmentRequestedTypes, pushRequests);
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(101L, 201L);
+        verify(shipmentServiceImplV3).sendEmailForPullRequestReject(
+                eq(shipId),
+                eq(List.of(101L)),
+                eq(shipmentRequestedTypes),
+                contains("Target Shipment has been requested to attach"),
+                eq(pullRequests)
+        );
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(102L, 202L);
+        verify(shipmentServiceImplV3).sendEmailForPushRequestWithdrawl(
+                eq(shipId),
+                eq(List.of(102L)),
+                eq(shipmentRequestedTypes),
+                eq(remarks)
+        );
+        verify(shipmentServiceImplV3).sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
+    }
+
+
+    @Test
+    void testUpdatePullRequests_WithBothPullAndPushRequestedTypes_ShouldAddToRespectiveLists() {
+        ConsoleShipmentMapping pullMapping = new ConsoleShipmentMapping();
+        pullMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+        ConsoleShipmentMapping pushMapping = new ConsoleShipmentMapping();
+        pushMapping.setRequestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED);
+        List<ConsoleShipmentMapping> pullRequests = new ArrayList<>();
+        List<ConsoleShipmentMapping> pushRequests = new ArrayList<>();
+        when(jsonHelper.convertValue(eq(pullMapping), eq(ConsoleShipmentMapping.class))).thenReturn(pullMapping);
+        when(jsonHelper.convertValue(eq(pushMapping), eq(ConsoleShipmentMapping.class))).thenReturn(pushMapping);
+        shipmentServiceImplV3.updatePullRequests(pullMapping, pullRequests, pushRequests);
+        shipmentServiceImplV3.updatePullRequests(pushMapping, pullRequests, pushRequests);
+        assertEquals(1, pullRequests.size());
+        assertEquals(pullMapping, pullRequests.get(0));
+        assertEquals(1, pushRequests.size());
+        assertEquals(pushMapping, pushRequests.get(0));
+    }
+
+    @Test
+    void testProcessConsolidationDetails_WithValidList_ShouldPopulateCollections() {
+        ConsolidationDetails cd1 = new ConsolidationDetails();
+        cd1.setId(1L);
+        cd1.setTenantId(100);
+        cd1.setCreatedBy("userA");
+        ConsolidationDetails cd2 = new ConsolidationDetails();
+        cd2.setId(2L);
+        cd2.setTenantId(200);
+        cd2.setCreatedBy("userB");
+        List<ConsolidationDetails> consolidationDetails = List.of(cd1, cd2);
+        Map<Long, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+        ShipmentServiceImplV3.processConsolidationDetails(consolidationDetails, consolidationDetailsMap, tenantIds, userNames);
+        assertEquals(2, consolidationDetailsMap.size());
+        assertSame(cd1, consolidationDetailsMap.get(1L));
+        assertSame(cd2, consolidationDetailsMap.get(2L));
+        assertEquals(Set.of(100, 200), tenantIds);
+        assertEquals(Set.of("userA", "userB"), userNames);
+    }
+
+    @Test
+    void testProcessConsolidationDetails_WithNullOrEmptyList_ShouldDoNothing() {
+        Map<Long, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+        ShipmentServiceImplV3.processConsolidationDetails(null, consolidationDetailsMap, tenantIds, userNames);
+        assertTrue(consolidationDetailsMap.isEmpty());
+        assertTrue(tenantIds.isEmpty());
+        assertTrue(userNames.isEmpty());
+        ShipmentServiceImplV3.processConsolidationDetails(Collections.emptyList(), consolidationDetailsMap, tenantIds, userNames);
+        assertTrue(consolidationDetailsMap.isEmpty());
+        assertTrue(tenantIds.isEmpty());
+        assertTrue(userNames.isEmpty());
+    }
+
+    @Test
+    void testGetOptionalConsolidationDetails_WithConsoleIdAndFromNteFalse() throws Exception {
+        Long consoleId = 2L;
+        String consoleGuid = null;
+        boolean fromNte = false;
+        ConsolidationDetails mockDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(mockDetails));
+        Optional<ConsolidationDetails> result = shipmentServiceImplV3.getOptionalConsolidationDetails(consoleId, consoleGuid, fromNte);
+        assertTrue(result.isPresent());
+        assertEquals(mockDetails, result.get());
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(shipmentServiceImplV3, never()).isValidNte(any());
+    }
+
+    @Test
+    void testGetOptionalConsolidationDetails_WithNullConsoleId() throws Exception {
+        Long consoleId = null;
+        String consoleGuid = "f47ac10b-58cc-4372-a567-0e02b2c3d479"; // valid UUID string
+        boolean fromNte = false;
+        ConsolidationDetails mockDetails = mock(ConsolidationDetails.class);
+        UUID guid = UUID.fromString(consoleGuid);
+        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockDetails));
+        Optional<ConsolidationDetails> result = shipmentServiceImplV3.getOptionalConsolidationDetails(consoleId, consoleGuid, fromNte);
+        assertTrue(result.isPresent());
+        assertEquals(mockDetails, result.get());
+        verify(consolidationDetailsDao).findByGuid(guid);
+        verify(shipmentServiceImplV3, never()).isValidNte(any());
     }
 }

@@ -17,10 +17,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
@@ -72,6 +69,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
@@ -1950,4 +1948,69 @@ class ContainerV3ServiceTest extends CommonMocks {
         Mockito.verify(containerDao).findByShipmentId(shipmentId);
         Mockito.verify(spyService).validateAndSaveDGShipment(oldContainers, shipmentDetails, containerRequestList, isCreate);
     }
+
+    @Test
+    void testUpdateContainerRequestWithDgFalse() {
+        ContainerV3Request containerRequest = new ContainerV3Request();
+        containerRequest.setUnNumber("1234");
+        containerRequest.setProperShippingName("Some Name");
+        containerRequest.setDgClass("3");
+        containerRequest.setMarinePollutant(true);
+        containerRequest.setPackingGroup("II");
+        containerRequest.setMinimumFlashPoint(new BigDecimal(23));
+        containerV3Service.updateContainerRequestWithDgFalse(containerRequest);
+        assertNull(containerRequest.getUnNumber());
+        assertNull(containerRequest.getProperShippingName());
+        assertNull(containerRequest.getDgClass());
+        assertNull(containerRequest.getMarinePollutant());
+        assertNull(containerRequest.getPackingGroup());
+        assertNull(containerRequest.getMinimumFlashPoint());
+    }
+
+    @Test
+    void testUpdateContainerRequestOnDgFlag_shouldClearDgFieldsForNonHazardousContainers() {
+        ContainerV3Request dgContainer = new ContainerV3Request();
+        dgContainer.setHazardous(true);
+        dgContainer.setUnNumber("1234");
+        ContainerV3Request nonDgContainer = new ContainerV3Request();
+        nonDgContainer.setHazardous(false);
+        nonDgContainer.setProperShippingName("Sample DG");
+        nonDgContainer.setDgClass("3");
+        nonDgContainer.setMarinePollutant(true);
+        nonDgContainer.setPackingGroup("II");
+        nonDgContainer.setMinimumFlashPoint(new BigDecimal(23));
+        List<ContainerV3Request> containerList = List.of(dgContainer, nonDgContainer);
+        containerV3Service.updateContainerRequestOnDgFlag(containerList);
+        assertEquals("1234", dgContainer.getUnNumber());
+        assertNull(nonDgContainer.getProperShippingName());
+        assertNull(nonDgContainer.getDgClass());
+        assertNull(nonDgContainer.getMarinePollutant());
+        assertNull(nonDgContainer.getPackingGroup());
+        assertNull(nonDgContainer.getMinimumFlashPoint());
+    }
+
+    @Test
+    void testSetAttachedShipmentResponseInContainer_shouldSetResponsesCorrectly() {
+        ShipmentDetailsProjection detail1 = Mockito.mock(ShipmentDetailsProjection.class);
+        ShipmentDetailsProjection detail2 = Mockito.mock(ShipmentDetailsProjection.class);
+        Mockito.when(detail1.getId()).thenReturn(1L);
+        Mockito.when(detail1.getShipmentNumber()).thenReturn("SHP001");
+        Mockito.when(detail1.getShipmentType()).thenReturn("FCL");
+        Mockito.when(detail2.getId()).thenReturn(2L);
+        Mockito.when(detail2.getShipmentNumber()).thenReturn("SHP002");
+        Mockito.when(detail2.getShipmentType()).thenReturn("LCL");
+        List<ShipmentDetailsProjection> details = List.of(detail1, detail2);
+        ContainerBaseResponse container = new ContainerBaseResponse();
+        ContainerV3Service.setAttachedShipmentResponseInContainer(container, details);
+        List<AttachedShipmentResponse> responses = container.getAttachedShipmentResponses();
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+        assertEquals(1L, responses.get(0).getAttachedShipmentId());
+        assertEquals("SHP001", responses.get(0).getAttachedShipmentNumber());
+        assertEquals("FCL", responses.get(0).getAttachedShipmentType());
+        assertEquals(2L, responses.get(1).getAttachedShipmentId());
+        assertEquals("SHP002", responses.get(1).getAttachedShipmentNumber());
+        assertEquals("LCL", responses.get(1).getAttachedShipmentType());
+    }
+
 }
