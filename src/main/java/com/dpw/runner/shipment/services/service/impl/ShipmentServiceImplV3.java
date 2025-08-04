@@ -2628,7 +2628,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 chargeableUnit(customerBookingRequest.getChargeableUnit()).
                 bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                 bookingReference(customerBookingRequest.getBookingNumber()).
-                bookingCreatedDate(LocalDateTime.now()).
+                bookingCreatedDate(customerBookingRequest.getCreatedAt()).
                 shipmentCreatedOn(LocalDateTime.now()).
                 client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry(), null)).
                 consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry(), null)).

@@ -469,8 +469,20 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setContainers(containerCount);
             customerBooking.setTeuCount(teuCount);
             customerBooking.setContainersList(containersList);
-            customerBooking.setPackages(getTotalContainerPackages(containersList));
-            customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+            List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
+            boolean ifAnyPackMissedWeight = false;
+            if(packingList.isEmpty()) {
+                customerBooking.setPackages(getTotalContainerPackages(containersList));
+                for(Packing pack: packingList) {
+                    if(Objects.isNull(pack.getCargoWeightPerPack())) {
+                        ifAnyPackMissedWeight = true;
+                        break;
+                    }
+                }
+            }
+            if(!ifAnyPackMissedWeight) {
+                customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+            }
             customerBookingDao.save(customerBooking);
         }
     }
@@ -2344,7 +2356,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
     }
 
-    private BigDecimal getTotalCargoWeight(List<Containers> containersList) {
+    public BigDecimal getTotalCargoWeight(List<Containers> containersList) {
         BigDecimal totalCargoWeight = BigDecimal.ZERO;
 
         for (Containers container : containersList) {
@@ -2358,8 +2370,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return totalCargoWeight;
     }
 
-    private Long getTotalContainerPackages(List<Containers> containersList) {
-        long totalLinePackages, totalCargoSummaryPackages = 0L;
+    public Long getTotalContainerPackages(List<Containers> containersList) {
+        long totalLinePackages;
+        long totalCargoSummaryPackages = 0L;
         for(Containers container: containersList) {
             totalLinePackages = container.getContainerCount() * container.getPackagesPerContainer();
             totalCargoSummaryPackages += totalLinePackages;

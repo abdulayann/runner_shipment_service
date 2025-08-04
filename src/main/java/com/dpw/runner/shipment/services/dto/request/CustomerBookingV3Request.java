@@ -70,6 +70,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private Boolean isCustomerAddressFreeText;
     private Boolean isNotifyPartyAddressFreeText;
     private LocalDateTime shipmentCreatedDate;
+    private LocalDateTime createdAt;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
