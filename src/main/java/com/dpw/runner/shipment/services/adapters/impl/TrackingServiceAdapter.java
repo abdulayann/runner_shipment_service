@@ -246,6 +246,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private List<Events> getEventsFromShipment(String refNumber) {
+        if(StringUtility.isEmpty(refNumber)) {
+            return Collections.emptyList();
+        }
         ListCommonRequest listCommonRequest = constructListCommonRequest("bookingReference", refNumber, "=");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
