@@ -1376,8 +1376,8 @@ class HblServiceTest extends CommonMocks {
 void testValidateSealNumberWarning_containersMissingSeals() {
     Long shipmentId = 4L;
     ShipmentDetails shipment = new ShipmentDetails();
-    shipment.setTransportMode("SEA");
-    shipment.setDirection("EXP");
+    shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    shipment.setDirection(Constants.DIRECTION_EXP);
 
     Containers container1 = new Containers();
     container1.setContainerNumber("CONT001");
@@ -1403,5 +1403,39 @@ void testValidateSealNumberWarning_containersMissingSeals() {
     assertTrue(responseBody.getWarning().contains("CONT001"));
     assertFalse(responseBody.getWarning().contains("CONT002"));
 }
+
+    @Test
+    public void testValidateSealNumberWarning_AllContainersHaveSeals() {
+        Containers container = new Containers();
+        container.setContainerNumber("CTN789");
+        container.setCarrierSealNumber("SEAL789");
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container)));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNull(responseBody.getWarning()); // No warning expected
+    }
+
+    @Test
+    public void testValidateSealNumberWarning_NoContainers() {
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        when(shipment.getContainersList()).thenReturn(Collections.emptySet());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNull(responseBody.getWarning()); // No warning expected
+    }
 
 }
