@@ -20,7 +20,16 @@ import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameter
 public class CreateValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.create(..)) && args(commonRequestModel)")
-    public void validateShipmentCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+    public void validateShipmentCreateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+        this.validateShipmentCreate(joinPoint, commonRequestModel);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.create(..)) && args(commonRequestModel)")
+    public void validateShipmentCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+        this.validateShipmentCreate(joinPoint, commonRequestModel);
+    }
+
+    private void validateShipmentCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
         ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
@@ -85,6 +94,15 @@ public class CreateValidateAspect {
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationService.create(..)) && args(commonRequestModel)")
+    public void validateConsolidationCreateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+        this.validateConsolidationCreate(joinPoint, commonRequestModel);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service.create(..)) && args(commonRequestModel)")
+    public void validateConsolidationCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+        this.validateConsolidationCreate(joinPoint, commonRequestModel);
+    }
+
     public void validateConsolidationCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_CREATE_PERMISSION);
         int retrieveValidationFields = 4;

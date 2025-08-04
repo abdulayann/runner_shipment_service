@@ -75,7 +75,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        retrieveValidateAspect.validateShipmentRetrieveV2(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         assert (true);
     }
 
@@ -99,7 +99,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
         ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieveV2(shipmentDetailsResponse));
     }
 
     @Test
@@ -122,7 +122,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
         ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieveV2(shipmentDetailsResponse));
     }
 
     @Test
@@ -145,7 +145,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        retrieveValidateAspect.validateShipmentRetrieveV2(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         assertNotNull(shipmentDetails);
     }
 
@@ -165,7 +165,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        retrieveValidateAspect.validateShipmentRetrieveV2(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         assertNotNull(shipmentDetails);
     }
 
@@ -190,7 +190,7 @@ class RetrieveValidateAspectTest {
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
         ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieveV2(shipmentDetailsResponse));
     }
 
     @Test
@@ -213,7 +213,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+        retrieveValidateAspect.validateConsolidationRetrieveForV2(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
         assert (true);
     }
 
@@ -237,7 +237,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
         ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieveForV2(consolidationDetailsResponse));
     }
 
     @Test
@@ -260,7 +260,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
         ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieveForV2(consolidationDetailsResponse));
     }
 
     @Test
@@ -283,7 +283,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+        retrieveValidateAspect.validateConsolidationRetrieveForV2(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
         assertNotNull(consolidationDetails);
     }
 
@@ -303,7 +303,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+        retrieveValidateAspect.validateConsolidationRetrieveForV2(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
         assertNotNull(consolidationDetails);
     }
 
@@ -327,6 +327,6 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
         ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieveForV2(consolidationDetailsResponse));
     }
 }

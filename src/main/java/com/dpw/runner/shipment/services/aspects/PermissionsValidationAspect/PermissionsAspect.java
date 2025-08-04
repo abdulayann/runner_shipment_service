@@ -26,6 +26,15 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 public class PermissionsAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeFindOfMultiTenancyRepositoryV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        this.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, getMasterData);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeFindOfMultiTenancyRepositoryV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        this.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, getMasterData);
+    }
+
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class) || checkExcludePermissionsFilter(joinPoint)) {
             return;
@@ -53,6 +62,15 @@ public class PermissionsAspect {
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeConsolidationListV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        this.beforeConsolidationList(joinPoint, commonRequestModel, getMasterData);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeConsolidationListV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        this.beforeConsolidationList(joinPoint, commonRequestModel, getMasterData);
+    }
+
     public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;

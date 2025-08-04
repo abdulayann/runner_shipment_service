@@ -23,6 +23,15 @@ import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameter
 public class UpdateValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.completeUpdate(..)) && args(commonRequestModel)")
+    public void validateShipmentUpdateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+        this.validateShipmentUpdate(joinPoint, commonRequestModel);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.completeUpdate(..)) && args(commonRequestModel)")
+    public void validateShipmentUpdateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+        this.validateShipmentUpdate(joinPoint, commonRequestModel);
+    }
+
     public void validateShipmentUpdate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_UPDATE_PERMISSION);
@@ -88,6 +97,15 @@ public class UpdateValidateAspect {
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationService.completeUpdate(..)) && args(commonRequestModel)")
+    public void validateConsolidationUpdateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+        this.validateConsolidationUpdate(joinPoint, commonRequestModel);
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service.completeUpdate(..)) && args(commonRequestModel)")
+    public void validateConsolidationUpdateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+        this.validateConsolidationUpdate(joinPoint, commonRequestModel);
+    }
+
     public void validateConsolidationUpdate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_UPDATE_PERMISSION);
         int retrieveValidationFields = 4;
