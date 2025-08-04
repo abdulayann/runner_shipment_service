@@ -452,7 +452,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    //todo: inline save
     @Override
     public void updateContainerInfoInBooking(Long bookingId) throws RunnerException {
         Optional<CustomerBooking> optionalBooking = customerBookingDao.findById(bookingId);
@@ -2330,7 +2329,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    //todo: create, update
     public void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
         List<Containers> containers = new ArrayList<>();
         List<Packing> packings = new ArrayList<>();
@@ -2403,7 +2401,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .setScale(1, RoundingMode.UNNECESSARY);
     }
 
-    //todo: inline save
     public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
