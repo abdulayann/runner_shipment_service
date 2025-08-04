@@ -218,7 +218,7 @@ public class PackingV3Service implements IPackingV3Service {
             }
             if(consolidationDetails != null)
                 consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
-            boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+            boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()); //NOSONAR
             if (!isSeaFCLOrRoadFTL)
                 updateAttachedContainersData(packings, shipmentDetails);
         }

@@ -1878,7 +1878,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         List<Containers> containersList = List.of(new Containers());
 
         // Act & Assert - Should not throw exception
-        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, new ArrayList<>(), false));
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, containersList, new ArrayList<>(), false));
 
         // Verify no methods were called since method returns early
         verify(commonUtils, never()).checkIfDGClass1(any());
@@ -1894,7 +1894,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         List<Containers> containersList = null;
         // Act & Assert - Should not throw exception
-        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, null , false));
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, containersList, null , false));
     }
 
 
@@ -1922,7 +1922,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
 
-        containerV3Service.updateOceanDgStatus(shipmentDetails, null, List.of(containerV3Request), true);
+        containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, null, List.of(containerV3Request), true);
         verify(commonUtils).checkIfDGClass1(any());
     }
 
@@ -1940,7 +1940,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
         lenient().when(commonUtils.checkIfDGFieldsChangedInContainer(containerV3Request, containers)).thenReturn(true);
 
-        containerV3Service.updateOceanDgStatus(shipmentDetails, List.of(containers), List.of(containerV3Request), false);
+        containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, List.of(containers), List.of(containerV3Request), false);
         verify(commonUtils).checkIfDGClass1(any());
     }
 
