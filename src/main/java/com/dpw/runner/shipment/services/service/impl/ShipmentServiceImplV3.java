@@ -245,8 +245,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
-            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service,
-            IPackingV3Service packingV3Service, INPMServiceAdapter npmServiceAdapater,
+            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService,
+            @Lazy IPackingV3Service packingV3Service, INPMServiceAdapter npmServiceAdapater,
             INetworkTransferDao networkTransferDao,
             INotificationService notificationService, IMDMServiceAdapter mdmServiceAdapter) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
