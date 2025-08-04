@@ -50,6 +50,19 @@ public class HblController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Seal validation completed successfully")
+    })
+    @GetMapping("/validate-seals/{shipmentId}")
+    public ResponseEntity<IRunnerResponse> validateSealNumbers(
+            @PathVariable Long shipmentId) {
+        try {
+            return hblService.validateSealNumberWarning(shipmentId);
+        } catch (Exception e) {
+            log.error("Error validating seal numbers: {}", e.getMessage());
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_UPDATE_SUCCESS, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE)
