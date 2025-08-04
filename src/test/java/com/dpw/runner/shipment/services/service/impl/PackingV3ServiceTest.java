@@ -1101,12 +1101,16 @@ class PackingV3ServiceTest extends CommonMocks {
         shipmentDetails.setId(10L);
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
 
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
+
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
         when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
         when(containerV3Service.assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING)))
                 .thenReturn(new ContainerResponse());
 
-        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(request);
+        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(assignContainerRequest);
 
         assertNotNull(response);
         verify(packingDao).findByIdIn(request.getPackingIds());
@@ -1117,17 +1121,22 @@ class PackingV3ServiceTest extends CommonMocks {
     @Test
     void testAssignShipmentPackagesContainers_noPackingIdsProvided_shouldThrowValidationException() {
         ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
         request.setPackingIds(Collections.emptyList());
-        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
-        assertEquals("No Packing Ids provided.", exception.getMessage());
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
+        assertEquals("No Shipment/Packing Ids provided.", exception.getMessage());
     }
 
     @Test
     void testAssignShipmentPackagesContainers_noPackingFound_shouldThrowValidationException() {
         ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
         request.setPackingIds(List.of(1L, 2L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(Collections.emptyList());
-        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
         assertEquals("No Packing found with Ids: [1, 2]", exception.getMessage());
     }
 
@@ -1135,6 +1144,9 @@ class PackingV3ServiceTest extends CommonMocks {
     void testAssignShipmentPackagesContainers_multipleShipmentIds_shouldThrowValidationException() {
         ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
         request.setPackingIds(List.of(1L, 2L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
         Packing packing1 = new Packing();
         packing1.setId(1L);
         packing1.setShipmentId(100L);
@@ -1146,7 +1158,7 @@ class PackingV3ServiceTest extends CommonMocks {
                packing1, packing2 // Shipment ID 200
         );
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(packingList);
-        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
         assertEquals("Please select Packages of single shipment only for assignment.", exception.getMessage());
     }
 
@@ -1154,6 +1166,9 @@ class PackingV3ServiceTest extends CommonMocks {
     void testAssignShipmentPackagesContainers_invalidShipmentType_shouldThrowValidationException() {
         ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
         request.setPackingIds(List.of(1L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
         Packing packing = new Packing();
         packing.setId(1L);
         packing.setShipmentId(100L); // Shipment ID 100
@@ -1161,7 +1176,7 @@ class PackingV3ServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType("LCL"); // Invalid type
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing));
         when(shipmentService.findById(100L)).thenReturn(Optional.of(shipmentDetails));
-        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
         assertEquals("Shipment level package assignment is only allowed for FCL/FTL shipments.", exception.getMessage());
     }
 
