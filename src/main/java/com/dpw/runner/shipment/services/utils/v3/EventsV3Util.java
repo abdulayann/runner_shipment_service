@@ -106,10 +106,6 @@ public class EventsV3Util {
 
             processBOCOEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
-            processCADEEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
-
-            processCACOEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
-
             processCUREEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
             processDOTPEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
@@ -147,76 +143,32 @@ public class EventsV3Util {
         }
     }
 
-    private void processCADEEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isImportTransferredScenario(shipmentDetails)) return;
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
-                isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
-                        oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
-
-            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
-                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
-                LocalDateTime deliveredDate = shipmentDetails.getAdditionalDetails().getCargoDeliveredDate();
-                updateExistingCADEEvents(dbEvents, deliveredDate);
-            } else {
-                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null));
-            }
-        }
-    }
-
-    private void updateExistingCADEEvents(List<Events> dbEvents, LocalDateTime deliveredDate) {
-        LocalDateTime zoneTime = commonUtils.getUserZoneTime(deliveredDate);
-        for (Events event : dbEvents) {
-            event.setActual(zoneTime);
-            eventDao.updateUserFieldsInEvent(event, true);
-        }
-    }
-
-    private void updateExistingCACOEvents(List<Events> dbEvents, LocalDateTime pickupDate) {
-        LocalDateTime zoneTime = commonUtils.getUserZoneTime(pickupDate);
-        for (Events event : dbEvents) {
-            event.setActual(zoneTime);
-            eventDao.updateUserFieldsInEvent(event, true);
-        }
-    }
 
     private boolean isImportTransferredScenario(ShipmentDetails details) {
         return Objects.equals(details.getDirection(), Constants.DIRECTION_IMP) && details.getSourceGuid() != null &&
                 !Objects.equals(details.getGuid(), details.getSourceGuid());
     }
 
-    private void processCACOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isImportTransferredScenario(shipmentDetails)) return;
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
-                isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
-                        oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
-            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
-                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
-                LocalDateTime pickupDate = shipmentDetails.getAdditionalDetails().getPickupDate();
-                updateExistingCACOEvents(dbEvents, pickupDate);
-            } else {
-                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null));
-            }
-        }
-    }
 
     private void processCUREEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment,
-            Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && Constants.DIRECTION_IMP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                                  Map<String, List<Events>> cargoesRunnerDbEvents) {
+
+        boolean isActualChanged = isEventChanged(shipmentDetails.getBrokerageAtDestinationDate(),
+                oldEntity.getBrokerageAtOriginDate(), isNewShipment);
+        boolean isEstimatedChanged = isEventChanged(shipmentDetails.getEstimatedBrokerageAtDestinationDate(),
+                oldEntity.getEstimatedBrokerageAtOriginDate(), isNewShipment);
+
+        if ((isActualChanged || isEstimatedChanged) && Constants.DIRECTION_IMP.equalsIgnoreCase(shipmentDetails.getDirection())) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
-                for (Events event : dbEvents) {
-                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()));
-                    eventDao.updateUserFieldsInEvent(event, true);
-                }
+                setActualAndEstimatedEventTime(shipmentDetails.getBrokerageAtDestinationDate(),
+                        shipmentDetails.getEstimatedBrokerageAtDestinationDate(), dbEvents, isActualChanged, isEstimatedChanged);
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()), null));
+                        Objects.nonNull(shipmentDetails.getBrokerageAtDestinationDate()) ?
+                                commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtDestinationDate()) : null,
+                        Objects.nonNull(shipmentDetails.getEstimatedBrokerageAtDestinationDate()) ?
+                                commonUtils.getUserZoneTime(shipmentDetails.getEstimatedBrokerageAtDestinationDate()) : null));
             }
         }
     }
@@ -341,22 +293,42 @@ public class EventsV3Util {
             }
         }
     }
-
     private void processECCCEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if ((Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
-                isEventChanged(shipmentDetails.getBrokerageAtOriginDate(),
-                        oldEntity.getBrokerageAtOriginDate(), isNewShipment)) {
 
+        boolean isActualChanged = isEventChanged(shipmentDetails.getBrokerageAtOriginDate(),
+                oldEntity.getBrokerageAtOriginDate(), isNewShipment);
+
+        boolean isEstimatedChanged = isEventChanged(shipmentDetails.getEstimatedBrokerageAtOriginDate(),
+                oldEntity.getEstimatedBrokerageAtOriginDate(), isNewShipment);
+
+        if ((Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) && (isActualChanged || isEstimatedChanged)) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
-                for (Events event : dbEvents) {
-                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()));
-                    eventDao.updateUserFieldsInEvent(event, true);
-                }
+                    setActualAndEstimatedEventTime(shipmentDetails.getBrokerageAtOriginDate(),shipmentDetails.getEstimatedBrokerageAtOriginDate(),
+                            dbEvents, isActualChanged, isEstimatedChanged);
             } else {
+
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
-                        commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()), null));
+                        Objects.nonNull(shipmentDetails.getBrokerageAtOriginDate()) ?
+                                commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()) : null,
+                        Objects.nonNull(shipmentDetails.getEstimatedBrokerageAtOriginDate()) ?
+                                commonUtils.getUserZoneTime(shipmentDetails.getEstimatedBrokerageAtOriginDate()) : null));
             }
+        }
+    }
+
+    private void setActualAndEstimatedEventTime(LocalDateTime actualTime,
+                                                LocalDateTime estimatedTime,
+                                                List<Events> events, boolean isActualChanged,
+                                                boolean isEstimatedChanged) {
+        for (Events event : events) {
+            if (isActualChanged) {
+                event.setActual(commonUtils.getUserZoneTime(actualTime));
+            }
+            if (isEstimatedChanged) {
+                event.setEstimated(commonUtils.getUserZoneTime(estimatedTime));
+            }
+            eventDao.updateUserFieldsInEvent(event, true);
         }
     }
 

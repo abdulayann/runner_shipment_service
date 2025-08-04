@@ -61,6 +61,7 @@ public class ReportRequest implements IRunnerRequest {
     Integer totalHawbPieces;
     List<HawbInfo> hawbInfo;
     String entityName;
+    Boolean forValidation;
     boolean isSelfCall = false;
 
     @Getter

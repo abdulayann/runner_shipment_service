@@ -60,6 +60,8 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String CONSOLIDATION_PACKING = "CONSOLIDATION_PACKING";
+    public static final String SHIPMENT_PACKING = "SHIPMENT_PACKING";
     public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
@@ -67,6 +69,8 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CONSOLIDATION_CONTAINER = "CONSOLIDATION_CONTAINER";
+    public static final String SHIPMENT_CONTAINER = "SHIPMENT_CONTAINER";
     public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
@@ -415,6 +419,10 @@ public class Constants {
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
     public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String GROSS_WEIGHT_UNIT = "grossWeightUnit";
+    public static final String GROSS_VOLUME = "grossVolume";
+    public static final String GROSS_VOLUME_UNIT = "grossVolumeUnit";
+    public static final String PACKS_TYPE = "packsType";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String ORGANIZATIONS = "Organizations";
@@ -448,7 +456,7 @@ public class Constants {
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+            GROSS_WEIGHT,GROSS_WEIGHT_UNIT,GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
@@ -697,7 +705,7 @@ public class Constants {
     public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
-
+    public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
     private Constants() {
     }
 

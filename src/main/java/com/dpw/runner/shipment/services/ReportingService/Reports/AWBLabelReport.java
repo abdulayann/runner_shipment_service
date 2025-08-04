@@ -198,6 +198,7 @@ public class AWBLabelReport extends IReport{
 
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
 
+        populateShippedOnboardFields(awbLabelModel.shipment, dictionary);
         if (awbLabelModel.tenant != null) {
             processTenantDetails(awbLabelModel, dictionary);
         }

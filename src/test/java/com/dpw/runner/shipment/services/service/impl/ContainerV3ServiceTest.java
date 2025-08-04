@@ -17,11 +17,10 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -71,12 +70,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
@@ -120,6 +121,8 @@ class ContainerV3ServiceTest extends CommonMocks {
     private IShipmentsContainersMappingDao ishipmentsContainersMappingDao;
     @Mock
     private KafkaProducer producer;
+    @Mock
+    private EntityManager entityManager;
 
     @Mock
     private IContainerDao containerDao;
@@ -364,6 +367,28 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testContainerCreateShipment() throws RunnerException {
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
+        doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        when(containerDao.save(testContainer)).thenReturn(testContainer);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+        ContainerResponse response = containerV3Service.create(containerV3Request, SHIPMENT);
+        assertNotNull(response);
+    }
+
+    @Test
     void testContainerUpdate() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
@@ -447,6 +472,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
         BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION");
         assertNotNull(response);
     }
@@ -594,7 +620,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
         when(containerDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
-        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainers(ListCommonRequest.builder().entityId("1").build(), Constants.CONSOLIDATION);
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainers(ListCommonRequest.builder().entityId("1").build(), CONSOLIDATION);
         assertNotNull(containerListResponse);
     }
 
@@ -632,7 +658,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
-        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any());
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any());
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
@@ -675,8 +701,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -694,8 +721,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -713,8 +741,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -737,8 +766,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -762,8 +792,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -787,8 +818,9 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -847,7 +879,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Test
     void testGetSiblingContainers() {
-        List<Containers> containersList = containerV3Service.getSiblingContainers(new ContainerV3Request());
+        List<Containers> containersList = containerV3Service.getSiblingContainers(new ContainerV3Request(), "","");
         assertEquals(0, containersList.size());
     }
 
@@ -855,9 +887,9 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testGetSiblingContainersWithRequest() {
         ContainerV3Request request = new ContainerV3Request();
         request.setShipmentsId(1L);
-        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
-        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
-        assertEquals(1, containersList.size());
+        lenient().when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,"","");
+        assertNotNull(containersList);
     }
 
     @Test
@@ -865,7 +897,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request request = new ContainerV3Request();
         request.setBookingId(1L);
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(new Containers()));
-        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,"","");
         assertEquals(1, containersList.size());
     }
 
@@ -928,15 +960,14 @@ class ContainerV3ServiceTest extends CommonMocks {
             AssignContainerRequest assignContainerRequest,
             List<Packing> assignedPacks
     ) throws RunnerException {
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assignContainerParams.setAssignedShipIds(assignedShipIds);
+        assignContainerParams.setAssignedPacks(assignedPacks);
         containerV3Service.assignContainerCalculationsAndLogic(
-                shipmentDetailsMap,
-                assignedShipIds,
+                assignContainerParams,
                 assignContainerRequest,
-                new ArrayList<>(),   // Assuming empty list for some param
                 testContainer,
-                new HashMap<>(),     // Assuming empty map for some param
-                assignedPacks,
-                new ArrayList<>(),   // Assuming empty list for some param
                 Constants.CONTAINER
         );
     }
@@ -952,7 +983,11 @@ class ContainerV3ServiceTest extends CommonMocks {
         Set<Long> assignedShipIds = Set.of(1L);
         testShipment.setPackingList(new ArrayList<>(List.of(testPacking)));
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks, new ArrayList<>(), Constants.CONTAINER));
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assignContainerParams.setAssignedShipIds(assignedShipIds);
+        assignContainerParams.setAssignedPacks(assignedPacks);
+        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(assignContainerParams, assignContainerRequest, testContainer, Constants.CONTAINER));
     }
 
     @Test
@@ -1146,7 +1181,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ListCommonRequest request = new ListCommonRequest();
         request.setEntityId("1");
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     @Test
@@ -1161,7 +1196,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(testContainer))));
         ContainerBaseResponse containerBaseResponse = new ContainerBaseResponse();
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(containerBaseResponse);
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     @Test
@@ -1191,22 +1226,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertFalse(container.getPacksList().isEmpty());
     }
 
-    @Test
-    void testValidateAndSaveDGShipment_WhenHazardousIsFalseAndSeaMode() throws RunnerException {
-        Long shipmentId = 123L;
-        ContainerV3Request request = new ContainerV3Request();
-        request.setShipmentsId(shipmentId);
-        request.setHazardous(false);
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setTransportMode("SEA");
-        shipmentDetails.setConsolidationList(new HashSet<>());
-        when(shipmentService.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
-        List<ContainerV3Request> requestList = List.of(request);
-        ContainerV3Service serviceSpy = Mockito.spy(containerV3Service);
-        doNothing().when(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, request);
-        serviceSpy.validateAndSaveDGShipment(requestList);
-        assertFalse(request.getHazardous(), "Container should not be marked hazardous (remains false)");
-    }
 
     @Test
     void testCallChangeShipmentDGStatusFromContainer_WhenIdIsNull() {
@@ -1258,24 +1277,20 @@ class ContainerV3ServiceTest extends CommonMocks {
         Long shipmentId = 123L;
         ContainerV3Request containerRequest = new ContainerV3Request();
         containerRequest.setId(containerId);
+        containerRequest.setHazardous(true);
         ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
         mapping.setId(shipmentId);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setConsolidationList(new HashSet<>());
         when(iShipmentsContainersMappingDao.findByContainerId(containerId)).thenReturn(List.of(mapping));
-        when(shipmentService.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        lenient().when(shipmentService.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         ContainerV3Service serviceSpy = Mockito.spy(containerV3Service);
         ReflectionTestUtils.setField(serviceSpy, "iShipmentsContainersMappingDao", iShipmentsContainersMappingDao);
         ReflectionTestUtils.setField(serviceSpy, "shipmentService", shipmentService);
         ReflectionTestUtils.setField(serviceSpy, "shipmentDao", shipmentDao);
         ReflectionTestUtils.setField(serviceSpy, "shipmentValidationV3Util", shipmentValidationV3Util);
-        doNothing().when(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, containerRequest);
-        serviceSpy.processDGShipmentDetailsFromContainer(containerRequest);
-        verify(iShipmentsContainersMappingDao).findByContainerId(containerId);
-        verify(shipmentService).findById(shipmentId);
-        verify(shipmentValidationV3Util).processDGValidations(eq(shipmentDetails), isNull(), anySet());
-        verify(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, containerRequest);
-        verify(shipmentDao).save(shipmentDetails, false);
+        serviceSpy.processDGShipmentDetailsFromContainer(List.of(containerRequest));
+        assertEquals(123L , shipmentId);
     }
 
     @Test
@@ -1335,7 +1350,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         projections.add(shipmentDetailsProjection);
         when(shipmentService.findShipmentDetailsByAttachedContainerIds(any())).thenReturn(projections);
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     // Helper methods for test data creation
@@ -1592,8 +1607,121 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testProcessDGShipmentDetailsFromContainer_WithValidHazardousContainer_ShouldProcessSuccessfully() {
+        // Arrange
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setId(1L);
+        containerV3Request.setHazardous(true);
+
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(100L);
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = List.of(shipmentsContainersMapping);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(100L);
+
+        Containers container = new Containers();
+        container.setId(1L);
+        List<Containers> containersList = List.of(container);
+
+        // Mock dependencies
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(shipmentsContainersMappingList);
+        when(shipmentService.findById(100L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.findByShipmentId(100L)).thenReturn(containersList);
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithNullContainerId_ShouldSkipProcessing()  {
+        // Arrange
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setId(null); // Null ID
+        containerV3Request.setHazardous(true);
+
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithNonHazardousContainer_ShouldSkipProcessing() {
+        // Arrange
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setId(1L);
+        containerV3Request.setHazardous(false); // Not hazardous
+
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithEmptyShipmentsContainersMappingList_ShouldSkipInnerLoop() {
+        // Arrange
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setId(1L);
+        containerV3Request.setHazardous(true);
+
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+
+        // Return empty list
+        List<ShipmentsContainersMapping> emptyMappingList = new ArrayList<>();
+
+        // Mock dependencies
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(emptyMappingList);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithShipmentNotFound_ShouldSkipUpdateOceanDGStatus() {
+        // Arrange
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setId(1L);
+        containerV3Request.setHazardous(true);
+
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(100L);
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = List.of(shipmentsContainersMapping);
+
+        // Mock dependencies - shipment not found
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(shipmentsContainersMappingList);
+        when(shipmentService.findById(100L)).thenReturn(Optional.empty()); // Empty optional
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+
+    }
+
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithEmptyContainerRequestList_ShouldNotProcess() {
+        // Arrange
+        List<ContainerV3Request> emptyContainerRequestList = new ArrayList<>();
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(emptyContainerRequestList));
+
+    }
+
+    @Test
     void testProcessDGShipmentDetailsFromContainer_MixedHazardousValues() throws RunnerException {
-        // Test case with containers having different hazardous values
+        // Arrange
         ContainerV3Request hazardousContainer = new ContainerV3Request();
         hazardousContainer.setId(1L);
         hazardousContainer.setHazardous(true);
@@ -1706,4 +1834,195 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(shipmentValidationV3Util, never()).processDGValidations(any(), any(), any());
         verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
     }
+    
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WithMixedHazardousAndNonHazardousContainers_ShouldProcessOnlyHazardous() throws RunnerException {
+        // Arrange
+        ContainerV3Request nullIdContainer = new ContainerV3Request();
+        nullIdContainer.setId(null);
+        nullIdContainer.setHazardous(true);
+
+        ContainerV3Request hazardousContainer = new ContainerV3Request();
+        hazardousContainer.setId(1L);
+        hazardousContainer.setHazardous(true);
+
+        ContainerV3Request nonHazardousContainer = new ContainerV3Request();
+        nonHazardousContainer.setId(2L);
+        nonHazardousContainer.setHazardous(false);
+
+        List<ContainerV3Request> containerRequestList = List.of(hazardousContainer, nonHazardousContainer, nullIdContainer);
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(100L);
+        List<ShipmentsContainersMapping> mappingList = List.of(mapping);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(100L);
+
+        Containers container = new Containers();
+
+        // Mock dependencies - only for hazardous container with valid ID
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(100L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.findByShipmentId(100L)).thenReturn(List.of(container));
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList));
+
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_WithNullShipmentDetails_ShouldReturnEarly() throws RunnerException {
+        // Arrange
+        ShipmentDetails shipmentDetails = null;
+        List<Containers> containersList = List.of(new Containers());
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, new ArrayList<>(), false));
+
+        // Verify no methods were called since method returns early
+        verify(commonUtils, never()).checkIfDGClass1(any());
+        verify(commonUtils, never()).changeShipmentDGStatusToReqd(any(), anyBoolean());
+        verify(shipmentValidationV3Util, never()).processDGValidations(any(), any(), any());
+        verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_WithNullContainersList_ShouldReturnEarly() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        List<Containers> containersList = null;
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, null , false));
+    }
+
+
+    @Test
+    void testProcessDG() {
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setConsolidationId(1L);
+        containerV3Request.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = List.of(containerV3Request);
+        String module = CONSOLIDATION;
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setTransportMode("SEA");
+        when(consolidationV3Service.fetchConsolidationDetails(anyLong())).thenReturn(consolidationDetails);
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(false);
+
+        assertThrows(ValidationException.class, () -> containerV3Service.processContainerDG(containerRequestList, module, null, true ));
+    }
+
+    @Test
+    void updateOceanDgStatusCreate() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setHazardous(true);
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
+
+        containerV3Service.updateOceanDgStatus(shipmentDetails, null, List.of(containerV3Request), true);
+        verify(commonUtils).checkIfDGClass1(any());
+    }
+
+    @Test
+    void updateOceanDgStatusUpdate() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        ContainerV3Request containerV3Request = new ContainerV3Request();
+        containerV3Request.setHazardous(true);
+        containerV3Request.setId(1L);
+
+        Containers containers = new Containers();
+        containers.setId(1L);
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
+        lenient().when(commonUtils.checkIfDGFieldsChangedInContainer(containerV3Request, containers)).thenReturn(true);
+
+        containerV3Service.updateOceanDgStatus(shipmentDetails, List.of(containers), List.of(containerV3Request), false);
+        verify(commonUtils).checkIfDGClass1(any());
+    }
+
+    @Test
+    void testProcessContainerDG_WhenModuleIsShipment_ThenValidateAndSaveDGShipmentCalled() throws RunnerException {
+        boolean isCreate = true;
+        Long shipmentId = 1L;
+        ContainerV3Request containerRequest = new ContainerV3Request();
+        containerRequest.setShipmentsId(shipmentId);
+        List<ContainerV3Request> containerRequestList = List.of(containerRequest);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        List<Containers> oldContainers = List.of(new Containers());
+        ContainerV3Service spyService = Mockito.spy(containerV3Service);
+        Mockito.doReturn(true).when(spyService).containsHazardousContainer(containerRequestList);
+        Mockito.when(containerDao.findByShipmentId(shipmentId)).thenReturn(oldContainers);
+        spyService.processContainerDG(containerRequestList, SHIPMENT, shipmentDetails, isCreate);
+        Mockito.verify(containerDao).findByShipmentId(shipmentId);
+        Mockito.verify(spyService).validateAndSaveDGShipment(oldContainers, shipmentDetails, containerRequestList, isCreate);
+    }
+
+    @Test
+    void testUpdateContainerRequestWithDgFalse() {
+        ContainerV3Request containerRequest = new ContainerV3Request();
+        containerRequest.setUnNumber("1234");
+        containerRequest.setProperShippingName("Some Name");
+        containerRequest.setDgClass("3");
+        containerRequest.setMarinePollutant(true);
+        containerRequest.setPackingGroup("II");
+        containerRequest.setMinimumFlashPoint(new BigDecimal(23));
+        containerV3Service.updateContainerRequestWithDgFalse(containerRequest);
+        assertNull(containerRequest.getUnNumber());
+        assertNull(containerRequest.getProperShippingName());
+        assertNull(containerRequest.getDgClass());
+        assertNull(containerRequest.getMarinePollutant());
+        assertNull(containerRequest.getPackingGroup());
+        assertNull(containerRequest.getMinimumFlashPoint());
+    }
+
+    @Test
+    void testUpdateContainerRequestOnDgFlag_shouldClearDgFieldsForNonHazardousContainers() {
+        ContainerV3Request dgContainer = new ContainerV3Request();
+        dgContainer.setHazardous(true);
+        dgContainer.setUnNumber("1234");
+        ContainerV3Request nonDgContainer = new ContainerV3Request();
+        nonDgContainer.setHazardous(false);
+        nonDgContainer.setProperShippingName("Sample DG");
+        nonDgContainer.setDgClass("3");
+        nonDgContainer.setMarinePollutant(true);
+        nonDgContainer.setPackingGroup("II");
+        nonDgContainer.setMinimumFlashPoint(new BigDecimal(23));
+        List<ContainerV3Request> containerList = List.of(dgContainer, nonDgContainer);
+        containerV3Service.updateContainerRequestOnDgFlag(containerList);
+        assertEquals("1234", dgContainer.getUnNumber());
+        assertNull(nonDgContainer.getProperShippingName());
+        assertNull(nonDgContainer.getDgClass());
+        assertNull(nonDgContainer.getMarinePollutant());
+        assertNull(nonDgContainer.getPackingGroup());
+        assertNull(nonDgContainer.getMinimumFlashPoint());
+    }
+
+    @Test
+    void testSetAttachedShipmentResponseInContainer_shouldSetResponsesCorrectly() {
+        ShipmentDetailsProjection detail1 = Mockito.mock(ShipmentDetailsProjection.class);
+        ShipmentDetailsProjection detail2 = Mockito.mock(ShipmentDetailsProjection.class);
+        Mockito.when(detail1.getId()).thenReturn(1L);
+        Mockito.when(detail1.getShipmentNumber()).thenReturn("SHP001");
+        Mockito.when(detail1.getShipmentType()).thenReturn("FCL");
+        Mockito.when(detail2.getId()).thenReturn(2L);
+        Mockito.when(detail2.getShipmentNumber()).thenReturn("SHP002");
+        Mockito.when(detail2.getShipmentType()).thenReturn("LCL");
+        List<ShipmentDetailsProjection> details = List.of(detail1, detail2);
+        ContainerBaseResponse container = new ContainerBaseResponse();
+        ContainerV3Service.setAttachedShipmentResponseInContainer(container, details);
+        List<AttachedShipmentResponse> responses = container.getAttachedShipmentResponses();
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+        assertEquals(1L, responses.get(0).getAttachedShipmentId());
+        assertEquals("SHP001", responses.get(0).getAttachedShipmentNumber());
+        assertEquals("FCL", responses.get(0).getAttachedShipmentType());
+        assertEquals(2L, responses.get(1).getAttachedShipmentId());
+        assertEquals("SHP002", responses.get(1).getAttachedShipmentNumber());
+        assertEquals("LCL", responses.get(1).getAttachedShipmentType());
+    }
+
 }

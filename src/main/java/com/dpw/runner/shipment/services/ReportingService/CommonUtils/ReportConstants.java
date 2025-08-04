@@ -243,6 +243,9 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
     public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
+    public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
+    public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -1507,6 +1510,15 @@ public class ReportConstants {
     public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
     public static final String S_FIRST_CARRIER = "S_FirstCarrier";
 
+    public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
+    public static final String HAS_PACKS = "HasPacks1";
+
+    public static final String NOT_VALID_RELEASE_TYPE = "Release Type is not Valid";
+    public static final String SEAWAY_BILL_RELEASE_TYPE = "SWB";
+    public static final String SURRENDER_RELEASE_TYPE = "OBO";
+    public static final String HOUSE_BILL_RELEASE_TYPE = "OBL";
+
+    public static final String CARRIER_BOOKING_NUMBER = "CarrierBookingNumber";
     public static final String HAS_PACKS2 = "HasPacks2";
     public static final String HAS_CONTAINERS2 = "HasContainers2";
     public static final String CONTAINER_TYPE_CODE2 = "ContainerTypeCode2";

@@ -1,13 +1,5 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -142,6 +134,14 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -166,16 +166,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 
 @Slf4j
 @SuppressWarnings({"unchecked", "java:S2259"})
@@ -503,6 +503,8 @@ public abstract class IReport {
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
+        populateShippedOnboardFields(shipment, dictionary);
+
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
@@ -544,6 +546,18 @@ public abstract class IReport {
             dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
                     pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
                     pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
+        }
+    }
+
+    public void populateShippedOnboardFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel) || Objects.isNull(shipmentModel.getAdditionalDetails())) return;
+
+        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
+        if (Objects.nonNull(shippedOnboardDate)) {
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                    shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
         }
     }
 

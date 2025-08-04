@@ -22,10 +22,7 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -82,8 +79,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
@@ -159,6 +155,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Transactional
     public PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
+        updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
         if (packingRequest.getContainerId() != null) {
@@ -211,7 +208,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (!CommonUtils.listIsNullOrEmpty(packings) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
             boolean isDelete = shipmentDetails == null;
             shipmentDetails = getShipment(shipmentDetails, packings.get(0).getShipmentId());
-            List<Packing> finalPackings = updateCargoDetailsInShipment(shipmentDetails);
+            List<Packing> finalPackings = updateCargoDetailsInShipment(packings, shipmentDetails);
             packingValidationV3Util.validatePackageAfterSave(shipmentDetails, finalPackings);
             if (checkIfLCLConsolidationEligible(shipmentDetails)) {
                 updateShipmentGateInDateAndStatusFromPacks(shipmentDetails, finalPackings);
@@ -221,7 +218,9 @@ public class PackingV3Service implements IPackingV3Service {
             }
             if(consolidationDetails != null)
                 consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
-            updateAttachedContainersData(packings, shipmentDetails);
+            boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+            if (!isSeaFCLOrRoadFTL)
+                updateAttachedContainersData(packings, shipmentDetails);
         }
     }
 
@@ -296,12 +295,17 @@ public class PackingV3Service implements IPackingV3Service {
         return old != null && commonUtils.checkIfDGFieldsChangedInPackingV3(updated, old);
     }
 
-
-    private List<Packing> updateCargoDetailsInShipment(ShipmentDetails shipmentDetails) throws RunnerException {
+    private List<Packing> updateCargoDetailsInShipment(List<Packing> updatedPackings, ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null)
             return Collections.emptyList();
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
-        if (!CollectionUtils.isEmpty(packings)) {
+        boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if (isSeaFCLOrRoadFTL) {
+            updateAttachedContainersData(updatedPackings, shipmentDetails);
+            CargoDetailsResponse cargoDetailsResponse = shipmentService.calculateShipmentSummary(shipmentDetails.getTransportMode(), packings, shipmentDetails.getContainersList());
+            if (cargoDetailsResponse != null)
+                shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+        } else if (!CollectionUtils.isEmpty(packings)) {
             CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
             cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
             cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
@@ -316,6 +320,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
+        updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
@@ -413,6 +418,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+        updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
@@ -943,7 +949,7 @@ public class PackingV3Service implements IPackingV3Service {
                 .build();
     }
 
-    private ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
+    public ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> optionalConsolidationDetails;
         if (Objects.equals(xSource, NETWORK_TRANSFER)){
             optionalConsolidationDetails = consolidationV3Service.retrieveForNte(consolidationId);
@@ -1471,7 +1477,9 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void updateAttachedContainersData(List<Packing> packings, ShipmentDetails shipmentDetails) throws RunnerException {
-        if (shipmentDetails == null || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+        if (shipmentDetails == null ||
+                !(TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
+                        TRANSPORT_MODE_ROA.equalsIgnoreCase(shipmentDetails.getTransportMode())))
             return;
         Set<Long> containerIdsToUpdate = new HashSet<>();
         packings.forEach(e -> {
@@ -1499,11 +1507,37 @@ public class PackingV3Service implements IPackingV3Service {
         if(request.getShipmentPackIds().size() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
-        return containerV3Service.assignContainers(request, Constants.PACKING);
+        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
     }
 
     @Override
-    public void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException {
+    public ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException {
+        if(setIsNullOrEmpty(request.getShipmentPackIds().keySet())) {
+            throw new ValidationException("No Shipment/Packing Ids provided.");
+        }
+        request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
+                )));
+        List<Long> packingIds = request.getShipmentPackIds().values().stream().flatMap(List::stream).toList();
+        List<Packing> packingList = packingDao.findByIdIn(packingIds);
+        if(listIsNullOrEmpty(packingList)) {
+            throw new ValidationException("No Packing found with Ids: " + packingIds);
+        }
+        if(packingList.stream().map(Packing::getShipmentId).distinct().count() > 1) {
+            throw new ValidationException("Please select Packages of single shipment only for assignment.");
+        }
+        Long shipmentId = packingList.get(0).getShipmentId();
+        ShipmentDetails shipmentDetails = shipmentService.findById(shipmentId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+        if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+            throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
+        }
+        return containerV3Service.assignContainers(request, SHIPMENT_PACKING);
+    }
+
+    @Override
+    public void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException {
         List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
         List<UnAssignContainerRequest> unAssignContainerRequests = new ArrayList<>();
         Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
@@ -1529,9 +1563,49 @@ public class PackingV3Service implements IPackingV3Service {
             unAssignContainerRequest.setShipmentPackIds(shipmentPackIds);
             unAssignContainerRequests.add(unAssignContainerRequest);
         }
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
-            containerV3Service.unAssignContainers(unAssignContainerRequest, Constants.PACKING);
+            containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
+        }
+        // update shipments and consolidations data only for FCL/FTL shipments
+        updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);
+    }
+
+    public void updateShipmentAndContainerDataForFCLAndFTLShipments(UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+        if(!setIsNullOrEmpty(unAssignContainerParams.getFclOrFtlShipmentIds())) {
+            for(Long shipmentId: unAssignContainerParams.getFclOrFtlShipmentIds()) {
+                ShipmentDetails shipmentDetails = unAssignContainerParams.getShipmentDetailsMap().get(shipmentId);
+                shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+            }
+            consolidationV3Service.updateConsolidationCargoSummary(unAssignContainerParams.getConsolidationDetails(), unAssignContainerParams.getOldShipmentWtVolResponse());
         }
     }
 
+    private void updatePackingRequestOnDgAndTemperatureFlag(List<PackingV3Request> packingV3RequestList) {
+        for(PackingV3Request packingRequest: packingV3RequestList) {
+            if(Boolean.FALSE.equals(packingRequest.getHazardous())) {
+                updatePackingRequestWithDgFalse(packingRequest);
+            }
+            if(Boolean.FALSE.equals(packingRequest.getIsTemperatureControlled())) {
+                updatePackingRequestWithTemperatureFalse(packingRequest);
+            }
+        }
+    }
+
+    private void updatePackingRequestWithDgFalse(PackingV3Request packingV3Request) {
+        packingV3Request.setDgClassAir(null);
+        packingV3Request.setDgClassAirDescription(null);
+        packingV3Request.setUnNumberAir(null);
+        packingV3Request.setDGClass(null);
+        packingV3Request.setUnNumber(null);
+        packingV3Request.setProperShippingName(null);
+        packingV3Request.setPackingGroup(null);
+        packingV3Request.setMinimumFlashPoint(null);
+        packingV3Request.setMarinePollutant(null);
+    }
+
+    private void updatePackingRequestWithTemperatureFalse(PackingV3Request packingV3Request) {
+        packingV3Request.setMinTemp(null);
+        packingV3Request.setMaxTemp(null);
+    }
 }

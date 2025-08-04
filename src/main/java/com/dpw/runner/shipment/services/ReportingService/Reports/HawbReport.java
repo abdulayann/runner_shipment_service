@@ -182,6 +182,8 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
+        populateShippedOnboardFields(hawbModel.shipmentDetails, dictionary);
+
         populateUserFields(hawbModel.usersDto, dictionary);
 
         // Get the shipmentInforRow

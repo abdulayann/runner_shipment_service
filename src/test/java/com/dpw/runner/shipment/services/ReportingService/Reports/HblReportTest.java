@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
@@ -12,12 +12,15 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -32,8 +35,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -43,7 +46,12 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -53,12 +61,14 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

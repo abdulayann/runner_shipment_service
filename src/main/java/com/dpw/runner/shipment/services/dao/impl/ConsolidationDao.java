@@ -394,6 +394,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
+    private void addAgentOrganisationIdValidationErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getSendingAgent() != null && request.getReceivingAgent() != null) {
+
+            String sendingAgentOrganisationId = request.getSendingAgent().getOrgId();
+
+            if (sendingAgentOrganisationId != null && sendingAgentOrganisationId.equals(
+                    request.getReceivingAgent().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
+            }
+        }
+    }
+
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
         if(!isStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
@@ -827,6 +839,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public Boolean getAllowAttachMentFromConsol(Long consolidationId) {
+        return consolidationRepository.getAllowAttachMentFromConsol(consolidationId);
+    }
+
+    @Override
     public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }
@@ -896,6 +913,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
+
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
 
         // Shipment restricted unlocations validation
         addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);

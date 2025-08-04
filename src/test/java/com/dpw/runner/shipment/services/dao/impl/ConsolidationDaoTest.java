@@ -1105,6 +1105,71 @@ class ConsolidationDaoTest extends CommonMocks {
     }
 
     @Test
+    void applyAgentOrganisationIdValidationTest_SendingAgentNullOnlyV3() {
+
+        Parties receivingAgent = mock(Parties.class);
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_ReceivingAgentNullOnlyV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(null);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_BothAgentsNullV3() {
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(null);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_SameOrganisationsFailureV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        Parties receivingAgent = mock(Parties.class);
+        when(sendingAgent.getOrgId()).thenReturn("123");
+        when(receivingAgent.getOrgId()).thenReturn("123");
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertTrue(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_DifferentOrganisationsSuccessV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        Parties receivingAgent = mock(Parties.class);
+        when(sendingAgent.getOrgId()).thenReturn("324");
+        when(receivingAgent.getOrgId()).thenReturn("123");
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
     void applyConsolidationValidationsTest_CountryAirCargoSecurity2V3() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
 
@@ -1193,4 +1258,14 @@ class ConsolidationDaoTest extends CommonMocks {
         assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
     }
 
+    @Test
+    void testGetAllowAttachmentFromConsol_ReturnsExpectedValue() {
+        Long consolidationId = 123L;
+        Boolean expectedValue = true;
+        Mockito.when(consolidationRepository.getAllowAttachMentFromConsol(consolidationId))
+                .thenReturn(expectedValue);
+        Boolean result = consolidationsDao.getAllowAttachMentFromConsol(consolidationId);
+        assertEquals(expectedValue, result);
+        Mockito.verify(consolidationRepository).getAllowAttachMentFromConsol(consolidationId);
+    }
 }

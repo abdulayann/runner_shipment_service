@@ -154,7 +154,7 @@ class MasterDataImplTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().fetchContainerTypeData(Mockito.any())).thenReturn(new DependentServiceResponse());
-        ResponseEntity<IRunnerResponse> responseEntity = masterData.listContainerType(commonRequestModel);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listContainerType(commonRequestModel, "");
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

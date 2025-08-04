@@ -41,7 +41,7 @@ public class MasterDataImpl implements IMasterDataService {
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
-    ,IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil) {
+    , IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
@@ -92,8 +92,10 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel) {
-        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchContainerTypeData(commonRequestModel.getDependentData()));
+    public ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel, String quoteId) {
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchContainerTypeData(commonRequestModel.getDependentData());
+        commonUtils.updateContainerTypeWithQuoteId(dependentServiceResponse, quoteId);
+        return ResponseHelper.buildDependentServiceResponse(dependentServiceResponse);
     }
 
     @Override

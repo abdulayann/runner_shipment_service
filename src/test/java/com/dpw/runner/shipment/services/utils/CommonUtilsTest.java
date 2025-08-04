@@ -17,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
@@ -37,6 +39,7 @@ import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
@@ -77,6 +80,7 @@ import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
@@ -88,6 +92,7 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -243,6 +248,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -316,7 +322,12 @@ class CommonUtilsTest {
     private ConsolidationDao consolidationDetailsDao;
 
     @Mock
+    private QuoteContractsDao quoteContractsDao;
+
+    @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+    @Mock
+    private IV1Service v1Service;
 
 
     private PdfContentByte dc;
@@ -4977,6 +4988,105 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testUpdateContainerTypeWithQuoteId_withMatchingCodes_setsIsQuotedTrue() {
+        String quoteId = "Q123";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("20GP")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertTrue(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withNoMatchingCodes_allIsQuotedFalse() {
+        String quoteId = "Q999";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("45HC")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertFalse(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenDefaultAddressIdIsNull_returnsNull() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(null);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNull(result);
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenNoAddressFound_returnsEmptyEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        CommonV1ListRequest expectedRequest = new CommonV1ListRequest();
+        expectedRequest.setCriteriaRequests(List.of(List.of("Id", "=", 123L)));
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = new ArrayList<>();
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(Collections.emptyList());
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(new EntityTransferAddress(), result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenAddressFound_returnsEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        EntityTransferAddress expectedAddress = EntityTransferAddress.builder()
+                .id(123L)
+                .Address1("Test Address")
+                .build();
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = List.of(Map.of());
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class)))
+                .thenReturn(List.of(expectedAddress));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(expectedAddress, result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    private ContainerTypeMasterResponse buildResponse(String code, boolean isQuoted) {
+        ContainerTypeMasterResponse response = new ContainerTypeMasterResponse();
+        response.setCode(code);
+        response.setIsQuoted(isQuoted);
+        return response;
+    }
+
+    @Test
     void testGetAddress_withAllFields() {
         // Arrange
         Map<String, Object> addressData = new HashMap<>();
@@ -5280,5 +5390,57 @@ class CommonUtilsTest {
         packing.setMinimumFlashPointUnit("C");
         packing.setMarinePollutant(false);
         return packing;
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FCL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FTL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_Valid() {
+        assertTrue(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_AIR, "FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FCL() {
+        assertTrue(commonUtils.isFCLorFTL("FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FTL() {
+        assertTrue(commonUtils.isFCLorFTL("FTL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_Invalid() {
+        assertFalse(commonUtils.isFCLorFTL("LCL"));
+        assertFalse(commonUtils.isFCLorFTL(null));
+        assertFalse(commonUtils.isFCLorFTL(""));
     }
 }

@@ -3040,7 +3040,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
+    public String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
         if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -3096,9 +3096,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Integer consoleDgContCount = 0;
         BigDecimal consoleTeus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
+        Boolean isNonFtlOrFclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
+            isNonFtlOrFclAttached = shipmentDetailsList.stream().anyMatch(this::isNonFtlOrFclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
@@ -3137,7 +3139,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
+                .isNonFtlOrFclAttached(isNonFtlOrFclAttached)
                 .build();
+    }
+    private boolean isNonFtlOrFclAttached(ShipmentDetails shipmentDetails) {
+        return   (!CARGO_TYPE_FCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) && !CARGO_TYPE_FTL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")));
     }
 
     public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
@@ -4925,4 +4931,5 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments != null && shipments.stream()
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
+
 }

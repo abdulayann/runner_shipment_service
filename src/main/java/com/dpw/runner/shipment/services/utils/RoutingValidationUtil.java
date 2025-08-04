@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -13,10 +14,12 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,13 +28,17 @@ import java.util.stream.Collectors;
 
 
 @Component
+@AllArgsConstructor
 public class RoutingValidationUtil {
-    @Autowired
-    private IShipmentServiceV3 shipmentService;
-    @Autowired
-    private IConsolidationService consolidationService;
-    @Autowired
-    private ICustomerBookingService customerBookingService;
+
+    private final IShipmentServiceV3 shipmentService;
+
+    private final IConsolidationService consolidationService;
+
+    private final ICustomerBookingService customerBookingService;
+
+    private final IRoutingsDao routingsV3Dao;
+
 
     public void validateUpdateRequest(RoutingsRequest request) {
         if (request == null) {
@@ -49,6 +56,73 @@ public class RoutingValidationUtil {
         if (request.getId() == null) {
             throw new ValidationException("Routing ID is missing.");
         }
+    }
+
+    public void validateRoutingLegs(List<RoutingsRequest> incomingRoutings) {
+
+        for (RoutingsRequest routingsRequest : incomingRoutings) {
+            validateRoutingLeg(routingsRequest.getEtd(), routingsRequest.getEta(),
+                    routingsRequest.getAtd(), routingsRequest.getAta());
+        }
+    }
+
+    private void validateRoutingLeg(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
+
+        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
+            throw new ValidationException("ETD cannot be more than ETA");
+        }
+
+        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
+            throw new ValidationException("ATA cannot be less than ATD");
+        }
+
+        if (Objects.nonNull(atd) && atd.toLocalDate().isAfter(LocalDate.now())) {
+            throw new ValidationException("ATD cannot be more than Current Date");
+        }
+
+        if (Objects.nonNull(ata) && ata.toLocalDate().isAfter(LocalDate.now())) {
+            throw new ValidationException("ATA cannot be more than Current Date");
+        }
+    }
+
+    public void validateMainCarriageRoutingLegs(List<RoutingsRequest> routingsList) {
+        RoutingsRequest firstMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, true);
+        RoutingsRequest lastMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, false);
+        if (Objects.isNull(firstMainCarriageRoutingLeg) || Objects.isNull(lastMainCarriageRoutingLeg)) return;
+
+        validateMainCarriageRoutingLegs(firstMainCarriageRoutingLeg.getEtd(), lastMainCarriageRoutingLeg.getEta(),
+                firstMainCarriageRoutingLeg.getAtd(), lastMainCarriageRoutingLeg.getAta());
+    }
+
+    private void validateMainCarriageRoutingLegs(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
+
+        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
+            throw new ValidationException("ETD cannot be more than ETA. Please Update the date entered correctly.");
+        }
+
+        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
+            throw new ValidationException("ATA cannot be less than ATD. Please Update the date entered correctly.");
+        }
+
+        if (Objects.nonNull(ata) && ata.isAfter(LocalDateTime.now().plusHours(24))) {
+            throw new ValidationException("ATA cannot be more than Current Date. Please Update the date entered correctly.");
+        }
+
+        if (Objects.nonNull(atd) && atd.isAfter(LocalDateTime.now().plusHours(24))) {
+            throw new ValidationException("ATD cannot be more than Current Date. Please Update the date entered correctly.");
+        }
+    }
+
+    private RoutingsRequest findMainCarriageLeg(List<RoutingsRequest> routingsList, boolean toFindFirstMainCarriageRoutingLeg) {
+
+        RoutingsRequest currMainCarriageRoutingLeg = null;
+        for (RoutingsRequest routingsRequest : routingsList) {
+            if (RoutingCarriage.MAIN_CARRIAGE.equals(routingsRequest.getCarriage())) {
+                if (toFindFirstMainCarriageRoutingLeg) return routingsRequest;
+                else currMainCarriageRoutingLeg = routingsRequest;
+            }
+        }
+        return currMainCarriageRoutingLeg;
     }
 
     public void validateUpdateBulkRequest(List<RoutingsRequest> routingListRequest, List<Routings> existingRoutings) {
@@ -116,6 +190,21 @@ public class RoutingValidationUtil {
         Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
+        }
+    }
+
+    public void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest) {
+        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
+            if (shipmentDetails.isEmpty()) {
+                throw new ValidationException("Please provide the valid shipment id");
+            }
+            if (shipmentDetails.get().getConsolRef() != null) {
+                int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
+                if (inheritCarriage == 0) {
+                    throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
+                }
+            }
         }
     }
 

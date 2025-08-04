@@ -236,6 +236,12 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
