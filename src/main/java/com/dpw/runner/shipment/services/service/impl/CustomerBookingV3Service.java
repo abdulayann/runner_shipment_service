@@ -2405,9 +2405,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         Set<String> distinctPackTypes = new HashSet<>();
         boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
         boolean stopWeightCalculation = false;
-
+        customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+        customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         for (Packing packing : packings) {
-            totalVolume = addVolume(packing, totalVolume, customerBooking);
+            totalVolume = addVolume(packing, totalVolume, customerBooking.getVolumeUnit());
             if (!isStringNullOrEmpty(packing.getPacks())) {
                 totalPacks += Integer.parseInt(packing.getPacks());
             }
@@ -2425,14 +2426,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);
-        customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
-        customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
     }
 
-    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, CustomerBooking booking) throws RunnerException {
+    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, String volumeUnit) throws RunnerException {
         if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), booking.getVolumeUnit()).toString());
+            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), volumeUnit).toString());
             return totalVolume.add(converted);
         }
         return totalVolume;

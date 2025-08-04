@@ -31,6 +31,8 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private AirAuthorisingEntity securityStatusReceivedFrom;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 
 
     private String inspection;

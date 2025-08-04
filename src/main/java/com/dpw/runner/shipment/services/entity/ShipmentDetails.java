@@ -666,6 +666,12 @@ public class ShipmentDetails extends MultiTenancy {
     @OrganizationMasterData
     private Long brokerageAtDestination;
 
+    @Column(name = "est_brokerage_at_origin_date")
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @Column(name = "est_brokerage_at_destination_date")
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
     @Column(name = "brokerage_at_origin_date")
     private LocalDateTime brokerageAtOriginDate;
 

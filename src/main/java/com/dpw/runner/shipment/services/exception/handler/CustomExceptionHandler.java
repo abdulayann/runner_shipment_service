@@ -9,11 +9,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticati
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -56,6 +58,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler({
+            ReportExceptionWarning.class
+    })
+    private ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
+        return ResponseHelper.buildSuccessResponseWithWarning(ex.getMessage());
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<IRunnerResponse> handleConstraintViolation(ConstraintViolationException ex) {
         String errorMessages = ex.getConstraintViolations().stream()
@@ -93,6 +102,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidAuthenticationException.class)
     public final ResponseEntity<IRunnerResponse> handleAuthenticationException(InvalidAuthenticationException ex) {
         return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(V1ServiceException.class)
+    public ResponseEntity<IRunnerResponse> handleV1ServiceException(V1ServiceException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override

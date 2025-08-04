@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.enums.TILegType;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TiContainers;
@@ -30,13 +31,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,11 +127,14 @@ class TransportInstructionReportHelperTest extends CommonMocks {
         TiLegs legs = new TiLegs();
         TiPackages packages = new TiPackages();
         legs.setTiPackages(List.of(packages));
-
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setWeightDecimalPlace(3);
+        sampleResponse.setVolumeDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         TILegsPackagesModel packagesModel = new TILegsPackagesModel();
         when(modelMapper.map(any(TiPackages.class), eq(TILegsPackagesModel.class)))
                 .thenReturn(packagesModel);
-
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         Map<String, Object> legsDictionary = new HashMap<>();
 
         transportInstructionReportHelper.addTransportInstructionLegsPackagesDataIntoDictionary(legs, legsDictionary);
@@ -145,10 +147,13 @@ class TransportInstructionReportHelperTest extends CommonMocks {
         TiLegs legs = new TiLegs();
         TiContainers containers = new TiContainers();
         legs.setTiContainers(List.of(containers));
-
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setWeightDecimalPlace(3);
+        sampleResponse.setVolumeDecimalPlace(3);
         TILegsContainersModel containersModel = new TILegsContainersModel();
         when(modelMapper.map(any(TiContainers.class), eq(TILegsContainersModel.class)))
                 .thenReturn(containersModel);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
 
         Map<String, Object> legsDictionary = new HashMap<>();
 

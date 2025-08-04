@@ -103,9 +103,11 @@ public class PickupOrderReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
+        populateShippedOnboardFields(pickUpOrderReportModel.hblModel.shipment, dictionary);
         ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
         if (pickUpOrderReportModel.hblModel.getShipment() != null) {
             this.populateShipmentReportData(dictionary, null, pickUpOrderReportModel.hblModel.getShipment() .getId());
+            this.getContainerDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
             this.getPackingDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
         }
 

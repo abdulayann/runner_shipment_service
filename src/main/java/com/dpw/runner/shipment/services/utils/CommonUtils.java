@@ -14,11 +14,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
@@ -31,11 +29,11 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -160,7 +158,12 @@ public class CommonUtils {
     IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
+    IQuoteContractsDao quoteContractsDao;
+
+    @Autowired
     IMDMServiceAdapter mdmServiceAdapter;
+    @Autowired
+    private IV1Service v1Service;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -356,15 +359,11 @@ public class CommonUtils {
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
         ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = null;
-        PdfCopy copy = null;
-        doc = new Document();
-        copy = new PdfSmartCopy(doc, ms);
+        Document doc = new Document();
+        PdfCopy copy =  new PdfCopy(doc, ms);
         doc.open();
-
         for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = null;
-            reader = new PdfReader(dataByte);
+            PdfReader reader = new PdfReader(dataByte);
             copy.addDocument(reader);
             reader.close();
         }
@@ -2853,7 +2852,7 @@ public class CommonUtils {
         return getShipmentSettingFromContext().getVolumeChargeableUnit();
     }
     public static String setTransportInfoStatusMessage(CarrierDetails carrierDetails, TransportInfoStatus transportInfoStatus, List<Routings> mainCarriageRoutings) {
-        if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+        if (TransportInfoStatus.IH.equals(transportInfoStatus) && !CommonUtils.listIsNullOrEmpty(mainCarriageRoutings)) {
             Routings firstLeg = mainCarriageRoutings.get(0);
             Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
             String polMessage = Constants.EMPTY_STRING;
@@ -2882,5 +2881,54 @@ public class CommonUtils {
         }
         return (Constants.TRANSPORT_MODE_SEA.equals(route.getMode()) && StringUtility.isNotEmpty(route.getVesselName()) && StringUtility.isNotEmpty(route.getVoyage()))
                 || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()));
+    }
+    public Map<String, RAKCDetailsResponse> getRAKCDetailsMap(List<String> addressIds) {
+        if (CommonUtils.listIsNullOrEmpty(addressIds)) {
+            return Collections.emptyMap();
+        }
+
+        CommonV1ListRequest request = convertV1InCriteriaRequest("Id", addressIds);
+        V1DataResponse addressResponse = iv1Service.addressList(request);
+        List<RAKCDetailsResponse> rakcDetailsList =
+                jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class);
+
+        return CommonUtils.listIsNullOrEmpty(rakcDetailsList)
+                ? Collections.emptyMap()
+                : rakcDetailsList.stream().collect(Collectors.toMap(rakc -> String.valueOf(rakc.getId()), Function.identity()));
+    }
+
+    public CommonV1ListRequest convertV1InCriteriaRequest(String filterValue, List<?> values) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<List<?>> param = new ArrayList<>();
+        param.add(values);
+        List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
+        return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
+    }
+
+    public void updateContainerTypeWithQuoteId(DependentServiceResponse dependentServiceResponse, String quoteId) {
+        List<ContainerTypeMasterResponse> containerTypeMasterResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ContainerTypeMasterResponse.class);
+        List<QuoteContracts> quoteContracts = quoteContractsDao.findByContractId(quoteId);
+        List<String> quotedContainerTypes = quoteContracts.stream()
+                .flatMap(qc -> qc.getContainerTypes().stream())
+                .toList();
+        containerTypeMasterResponses.forEach(response -> {
+            if (quotedContainerTypes.contains(response.getCode())) {
+                response.setIsQuoted(true);
+            }
+        });
+        dependentServiceResponse.setData(containerTypeMasterResponses);
+    }
+    public EntityTransferAddress getEntityTransferAddress(TenantModel tenantModel) {
+        if (Objects.nonNull(tenantModel.getDefaultAddressId())) {
+            CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+            List<Object> addressField = new ArrayList<>(List.of("Id"));
+            List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
+            addressRequest.setCriteriaRequests(addressCriteria);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+            return addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
+        }
+        return null;
     }
 }

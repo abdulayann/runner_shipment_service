@@ -85,6 +85,8 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.hblModel.shipment.getTransportMode());
 
+        populateShippedOnboardFields(bookingConfirmationModel.hblModel.shipment, dictionary);
+
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
         if (referenceNumbers != null && !referenceNumbers.isEmpty()) {
@@ -93,6 +95,7 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        dictionary.put(ReportConstants.CARRIER_BOOKING_NUMBER, bookingConfirmationModel.hblModel.shipment.getBookingNumber());
 
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
@@ -107,6 +110,7 @@ public class BookingConfirmationReport extends IReport{
 
         if(bookingConfirmationModel.hblModel.shipment != null) {
             this.populateShipmentReportData(dictionary, null, bookingConfirmationModel.hblModel.shipment.getId());
+            this.getContainerDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
             this.getPackingDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
         }
         return dictionary;

@@ -18,13 +18,17 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NET_WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TARE_WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VGM_WEIGHT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -69,6 +73,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -131,6 +136,10 @@ class SeawayBillReportTest extends CommonMocks {
     @Mock
     private IHblDao hblDao;
 
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @BeforeAll
@@ -173,6 +182,13 @@ class SeawayBillReportTest extends CommonMocks {
         mockedTenantMap.put("100", origin);
         mockedTenantMap.put("200", dest);
         mockedTenantMap.put("300", triang);
+
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(SeawayBillModel seawayBillModel) {
@@ -347,7 +363,7 @@ class SeawayBillReportTest extends CommonMocks {
         V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
         tenantSettings.setIsModuleValidationEnabled(Boolean.FALSE);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
     }
 
     @Test
@@ -424,7 +440,6 @@ class SeawayBillReportTest extends CommonMocks {
         verify(shipmentService, never()).validateContainerDetails(any(), anyList());
     }
 
-
     @Test
     void populateDictionary() {
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
@@ -444,6 +459,7 @@ class SeawayBillReportTest extends CommonMocks {
         containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
@@ -482,6 +498,7 @@ class SeawayBillReportTest extends CommonMocks {
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, Object> chargeMap = new HashMap<>();

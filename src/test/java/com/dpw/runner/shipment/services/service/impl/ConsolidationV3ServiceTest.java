@@ -4260,7 +4260,9 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testGetSummaryDgPacks() {
     // Setup
-    List<Packing> packingList = List.of(new Packing());
+    Packing packing = new Packing();
+    packing.setPacks("1");
+    List<Packing> packingList = List.of(packing);
 
     // method under test
     String result = consolidationV3Service.getSummaryDgPacks(packingList);
@@ -4272,6 +4274,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetSummaryDgPacks1() {
     // Setup
     Packing packing = new Packing();
+    packing.setPacks("1");
     packing.setHazardous(true);
     List<Packing> packingList = List.of(packing);
 
@@ -5331,12 +5334,12 @@ if (unitConversionUtilityMockedStatic != null) {
   void testAibAttachedPendingShipmentCount() {
     var mockRequest = CommonGetRequest.builder().id(1L).build();
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
-    Exception e = assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(mockRequest));
+    Exception e = assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(mockRequest, null));
     assertNotNull(e.getMessage());
   }
 
   @Test
-  void testAibAttachedPendingShipmentCount1() {
+  void testAibAttachedPendingShipmentCount1() throws AuthenticationException, RunnerException {
     List<ConsoleShipmentMapping> mockConsoleShipMappings = Arrays.asList(
             ConsoleShipmentMapping.builder().build(),
             ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.APPROVE).build(),
@@ -5348,7 +5351,30 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
     when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(mockConsoleShipMappings);
 
-    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build());
+    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build(), null);
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+  }
+
+  @Test
+  void testAibAttachedPendingShipmentCount2() throws AuthenticationException, RunnerException {
+    List<ConsoleShipmentMapping> mockConsoleShipMappings = Arrays.asList(
+            ConsoleShipmentMapping.builder().build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.APPROVE).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.REJECT).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build()
+    );
+
+    consolidationDetails.setTriangulationPartnerList(null);
+    consolidationDetails.setReceivingBranch(1L);
+    when(TenantContext.getCurrentTenant()).thenReturn(1);
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(mockConsoleShipMappings);
+
+    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build(), NETWORK_TRANSFER);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -5481,5 +5507,117 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThatThrownBy(() -> consolidationV3Service.getDGShipment(invalidId))
             .isInstanceOf(ValidationException.class)
             .hasMessage("No Consolidation found for the Id: " + invalidId);
+  }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsFalse_AndOldAndNewIncoTermsMatch_UpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("FOB");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setIncoterms("FOB");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB"); // same as old
+
+    consolidationV3Service.setIncoTerms(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("FOB"); // from console
+  }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsFalse_AndOldAndNewIncoTermsDoNotMatch_DoesNotUpdate() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("FOB");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setIncoterms("CIF");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB"); // does not match old
+
+    consolidationV3Service.setIncoTerms(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("FOB"); // remains same
+  }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsTrue_AlwaysUpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("EXW");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB");
+
+    consolidationV3Service.setIncoTerms(console, null, shipment, true);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("EXW");
+  }
+
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsFalse_AndOldAndNewBookingMatch_UpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK123");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setBookingNumber("BK123");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123");
+
+    consolidationV3Service.setBookingNumberInShipment(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK123");
+  }
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsFalse_AndOldAndNewBookingMismatch_DoesNotUpdate() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK999");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setBookingNumber("BK123");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123"); // matches old
+
+    consolidationV3Service.setBookingNumberInShipment(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK999"); // remains same
+  }
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsTrue_AlwaysUpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK987");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123");
+
+    consolidationV3Service.setBookingNumberInShipment(console, null, shipment, true);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK987");
+  }
+
+  @Test
+  void testIsSeaExportWithLclAttachedFlagSet() throws Exception {
+//    shipmentDetails.setShipmentType("LCL");
+    ShipmentDetails lclShipment = new ShipmentDetails();
+    lclShipment.setShipmentType("LCL");
+    ShipmentDetails fclShipment = new ShipmentDetails();
+    fclShipment.setShipmentType("FCL");
+    ShipmentDetails lseShipment = new ShipmentDetails();
+    lseShipment.setShipmentType("LSE");
+    List<ShipmentDetails> shipmentDetailsList = List.of(lclShipment, fclShipment, lseShipment);
+    shipmentSettingsDetails.setWeightChargeableUnit("KG");
+    shipmentSettingsDetails.setVolumeChargeableUnit("M3");
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(new BigDecimal("100"));
+    ShipmentWtVolResponse response = consolidationV3Service.calculateShipmentWtVol(
+            "SEA", shipmentDetailsList, Collections.emptyList()
+    );
+    assertTrue(response.getIsNonFtlOrFclAttached());
   }
 }

@@ -155,6 +155,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SENDING_AGENT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SERVICE_MODE_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CAN_DOCUMENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_ID;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PICKUP_PICKUPINSTRUCTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_REF_NO;
@@ -286,26 +287,34 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
-        V1TenantSettingsResponse tenantSettings;
-        tenantSettings = getCurrentTenantSettings();
-
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
-
-            if (shipment == null) {
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
-
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
-                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-                Hbl hblObject = getHbl(shipmentId);
-                shipmentService.validateHblContainerNumberCondition(shipment);
-                hblService.validateHblContainerNumberCondition(hblObject);
-            }
-            processMissingFields(tenantSettings, shipment);
+            validateOriginalPrintType(shipmentId, shipment, tenantSettings);
         }
+    }
+
+    private void validateOriginalPrintType(Long shipmentId, ShipmentDetails shipment, V1TenantSettingsResponse tenantSettings) {
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
+
+        if (isSeaFclExportOrCtsShipment(shipment)) {
+            Hbl hblObject = getHbl(shipmentId);
+            shipmentService.validateHblContainerNumberCondition(shipment);
+            hblService.validateHblContainerNumberCondition(hblObject);
+        }
+
+        processMissingFields(tenantSettings, shipment);
+    }
+
+    private boolean isSeaFclExportOrCtsShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
+                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
     }
 
     private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {
@@ -549,6 +558,7 @@ public class HblReport extends IReport {
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
 
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -692,6 +702,7 @@ public class HblReport extends IReport {
 
         if (hblModel.shipment != null) {
             this.populateShipmentReportData(dictionary, null, hblModel.shipment.getId());
+            this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
 

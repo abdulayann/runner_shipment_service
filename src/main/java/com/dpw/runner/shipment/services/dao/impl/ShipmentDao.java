@@ -389,6 +389,9 @@ public class ShipmentDao implements IShipmentDao {
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
 
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
+
         // Shipment must be attached to consolidation with same master bill
         addMasterBillValidationErrors(request, errors);
 
@@ -492,6 +495,19 @@ public class ShipmentDao implements IShipmentDao {
 
                 String message = (duplicatePartyTypes.size() == 1) ? " is a duplicate Party Type." : " are duplicate Party Types.";
                 errors.add(types + message);
+            }
+        }
+    }
+
+    private void addAgentOrganisationIdValidationErrors(ShipmentDetails request, Set<String> errors) {
+        if (request.getAdditionalDetails() != null && request.getAdditionalDetails().getExportBroker() != null
+                && request.getAdditionalDetails().getImportBroker() != null) {
+
+            String exportAgentOrganisationId = request.getAdditionalDetails().getExportBroker().getOrgId();
+
+            if (exportAgentOrganisationId != null && exportAgentOrganisationId.equals(
+                    request.getAdditionalDetails().getImportBroker().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
             }
         }
     }
@@ -637,7 +653,7 @@ public class ShipmentDao implements IShipmentDao {
         if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-            else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) {
+            else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && (!Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId()) ||  mawbStocksLink.getEntityId() == null)) {
                 var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
                 if(mawbStock.isEmpty()){
                     throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
@@ -658,10 +674,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private boolean validatedBorrowedFrom(ShipmentDetails shipmentRequest, MawbStocks mawbStocks) {
         if (StringUtility.isEmpty(mawbStocks.getBorrowedFrom())) return false;
-        if(shipmentRequest.getAdditionalDetails() == null) return false;
-        if (Objects.isNull(shipmentRequest.getAdditionalDetails().getBorrowedFrom())) return false;
-        if (StringUtility.isEmpty(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode())) return false;
-        return !Objects.equals(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode(), mawbStocks.getBorrowedFrom());
+        return !StringUtility.isEmpty(shipmentRequest.getPartner());
     }
 
     private CarrierResponse getCorrespondingCarrier(ShipmentDetails shipmentRequest, String oldMasterBill) {

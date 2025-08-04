@@ -40,6 +40,7 @@ import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataIm
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -128,6 +129,10 @@ class ArrivalNoticeReportTest extends CommonMocks {
     @Mock
     private CustomKeyGenerator keyGenerator;
 
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     private static final String DG_CLASS_VALUE = "DG";
 
     @BeforeAll
@@ -149,6 +154,12 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void mockVessel() {
@@ -369,6 +380,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -419,6 +431,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -465,6 +478,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -511,6 +525,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -555,6 +570,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();

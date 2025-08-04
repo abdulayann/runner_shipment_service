@@ -135,6 +135,7 @@ public class FreightCertificationReport extends IReport{
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
+        populateShippedOnboardFields(freightCertificationModel.shipmentDetails, dictionary);
         processBillingList(freightCertificationModel, dictionary);
 
         if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
@@ -144,6 +145,7 @@ public class FreightCertificationReport extends IReport{
 
         if(freightCertificationModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, freightCertificationModel.shipmentDetails.getId());
+            this.getContainerDetails(freightCertificationModel.shipmentDetails, dictionary);
             this.getPackingDetails(freightCertificationModel.shipmentDetails, dictionary);
         }
         return dictionary;

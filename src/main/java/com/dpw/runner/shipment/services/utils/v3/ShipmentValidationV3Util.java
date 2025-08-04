@@ -5,13 +5,13 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_N
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -24,6 +24,9 @@ import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,9 +34,6 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -48,20 +48,6 @@ public class ShipmentValidationV3Util {
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
-
-    public void validateStaleShipmentUpdateError(ShipmentDetails shipmentDetails, boolean isCreate) {
-        if(!isCreate) {
-            // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
-            if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-                consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
-                if (CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()
-                        && !Objects.isNull(consoleShipmentMappings.get(0).getRequestedType())) {
-                    throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
-                }
-            }
-        }
-    }
 
     public void validTransportModeForTrasnportModeConfig(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, boolean isImportFile, V1TenantSettingsResponse tenantSettings) {
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && Boolean.FALSE.equals(isImportFile) && (isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
@@ -118,13 +104,72 @@ public class ShipmentValidationV3Util {
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }
 
+    public void validateShippedOnBoardDate(ShipmentDetails shipmentDetails) {
+
+        LocalDateTime shippedOnboard = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getShippedOnboard() : null;
+
+        if (Objects.nonNull(shippedOnboard) && Objects.nonNull(shipmentDetails.getCarrierDetails())) {
+            LocalDateTime actualTimeOfDeparture = shipmentDetails.getCarrierDetails().getAtd();
+
+            if (shippedOnboard.toLocalDate().isAfter(LocalDate.now())) {
+                throw new ValidationException("Shipped On Board cannot be a future date.");
+            }
+            if (Objects.isNull(actualTimeOfDeparture)) {
+                throw new ValidationException("Shipped On Board cannot be set without Actual Time of Departure(ATD).");
+            }
+            if (shippedOnboard.isAfter(actualTimeOfDeparture)) {
+                throw new ValidationException("Shipped On Board must be before or same as ATD.");
+            }
+        }
+    }
+
+    public void validateCarrierDetailsDates(ShipmentDetails shipmentDetails) {
+
+        LocalDateTime actualPickupDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getPickupDate() : null;
+
+        LocalDateTime actualCargoDeliveredDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() : null;
+
+        LocalDateTime estimatedPickupDate = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getEstimatedPickupDate() : null;
+
+        LocalDateTime estimatedCargoDeliveryDate = shipmentDetails.getCargoDeliveryDate();
+
+        LocalDateTime etd = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getEtd() : null;
+
+        LocalDateTime atd = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getAtd() : null;
+
+        LocalDateTime eta = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getEta() : null;
+
+        LocalDateTime ata = Objects.nonNull(shipmentDetails.getCarrierDetails())
+                ? shipmentDetails.getCarrierDetails().getAta() : null;
+
+        if (Objects.nonNull(estimatedPickupDate) && Objects.nonNull(etd) && estimatedPickupDate.isAfter(etd)) {
+            throw new ValidationException("Est. Origin Transport Date should be less than or equal to ETD");
+        }
+
+        if (Objects.nonNull(actualPickupDate) && Objects.nonNull(atd) && actualPickupDate.isAfter(atd)) {
+            throw new ValidationException("Act. Origin Transport Date should be less than or equal to ATD");
+        }
+
+        if (Objects.nonNull(estimatedCargoDeliveryDate) && Objects.nonNull(eta) && estimatedCargoDeliveryDate.isBefore(eta)) {
+            throw new ValidationException("Est. Destination Transport Date should be more than or equal to ETA");
+        }
+
+        if (Objects.nonNull(actualCargoDeliveredDate) && Objects.nonNull(ata) && actualCargoDeliveredDate.isAfter(ata)) {
+            throw new ValidationException("Act. Destination Transport Date should be less than or equal to ATA");
+        }
+    }
+
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
             throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
         }
-        // Validation for Partner fields
-        // Validation for DPS Implication
-        this.validateDPSImplication(shipmentDetails);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
         // Validation for cutoffFields
@@ -277,7 +322,7 @@ public class ShipmentValidationV3Util {
 
     public void validateBeforeSaveForEt(ShipmentDetails shipmentDetails) {
         if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+            throw new ValidationException(ErrorConstants.SAME_SHIPPER_CONSIGNEE);
 
         if(!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
