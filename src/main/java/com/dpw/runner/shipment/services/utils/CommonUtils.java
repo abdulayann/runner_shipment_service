@@ -2835,7 +2835,7 @@ public class CommonUtils {
     /**
      * Capitalizes the first letter of a string.
      */
-    private String capitalizeV3(String str) {
+    public String capitalizeV3(String str) {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
@@ -2883,22 +2883,16 @@ public class CommonUtils {
             }
         }
     }
-
-
     public void sendExcelFileViaEmail(Workbook workbook, String filenameWithTimestamp) {
         try {
             SendEmailBaseRequest request = new SendEmailBaseRequest();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
             out.close();
-
             MultipartFile multipartFile = new WorkbookMultipartFile(workbook, filenameWithTimestamp);
-
             request.setTo(UserContext.getUser().getEmail());
             request.setSubject("Export Excel");
             request.setFile(multipartFile);
-
-
             notificationService.sendEmail(request);
             log.info("Email sent with Excel attachment");
         } catch (Exception e) {

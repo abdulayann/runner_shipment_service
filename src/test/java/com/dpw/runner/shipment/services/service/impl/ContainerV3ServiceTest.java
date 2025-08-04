@@ -2240,4 +2240,56 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertEquals(mockConsolidationDetails, params1.getConsolidationDetails());
         assertEquals(mockWtVolResponse, params1.getOldShipmentWtVolResponse());
     }
+
+    @Test
+    void setUnassignedContainerParems_happyPath_shouldSetDetailsAndWtVol() throws RunnerException {
+        // Arrange
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Set.of(1L, 2L)); // Condition 1: not empty
+        params.setConsolidationDetails(null); // Condition 2: is null
+        params.setConsolidationId(123L);
+
+        ConsolidationDetails mockConsolidationDetails = new ConsolidationDetails();
+        ShipmentWtVolResponse mockWtVolResponse = new ShipmentWtVolResponse();
+
+        // Stub the mock service calls
+        when(consolidationV3Service.fetchConsolidationDetails(123L)).thenReturn(mockConsolidationDetails);
+        when(consolidationV3Service.calculateShipmentWtVol(mockConsolidationDetails)).thenReturn(mockWtVolResponse);
+
+        // Act
+        containerV3Service.setUnassignedContainerParems(params);
+
+        // Assert
+        // Verify that the service methods were called with the correct arguments
+        verify(consolidationV3Service, times(1)).fetchConsolidationDetails(123L);
+        verify(consolidationV3Service, times(1)).calculateShipmentWtVol(mockConsolidationDetails);
+
+        // Verify that the parameters object was updated correctly
+        assertEquals(mockConsolidationDetails, params.getConsolidationDetails());
+        assertEquals(mockWtVolResponse, params.getOldShipmentWtVolResponse());
+    }
+
+    @Test
+    void setUnassignedContainerParems_whenShipmentIdsAreEmpty_shouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Collections.emptySet());
+        params.setConsolidationDetails(null);
+        containerV3Service.setUnassignedContainerParems(params);
+        verify(consolidationV3Service, never()).fetchConsolidationDetails(any());
+        verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
+        assertEquals(Collections.emptySet(), params.getFclOrFtlShipmentIds());
+        assertEquals(null, params.getConsolidationDetails());
+        assertEquals(null, params.getOldShipmentWtVolResponse());
+    }
+
+    @Test
+    void setUnassignedContainerParems_whenConsolidationDetailsArePresent_shouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Set.of(1L)); // Condition 1: not empty
+        params.setConsolidationDetails(new ConsolidationDetails()); // Condition 2: not null
+        containerV3Service.setUnassignedContainerParems(params);
+        verify(consolidationV3Service, never()).fetchConsolidationDetails(any());
+        verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
+        assertEquals(1, params.getFclOrFtlShipmentIds().size());
+    }
 }

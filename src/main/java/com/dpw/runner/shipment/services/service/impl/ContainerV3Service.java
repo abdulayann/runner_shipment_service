@@ -1786,14 +1786,18 @@ public class ContainerV3Service implements IContainerV3Service {
                 }
             }
         }
+        setUnassignedContainerParems(unAssignContainerParams);
+        unAssignContainerParams.setOldContainersEntity(jsonHelper.convertValue(container, Containers.class));
+        containerV3Util.resetContainerDataForRecalculation(container);
+        return container;
+    }
+
+    public void setUnassignedContainerParems(UnAssignContainerParams unAssignContainerParams) throws RunnerException {
         if(!setIsNullOrEmpty(unAssignContainerParams.getFclOrFtlShipmentIds()) && Objects.isNull(unAssignContainerParams.getConsolidationDetails())) {
             ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(unAssignContainerParams.getConsolidationId());
             unAssignContainerParams.setConsolidationDetails(consolidationDetails);
             unAssignContainerParams.setOldShipmentWtVolResponse(consolidationV3Service.calculateShipmentWtVol(consolidationDetails));
         }
-        unAssignContainerParams.setOldContainersEntity(jsonHelper.convertValue(container, Containers.class));
-        containerV3Util.resetContainerDataForRecalculation(container);
-        return container;
     }
 
     private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
@@ -1928,7 +1932,6 @@ public class ContainerV3Service implements IContainerV3Service {
         log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
                 tenantSettings.getLogicAppIntegrationEnabled(),
                 tenantSettings.getTransportOrchestratorEnabled());
-
         if (!canProcessContainers(containersList, tenantSettings)) {
             log.warn("Containers cannot be processed based on tenant settings. Exiting.");
             return;
@@ -1940,15 +1943,12 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         EventMessage eventMessage = new EventMessage();
         eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
-
         ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
         updateRequest.setContainers(payloadDetails);
         updateRequest.setTenantCode(UserContext.getUser().getCode());
         eventMessage.setContainerUpdateRequest(updateRequest);
-
         String jsonBody = jsonHelper.convertToJson(eventMessage);
         log.debug("JSON body created for event message: {}", jsonBody);
-
         if (Boolean.TRUE.equals(tenantSettings.getTransportOrchestratorEnabled())) {
             log.info("Producing message to Kafka for transport orchestrator.");
             producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
@@ -1967,10 +1967,8 @@ public class ContainerV3Service implements IContainerV3Service {
 
         for (Containers container : containersList) {
             Set<ShipmentDetails> shipments = container.getShipmentsList();
-
             boolean isValidContainer = StringUtility.isNotEmpty(container.getContainerNumber())
                     && ObjectUtils.isNotEmpty(shipments);
-
             if (!isValidContainer) {
                 continue;
             }
@@ -1986,10 +1984,8 @@ public class ContainerV3Service implements IContainerV3Service {
                 }
             }
         }
-
         return payloadDetails;
     }
-
     private ContainerPayloadDetails prepareQueuePayload(Containers container, String bookingRef) {
         ContainerBoomiUniversalJson jsonPayload = modelMapper.map(container, ContainerBoomiUniversalJson.class);
         if (Boolean.TRUE.equals(jsonPayload.getHazardous())) {
@@ -2053,7 +2049,6 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
                 .filter(Objects::nonNull).distinct().toList();
-
         List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
         Map<Long, List<ShipmentDetailsProjection>> containerIdToShipmentDetailsMap =
                 attachedShipmentDetails.stream()
@@ -2074,7 +2069,6 @@ public class ContainerV3Service implements IContainerV3Service {
                             .attachedShipmentType(detail.getShipmentType())
                             .build())
                     .toList();
-
             container.setAttachedShipmentResponses(attachedShipmentResponseList);
         }
     }
@@ -2085,7 +2079,6 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
     }
-
     public void updateContainerRequestWithDgFalse(ContainerV3Request containerRequest) {
         containerRequest.setUnNumber(null);
         containerRequest.setProperShippingName(null);
