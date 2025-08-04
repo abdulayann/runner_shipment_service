@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -55,6 +56,9 @@ class CargoServiceTest {
     @Mock
     private IConsolidationService consolidationService;
 
+    @Mock
+    private ICustomerBookingV3Service customerBookingV3Service;
+
     @InjectMocks
     private CargoService cargoService;
 
@@ -65,8 +69,10 @@ class CargoServiceTest {
         Containers container1 = new Containers();
         container1.setContainerCount(1L);
         container1.setContainerCode("20GP");
+        container1.setPackagesPerContainer(2L);
         Containers container2 = new Containers();
         container2.setContainerCount(2L);
+        container1.setPackagesPerContainer(2L);
         container2.setContainerCode("20GP");
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
         when(customerBooking.getContainersList()).thenReturn(Arrays.asList(container1, container2));
@@ -258,7 +264,9 @@ class CargoServiceTest {
         vwOb.setChargeableUnit("KG");
         vwOb.setVolumeWeight(BigDecimal.valueOf(150));
         vwOb.setVolumeWeightUnit("KG");
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -307,6 +315,8 @@ class CargoServiceTest {
         vwOb.setChargeableUnit("KG");
         vwOb.setVolumeWeight(BigDecimal.valueOf(150));
         vwOb.setVolumeWeightUnit("KG");
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -347,6 +357,8 @@ class CargoServiceTest {
         DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
@@ -385,6 +397,7 @@ class CargoServiceTest {
         DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
@@ -395,6 +408,7 @@ class CargoServiceTest {
         vwOb.setVolumeWeight(BigDecimal.valueOf(150));
         vwOb.setVolumeWeightUnit("KG");
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -443,6 +457,8 @@ class CargoServiceTest {
         vwOb.setVolumeWeight(BigDecimal.valueOf(150));
         vwOb.setVolumeWeightUnit("KG");
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -486,6 +502,8 @@ class CargoServiceTest {
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
         vwOb.setChargeable(BigDecimal.TEN);

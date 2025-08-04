@@ -468,6 +468,20 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setContainers(containerCount);
             customerBooking.setTeuCount(teuCount);
             customerBooking.setContainersList(containersList);
+            List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
+            boolean ifAnyPackMissedWeight = false;
+            if(packingList.isEmpty()) {
+                customerBooking.setPackages(getTotalContainerPackages(containersList));
+                for(Packing pack: packingList) {
+                    if(Objects.isNull(pack.getCargoWeightPerPack())) {
+                        ifAnyPackMissedWeight = true;
+                        break;
+                    }
+                }
+            }
+            if(!ifAnyPackMissedWeight) {
+                customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+            }
             customerBookingDao.save(customerBooking);
         }
     }
@@ -2336,6 +2350,32 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         customerBooking.setContainers(getTotalContainerCount(containersList));
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
+        customerBooking.setPackages(getTotalContainerPackages(containersList));
+        customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+    }
+
+    public BigDecimal getTotalCargoWeight(List<Containers> containersList) {
+        BigDecimal totalCargoWeight = BigDecimal.ZERO;
+
+        for (Containers container : containersList) {
+            BigDecimal containerCount = BigDecimal.valueOf(container.getContainerCount());
+            BigDecimal weightPerContainer = container.getCargoWeightPerContainer();
+            BigDecimal totalLineCargoWeight = containerCount.multiply(weightPerContainer);
+
+            totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
+        }
+
+        return totalCargoWeight;
+    }
+
+    public Long getTotalContainerPackages(List<Containers> containersList) {
+        long totalLinePackages;
+        long totalCargoSummaryPackages = 0L;
+        for(Containers container: containersList) {
+            totalLinePackages = container.getContainerCount() * container.getPackagesPerContainer();
+            totalCargoSummaryPackages += totalLinePackages;
+        }
+        return totalCargoSummaryPackages;
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {

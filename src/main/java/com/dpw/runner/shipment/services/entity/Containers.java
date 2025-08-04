@@ -385,6 +385,20 @@ public class Containers extends MultiTenancy {
     @Column(name = "pra_status")
     private ContainerPraStatus praStatus;
 
+    @Column(name = "packages_per_container")
+    private Long packagesPerContainer;
+
+    @Column(name = "container_package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String containerPackageType;
+
+    @Column(name = "cargo_weight_per_container")
+    private BigDecimal cargoWeightPerContainer;
+
+    @Column(name = "container_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
+    private String containerWeightUnit;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
