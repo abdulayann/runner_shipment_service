@@ -323,28 +323,16 @@ public class HblService implements IHblService {
                 .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
 
         // Check mandatory conditions (Sea + Export + has containers)
-        if (!isSeaExportShipment(shipment) ||
-                shipment.getContainersList() == null ||
-                shipment.getContainersList().isEmpty()) {
+        if (!isSeaExportShipment(shipment) || shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) {
             return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
         }
-
         // Find containers missing all seals
-        List<String> containersWithoutSeals = shipment.getContainersList().stream()
-                .filter(this::isSealEmpty)
-                .map(Containers::getContainerNumber)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
+        List<String> containersWithoutSeals = shipment.getContainersList().stream().filter(this::isSealEmpty).map(Containers::getContainerNumber).filter(Objects::nonNull).collect(Collectors.toList());
         // Return warning only if containers are missing seals
         if (!containersWithoutSeals.isEmpty()) {
             return ResponseEntity.ok(
-                    RunnerResponse.builder().success(true)
-                            .warning("Seal Number not entered against the Container Number - " +
-                                    String.join(", ", containersWithoutSeals))
-                            .build());
+                    RunnerResponse.builder().success(true).warning("Seal Number not entered against the Container Number - " + String.join(", ", containersWithoutSeals)).build());
         }
-
         return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
     }
 

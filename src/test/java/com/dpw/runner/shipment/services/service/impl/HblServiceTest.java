@@ -1429,20 +1429,20 @@ void testValidateSealNumberWarning_containersMissingSeals() {
         container.setContainerNumber("CTN000");
         // IMPORT direction
         ShipmentDetails importShipment = mock(ShipmentDetails.class);
-        when(importShipment.getTransportMode()).thenReturn("SEA");
-        when(importShipment.getDirection()).thenReturn("IMP");
+        when(importShipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(importShipment.getDirection()).thenReturn(Constants.DIRECTION_IMP);
         importShipment.setContainersList(new HashSet<>(Arrays.asList(container)));
 
         // No containers
         ShipmentDetails emptyShipment = mock(ShipmentDetails.class);
-        when(emptyShipment.getTransportMode()).thenReturn("SEA");
-        when(emptyShipment.getDirection()).thenReturn("EXP");
+        when(emptyShipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(emptyShipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
         when(emptyShipment.getContainersList()).thenReturn(Collections.emptySet());
 
         //  Null containers
         ShipmentDetails nullShipment = mock(ShipmentDetails.class);
-        when(nullShipment.getTransportMode()).thenReturn("SEA");
-        when(nullShipment.getDirection()).thenReturn("EXP");
+        when(nullShipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(nullShipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
         when(nullShipment.getContainersList()).thenReturn(null);
 
         // Common mock
@@ -1455,6 +1455,13 @@ void testValidateSealNumberWarning_containersMissingSeals() {
             RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
             assertEquals(200, response.getStatusCodeValue());
             assertNull(responseBody.getWarning());
+        });
+    }
+    @Test
+     void testErrorCaseForSealVal() {
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            hblService.validateSealNumberWarning(1L);
         });
     }
 
