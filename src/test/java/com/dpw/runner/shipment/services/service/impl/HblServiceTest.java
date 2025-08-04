@@ -1405,7 +1405,7 @@ void testValidateSealNumberWarning_containersMissingSeals() {
 }
 
     @Test
-    public void testValidateSealNumberWarning_AllContainersHaveSeals() {
+     void testValidateSealNumberWarning_AllContainersHaveSeals() {
         Containers container = new Containers();
         container.setContainerNumber("CTN789");
         container.setCarrierSealNumber("SEAL789");
@@ -1424,7 +1424,7 @@ void testValidateSealNumberWarning_containersMissingSeals() {
     }
 
     @Test
-    public void testValidateSealNumberWarning_NoContainers() {
+     void testValidateSealNumberWarning_NoContainers() {
         ShipmentDetails shipment = mock(ShipmentDetails.class);
         when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
         when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
