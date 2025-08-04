@@ -3726,7 +3726,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return value != null ? value : defaultValue;
     }
 
-    private Optional<ConsolidationDetails> getOptionalConsolidationDetails(Long consoleId, String consoleGuid, boolean fromNte) throws AuthenticationException {
+    public Optional<ConsolidationDetails> getOptionalConsolidationDetails(Long consoleId, String consoleGuid, boolean fromNte) throws AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetails;
         if (consoleId != null) {
             if (fromNte) {
@@ -3777,7 +3777,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
+    public boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if (Objects.equals(currentTenant, consolidationDetails.getTenantId())) {
@@ -3967,7 +3967,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void sendEmailForPushRequestWithdrawl(Long shipmentId, List<Long> consolidationIds,
+    public void sendEmailForPushRequestWithdrawl(Long shipmentId, List<Long> consolidationIds,
                                                   Set<ShipmentRequestedType> requestedTypes, String withdrawRemarks) {
         Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap = new EnumMap<>(ShipmentRequestedType.class);
         Map<String, String> userEmailsMap = new HashMap<>();
@@ -3979,13 +3979,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(consolidationIds));
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         Map<Long, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
-        if (!listIsNullOrEmpty(consolidationDetails)) {
-            for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
-                consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
-                tenantIds.add(consolidationDetails1.getTenantId());
-                userNames.add(consolidationDetails1.getCreatedBy());
-            }
-        }
+        processConsolidationDetails(consolidationDetails, consolidationDetailsMap, tenantIds, userNames);
         userNames.add(shipmentDetails.get().getCreatedBy());
         userNames.add(shipmentDetails.get().getAssignedTo());
         tenantIds.add(shipmentDetails.get().getTenantId());
@@ -3999,6 +3993,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
+            }
+        }
+    }
+
+    public static void processConsolidationDetails(List<ConsolidationDetails> consolidationDetails, Map<Long, ConsolidationDetails> consolidationDetailsMap, Set<Integer> tenantIds, Set<String> userNames) {
+        if (!listIsNullOrEmpty(consolidationDetails)) {
+            for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
+                consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
+                tenantIds.add(consolidationDetails1.getTenantId());
+                userNames.add(consolidationDetails1.getCreatedBy());
             }
         }
     }
@@ -4073,14 +4077,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return null;
     }
 
-    private void updatePullRequests(ConsoleShipmentMapping consoleShip, List<ConsoleShipmentMapping> pullRequests, List<ConsoleShipmentMapping> pushRequests) {
+    public void updatePullRequests(ConsoleShipmentMapping consoleShip, List<ConsoleShipmentMapping> pullRequests, List<ConsoleShipmentMapping> pushRequests) {
         if (ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.equals(consoleShip.getRequestedType()))
             pullRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
         if (ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.equals(consoleShip.getRequestedType()))
             pushRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
     }
 
-    private void sendEmailForNonImportShipment(Long shipId, Long consoleId, String remarks, List<ConsoleShipmentMapping> pullRequests, Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsoleShipmentMapping> pushRequests) {
+    public void sendEmailForNonImportShipment(Long shipId, Long consoleId, String remarks, List<ConsoleShipmentMapping> pullRequests, Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsoleShipmentMapping> pushRequests) {
         if (!pullRequests.isEmpty()) {
             pullRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));
             sendEmailForPullRequestReject(shipId, pullRequests.stream().map(e -> e.getConsolidationId()).toList(), shipmentRequestedTypes,
@@ -4126,7 +4130,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setColoadingStation(ShipmentDetails request) {
+    public void setColoadingStation(ShipmentDetails request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
