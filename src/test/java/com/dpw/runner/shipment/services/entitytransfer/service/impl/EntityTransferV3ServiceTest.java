@@ -31,7 +31,9 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ContainerV3Service;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
+import com.dpw.runner.shipment.services.service.impl.PackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -161,6 +163,12 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Mock
     private ExecutorService executorService;
 
+    @Mock
+    private PackingV3Service packingV3Service;
+
+    @Mock
+    private ContainerV3Service containerV3Service;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
 
@@ -215,7 +223,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentSuccess() {
+    void testSendShipmentSuccess() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -247,7 +255,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentSuccess_WithTriangulationPartner() {
+    void testSendShipmentSuccess_WithTriangulationPartner() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -323,7 +331,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidationSuccess() {
+    void testSendConsolidationSuccess() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -363,7 +371,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testConsolidationInterBranchSuccess() {
+    void testConsolidationInterBranchSuccess() throws RunnerException {
         int mockTenantId = 10;
         UUID shipGuid = UUID.randomUUID();
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
@@ -422,7 +430,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
     @Test
     // change IMP -> EXP || EXP -> IMP if receiving branch == send to branch
-    void testConsolidationSuccessReverseDirectionInResponsePayload() {
+    void testConsolidationSuccessReverseDirectionInResponsePayload() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setReceivingBranch(66L);
@@ -1588,7 +1596,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentForNTESuccess() {
+    void testSendShipmentForNTESuccess() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1627,7 +1635,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipment_alreadyAcceptedNT() {
+    void testSendShipment_alreadyAcceptedNT() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1665,7 +1673,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipment_alreadyReTransferNT() {
+    void testSendShipment_alreadyReTransferNT() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1701,7 +1709,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidationForNTESuccess() {
+    void testSendConsolidationForNTESuccess() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -1745,7 +1753,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidation_For_InterBranchConsole_And_NTE() {
+    void testSendConsolidation_For_InterBranchConsole_And_NTE() throws RunnerException {
         int mockTenantId = 10;
         UUID shipGuid = UUID.randomUUID();
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
@@ -1810,7 +1818,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidationWithTriangulationPartner() {
+    void testSendConsolidationWithTriangulationPartner() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -1864,7 +1872,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
     @Test
-    void testSendConsolidation_alreadyAcceptedNT() {
+    void testSendConsolidation_alreadyAcceptedNT() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setTenantId(mockTenantId);
@@ -1910,7 +1918,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidation_alreadyRetransferNT() {
+    void testSendConsolidation_alreadyRetransferNT() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setTenantId(mockTenantId);

@@ -57,4 +57,5 @@ public interface IContainerV3Service {
     void pushContainersToDependentServices(List<Containers> containersList);
     ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
+    ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException;
 }

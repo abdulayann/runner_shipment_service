@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
@@ -148,6 +149,9 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String sourceBranchTenantName;
 
     private transient Map<String, Object> masterData;
+
+    private PackSummaryV3Response packingSummary;
+
     private Integer sendToBranch;
 
     private List<String> additionalDocs;
