@@ -25,6 +25,13 @@ public class StringUtility {
         return value.toUpperCase();
     }
 
+    public static String toLowerCase(String value) {
+        if(isEmpty(value)){
+            return null;
+        }
+        return value.toLowerCase();
+    }
+
     public static String getRandomString(int length) {
         int lowerLimit = 48;
         int upperLimit = 122;

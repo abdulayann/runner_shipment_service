@@ -96,7 +96,7 @@ class UpdateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdateV2(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -122,7 +122,33 @@ class UpdateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdateV2(joinPoint, commonRequestModel));
+    }
+
+    @Test
+    void testUpdateShipmentAspectV3() throws RunnerException {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Update:Air Shipment:ImportAirShipmentUpdate")));
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        mockShipment.setTransportMode("AIR");
+        mockShipment.setIsDomestic(false);
+        mockShipment.setDirection("EXP");
+        mockShipment.setShipmentType("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        updateValidateAspect = new UpdateValidateAspect();
+        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdateV3(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -148,7 +174,7 @@ class UpdateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel);
+        updateValidateAspect.validateShipmentUpdateV2(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
@@ -171,7 +197,7 @@ class UpdateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel);
+        updateValidateAspect.validateShipmentUpdateV2(joinPoint, commonRequestModel);
         assertNotNull(commonRequestModel);
     }
 
