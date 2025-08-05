@@ -149,7 +149,7 @@ public class PackingValidationV3Util {
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
         }
-        if(packingRequest.getCommodity().equals(packingRequest.getCommodityGroup())) {
+        if(Objects.isNull(packingRequest.getCommodity())) {
             throw new ValidationException("Please select Commodity in the Packages to save");
         }
         return shipmentDetails.get();

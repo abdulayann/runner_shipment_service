@@ -2398,7 +2398,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Long shipmentId = shipmentDetails.getId();
             if (consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
-                processPacksAndContainers(customerBookingV3Request, containerList, consolidationId, shipmentDetails);
             }
             shipmentDao.save(shipmentDetails, false);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -2452,22 +2451,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             List<Notes> notes = jsonHelper.convertValueToList(notesRequests, Notes.class);
             notesDao.saveAll(notes);
         }
-    }
-
-    private void processPacksAndContainers(CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId, ShipmentDetails shipmentDetails) throws RunnerException {
-
-        if (customerBookingV3Request.getPackages() != 0L && (customerBookingV3Request.getPackages() < containerList.size())) {
-            throw new ValidationException("Booking packages should not be lesser than the container count. Please enter right amount.");
-        }
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        String packUnit = !isStringNullOrEmpty(v1TenantSettingsResponse.getDefaultPackUnit()) ? v1TenantSettingsResponse.getDefaultPackUnit() : PackingConstants.PKG;
-
-        List<Containers> containersArrayList = jsonHelper.convertValueToList(containerList, Containers.class);
-        for (Containers container : containersArrayList) {
-            containerV3Util.resetContainerDataForRecalculation(container);
-        }
-        containerDao.saveAll(containersArrayList);
-        shipmentDetails.setContainersList(new HashSet<>(containersArrayList));
     }
 
     private void assignShipmentIdToPacks(List<PackingV3Request> packingList, Long consolidationId) {

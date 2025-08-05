@@ -161,7 +161,6 @@ class PackingValidationV3UtilTest {
     @Test
     void testValidateModule_ShouldThrowErrorWithoutValidCommodity() {
         request.setShipmentId(100L);
-        request.setCommodity("CommodityGroup");
         request.setCommodityGroup("CommodityGroup");
         when(shipmentService.findById(100L)).thenReturn(Optional.of(new ShipmentDetails()));
 
