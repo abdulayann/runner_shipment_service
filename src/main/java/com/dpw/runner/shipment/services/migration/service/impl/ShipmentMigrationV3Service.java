@@ -171,11 +171,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+            //Existing values from Additional Details → HBL Details → Agent Reference field should be migrated to the References section with the type AGR
             if (StringUtils.isNotBlank(shipmentDetails.getAdditionalDetails().getAgentReference())) {
                 saveReferenceData(shipmentDetails, shipmentDetails.getAdditionalDetails().getAgentReference(), "AGR");
             }
         }
 
+        //Existing values from Pickup → Other Info → UCR Reference field should be migrated to the References section with the type UCR
         if (Objects.nonNull(shipmentDetails.getPickupDetails()) &&
                 StringUtils.isNotBlank(shipmentDetails.getPickupDetails().getUcrReference())) {
             saveReferenceData(shipmentDetails, shipmentDetails.getPickupDetails().getUcrReference(), "UCR");
