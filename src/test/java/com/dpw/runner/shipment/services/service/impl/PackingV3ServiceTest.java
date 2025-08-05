@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -63,6 +64,9 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
@@ -1301,5 +1305,41 @@ class PackingV3ServiceTest extends CommonMocks {
         ContainerResponse containerResponse = packingV3Service.assignPackagesContainers(assignedContainerRequest);
         assertEquals(expectedResponse, containerResponse);
         Mockito.verify(containerV3Service).assignContainers(assignedContainerRequest, Constants.CONSOLIDATION_PACKING);
+    }
+
+    @Test
+    void testCalculateCargoSummary_FCL() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(123L).build();
+        ShipmentDetails shipmentDetail = new ShipmentDetails();
+        shipmentDetail.setDirection(DIRECTION_EXP);
+        shipmentDetail.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetail.setShipmentType(CARGO_TYPE_FCL);
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setNoOfPacks(23);
+
+        when(commonUtils.isSeaFCLOrRoadFTL(TRANSPORT_MODE_SEA, CARGO_TYPE_FCL)).thenReturn(true);
+        when(shipmentService.calculateShipmentSummary(anyString(), any(), any())).thenReturn(cargoDetailsResponse);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetail));
+        var resp = packingV3Service.calculateCargoSummary(commonGetRequest);
+        assertEquals(23, resp.getNoOfPacks());
+
+    }
+
+    @Test
+    void testCalculateCargoSummary_LCL() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(123L).build();
+        ShipmentDetails shipmentDetail = new ShipmentDetails();
+        shipmentDetail.setDirection(DIRECTION_EXP);
+        shipmentDetail.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetail.setShipmentType(CARGO_TYPE_LCL);
+        shipmentDetail.setPackingList(List.of(new Packing()));
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setNoOfPacks(23);
+
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        when(commonUtils.isSeaFCLOrRoadFTL(TRANSPORT_MODE_SEA, CARGO_TYPE_LCL)).thenReturn(false);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetail));
+        var resp = packingV3Service.calculateCargoSummary(commonGetRequest);
+        assertEquals(TRANSPORT_MODE_SEA, resp.getTransportMode());
     }
 }

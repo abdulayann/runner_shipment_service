@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -208,6 +209,10 @@ public class PackingV3Service implements IPackingV3Service {
         if (!CommonUtils.listIsNullOrEmpty(packings) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
             boolean isDelete = shipmentDetails == null;
             shipmentDetails = getShipment(shipmentDetails, packings.get(0).getShipmentId());
+            if(shipmentDetails != null && Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
+            }
             List<Packing> finalPackings = updateCargoDetailsInShipment(packings, shipmentDetails);
             packingValidationV3Util.validatePackageAfterSave(shipmentDetails, finalPackings);
             if (checkIfLCLConsolidationEligible(shipmentDetails)) {
@@ -315,6 +320,29 @@ public class PackingV3Service implements IPackingV3Service {
             shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
         }
         return packings;
+    }
+
+    @Override
+    public CargoDetailsResponse calculateCargoSummary(CommonGetRequest commonGetRequest) throws RunnerException {
+        Long shipId = commonGetRequest.getId();
+        var shipment = shipmentDao.findById(shipId);
+        if(shipment.isEmpty()) {
+            throw new DataRetrievalFailureException("No shipment found for id " + shipId);
+        }
+        ShipmentDetails shipmentDetails = shipment.get();
+        List<Packing> packings = shipmentDetails.getPackingList();
+        boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        if (isSeaFCLOrRoadFTL) {
+            cargoDetailsResponse = shipmentService.calculateShipmentSummary(shipmentDetails.getTransportMode(), packings, shipmentDetails.getContainersList());
+        } else if(!CollectionUtils.isEmpty(packings)) {
+            cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
+            cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
+            cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
+            cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
+            cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
+        }
+        return cargoDetailsResponse;
     }
 
     @Override
@@ -1576,6 +1604,10 @@ public class PackingV3Service implements IPackingV3Service {
             for(Long shipmentId: unAssignContainerParams.getFclOrFtlShipmentIds()) {
                 ShipmentDetails shipmentDetails = unAssignContainerParams.getShipmentDetailsMap().get(shipmentId);
                 shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+                if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                    shipmentDetails.setTriggerMigrationWarning(false);
+                    shipmentDao.updateTriggerMigrationWarning(shipmentId);
+                }
             }
             consolidationV3Service.updateConsolidationCargoSummary(unAssignContainerParams.getConsolidationDetails(), unAssignContainerParams.getOldShipmentWtVolResponse());
         }

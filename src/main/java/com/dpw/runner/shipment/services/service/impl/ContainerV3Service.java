@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -260,6 +261,10 @@ public class ContainerV3Service implements IContainerV3Service {
         if (SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = processShipmentModule(containerRequest);
             consoleType = shipmentDetails.getJobType();
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
+            }
         }
 
         // Validate container uniqueness
@@ -413,6 +418,10 @@ public class ContainerV3Service implements IContainerV3Service {
         if (SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = processShipmentModule(containerRequestList.get(0));
             consoleType = shipmentDetails.getJobType();
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
+            }
         }
 
         List<Containers> containersList = getSiblingContainers(containerRequestList.get(0), module, consoleType);
@@ -518,6 +527,10 @@ public class ContainerV3Service implements IContainerV3Service {
             List<Containers> shipmentContainers = containerDao.findByShipmentId(shipmentId);
 
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentId);
+            }
         }
 
         // update console achieved data
@@ -1810,6 +1823,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 if(shipmentIdsForAttachment.contains(shipmentDetails.getId()))
                     containersList.add(container);
                 shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails, containersList);
+                if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                    shipmentDetails.setTriggerMigrationWarning(false);
+                    shipmentDao.updateTriggerMigrationWarning(shipmentId);
+                }
             }
             consolidationV3Service.updateConsolidationCargoSummary(assignContainerParams.getConsolidationDetails(), assignContainerParams.getOldShipmentWtVolResponse());
         }

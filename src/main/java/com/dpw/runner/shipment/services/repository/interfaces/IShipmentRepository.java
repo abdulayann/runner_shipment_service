@@ -303,4 +303,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Transactional
     @Query(value = "DELETE FROM triangulation_partner_shipment WHERE shipment_id = ?1", nativeQuery = true)
     void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update shipment_details set trigger_migration_warning = false WHERE id = ?1", nativeQuery = true)
+    void updateTriggerMigrationWarning(Long shipmentId);
+
 }

@@ -25,6 +25,7 @@ public class ContainerConstants {
     public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
     public static final String UN_ASSIGN_PACKAGES = "/unAssignPackages";
     public static final String UN_ASSIGN_PACKAGES_SHIPMENT = "/shipment-unAssign-packages";
+    public static final String CALCULATE_CARGO_SUMMARY = "calculate-cargo-summary";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
     public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";

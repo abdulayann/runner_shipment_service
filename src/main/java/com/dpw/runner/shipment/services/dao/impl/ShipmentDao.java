@@ -1016,4 +1016,9 @@ public class ShipmentDao implements IShipmentDao {
     public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
         shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
     }
+
+    @Override
+    public void updateTriggerMigrationWarning(Long shipmentId) {
+        shipmentRepository.updateTriggerMigrationWarning(shipmentId);
+    }
 }

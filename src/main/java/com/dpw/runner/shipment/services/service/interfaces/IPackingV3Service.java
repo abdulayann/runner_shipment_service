@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
@@ -60,6 +61,7 @@ public interface IPackingV3Service {
     List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
     CargoDetailsResponse calculateCargoDetails(List<Packing> packings, CargoDetailsResponse response) throws RunnerException;
+    CargoDetailsResponse calculateCargoSummary(CommonGetRequest commonGetRequest) throws RunnerException;
 
     void processPacksAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails);
 
