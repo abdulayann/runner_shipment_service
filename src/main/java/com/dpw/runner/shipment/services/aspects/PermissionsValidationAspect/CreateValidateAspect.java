@@ -24,10 +24,10 @@ public class CreateValidateAspect {
         this.validateShipmentCreate(commonRequestModel);
     }
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.create(..)) && args(commonRequestModel)")
-    public void validateShipmentCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
-        this.validateShipmentCreate(commonRequestModel);
-    }
+//    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.create(..)) && args(commonRequestModel)")
+//    public void validateShipmentCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+//        this.validateShipmentCreate(commonRequestModel);
+//    }
 
     private void validateShipmentCreate(CommonRequestModel commonRequestModel) throws ValidationException {
         ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
