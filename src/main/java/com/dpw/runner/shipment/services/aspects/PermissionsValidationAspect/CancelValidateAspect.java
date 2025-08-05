@@ -33,7 +33,12 @@ public class CancelValidateAspect {
     public void validateShipmentCancelV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         this.validateShipmentCancel(commonRequestModel);
     }
-    
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.cancel(..)) && args(commonRequestModel)")
+    public void validateShipmentCancelV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+        this.validateShipmentCancel(commonRequestModel);
+    }
+
 
     public void validateShipmentCancel(CommonRequestModel commonRequestModel) throws RunnerException {
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CANCEL_PERMISSION);
