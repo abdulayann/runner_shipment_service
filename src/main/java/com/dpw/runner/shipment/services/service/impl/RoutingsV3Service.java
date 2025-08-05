@@ -1035,6 +1035,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         List<Routings> onCarriage = new ArrayList<>();
 
         for (Routings routing : reorderedList) {
+            if (routing.getCarriage() == null) {
+                throw new ValidationException("Routing carriage cannot be null");
+            }
             switch (routing.getCarriage().name()) {
                 case "PRE_CARRIAGE" -> preCarriage.add(routing);
                 case "MAIN_CARRIAGE" -> mainCarriage.add(routing);
