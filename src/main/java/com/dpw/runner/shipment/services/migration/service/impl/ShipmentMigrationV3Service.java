@@ -228,54 +228,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
     }
 
-    private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
-        List<Packing> packingList = shipmentDetails.getPackingList();
-        packingList = packingList.stream().filter(p -> !Boolean.TRUE.equals(p.getIsDeleted())).toList();
-        int packLineItems = packingList.size();
-        if (packLineItems == 0) {
-            return;
-        }
-
-        BigDecimal shipmentWeight = shipmentDetails.getWeight();
-        BigDecimal shipmentVolume = shipmentDetails.getVolume();
-        BigDecimal shipmentNoOfPacks = shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentDetails.getNoOfPacks());
-
-        if (shipmentWeight == null) {
-            shipmentWeight = BigDecimal.ZERO;
-        }
-
-        if (shipmentVolume == null) {
-            shipmentVolume = BigDecimal.ZERO;
-        }
-
-        BigDecimal[] weightWithRemain = shipmentWeight.divideAndRemainder(BigDecimal.valueOf(packLineItems));
-        BigDecimal[] volumeWithRemain = shipmentVolume.divideAndRemainder(BigDecimal.valueOf(packLineItems));
-        BigDecimal[] noOfPacksWithRemain = shipmentNoOfPacks.divideAndRemainder(BigDecimal.valueOf(packLineItems));
-        if (noOfPacksWithRemain[0].equals(BigDecimal.ZERO)) {
-            noOfPacksWithRemain[0] = BigDecimal.ONE;
-            noOfPacksWithRemain[1] = BigDecimal.ZERO;
-        }
-
-        String volumeUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getVolumeUnit()) ? shipmentDetails.getVolumeUnit() : commonUtils.getDefaultVolumeUnit();
-        String weightUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getWeightUnit()) ? shipmentDetails.getWeightUnit() : commonUtils.getDefaultWeightUnit();
-        String packsType = commonUtils.getPacksUnit(shipmentDetails.getPacksUnit());
-
-        for (int i = 0; i < packLineItems; i++) {
-            if (i == packLineItems - 1) {
-                packingList.get(i).setWeight(weightWithRemain[0].add(weightWithRemain[1]));
-                packingList.get(i).setVolume(volumeWithRemain[0].add(volumeWithRemain[1]));
-                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0].add(noOfPacksWithRemain[1])));
-            } else {
-                packingList.get(i).setWeight(weightWithRemain[0]);
-                packingList.get(i).setVolume(volumeWithRemain[0]);
-                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0]));
-            }
-            packingList.get(i).setWeightUnit(weightUnit);
-            packingList.get(i).setVolumeUnit(volumeUnit);
-            packingList.get(i).setPacksType(packsType);
-        }
-    }
-
     private void createPackWithContainerInfo(Packing packing, Containers container) {
         packing.setPacks("0");
         packing.setPacksType(PackingConstants.PKG);
@@ -435,32 +387,30 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         List<Future<Long>> futures = new ArrayList<>();
 
-        shipmentIds.forEach(id -> {
-            futures.add(trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
+        shipmentIds.forEach(id -> futures.add(trxExecutor.runInAsync(() -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.getUser().setPermissions(new HashMap<>());
 
-                    return trxExecutor.runInTrx(() -> {
-                        log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, id);
-                        ShipmentDetails migrated = null;
-                        try {
-                            migrated = migrateShipmentV3ToV2(id);
-                        } catch (RunnerException e) {
-                            throw new RuntimeException(e);
-                        }
-                        log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, id, migrated.getId());
-                        return migrated.getId();
-                    });
-                } catch (Exception e) {
-                    log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            }));
-        });
+                return trxExecutor.runInTrx(() -> {
+                    log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, id);
+                    ShipmentDetails migrated = null;
+                    try {
+                        migrated = migrateShipmentV3ToV2(id);
+                    } catch (RunnerException e) {
+                        throw new RuntimeException(e);
+                    }
+                    log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, id, migrated.getId());
+                    return migrated.getId();
+                });
+            } catch (Exception e) {
+                log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
+                throw new IllegalArgumentException(e);
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        })));
 
         List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
         stats.put("Total Shipment Migrated", migratedIds.size());

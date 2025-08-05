@@ -154,14 +154,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             shp.getConsolidationList().add(console);
             shp.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
             shp.setTriggerMigrationWarning(true);
-//            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
         // Step 8: Mark consolidation itself as migrated and save
-//        console.setIsMigratedToV3(Boolean.TRUE);
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
         console.setTriggerMigrationWarning(true);
         consolidationRepository.save(console);
