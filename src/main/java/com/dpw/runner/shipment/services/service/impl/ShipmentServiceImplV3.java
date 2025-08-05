@@ -2280,6 +2280,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                     coLoadBookingReference(customerBookingRequest.getPartnerBkgNumber()).
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
+                    bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                     carrierBookingRef(customerBookingRequest.getCarrierBookingNumber()).
                     build();
             // Set Department in case single department is available
