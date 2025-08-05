@@ -9,7 +9,7 @@ WHERE consolidation_id = 63901;
 
 
 UPDATE awb
-SET awb_shipment_info = jsonb_set(awb_shipment_info, '{consigneeAddress2}', '"USCI+91310115717856770B"', true)
+SET awb_shipment_info = jsonb_set(awb_shipment_info, '{consigneeTaxRegistrationNumber}', '"91310115717856770B"', true)
 WHERE consolidation_id = 63901;
 
 
