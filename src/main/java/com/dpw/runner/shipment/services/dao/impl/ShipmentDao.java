@@ -292,7 +292,7 @@ public class ShipmentDao implements IShipmentDao {
     private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
         if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
             return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+        return false;
     }
 
     private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {

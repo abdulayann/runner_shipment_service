@@ -2646,7 +2646,7 @@ public class ShipmentService implements IShipmentService {
 
     public void airDGValidations(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Long> removedConsolIds,
                                     MutableBoolean isNewConsolAttached, Set<ConsolidationDetailsRequest> consolidationDetailsRequests) throws RunnerException {
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && !isAirDgUser()) {
+        if(!isAirDgUser()) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 if(!listIsNullOrEmpty(removedConsolIds) || Boolean.TRUE.equals(isNewConsolAttached.getValue()))
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
@@ -6878,8 +6878,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
-            return false;
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }
 
@@ -6895,8 +6893,6 @@ public class ShipmentService implements IShipmentService {
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             return true;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
-            return true;
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return true;
         if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
             return false;
@@ -7119,7 +7115,7 @@ public class ShipmentService implements IShipmentService {
     private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
         if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
             return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+        return false;
     }
 
     private boolean checkForDGShipmentAndAirDgFlag(ShipmentDetails shipment) {

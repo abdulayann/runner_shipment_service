@@ -248,7 +248,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
         if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
             return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+        return false;
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
