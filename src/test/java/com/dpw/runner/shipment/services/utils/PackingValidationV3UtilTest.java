@@ -151,9 +151,24 @@ class PackingValidationV3UtilTest {
     @Test
     void testValidateModule_validShipmentId() {
         request.setShipmentId(100L);
+        request.setCommodity("Commodity");
+        request.setCommodityGroup("CommodityGroup");
         when(shipmentService.findById(100L)).thenReturn(Optional.of(new ShipmentDetails()));
 
         assertDoesNotThrow(() -> packingValidationV3Util.validateModule(request, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testValidateModule_ShouldThrowErrorWithoutValidCommodity() {
+        request.setShipmentId(100L);
+        request.setCommodity("CommodityGroup");
+        request.setCommodityGroup("CommodityGroup");
+        when(shipmentService.findById(100L)).thenReturn(Optional.of(new ShipmentDetails()));
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateModule(request, Constants.SHIPMENT)
+        );
+        assertEquals("Please select Commodity in the Packages to save", ex.getMessage());
     }
 
     @Test
