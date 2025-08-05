@@ -552,7 +552,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    protected void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
+    public void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
         if (!CollectionUtils.isEmpty(containersList)) {
             setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
         }

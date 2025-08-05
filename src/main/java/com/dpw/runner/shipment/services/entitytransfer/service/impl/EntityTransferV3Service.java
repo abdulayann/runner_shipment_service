@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -1329,6 +1330,10 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         payload.setPackingSummary(packingV3Service.getPackSummaryV3Response(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), SHIPMENT, null, shipmentDetails.getId()));
         if(shipmentDetails.getContainersList()!=null && !shipmentDetails.getContainersList().isEmpty()) {
             payload.setContainerSummary(containerV3Service.getContainerSummaryResponse(new ArrayList<>(shipmentDetails.getContainersList()), true, NETWORK_TRANSFER));
+            ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+            shipmentService.setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetails.getContainersList());
+            payload.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+            payload.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         }
 
 
