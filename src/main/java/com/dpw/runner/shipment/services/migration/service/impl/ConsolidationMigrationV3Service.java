@@ -46,6 +46,8 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
+
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +56,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@Generated
 @SuppressWarnings("java:S112")
 public class ConsolidationMigrationV3Service implements IConsolidationMigrationV3Service {
 
@@ -224,6 +227,30 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         log.info("Distributed containers. Total after split: {}", splitContainers.size());
 
         // Step 5: Re-link containers <→ shipments for V3 structure
+        relinkContainerToShipment(containerGuidToShipments, guidToShipment, guidVsContainer);
+
+        // Step 6: Transform each Shipment to V3 (populates packingVsContainerGuid)
+        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
+            for (ShipmentDetails shipment : shipmentDetailsList) {
+                try {
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
+                } catch (Exception e) {
+                    log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
+                    throw new IllegalArgumentException("Shipment transformation failed", e);
+                }
+            }
+        }
+
+        log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
+
+        clonedConsole.setOpenForAttachment(true);
+        clonedConsole.setTriggerMigrationWarning(true);
+        clonedConsole.setIsLocked(false);
+        log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
+        return clonedConsole;
+    }
+
+    private void relinkContainerToShipment(Map<UUID, List<UUID>> containerGuidToShipments, Map<UUID, ShipmentDetails> guidToShipment, Map<UUID, Containers> guidVsContainer) {
         containerGuidToShipments.forEach((containerGuid, shipmentGuids) -> {
             for (UUID shipmentGuid : shipmentGuids) {
                 ShipmentDetails shipment = guidToShipment.get(shipmentGuid);
@@ -246,26 +273,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 }
             }
         });
-
-        // Step 6: Transform each Shipment to V3 (populates packingVsContainerGuid)
-        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
-            for (ShipmentDetails shipment : shipmentDetailsList) {
-                try {
-                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
-                } catch (Exception e) {
-                    log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
-                    throw new IllegalArgumentException("Shipment transformation failed", e);
-                }
-            }
-        }
-
-        log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
-
-        clonedConsole.setOpenForAttachment(true);
-        clonedConsole.setTriggerMigrationWarning(true);
-        clonedConsole.setIsLocked(false);
-        log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
-        return clonedConsole;
     }
 
     private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataRestoreService;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/restore")
 @Slf4j
+@Generated
 public class RestoreController {
 
     @Autowired

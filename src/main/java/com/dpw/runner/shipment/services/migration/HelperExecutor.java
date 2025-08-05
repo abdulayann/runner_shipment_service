@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.migration;
 
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -11,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @EnableAsync
 @Slf4j
+@Generated
 public class HelperExecutor {
 
     @Transactional

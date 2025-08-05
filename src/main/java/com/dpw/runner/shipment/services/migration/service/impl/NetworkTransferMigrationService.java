@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -30,6 +31,7 @@ import java.util.concurrent.Future;
 
 @Slf4j
 @Service
+@Generated
 public class NetworkTransferMigrationService implements INetworkTransferMigrationService {
 
     @Autowired

@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.col
 
 @Service
 @Slf4j
+@Generated
 public class MigrationV3Service implements IMigrationV3Service {
 
     @Autowired

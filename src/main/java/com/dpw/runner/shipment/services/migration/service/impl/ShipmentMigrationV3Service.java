@@ -33,8 +33,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +61,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 @Slf4j
 @Service
+@Generated
 @SuppressWarnings("java:S112")
 public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired

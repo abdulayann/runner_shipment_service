@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -40,6 +41,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 @Service
 @Slf4j
+@Generated
 public class CustomerBookingMigrationV3Service implements ICustomerBookingV3MigrationService {
     @Autowired
     ICustomerBookingDao customerBookingDao;
