@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {ShipmentControllerExternal.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class ShipmentControllerExternalTest {
+class ShipmentControllerExternalTest {
     @Mock
     IShipmentServiceV3 shipmentService;
     @InjectMocks
