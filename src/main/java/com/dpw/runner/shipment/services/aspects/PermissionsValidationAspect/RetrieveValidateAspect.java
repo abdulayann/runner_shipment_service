@@ -2,7 +2,10 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -21,23 +24,32 @@ public class RetrieveValidateAspect {
 
     @AfterReturning(pointcut = "execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.retireveShipmentData(..))",
             returning = "shipmentResponse")
-    public void validateShipmentRetrieve(ShipmentDetailsResponse shipmentResponse) throws ValidationException {
+    public void validateShipmentRetrieveV2(ShipmentDetailsResponse shipmentResponse) throws ValidationException {
+        this.validateShipmentRetrieve(
+                StringUtility.toLowerCase(shipmentResponse.getTransportMode()),
+                StringUtility.toLowerCase(shipmentResponse.getDirection()),
+                StringUtility.toLowerCase(shipmentResponse.getShipmentType()),
+                shipmentResponse.getIsDomestic()
+        );
+    }
+
+    @AfterReturning(pointcut = "execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.retireveShipmentData(..))",
+            returning = "shipmentResponse")
+    public void validateShipmentRetrieveV3(ShipmentRetrieveLiteResponse shipmentResponse) throws ValidationException {
+        this.validateShipmentRetrieve(
+                StringUtility.toLowerCase(shipmentResponse.getTransportMode()),
+                StringUtility.toLowerCase(shipmentResponse.getDirection()),
+                StringUtility.toLowerCase(shipmentResponse.getShipmentType()),
+                shipmentResponse.getIsDomestic()
+        );
+    }
+
+    public void validateShipmentRetrieve(String transportMode, String direction, String shipmentType, Boolean domesticType) throws ValidationException {
         log.info("Validating Retrieve permissions on shipment entity");
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        String transportMode = null;
-        String direction = null;
-        String shipmentType = null;
-        Boolean domesticType = null;
-        if (shipmentResponse.getTransportMode() != null)
-            transportMode = shipmentResponse.getTransportMode().toLowerCase();
-        if (shipmentResponse.getDirection() != null)
-            direction = shipmentResponse.getDirection().toLowerCase();
-        if (shipmentResponse.getShipmentType() != null)
-            shipmentType = shipmentResponse.getShipmentType().toLowerCase();
-        if (shipmentResponse.getIsDomestic() != null)
-            domesticType = shipmentResponse.getIsDomestic();
+
 
         List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
@@ -70,23 +82,31 @@ public class RetrieveValidateAspect {
 
     @AfterReturning(pointcut = "execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationService.retrieveConsolidationData(..))",
             returning = "consolidationResponse")
-    public void validateConsolidationRetrieve(ConsolidationDetailsResponse consolidationResponse) throws ValidationException {
+    public void validateConsolidationRetrieveForV2(ConsolidationDetailsResponse consolidationResponse) throws ValidationException {
+        this.validateConsolidationRetrieve(
+                StringUtility.toLowerCase(consolidationResponse.getTransportMode()),
+                StringUtility.toLowerCase(consolidationResponse.getShipmentType()),
+                StringUtility.toLowerCase(consolidationResponse.getContainerCategory()),
+                consolidationResponse.getIsDomestic()
+        );
+    }
+
+
+    @AfterReturning(pointcut = "execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service.retrieveById(..))",
+            returning = "consolidationResponse")
+    public void validateConsolidationRetrieveV3(ConsolidationDetailsV3Response consolidationResponse) throws ValidationException {
+        this.validateConsolidationRetrieve(
+                StringUtility.toLowerCase(consolidationResponse.getTransportMode()),
+                StringUtility.toLowerCase(consolidationResponse.getShipmentType()),
+                StringUtility.toLowerCase(consolidationResponse.getContainerCategory()),
+                consolidationResponse.getIsDomestic()
+        );
+    }
+    public void validateConsolidationRetrieve(String transportMode, String direction, String shipmentType, Boolean domesticType) throws ValidationException {
         log.info("Validating Retrieve permissions on consolidation entity");
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        String transportMode = null;
-        String direction = null;
-        String shipmentType = null;
-        Boolean domesticType = null;
-        if (consolidationResponse.getTransportMode() != null)
-            transportMode = consolidationResponse.getTransportMode().toLowerCase();
-        if (consolidationResponse.getShipmentType() != null)
-            direction = consolidationResponse.getShipmentType().toLowerCase();
-        if (consolidationResponse.getContainerCategory() != null)
-            shipmentType = consolidationResponse.getContainerCategory().toLowerCase();
-        if (consolidationResponse.getIsDomestic() != null)
-            domesticType = consolidationResponse.getIsDomestic();
 
         List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
