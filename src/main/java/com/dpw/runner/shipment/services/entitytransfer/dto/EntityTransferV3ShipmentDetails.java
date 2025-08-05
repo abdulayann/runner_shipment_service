@@ -214,5 +214,7 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String destinationSecondarySalesAgentEmail;
     private Integer slac;
     private Boolean isFrob;
+    private Long containerCount;
+    private BigDecimal teuCount;
 
 }
