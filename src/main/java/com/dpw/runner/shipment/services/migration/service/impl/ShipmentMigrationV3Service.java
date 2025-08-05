@@ -141,13 +141,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
-        // Business Logic for transformation
 
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
-
-//         Update Shipment Summary
-//        updateShipmentCargoSummary(shipmentDetails);
 
         updateTransportInstruction(shipmentDetails);
 
@@ -230,22 +226,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 pack.setVolumeUnit(Strings.isNullOrEmpty(pack.getVolumeUnit())? Constants.VOLUME_UNIT_M3: pack.getVolumeUnit());
             });
         }
-//        if (Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
-//            if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-//                createPacksWithContainerSummary(shipmentDetails, packingVsContainerGuid);
-//            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-//                createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
-//            }
-//
-//        } else {
-//            if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-//                redistributeSummaryToPacks(shipmentDetails);
-//            } else if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-//                createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
-//            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-//                removeExistingPacksAndCreateNewPacks(shipmentDetails, packingVsContainerGuid);
-//            }
-//        }
     }
 
     private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
@@ -296,54 +276,11 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
     }
 
-    private void createPacksForContainerLineItems(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        if (shipmentDetails.getPackingList() == null)
-            shipmentDetails.setPackingList(new ArrayList<>());
-        shipmentDetails.getContainersList().forEach(container -> {
-            Packing packing = new Packing();
-            packing.setGuid(UUID.randomUUID());
-            packing.setShipmentId(shipmentDetails.getId());
-            packing.setCreatedBy(shipmentDetails.getCreatedBy());
-            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
-            packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
-            shipmentDetails.getPackingList().add(packing);
-        });
-
-        // Distribute summary to packs equally
-        redistributeSummaryToPacks(shipmentDetails);
-    }
-
-    private void removeExistingPacksAndCreateNewPacks(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        // Delete Existing Packs
-        shipmentDetails.getPackingList().forEach(packing -> packing.setIsDeleted(true));
-        createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
-    }
-
-    private void createPacksWithContainerSummary(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        shipmentDetails.setPackingList(new ArrayList<>());
-        shipmentDetails.getContainersList().forEach(container -> {
-            Packing packing = new Packing();
-            packing.setGuid(UUID.randomUUID());
-            packing.setCreatedBy(shipmentDetails.getCreatedBy());
-            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
-            packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
-            // populate Container info to pack
-            createPackWithContainerInfo(packing, container);
-            shipmentDetails.getPackingList().add(packing);
-        });
-    }
-
     private void createPackWithContainerInfo(Packing packing, Containers container) {
-//        String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
         packing.setPacks("0");
         packing.setPacksType(PackingConstants.PKG);
         packing.setVolume(BigDecimal.ZERO);
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-//        packing.setWeight(container.getGrossWeight());
-//        packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
-//        packing.setVolume(container.getGrossVolume());
-//        packing.setVolumeUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossVolumeUnit()) ? container.getGrossVolumeUnit() : commonUtils.getDefaultVolumeUnit());
-        // TODO: handle default commodity
         packing.setCommodity(container.getCommodityCode());
     }
 
@@ -372,31 +309,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 shipmentDetails.getPackingList().add(packing);
             }
         }
-    }
-
-    private void updateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
-        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
-        cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
-        cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
-        cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
-        cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
-        List<Packing> packingList = shipmentDetails.getPackingList().stream().filter(packing -> !Boolean.TRUE.equals(packing.getIsDeleted())).toList();
-
-        cargoDetailsResponse = packingV3Service.calculateCargoDetails(packingList, cargoDetailsResponse);
-
-        // update to shipment fields
-        shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
-        shipmentDetails.setPacksUnit(cargoDetailsResponse.getPacksUnit());
-        shipmentDetails.setVolume(cargoDetailsResponse.getVolume());
-        shipmentDetails.setVolumeUnit(cargoDetailsResponse.getVolumeUnit());
-        shipmentDetails.setWeight(cargoDetailsResponse.getWeight());
-        shipmentDetails.setWeightUnit(cargoDetailsResponse.getWeightUnit());
-        shipmentDetails.setVolumetricWeight(cargoDetailsResponse.getVolumetricWeight());
-        shipmentDetails.setVolumetricWeightUnit(cargoDetailsResponse.getVolumetricWeightUnit());
-        shipmentDetails.setChargable(cargoDetailsResponse.getChargable());
-        shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
-        shipmentDetails.setDgPacksCount(cargoDetailsResponse.getDgPacks());
-        shipmentDetails.setDgPacksUnit(cargoDetailsResponse.getDgPacksUnit());
     }
 
     @Override

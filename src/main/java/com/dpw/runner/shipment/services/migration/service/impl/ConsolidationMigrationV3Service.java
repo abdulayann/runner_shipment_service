@@ -263,18 +263,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
 
-//        // Step 7: Attach packings to correct containers using packingVsContainerGuid
-//        assignPackingsToContainers(shipmentDetailsList, packingVsContainerGuid, guidVsContainer);
-//        log.info("Packings assigned to containers for Consolidation [guid={}]", consolGuid);
-
-        // Step 8: Update console-level summary like weight/volume/counts/etc.
-//        try {
-//            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
-//        } catch (Exception e) {
-//            log.error("Failed to compute achieved quantities for Consolidation [guid={}]", consolGuid, e);
-//            throw new IllegalArgumentException("Summary calculation failed", e);
-//        }
-
         clonedConsole.setOpenForAttachment(true);
         clonedConsole.setTriggerMigrationWarning(true);
         clonedConsole.setIsLocked(false);
@@ -292,66 +280,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
         shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
         shipmentDetails.setLatestArrivalTime(console.getLatDate());
-    }
-
-    private void assignPackingsToContainers(List<ShipmentDetails> shipmentDetailsList, Map<UUID, UUID> packingVsContainerGuid, Map<UUID, Containers> guidVsContainer) {
-
-        log.info("Starting packing-to-container assignment. Packings to map: {}", packingVsContainerGuid.size());
-
-        // Step 1: Pre-clear container fields to re-aggregate packing data from scratch
-        packingVsContainerGuid.forEach((packGuid, containerGuid) -> {
-            Containers container = guidVsContainer.get(containerGuid);
-            if (container != null) {
-                container.setGrossWeight(BigDecimal.ZERO);
-                container.setGrossWeightUnit(null);
-                container.setGrossVolume(BigDecimal.ZERO);
-                container.setGrossVolumeUnit(null);
-                container.setPacks(null);
-                container.setPacksType(null);
-                log.info("Cleared aggregation fields for container [guid={}]", containerGuid);
-            } else {
-                log.info("Container [guid={}] not found while clearing pre-aggregation fields", containerGuid);
-            }
-        });
-
-        // Step 2: Process each shipment and assign their packings
-        for (ShipmentDetails shipment : shipmentDetailsList) {
-            UUID shipmentGuid = shipment.getGuid();
-            List<Packing> packingList = shipment.getPackingList();
-
-            if (packingList == null || packingList.isEmpty()) {
-                log.debug("No packings found for Shipment [guid={}], skipping...", shipmentGuid);
-                continue;
-            }
-
-            // Prepare packing lookup map for faster access
-            Map<UUID, Packing> packingByGuid = packingList.stream()
-                    .collect(Collectors.toMap(Packing::getGuid, Function.identity()));
-
-            for (Map.Entry<UUID, Packing> entry : packingByGuid.entrySet()) {
-                UUID packingGuid = entry.getKey();
-                Packing packing = entry.getValue();
-
-                UUID containerGuid = packingVsContainerGuid.get(packingGuid);
-                Containers container = guidVsContainer.get(containerGuid);
-
-                if (container == null) {
-                    log.warn("No container found for Packing [guid={}]. Skipping assignment.", packingGuid);
-                    continue;
-                }
-
-                try {
-                    // Add packing data to container aggregation (e.g. weight, volume)
-                    containerV3Service.addPackageDataToContainer(container, packing);
-                    log.debug("Assigned Packing data [guid={}] to Container [guid={}]", packingGuid, containerGuid);
-                } catch (RunnerException e) {
-                    log.error("Failed to assign Packing [guid={}] to Container [guid={}]", packingGuid, containerGuid, e);
-                    throw new IllegalArgumentException("Failed to add packing to container", e);
-                }
-            }
-        }
-
-        log.info("Completed packing data-to-container assignment for {} shipments", shipmentDetailsList.size());
     }
 
     @Override
@@ -506,7 +434,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) {
-        // TODO: Change Distribution logic
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
         BigDecimal totalPacks = BigDecimal.valueOf(Long.parseLong(original.getPacks()));
@@ -545,7 +472,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Step 2: Generate new containers for remaining (count - 1)
         for (int i = 1; i < count; i++) {
-//            boolean isLast = (i == count - 1);
 
             resultContainers.add(
                     createDistributedCopy(
