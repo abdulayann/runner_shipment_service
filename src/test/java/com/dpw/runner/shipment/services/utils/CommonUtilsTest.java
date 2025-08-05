@@ -147,12 +147,10 @@ import org.springframework.transaction.TransactionSystemException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -236,20 +234,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -5391,4 +5376,223 @@ class CommonUtilsTest {
         packing.setMarinePollutant(false);
         return packing;
     }
+
+    @Test
+    void testIsRoadFCLorFTL_FCL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FTL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_Valid() {
+        assertTrue(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_AIR, "FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FCL() {
+        assertTrue(commonUtils.isFCLorFTL("FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FTL() {
+        assertTrue(commonUtils.isFCLorFTL("FTL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_Invalid() {
+        assertFalse(commonUtils.isFCLorFTL("LCL"));
+        assertFalse(commonUtils.isFCLorFTL(null));
+        assertFalse(commonUtils.isFCLorFTL(""));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenSeaFCL_ReturnsTrue() {
+        assertTrue(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenNeither_ReturnsFalse() {
+        assertFalse(commonUtils.isSeaFCLOrRoadFTL("AIR", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotRoad() {
+        assertFalse(commonUtils.isRoadLCLorLTL("SEA", "LCL"));  // transport mode is not ROAD
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotLCLorLTL() {
+        assertFalse(commonUtils.isRoadLCLorLTL("ROAD", "FCL")); // cargo type not LCL or LTL
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenTransportModeAndCargoTypeInvalid() {
+        assertFalse(commonUtils.isRoadLCLorLTL("AIR", "FCL"));
+    }
+
+    @Test
+    void testCapitalizeV3() {
+        String result = commonUtils.capitalizeV3("example");
+        assertEquals("Example", result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings() {
+        List<String> result = CommonUtils.splitAndTrimStrings(" a , b, c ");
+        assertEquals(List.of("a", "b", "c"), result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings_EmptyInput() {
+        List<String> result = CommonUtils.splitAndTrimStrings("");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testIncludeRequiredColumns() {
+        Set<String> columns = new HashSet<>();
+        CommonUtils.includeRequiredColumns(columns);
+        assertTrue(columns.contains("id"));
+        assertTrue(columns.contains("guid"));
+    }
+
+    @Test
+    void testRoundBigDecimal() {
+        BigDecimal input = new BigDecimal("10.12345");
+        BigDecimal result = CommonUtils.roundBigDecimal(input, 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("10.12"), result);
+    }
+
+    @Test
+    void testDivide_NormalCase() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("5.00"), result);
+    }
+
+    @Test
+    void testDivide_DivideByZero() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(BigDecimal.ZERO, result);
+    }
+
+    @Test
+    void testCalculatePercentage_Normal() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("2"), new BigDecimal("4"), 2, RoundingMode.HALF_UP);
+        assertEquals(50.0, result);
+    }
+
+    @Test
+    void testCalculatePercentage_DivideByZero() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("1"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(0.0, result);
+    }
+
+    @Test
+    void shouldThrowException_WhenAirDGTrue_AndNotSecurity_AndHazardous_AndNotDgUser() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+        details.setContainsHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenAirSecurityTrue_AndCheckAirSecurityFails() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> mockedStatic = mockStatic(CommonUtils.class)) {
+            mockedStatic.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            mockedStatic.when(() -> CommonUtils.checkAirSecurityForShipment(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenConsolidationHazardousAndNotDgUser() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+        details.setHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        // If getShipmentSettingFromContext is static:
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+                // Mock static method getShipmentSettingFromContext() returning Optional
+                commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+
+                userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+                assertThrows(ValidationException.class, () ->
+                        commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+            }
+        }
+    }
+
+    @Test
+    void shouldThrowException_WhenConsolidationSecurityCheckFails() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            commonUtilsMock.when(() -> CommonUtils.checkAirSecurityForConsolidation(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+        }
+    }
+
+
 }

@@ -427,27 +427,21 @@ public class ContainerV3Util {
     }
 
     public BigDecimal getAddedWeight(BigDecimal initialWeight, String initialWeightUnit, BigDecimal addedWeight, String addedWeightUnit) throws RunnerException {
-        if(isStringNullOrEmpty(initialWeightUnit)) {
-            initialWeightUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+        if(Objects.isNull(addedWeight) || BigDecimal.ZERO.compareTo(addedWeight) == 0 || isStringNullOrEmpty(addedWeightUnit)) {
+            return initialWeight;
         }
         if(Objects.isNull(initialWeight)) {
             initialWeight = BigDecimal.ZERO;
-        }
-        if(Objects.isNull(addedWeight) || BigDecimal.ZERO.equals(addedWeight) || isStringNullOrEmpty(addedWeightUnit)) {
-            return initialWeight;
         }
         return initialWeight.add(new BigDecimal(convertUnit(Constants.MASS, addedWeight, addedWeightUnit, initialWeightUnit).toString()));
     }
 
     public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
-        if(isStringNullOrEmpty(initialVolumeUnit)) {
-            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getVolumeChargeableUnit();
+        if(Objects.isNull(addedVolume) || BigDecimal.ZERO.compareTo(addedVolume) == 0 || isStringNullOrEmpty(addedVolumeUnit)) {
+            return initialVolume;
         }
         if(Objects.isNull(initialVolume)) {
             initialVolume = BigDecimal.ZERO;
-        }
-        if(Objects.isNull(addedVolume) || BigDecimal.ZERO.equals(addedVolume) || isStringNullOrEmpty(addedVolumeUnit)) {
-            return initialVolume;
         }
         return initialVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, addedVolume, addedVolumeUnit, initialVolumeUnit).toString()));
     }
@@ -506,7 +500,53 @@ public class ContainerV3Util {
         if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
             containers.setGrossVolumeUnit(commonUtils.getDefaultVolumeUnit());
     }
-    
+
+    public void setWtVolUnits(Containers containers, Packing packing) throws RunnerException {
+        setContainerWeightUnit(containers, packing.getWeight(), packing.getWeightUnit());
+        setContainerVolumeUnit(containers, packing.getVolume(), packing.getVolumeUnit());
+        setContainerPacksUnit(containers, packing.getPacks(), packing.getPacksType());
+    }
+
+    public void setWtVolUnits(Containers containers, ShipmentDetails shipmentDetails) throws RunnerException {
+        setContainerWeightUnit(containers, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit());
+        setContainerVolumeUnit(containers, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit());
+        setContainerPacksUnit(containers, Objects.isNull(shipmentDetails.getNoOfPacks()) ? null : shipmentDetails.getNoOfPacks().toString(), shipmentDetails.getPacksUnit());
+    }
+
+    public void setContainerWeightUnit(Containers containers, BigDecimal sourceWeight, String sourceWeightUnit) throws RunnerException {
+        if(!isStringNullOrEmpty(sourceWeightUnit) && sourceWeight != null && sourceWeight.compareTo(BigDecimal.ZERO) != 0) {
+            if(containers.getGrossWeight() == null || BigDecimal.ZERO.compareTo(containers.getGrossWeight()) == 0) {
+                containers.setGrossWeightUnit(sourceWeightUnit);
+            } else {
+                if(!sourceWeightUnit.equalsIgnoreCase(containers.getGrossWeightUnit())) {
+                    String weightUnit = commonUtils.getDefaultWeightUnit();
+                    containers.setGrossWeight(new BigDecimal(convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), weightUnit).toString()));
+                    containers.setGrossWeightUnit(weightUnit);
+                }
+            }
+        }
+    }
+
+    public void setContainerVolumeUnit(Containers containers, BigDecimal sourceVolume, String sourceVolumeUnit) throws RunnerException {
+        if(!isStringNullOrEmpty(sourceVolumeUnit) && sourceVolume != null && sourceVolume.compareTo(BigDecimal.ZERO) != 0) {
+            if(containers.getGrossVolume() == null || BigDecimal.ZERO.compareTo(containers.getGrossVolume()) == 0) {
+                containers.setGrossVolumeUnit(sourceVolumeUnit);
+            } else {
+                if(!sourceVolumeUnit.equalsIgnoreCase(containers.getGrossVolumeUnit())) {
+                    String volumeUnit = commonUtils.getDefaultVolumeUnit();
+                    containers.setGrossVolume(new BigDecimal(convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), volumeUnit).toString()));
+                    containers.setGrossVolumeUnit(volumeUnit);
+                }
+            }
+        }
+    }
+
+    public void setContainerPacksUnit(Containers containers, String sourcePacks, String sourcePacksType) {
+        if(!isStringNullOrEmpty(sourcePacksType) && sourcePacks != null && Integer.parseInt(sourcePacks) != 0 &&
+                (isStringNullOrEmpty(containers.getPacks()) || Integer.parseInt(containers.getPacks()) == 0))
+            containers.setPacksType(sourcePacksType);
+    }
+
     public String getContainerNumberOrType(Long containerId) {
         return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
     }

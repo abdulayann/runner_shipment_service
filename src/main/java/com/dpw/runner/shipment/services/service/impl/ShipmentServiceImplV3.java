@@ -36,8 +36,10 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerResult;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -507,6 +509,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setImplicationList(implications);
         setConsoleAndNteInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
+        setCargoSummaryEditablbeFlags(shipmentDetailsEntity, response);
+        setShipmentSummaryWarnings(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
         setRoutingsLiteRespnse(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
@@ -524,6 +528,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
             shipmentRetrieveLiteResponse.setBookingId(getShipmentToBookingIdsMap(
                     List.of(shipmentDetails)).get(shipmentDetails.getId()));
+    }
+
+    private void setShipmentSummaryWarnings(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) throws RunnerException {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if (isSeaFCL || isRoadFCLorFTL) {
+            ShipmentSummaryWarningsResponse summaryWarningsResponse = getShipmentSummaryWarnings(shipmentDetails);
+            response.setSummaryWarningsResponse(summaryWarningsResponse);
+        }
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
@@ -575,6 +588,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
             }
             response.setIsPacksAvailable(Boolean.TRUE);
+        }
+    }
+
+    protected void setCargoSummaryEditablbeFlags(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if ((isSeaFCL || isRoadFCLorFTL) && !Boolean.TRUE.equals(response.getIsPacksAvailable())) {
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                boolean volumeMissingInContainers = false;
+                for (Containers containers: shipmentDetails.getContainersList()) {
+                    BigDecimal volume = Optional.ofNullable(containers.getGrossVolume()).orElse(BigDecimal.ZERO);
+                    if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                        volumeMissingInContainers = true;
+                        break;
+                    }
+                }
+                response.setIsVolumeEditable(volumeMissingInContainers);
+            } else {
+                response.setIsCargoSummaryEditable(true);
+            }
         }
     }
 
@@ -3600,7 +3633,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return value != null ? value : defaultValue;
     }
 
-    private Optional<ConsolidationDetails> getOptionalConsolidationDetails(Long consoleId, String consoleGuid, boolean fromNte) throws AuthenticationException {
+    public Optional<ConsolidationDetails> getOptionalConsolidationDetails(Long consoleId, String consoleGuid, boolean fromNte) throws AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetails;
         if (consoleId != null) {
             if (fromNte) {
@@ -3651,7 +3684,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
+    public boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if (Objects.equals(currentTenant, consolidationDetails.getTenantId())) {
@@ -3841,7 +3874,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void sendEmailForPushRequestWithdrawl(Long shipmentId, List<Long> consolidationIds,
+    public void sendEmailForPushRequestWithdrawl(Long shipmentId, List<Long> consolidationIds,
                                                   Set<ShipmentRequestedType> requestedTypes, String withdrawRemarks) {
         Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap = new EnumMap<>(ShipmentRequestedType.class);
         Map<String, String> userEmailsMap = new HashMap<>();
@@ -3853,13 +3886,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(consolidationIds));
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         Map<Long, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
-        if (!listIsNullOrEmpty(consolidationDetails)) {
-            for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
-                consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
-                tenantIds.add(consolidationDetails1.getTenantId());
-                userNames.add(consolidationDetails1.getCreatedBy());
-            }
-        }
+        processConsolidationDetails(consolidationDetails, consolidationDetailsMap, tenantIds, userNames);
         userNames.add(shipmentDetails.get().getCreatedBy());
         userNames.add(shipmentDetails.get().getAssignedTo());
         tenantIds.add(shipmentDetails.get().getTenantId());
@@ -3873,6 +3900,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
+            }
+        }
+    }
+
+    public static void processConsolidationDetails(List<ConsolidationDetails> consolidationDetails, Map<Long, ConsolidationDetails> consolidationDetailsMap, Set<Integer> tenantIds, Set<String> userNames) {
+        if (!listIsNullOrEmpty(consolidationDetails)) {
+            for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
+                consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
+                tenantIds.add(consolidationDetails1.getTenantId());
+                userNames.add(consolidationDetails1.getCreatedBy());
             }
         }
     }
@@ -3947,14 +3984,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return null;
     }
 
-    private void updatePullRequests(ConsoleShipmentMapping consoleShip, List<ConsoleShipmentMapping> pullRequests, List<ConsoleShipmentMapping> pushRequests) {
+    public void updatePullRequests(ConsoleShipmentMapping consoleShip, List<ConsoleShipmentMapping> pullRequests, List<ConsoleShipmentMapping> pushRequests) {
         if (ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.equals(consoleShip.getRequestedType()))
             pullRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
         if (ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.equals(consoleShip.getRequestedType()))
             pushRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
     }
 
-    private void sendEmailForNonImportShipment(Long shipId, Long consoleId, String remarks, List<ConsoleShipmentMapping> pullRequests, Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsoleShipmentMapping> pushRequests) {
+    public void sendEmailForNonImportShipment(Long shipId, Long consoleId, String remarks, List<ConsoleShipmentMapping> pullRequests, Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsoleShipmentMapping> pushRequests) {
         if (!pullRequests.isEmpty()) {
             pullRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));
             sendEmailForPullRequestReject(shipId, pullRequests.stream().map(e -> e.getConsolidationId()).toList(), shipmentRequestedTypes,
@@ -4000,7 +4037,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setColoadingStation(ShipmentDetails request) {
+    public void setColoadingStation(ShipmentDetails request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
@@ -4375,7 +4412,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
-        if (packsAvailable) {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if ((isSeaFCL || isRoadFCLorFTL)) {
+            applySeaRoadFCLCargoSummaryOverride(shipmentDetails, oldShipment, packsAvailable);
+        } else if (packsAvailable) {
             List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
             boolean isEmptyWeightPackAvailable = packings.stream()
                     .anyMatch(packing -> packing.getWeight() == null);
@@ -4394,5 +4435,190 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
             shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
         }
+    }
+
+    protected void applySeaRoadFCLCargoSummaryOverride(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, boolean packsAvailable) {
+        boolean allowOnlyVolumeOverride = false;
+        if (!Boolean.TRUE.equals(packsAvailable)) {
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                for (Containers containers: shipmentDetails.getContainersList()) {
+                    BigDecimal volume = Optional.ofNullable(containers.getGrossVolume()).orElse(BigDecimal.ZERO);
+                    if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                        allowOnlyVolumeOverride = true;
+                        break;
+                    }
+                }
+            } else {
+                return;
+            }
+        }
+        if (allowOnlyVolumeOverride) {
+            shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            shipmentDetails.setPacksUnit(oldShipment.getPacksUnit());
+            shipmentDetails.setDgPacksCount(oldShipment.getDgPacksCount());
+            shipmentDetails.setDgPacksUnit(oldShipment.getDgPacksUnit());
+            shipmentDetails.setWeight(oldShipment.getWeight());
+            shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
+            shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
+            shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
+        }
+    }
+
+    @Override
+    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException {
+        CargoDetailsResponse cargoDetailsResponse = calculateShipmentSummary(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), new HashSet<>(containersList));
+        if (cargoDetailsResponse != null)
+            updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+    }
+
+    @Override
+    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
+        calculateAndUpdateShipmentCargoSummary(shipmentDetails, shipmentDetails.getContainersList().stream().toList());
+    }
+
+    public CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        boolean isPacksAvailable = !CommonUtils.listIsNullOrEmpty(packingList);
+        boolean isContainersAvailable = !CommonUtils.setIsNullOrEmpty(containers);
+
+        if (!isPacksAvailable && !isContainersAvailable)
+            return null;
+
+        return isPacksAvailable
+                ? calculateCargoSummaryFromPacks(transportMode, packingList, containers, shipmentSettingsDetails, false)
+                : calculateCargoSummaryFromContainers(transportMode, containers, shipmentSettingsDetails);
+    }
+
+    public ShipmentSummaryWarningsResponse getShipmentSummaryWarnings(ShipmentDetails shipmentDetails) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        boolean isPacksAvailable = !CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList());
+        boolean isContainersAvailable = !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList());
+
+        CargoDetailsResponse packsSummary = null;
+        CargoDetailsResponse containerSummary = null;
+        if (isPacksAvailable && isContainersAvailable) {
+            packsSummary = calculateCargoSummaryFromPacks(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), shipmentDetails.getContainersList(), shipmentSettingsDetails, true);
+            containerSummary = calculateCargoSummaryFromContainers(shipmentDetails.getTransportMode(), shipmentDetails.getContainersList(), shipmentSettingsDetails);
+            return shipmentsV3Util.generateSummaryResponseWarnings(shipmentDetails, packsSummary, containerSummary);
+        }
+        return new ShipmentSummaryWarningsResponse();
+    }
+
+    public CargoDetailsResponse calculateCargoSummaryFromPacks(String transportMode, List<Packing> packingList, Set<Containers> containers, ShipmentSettingsDetails settingsDetails, boolean fromWarning) throws RunnerException {
+        List<String> weightUnits = packingList.stream()
+                .map(Packing::getWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<String> volumeUnits = packingList.stream()
+                .map(Packing::getVolumeUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String weightUnit = shipmentsV3Util.resolveUnit(weightUnits, consolidationV3Service.determineWeightChargeableUnit(settingsDetails));
+        String volumeUnit = shipmentsV3Util.resolveUnit(volumeUnits, Constants.VOLUME_UNIT_M3);
+
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        int packs = 0;
+        int dgPacks = 0;
+        boolean weightMissingInPacks = false;
+        ContainerResult result = new ContainerResult();
+
+        for (Packing packing : packingList) {
+            int count = Integer.parseInt(packing.getPacks());
+            packs += count;
+
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                dgPacks += count;
+            }
+
+            BigDecimal weight = Optional.ofNullable(packing.getWeight()).orElse(BigDecimal.ZERO);
+            BigDecimal volume = Optional.ofNullable(packing.getVolume()).orElse(BigDecimal.ZERO);
+
+            if (weight.compareTo(BigDecimal.ZERO) == 0) {
+                weightMissingInPacks = true;
+            }
+
+            totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, weight, packing.getWeightUnit(), weightUnit).toString()));
+            totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, volume, packing.getVolumeUnit(), volumeUnit).toString()));
+        }
+
+        // fallback to container weight if needed, skip when preparing Warning summary
+        if (!fromWarning && weightMissingInPacks && !CommonUtils.setIsNullOrEmpty(containers)) {
+            result = shipmentsV3Util.calculateWeightFromContainersFallBack(containers, weightUnit);
+            totalWeight = result.getTotalWeight();
+        }
+
+        List<String> packsTypes = shipmentsV3Util.getPacksType(packingList);
+        String packsType = packsTypes.get(0);
+        String dgPacksType = packsTypes.get(1);
+
+        if (!weightMissingInPacks)
+            result = shipmentsV3Util.getContainerResult(containers);
+
+        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
+
+        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vwOb, result, totalWeight, weightUnit, totalVolume, volumeUnit);
+    }
+
+    public CargoDetailsResponse calculateCargoSummaryFromContainers(String transportMode, Set<Containers> containersSet, ShipmentSettingsDetails settingsDetails) throws RunnerException {
+        if (CommonUtils.setIsNullOrEmpty(containersSet)) {
+            return new CargoDetailsResponse();
+        }
+
+        List<String> weightUnits = containersSet.stream()
+                .map(Containers::getGrossWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<String> volumeUnits = containersSet.stream()
+                .map(Containers::getGrossVolumeUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String weightUnit = shipmentsV3Util.resolveUnit(weightUnits, consolidationV3Service.determineWeightChargeableUnit(settingsDetails));
+        String volumeUnit = shipmentsV3Util.resolveUnit(volumeUnits, Constants.VOLUME_UNIT_M3);
+
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        int packs = 0;
+        int dgPacks = 0;
+        int containerCount = 0;
+        int dgContainerCount = 0;
+        boolean volumeMissingInContainers = false;
+        BigDecimal teus = BigDecimal.ZERO;
+        String dgPacksType = null;
+
+        for (Containers c : containersSet) {
+            int packsCount = c.getPacks() != null ? Integer.valueOf(c.getPacks()) : 0;
+            packs += packsCount;
+            containerCount += Math.toIntExact(c.getContainerCount());
+            if (Boolean.TRUE.equals(c.getHazardous())) {
+                dgContainerCount += Math.toIntExact(c.getContainerCount());
+                dgPacks += packsCount;
+            }
+            if(Objects.nonNull(c.getTeu()))
+                teus = teus.add(c.getTeu());
+
+            BigDecimal volume = Optional.ofNullable(c.getGrossVolume()).orElse(BigDecimal.ZERO);
+            if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                volumeMissingInContainers = true;
+            }
+
+            totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, c.getGrossWeight(), c.getGrossWeightUnit(), weightUnit).toString()));
+            totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, volume, c.getGrossVolumeUnit(), volumeUnit).toString()));
+        }
+
+        List<String> packsTypes = shipmentsV3Util.getPacksType(containersSet);
+        String packsType = packsTypes.get(0);
+        if (dgPacks > 0)
+            dgPacksType = packsTypes.get(1);
+        ContainerResult result = new ContainerResult(containerCount, dgContainerCount, teus);
+
+        VolumeWeightChargeable vw = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
+
+        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vw, result, totalWeight, weightUnit,
+                (!volumeMissingInContainers ? totalVolume : null), volumeUnit);
     }
 }

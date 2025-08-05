@@ -14,14 +14,13 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.http.auth.AuthenticationException;
 
 public interface IPackingV3Service {
 
@@ -62,5 +61,6 @@ public interface IPackingV3Service {
 
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
-    void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException;
+    ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException;
+    void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException;
 }

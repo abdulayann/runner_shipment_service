@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.mockito.Mock;
 
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 public class CommonMocks {
@@ -15,7 +16,7 @@ public class CommonMocks {
     public CommonUtils commonUtils;
 
     public void mockShipmentSettings() {
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
     }
 
     public void mockTenantSettings() {
