@@ -1,28 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
@@ -45,11 +22,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +30,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -65,6 +39,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {ShipmentControllerV3.class})
 @ExtendWith(MockitoExtension.class)
@@ -302,6 +295,56 @@ class ShipmentControllerV3Test {
         assertThrows(RuntimeException.class, () -> shipmentControllerV3.oceanDGApprovalResponse(request));
     }
 
+    @Test
+    void testCancelShipment_Success() throws RunnerException {
+        Long shipmentId = 123L;
+        ResponseEntity<IRunnerResponse> expectedResponse = new ResponseEntity<>(HttpStatus.OK);
+
+        try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
+            helper.when(ResponseHelper::buildSuccessResponse).thenReturn(expectedResponse);
+
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+
+            assertEquals(HttpStatus.OK, actualResponse.getStatusCode());
+            helper.verify(ResponseHelper::buildSuccessResponse);
+            verify(shipmentService).cancel(shipmentId);
+        }
+    }
+
+    @Test
+    void testCancelShipment_Failure_WithMessage() throws RunnerException {
+        Long shipmentId = 456L;
+        String errorMsg = "Invalid shipment";
+        ResponseEntity<IRunnerResponse> expectedResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+        doThrow(new RuntimeException(errorMsg)).when(shipmentService).cancel(shipmentId);
+
+        try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
+            helper.when(() -> ResponseHelper.buildFailedResponse(errorMsg)).thenReturn(expectedResponse);
+
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+
+            assertEquals(HttpStatus.BAD_REQUEST, actualResponse.getStatusCode());
+            helper.verify(() -> ResponseHelper.buildFailedResponse(errorMsg));
+        }
+    }
+
+    @Test
+    void testCancelShipment_Failure_WithNullMessage() throws RunnerException {
+        Long shipmentId = 789L;
+        ResponseEntity<IRunnerResponse> expectedResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+        doThrow(new RuntimeException()).when(shipmentService).cancel(shipmentId);
+
+        try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
+            helper.when(() -> ResponseHelper.buildFailedResponse("")).thenReturn(expectedResponse);
+
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+
+            assertEquals(HttpStatus.BAD_REQUEST, actualResponse.getStatusCode());
+            helper.verify(() -> ResponseHelper.buildFailedResponse(""));
+        }
+    }
 
 
 }

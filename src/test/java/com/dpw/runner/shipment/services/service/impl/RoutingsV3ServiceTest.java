@@ -956,4 +956,17 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(ValidationException.class, () -> routingsService.updateTransportInfoStatus(request));
     }
+
+    @Test
+    void testRoutingCarrierNull_Exception(){
+        Routings routingWithNullCarriage = new Routings();
+        routingWithNullCarriage.setGuid(UUID.randomUUID());
+        routingWithNullCarriage.setCarriage(null); // explicitly setting null
+
+        List<Routings> incomingRoutings = List.of(routingWithNullCarriage);
+        List<Routings> existingRoutings = List.of();
+
+        // Act
+        assertThrows(ValidationException.class, () -> routingsService.reOrderRoutings(incomingRoutings, existingRoutings));
+    }
 }

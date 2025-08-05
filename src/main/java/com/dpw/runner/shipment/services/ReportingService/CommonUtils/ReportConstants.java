@@ -1470,11 +1470,11 @@ public class ReportConstants {
     public static final String S_CONTROLLED = "S_Controlled";
     public static final String S_CONTROLLED_REF_NO = "S_ControlledRefNo";
     public static final String S_INCOTERM_LOCATION = "S_IncotermLocation";
-    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDrop-down";
-    public static final String S_CO_LOADER_NAME = "S_Co-LoaderName";
-    public static final String S_CO_LOADER_BKG_NO = "S_Co-LoaderBKGNo";
-    public static final String S_CO_LOADER_BL_NO = "S_Co-LoaderBLNo";
-    public static final String S_CO_LOADER_AWB_NO = "S_Co-LoaderAWBNo";
+    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDropdown";
+    public static final String S_CO_LOADER_NAME = "S_Co_LoaderName";
+    public static final String S_CO_LOADER_BKG_NO = "S_Co_LoaderBKGNo";
+    public static final String S_CO_LOADER_BL_NO = "S_Co_LoaderBLNo";
+    public static final String S_CO_LOADER_AWB_NO = "S_Co_LoaderAWBNo";
     public static final String S_BOOKING_AGENT = "S_BookingAgent";
     public static final String S_BOOKING_AGENT_BKG_NO = "S_BookingAgtBkgNo";
     public static final String S_BOOKING_AGENT_BL_NO = "S_BookingAgtBLNo";
