@@ -420,8 +420,12 @@ public class MasterDataImpl implements IMasterDataService {
         List<Object> criteria = request.getCriteria() ;
         List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request);
         if(tenantIds!=null && !tenantIds.isEmpty()) {
-            List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
-            criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
+            boolean isTenantConditionUpdated = false;
+            if(criteria!=null)
+                isTenantConditionUpdated = addTenantsToCriteria(criteria, tenantIds);
+            if(!isTenantConditionUpdated) {
+                criteria = convertToV1NotInCriteria("TenantId", tenantIds, null);
+            }
         }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
                 .sort(request.getSort())
@@ -435,6 +439,46 @@ public class MasterDataImpl implements IMasterDataService {
                 .build();
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
     }
+
+    public boolean addTenantsToCriteria(List<Object> criteria, List<Long> newTenants) {
+        // Case 1: criteria IS a single condition
+        if (isTenantCondition(criteria)) {
+            updateTenantIds(criteria, newTenants);
+            return true;
+        }
+
+        // Case 2: criteria contains multiple conditions (and/or + conditions)
+        for (Object item : criteria) {
+            if (item instanceof List<?> innerList && isTenantCondition(innerList)) {
+                updateTenantIds(innerList, newTenants);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isTenantCondition(Object obj) {
+        if (!(obj instanceof List<?> list)) return false;
+        if (list.size() < 3) return false;
+
+        Object fieldPart = list.get(0);
+        Object operator = list.get(1);
+
+        return fieldPart instanceof List
+                && ((List<?>) fieldPart).size() == 1
+                && "TenantId".equals(((List<?>) fieldPart).get(0))
+                && "not in".equals(operator);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateTenantIds(List<?> condition, List<Long> newTenants) {
+        Object valuePart = condition.get(2);
+        if (valuePart instanceof List<?> outerList && !outerList.isEmpty() && outerList.get(0) instanceof List<?>) {
+            List<Long> existing = (List<Long>) outerList.get(0);
+            existing.addAll(newTenants);
+        }
+    }
+
 
     @SuppressWarnings("java:S4838")
     public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values, List<Long> existingTenantIds) {
