@@ -1299,7 +1299,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
         payload.setShipmentWtVolResponse(consolidationService.calculateShipmentWtVol(consolidationDetails));
 
-        payload.setPackSummary(packingV3Service.getPackSummaryV3Response(packingList, consolidationDetails.getTransportMode(), CONSOLIDATION, consolidationDetails.getId(), null));
+        payload.setPackV3Summary(packingV3Service.getPackSummaryV3Response(packingList, consolidationDetails.getTransportMode(), CONSOLIDATION, consolidationDetails.getId(), null));
         payload.setContainerSummary(containerV3Service.getContainerSummaryResponse(new ArrayList<>(consolidationDetails.getContainersList()), false, NETWORK_TRANSFER));
     }
 

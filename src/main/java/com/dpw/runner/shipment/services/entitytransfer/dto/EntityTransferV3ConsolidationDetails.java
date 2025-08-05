@@ -127,6 +127,8 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
 
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
+
+    private PackSummaryV3Response packV3Summary;
     private ShipmentWtVolResponse shipmentWtVolResponse;
 
     private String modeOfBooking;
