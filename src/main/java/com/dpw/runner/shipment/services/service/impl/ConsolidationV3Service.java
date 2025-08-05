@@ -61,13 +61,6 @@ import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
-import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -103,7 +96,16 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -142,24 +144,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -194,7 +180,15 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -2447,7 +2441,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Basic carrier detail updates from consolidation to shipment
             shipmentDetails.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
             shipmentDetails.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
-            shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
             if(StringUtility.isNotEmpty(console.getCarrierDetails().getShippingLine())) {
                 shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
@@ -2456,7 +2449,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-                shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             }
         }
     }
@@ -2507,7 +2499,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
@@ -2551,19 +2542,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Update export/import brokers if inter-branch logic applies
         updateNonInterBranchConsoleData(console, shipmentDetails);
-    }
-
-    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
-        if (Boolean.FALSE.equals(fromAttachShipment)) {
-            String oldIncoTerms = oldEntity.getIncoterms();
-            String newIncoTerms = console.getIncoterms();
-
-            if(isFieldChanged(oldIncoTerms, newIncoTerms)){
-                shipmentDetails.setIncoterms(console.getIncoterms());
-            }
-        }else{
-            shipmentDetails.setIncoterms(console.getIncoterms());
-        }
     }
 
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,

@@ -3814,6 +3814,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         containers.setContainerCount(1L);
         containers.setBookingId(2L);
         containers.setId(3L);
+        containers.setPackagesPerContainer(1L);
+        containers.setCargoWeightPerContainer(BigDecimal.TEN);
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();

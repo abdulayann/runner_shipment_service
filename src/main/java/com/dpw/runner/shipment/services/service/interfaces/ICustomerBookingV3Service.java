@@ -7,12 +7,14 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -33,4 +35,6 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
     void calculateCargoDetails(List<Packing> packingList, CustomerBooking customerBooking) throws RunnerException;
+    Long getTotalContainerPackages(List<Containers> containersList);
+    BigDecimal getTotalCargoWeight(List<Containers> containersList);
 }

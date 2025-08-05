@@ -18,10 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -43,6 +40,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -72,7 +70,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.persistence.EntityManager;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -174,6 +174,11 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     private static Packing testPacking;
 
+    private Containers container;
+    private AssignContainerParams params;
+    private ShipmentDetails shipmentDetails1;
+    private ShipmentDetails shipmentDetails2;
+
 
     @BeforeAll
     static void init(){
@@ -202,6 +207,18 @@ class ContainerV3ServiceTest extends CommonMocks {
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
         MockitoAnnotations.initMocks(this);
+        container = new Containers();
+        shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setContainersList(new HashSet<>());
+        shipmentDetails2 = new ShipmentDetails();
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainersList(new HashSet<>());
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, shipmentDetails1);
+        shipmentDetailsMap.put(2L, shipmentDetails2);
+        params = new AssignContainerParams();
+        params.setShipmentDetailsMap(shipmentDetailsMap);
     }
 
     @Test
@@ -1764,7 +1781,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(new Containers());
         List<ContainerV3Request> containerRequestList = Arrays.asList(new ContainerV3Request());
 
-        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+        containerV3Service.updateStatusForOceanDG(shipmentDetails, containersList, containerRequestList);
 
         // Verify no further processing happens
         verify(commonUtils, never()).changeShipmentDGStatusToReqd(any(), anyBoolean());
@@ -1793,7 +1810,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1("1")).thenReturn(true);
         when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, true)).thenReturn(true);
 
-        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+        containerV3Service.updateStatusForOceanDG(shipmentDetails, containersList, containerRequestList);
 
         verify(commonUtils).checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer);
         verify(commonUtils).checkIfDGClass1("1");
@@ -1825,7 +1842,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1("2")).thenReturn(false);
         when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, false)).thenReturn(false);
 
-        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+        containerV3Service.updateStatusForOceanDG(shipmentDetails, containersList, containerRequestList);
 
         verify(commonUtils).checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer);
         verify(commonUtils).checkIfDGClass1("2");
@@ -1836,7 +1853,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
     
     @Test
-    void testProcessDGShipmentDetailsFromContainer_WithMixedHazardousAndNonHazardousContainers_ShouldProcessOnlyHazardous() throws RunnerException {
+    void testProcessDGShipmentDetailsFromContainer_WithMixedHazardousAndNonHazardousContainers_ShouldProcessOnlyHazardous() {
         // Arrange
         ContainerV3Request nullIdContainer = new ContainerV3Request();
         nullIdContainer.setId(null);
@@ -1878,7 +1895,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         List<Containers> containersList = List.of(new Containers());
 
         // Act & Assert - Should not throw exception
-        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, new ArrayList<>(), false));
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, containersList, new ArrayList<>(), false));
 
         // Verify no methods were called since method returns early
         verify(commonUtils, never()).checkIfDGClass1(any());
@@ -1894,7 +1911,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         List<Containers> containersList = null;
         // Act & Assert - Should not throw exception
-        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatus(shipmentDetails, containersList, null , false));
+        assertDoesNotThrow(() -> containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, containersList, null , false));
     }
 
 
@@ -1922,7 +1939,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
 
-        containerV3Service.updateOceanDgStatus(shipmentDetails, null, List.of(containerV3Request), true);
+        containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, null, List.of(containerV3Request), true);
         verify(commonUtils).checkIfDGClass1(any());
     }
 
@@ -1940,7 +1957,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
         lenient().when(commonUtils.checkIfDGFieldsChangedInContainer(containerV3Request, containers)).thenReturn(true);
 
-        containerV3Service.updateOceanDgStatus(shipmentDetails, List.of(containers), List.of(containerV3Request), false);
+        containerV3Service.updateOceanDgStatusForCreateUpdate(shipmentDetails, List.of(containers), List.of(containerV3Request), false);
         verify(commonUtils).checkIfDGClass1(any());
     }
 
@@ -2024,5 +2041,255 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertEquals("SHP002", responses.get(1).getAttachedShipmentNumber());
         assertEquals("LCL", responses.get(1).getAttachedShipmentType());
     }
+    @Test
+    void testSaveUnAssignContainerResults_ShouldUnassignCorrectly() throws Exception {
+        Long shipmentId1 = 101L;
+        Long shipmentId2 = 102L;
+        List<Long> shipmentIdsForDetachment = List.of(shipmentId1, shipmentId2);
+        List<Long> cargoDetachmentIds = List.of(shipmentId1);
+        List<Long> packingIds = List.of(301L, 302L);
+        Containers container1 = mock(Containers.class);
+        Containers savedContainer = mock(Containers.class);
+        ShipmentsContainersMapping mapping1 = new ShipmentsContainersMapping();
+        mapping1.setShipmentId(shipmentId1);
+        ShipmentsContainersMapping mapping2 = new ShipmentsContainersMapping();
+        mapping2.setShipmentId(999L); // not in detachment list
+        UnAssignContainerParams params1 = new UnAssignContainerParams();
+        params1.setShipmentIdsForCargoDetachment(cargoDetachmentIds);
+        params1.setRemoveAllPackingIds(packingIds);
+        params1.setShipmentsContainersMappings(List.of(mapping1, mapping2));
+        when(containerDao.save(container1)).thenReturn(savedContainer);
+        Method method = ContainerV3Service.class.getDeclaredMethod(
+                "saveUnAssignContainerResults",
+                List.class, Containers.class, UnAssignContainerParams.class
+        );
+        method.setAccessible(true);
+        Containers result = (Containers) method.invoke(containerV3Service, shipmentIdsForDetachment, container1, params1);
+        assertEquals(savedContainer, result);
+        verify(shipmentDao).setShipmentIdsToContainer(cargoDetachmentIds, null);
+        verify(packingDao).setPackingIdsToContainer(packingIds, null);
+        verify(containerDao).save(container1);
+        verify(shipmentsContainersMappingDao).deleteAll(List.of(mapping1));
+        verifyNoMoreInteractions(shipmentsContainersMappingDao);
+    }
 
+    @Test
+    void testHandleUnAssignmentLogicWhenAllPacksAreRemoved_WithSeaFCL_ShouldUpdateContainerAndDetach() throws Exception {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentType("FCL");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetails.setContainerAssignedToShipmentCargo(99L);
+        Containers container1 = new Containers();
+        container1.setId(99L);
+        Containers oldContainer = new Containers();
+        oldContainer.setGrossWeight(new BigDecimal("100.0"));
+        oldContainer.setGrossWeightUnit("KG");
+        oldContainer.setGrossVolume(new BigDecimal("10.0"));
+        oldContainer.setGrossVolumeUnit("CBM");
+        oldContainer.setPacks("5");
+        oldContainer.setPacksType("CTN");
+        Packing packing1 = new Packing();
+        packing1.setContainerId(99L);
+        Packing packing2 = new Packing();
+        packing2.setContainerId(99L);
+        List<Long> shipmentIdsForDetachment = new ArrayList<>();
+        List<Packing> packingList = List.of(packing1, packing2);
+        Set<Long> removePackIds = Set.of(1L, 2L);
+        UnAssignContainerParams params1 = new UnAssignContainerParams();
+        params1.setOldContainersEntity(oldContainer);
+        params1.setRemoveAllPackingIds(new ArrayList<Long>());
+        params1.setShipmentIdsForCargoDetachment(new ArrayList<Long>());
+        CommonUtils commonUtils = mock(CommonUtils.class);
+        when(commonUtils.isSeaFCLOrRoadFTL(TRANSPORT_MODE_SEA, CARGO_TYPE_FCL)).thenReturn(true);
+        ContainerV3Service service = new ContainerV3Service();
+        Field utilsField = ContainerV3Service.class.getDeclaredField("commonUtils");
+        utilsField.setAccessible(true);
+        utilsField.set(service, commonUtils);
+        Method method = ContainerV3Service.class.getDeclaredMethod(
+                "handleUnAssignmentLogicWhenAllPacksAreRemoved",
+                UnAssignContainerParams.class,
+                Containers.class,
+                ShipmentDetails.class,
+                List.class,
+                List.class,
+                Set.class
+        );
+        method.setAccessible(true);
+        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+        assertEquals("KG", container1.getGrossWeightUnit());
+        assertEquals("CBM", container1.getGrossVolumeUnit());
+        assertEquals("5", container1.getPacks());
+        assertEquals("CTN", container1.getPacksType());
+        assertTrue(params1.getRemoveAllPackingIds().containsAll(removePackIds));
+        assertTrue(params1.getShipmentIdsForCargoDetachment().contains(10L));
+        assertNull(shipmentDetails.getContainerAssignedToShipmentCargo());
+        assertTrue(packingList.stream().allMatch(p -> p.getContainerId() == null));
+    }
+
+    @Test
+    void testUpdateSummary_WithEmptyFclOrFtlShipmentIds() throws RunnerException {
+        params.setFclOrFtlShipmentIds(null);
+        List<Long> shipmentIdsForAttachment = Arrays.asList(1L, 2L);
+        containerV3Service.updateSummary(container, shipmentIdsForAttachment, params);
+        verifyNoInteractions(shipmentService);
+        verifyNoInteractions(consolidationV3Service);
+    }
+
+    @Test
+    void testUpdateSummary_WithFclOrFtlShipmentIds_AllShipmentsNeedAttachment() throws RunnerException {
+        params.setFclOrFtlShipmentIds(Set.of(1L, 2L));
+        List<Long> shipmentIdsForAttachment = Arrays.asList(1L, 2L);
+        ShipmentWtVolResponse oldResponse = new ShipmentWtVolResponse();
+        params.setOldShipmentWtVolResponse(oldResponse);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        params.setConsolidationDetails(consolidationDetails);
+        containerV3Service.updateSummary(container, shipmentIdsForAttachment, params);
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails1),
+                argThat(list -> list.contains(container))
+        );
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails2),
+                argThat(list -> list.contains(container))
+        );
+        verify(consolidationV3Service).updateConsolidationCargoSummary(consolidationDetails, oldResponse);
+    }
+
+    @Test
+    void testUpdateSummary_WithFclOrFtlShipmentIds_SomeShipmentsNeedAttachment() throws RunnerException {
+        params.setFclOrFtlShipmentIds(Set.of(1L, 2L));
+        List<Long> shipmentIdsForAttachment = List.of(1L);
+        ShipmentWtVolResponse oldResponse = new ShipmentWtVolResponse();
+        params.setOldShipmentWtVolResponse(oldResponse);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        params.setConsolidationDetails(consolidationDetails);
+        containerV3Service.updateSummary(container, shipmentIdsForAttachment, params);
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails1),
+                argThat(list -> list.contains(container))
+        );
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails2),
+                argThat(list -> !list.contains(container))
+        );
+        verify(consolidationV3Service).updateConsolidationCargoSummary(consolidationDetails, oldResponse);
+    }
+
+    @Test
+    void testUpdateSummary_WithFclOrFtlShipmentIds_NoShipmentsNeedAttachment() throws RunnerException {
+        params.setFclOrFtlShipmentIds(Set.of(1L, 2L));
+        List<Long> shipmentIdsForAttachment = List.of(3L);
+        ShipmentWtVolResponse oldResponse = new ShipmentWtVolResponse();
+        params.setOldShipmentWtVolResponse(oldResponse);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        params.setConsolidationDetails(consolidationDetails);
+        containerV3Service.updateSummary(container, shipmentIdsForAttachment, params);
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails1),
+                argThat(list -> !list.contains(container))
+        );
+        verify(shipmentService).calculateAndUpdateShipmentCargoSummary(
+                eq(shipmentDetails2),
+                argThat(list -> !list.contains(container))
+        );
+        verify(consolidationV3Service).updateConsolidationCargoSummary(consolidationDetails, oldResponse);
+    }
+
+    @Test
+    void testAssignContainerOnlyToShipment_shouldThrowException_whenIsFCLorFTL() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setShipmentType("FCL");
+        Containers container1 = new Containers();
+        List<Long> shipmentIdsToSetContainerCargo = List.of(1L);
+        when(commonUtils.isSeaFCLOrRoadFTL(anyString(), anyString())).thenReturn(true);
+        ValidationException ex = assertThrows(ValidationException.class, () -> {
+            containerV3Service.assignContainerOnlyToShipment(shipmentDetails, container1, shipmentIdsToSetContainerCargo);
+        });
+        assertEquals("Please select atleast one package for FCL/FTL shipment.", ex.getMessage());
+    }
+    @Test
+    void testAssignContainerOnlyToShipment_shouldThrowException_whenContainerAlreadyAssigned() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR"); // non-FCL/FTL
+        shipmentDetails.setShipmentType("LCL");
+        shipmentDetails.setContainerAssignedToShipmentCargo(123L);
+        Containers container1 = new Containers();
+        List<Long> shipmentIdsToSetContainerCargo = List.of(1L);
+        when(commonUtils.isSeaFCLOrRoadFTL(anyString(), anyString())).thenReturn(false);
+        when(containerV3Util.getContainerNumberOrType(123L)).thenReturn("CONT123");
+        ValidationException ex = assertThrows(ValidationException.class, () -> {
+            containerV3Service.assignContainerOnlyToShipment(shipmentDetails, container1, shipmentIdsToSetContainerCargo);
+        });
+        assertEquals("Shipment already Assigned to Container -  CONT123", ex.getMessage());
+    }
+
+    @Test
+    void testSetAssignedContainersParems_WithValidShipmentIds_ShouldSetDetailsAndWtVol() throws RunnerException {
+        AssignContainerParams params1 = new AssignContainerParams();
+        Set<Long> shipmentIds = Set.of(101L, 102L);
+        Long consolidationId = 999L;
+        params1.setFclOrFtlShipmentIds(shipmentIds);
+        params1.setConsolidationId(consolidationId);
+        ConsolidationDetails mockConsolidationDetails = new ConsolidationDetails();
+        ShipmentWtVolResponse mockWtVolResponse = new ShipmentWtVolResponse();
+        when(consolidationV3Service.fetchConsolidationDetails(consolidationId)).thenReturn(mockConsolidationDetails);
+        when(consolidationV3Service.calculateShipmentWtVol(mockConsolidationDetails)).thenReturn(mockWtVolResponse);
+        containerV3Service.setAssignedContainersParems(params1);
+        assertEquals(mockConsolidationDetails, params1.getConsolidationDetails());
+        assertEquals(mockWtVolResponse, params1.getOldShipmentWtVolResponse());
+    }
+
+    @Test
+    void setUnassignedContainerParems_happyPath_shouldSetDetailsAndWtVol() throws RunnerException {
+        // Arrange
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Set.of(1L, 2L)); // Condition 1: not empty
+        params.setConsolidationDetails(null); // Condition 2: is null
+        params.setConsolidationId(123L);
+
+        ConsolidationDetails mockConsolidationDetails = new ConsolidationDetails();
+        ShipmentWtVolResponse mockWtVolResponse = new ShipmentWtVolResponse();
+
+        // Stub the mock service calls
+        when(consolidationV3Service.fetchConsolidationDetails(123L)).thenReturn(mockConsolidationDetails);
+        when(consolidationV3Service.calculateShipmentWtVol(mockConsolidationDetails)).thenReturn(mockWtVolResponse);
+
+        // Act
+        containerV3Service.setUnassignedContainerParems(params);
+
+        // Assert
+        // Verify that the service methods were called with the correct arguments
+        verify(consolidationV3Service, times(1)).fetchConsolidationDetails(123L);
+        verify(consolidationV3Service, times(1)).calculateShipmentWtVol(mockConsolidationDetails);
+
+        // Verify that the parameters object was updated correctly
+        assertEquals(mockConsolidationDetails, params.getConsolidationDetails());
+        assertEquals(mockWtVolResponse, params.getOldShipmentWtVolResponse());
+    }
+
+    @Test
+    void setUnassignedContainerParems_whenShipmentIdsAreEmpty_shouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Collections.emptySet());
+        params.setConsolidationDetails(null);
+        containerV3Service.setUnassignedContainerParems(params);
+        verify(consolidationV3Service, never()).fetchConsolidationDetails(any());
+        verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
+        assertEquals(Collections.emptySet(), params.getFclOrFtlShipmentIds());
+        assertEquals(null, params.getConsolidationDetails());
+        assertEquals(null, params.getOldShipmentWtVolResponse());
+    }
+
+    @Test
+    void setUnassignedContainerParems_whenConsolidationDetailsArePresent_shouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Set.of(1L)); // Condition 1: not empty
+        params.setConsolidationDetails(new ConsolidationDetails()); // Condition 2: not null
+        containerV3Service.setUnassignedContainerParems(params);
+        verify(consolidationV3Service, never()).fetchConsolidationDetails(any());
+        verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
+        assertEquals(1, params.getFclOrFtlShipmentIds().size());
+    }
 }

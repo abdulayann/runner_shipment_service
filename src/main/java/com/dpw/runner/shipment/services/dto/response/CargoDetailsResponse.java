@@ -32,4 +32,6 @@ public class CargoDetailsResponse {
     private BigDecimal teuCount;
     private Integer dgPacks;
     private String dgPacksUnit;
+    private Boolean isDifferenceInPackages;
+    private Boolean isDifferenceInCargoWeight;
 }

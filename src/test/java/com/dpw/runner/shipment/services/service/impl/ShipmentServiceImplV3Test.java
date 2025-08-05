@@ -1570,9 +1570,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         listContractResponse.getContracts().get(0).getContract_usage().get(0).setFilter_params(filterParams);
 
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
-        List<Events> eventsList = List.of(Events.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
-                .eventCode("eventType").build());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         mockShipmentRequest.setIsChargableEditable(true);
@@ -7218,4 +7215,35 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(consolidationDetailsDao).findByGuid(guid);
         verify(shipmentServiceImplV3, never()).isValidNte(any());
     }
+
+    @Test
+    void testCalculateAndUpdateShipmentCargoSummary_WithContainersList_ShouldUpdateCargo() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setPackingList(List.of(new Packing()));
+        Containers container1 = new Containers();
+        Containers container2 = new Containers();
+        List<Containers> containersList = List.of(container1, container2);
+        CargoDetailsResponse mockResponse = new CargoDetailsResponse();
+        doReturn(mockResponse)
+                .when(shipmentServiceImplV3)
+                .calculateShipmentSummary(eq("SEA"), anyList(), anySet());
+        shipmentServiceImplV3.calculateAndUpdateShipmentCargoSummary(shipmentDetails, containersList);
+        verify(shipmentServiceImplV3).updateCargoDetailsInShipment(shipmentDetails, mockResponse);
+    }
+
+    @Test
+    void testCalculateAndUpdateShipmentCargoSummary_WithoutContainersList_ShouldUseShipmentContainers() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setPackingList(List.of(new Packing()));
+        shipmentDetails.setContainersList(Set.of(new Containers()));
+        CargoDetailsResponse mockResponse = new CargoDetailsResponse();
+        doReturn(mockResponse)
+                .when(shipmentServiceImplV3)
+                .calculateShipmentSummary(eq("SEA"), anyList(), anySet());
+        shipmentServiceImplV3.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+        verify(shipmentServiceImplV3).updateCargoDetailsInShipment(eq(shipmentDetails), eq(mockResponse));
+    }
+
 }

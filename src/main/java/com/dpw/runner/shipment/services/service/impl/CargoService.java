@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class CargoService implements ICargoService {
     private final IConsolidationDetailsDao consolidationDetailsDao;
     private final JsonHelper jsonHelper;
     private final IConsolidationService consolidationService;
+    private final ICustomerBookingV3Service customerBookingV3Service;
 
     @Autowired
     public CargoService(IMDMServiceAdapter mdmServiceAdapter,
@@ -49,13 +51,15 @@ public class CargoService implements ICargoService {
                         IShipmentDao shipmentDao,
                         IConsolidationDetailsDao consolidationDetailsDao,
                         JsonHelper jsonHelper,
-                        IConsolidationService consolidationService) {
+                        IConsolidationService consolidationService,
+                        ICustomerBookingV3Service customerBookingV3Service) {
         this.mdmServiceAdapter = mdmServiceAdapter;
         this.customerBookingDao = customerBookingDao;
         this.shipmentDao = shipmentDao;
         this.consolidationDetailsDao = consolidationDetailsDao;
         this.jsonHelper = jsonHelper;
         this.consolidationService = consolidationService;
+        this.customerBookingV3Service = customerBookingV3Service;
     }
 
     @Override
@@ -78,7 +82,39 @@ public class CargoService implements ICargoService {
             calculateCargoDetails(packings, response);
         }
         calculateVW(response);
+        response.setIsDifferenceInPackages(calculatePackageDifference(containers, packings) ? Boolean.TRUE : Boolean.FALSE);
+        response.setIsDifferenceInCargoWeight(calculateCargoWeightDifference(containers, packings));
         return response;
+    }
+
+    private boolean calculatePackageDifference(List<Containers> containersList, List<Packing> packingList) {
+        if(containersList.isEmpty() || packingList.isEmpty()) {
+            return false;
+        }
+        Long totalContainerPackages = customerBookingV3Service.getTotalContainerPackages(containersList);
+        Long totalPackingSectionPackages = 0L;
+
+        for(Packing pack: packingList) {
+            totalPackingSectionPackages += Long.parseLong(pack.getPacks());
+        }
+        return Math.abs(totalContainerPackages - totalPackingSectionPackages) > 0L;
+    }
+
+    private boolean calculateCargoWeightDifference(List<Containers> containersList, List<Packing> packingList) {
+        if(containersList.isEmpty() || packingList.isEmpty()) {
+            return false;
+        }
+
+        BigDecimal totalContainerCargoWeight = customerBookingV3Service.getTotalCargoWeight(containersList);
+        BigDecimal totalPackingSectionCargoWeight = BigDecimal.ZERO;
+
+        for(Packing pack: packingList) {
+            if(pack.getWeight() != null) {
+                totalPackingSectionCargoWeight = totalPackingSectionCargoWeight.add(pack.getWeight());
+            }
+        }
+
+        return totalContainerCargoWeight.subtract(totalPackingSectionCargoWeight).abs().compareTo(BigDecimal.ZERO) > 0;
     }
 
     @Override
