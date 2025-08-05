@@ -2401,7 +2401,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 totalWeight = totalWeight.add(weight);
             }
         }
-        customerBooking.setGrossWeight(totalWeight);
+        if(!stopWeightCalculation) {
+            customerBooking.setGrossWeight(totalWeight);
+        }
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
