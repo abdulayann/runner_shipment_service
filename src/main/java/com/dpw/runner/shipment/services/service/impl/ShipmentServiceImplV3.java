@@ -227,6 +227,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     private PackingV3Util packingV3Util;
     @Autowired
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
+    @Autowired
     private IV1Service v1Service;
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
@@ -4435,6 +4437,31 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
             shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
         }
+    }
+
+    @Override
+    @Transactional
+    public void cancel(Long id) throws RunnerException {
+        Optional<ShipmentDetails> shipmentOptional = shipmentDao.findById(id);
+        if (shipmentOptional.isEmpty()) {
+            throw new RunnerException(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG);
+        }
+        ShipmentDetails shipment = shipmentOptional.get();
+        ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
+
+        // update shipment status by calling a dao method
+        shipment.setStatus(ShipmentStatus.Cancelled.getValue());
+        shipmentDao.update(shipment, false);
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
+        }
+        createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+        this.triggerPushToDownStream(shipment, oldConvertedShipment, false);
+        if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
     }
 
     protected void applySeaRoadFCLCargoSummaryOverride(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, boolean packsAvailable) {
