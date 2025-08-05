@@ -67,6 +67,7 @@ class CargoServiceTest {
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = new CustomerBooking();
         customerBooking.setContainers(3L);
+        customerBooking.setPackingList(new ArrayList<>());
         customerBooking.setTeuCount(new BigDecimal("6.0"));
         Containers container1 = new Containers();
         container1.setContainerCount(1L);
@@ -120,13 +121,10 @@ class CargoServiceTest {
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
         booking.setPackingList(List.of(packing));
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -161,6 +159,8 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -234,6 +234,8 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(List.of(container))).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
