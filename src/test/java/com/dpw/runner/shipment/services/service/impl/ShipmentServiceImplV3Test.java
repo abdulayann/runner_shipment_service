@@ -7319,4 +7319,59 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(shipmentDao).update(existingShipment, false);
         verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(any());
     }
+
+    @Test
+    void test_listShipment_withoutMasterData_listRequestNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_NullIncludeColumns() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setNotificationFlag(true);
+        listCommonRequest.setIncludeColumns(null);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_EmptyIncludeColumns() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setNotificationFlag(true);
+        listCommonRequest.setIncludeColumns(new ArrayList<String>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_CheckResponseData() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setIncludeColumns(List.of("ordersCount", "pickupDetails.shipperRef"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentListResponse shipmentListResponse = new ShipmentListResponse();
+        shipmentListResponse.setContainsHazardous(false);
+        shipmentListResponse.setPickupDetails(new PickupDeliveryDetailsListResponse());
+        shipmentListResponse.setId(1L);
+
+        ShipmentDetails ship = new ShipmentDetails();
+        ship.setId(1L);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType(ReportConstants.SRN);
+        referenceNumbers.setReferenceNumber("123");
+        ship.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetailsList.add(ship);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+
+        when(shipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(shipmentListResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
 }
