@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -67,9 +68,11 @@ class UpdateValidateAspectTest {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel);
+        updateValidateAspect.validateShipmentUpdate(mockShipmentRequest.getTransportMode(),
+                mockShipmentRequest.getDirection(),
+                mockShipmentRequest.getShipmentType(),
+                mockShipmentRequest.getIsDomestic());
         assert (true);
     }
 
@@ -145,7 +148,7 @@ class UpdateValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
         assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdateV3(joinPoint, commonRequestModel));
@@ -222,10 +225,14 @@ class UpdateValidateAspectTest {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         updateValidateAspect = new UpdateValidateAspect();
-        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdate(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> updateValidateAspect.validateShipmentUpdate(mockShipmentRequest.getTransportMode(),
+                mockShipmentRequest.getDirection(),
+                mockShipmentRequest.getShipmentType(),
+                mockShipmentRequest.getIsDomestic()));
     }
+
+
 
     @Test
     void testUpdateConsolidationAspect() throws RunnerException {
