@@ -13,12 +13,15 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +67,9 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     HelperExecutor trxExecutor;
+
+    @Autowired
+    MigrationUtil migrationUtil;
 
     Map<String, String> v2ToV3ServiceTypeMap = Map.ofEntries(
             // AIR
@@ -190,6 +196,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
+                    migrationUtil.saveErrorResponse(booking.getId(), CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

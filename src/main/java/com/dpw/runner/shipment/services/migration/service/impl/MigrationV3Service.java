@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
@@ -10,7 +11,9 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
@@ -18,6 +21,7 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -77,6 +81,9 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private TenantDataBackupService backupService;
 
+    @Autowired
+    private MigrationUtil migrationUtil;
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
 
@@ -108,11 +115,13 @@ public class MigrationV3Service implements IMigrationV3Service {
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
+                            migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
+                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -151,11 +160,13 @@ public class MigrationV3Service implements IMigrationV3Service {
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
+                            migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
                     log.error("Async failure during shipment setup [id={}]", id, e);
+                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

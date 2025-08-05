@@ -15,8 +15,10 @@ import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -88,6 +90,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private NotesUtil notesUtil;
     @Autowired
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
     public static final Map<String, String> airMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
@@ -543,6 +547,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

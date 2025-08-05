@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -12,10 +13,13 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
@@ -30,6 +34,7 @@ import com.google.common.collect.Sets;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
@@ -60,6 +65,9 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     private final CustomKeyGenerator keyGenerator;
     private final CacheManager cacheManager;
 
+    @Autowired
+    private MigrationUtil migrationUtil;
+
     @Override
     public void restore(Integer tenantId) {
 
@@ -81,6 +89,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                 restoreCustomerBookingData(bookingId, tenantId);
             } catch (Exception e) {
                 log.error("Failed to restore Booking id: {}", bookingId, e);
+                migrationUtil.saveErrorResponse(bookingId, Constants.CUSTOMER_BOOKING, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                 throw new RestoreFailureException("Failed to restore Booking: " + bookingId, e);
             }
         }

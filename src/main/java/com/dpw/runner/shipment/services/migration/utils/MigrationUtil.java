@@ -3,9 +3,15 @@ package com.dpw.runner.shipment.services.migration.utils;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.entity.IntegrationResponse;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.IRun;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -17,6 +23,12 @@ import java.util.concurrent.Future;
 @Slf4j
 @Component
 public class MigrationUtil {
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private IIntegrationResponseDao integrationResponseDao;
 
     public static <V> Callable<V> wrapWithMdc(IRun<V> runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
@@ -48,6 +60,14 @@ public class MigrationUtil {
             }
         }
         return ids;
+    }
+
+    public void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
+        IntegrationResponse response = IntegrationResponse.builder()
+                .entityId(entityId).entityType(entityType).integrationType(integrationType).status(status)
+                .response_message(jsonHelper.convertToJson(message))
+                .build();
+        integrationResponseDao.save(response);
     }
 
 }
