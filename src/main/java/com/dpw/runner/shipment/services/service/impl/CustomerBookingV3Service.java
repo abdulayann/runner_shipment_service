@@ -300,6 +300,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
+
+        CustomerBookingV3Response response = jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+        response.setIsShipperClientEqual(customerBooking.getIsShipperClientEqual());
+        response.setIsConsigneeClientEqual(customerBooking.getIsConsigneeClientEqual());
+        response.setIsNotifyConsigneeEqual(customerBooking.getIsNotifyConsigneeEqual());
+
         // Update NPM for contract utilization
         if(checkNPMContractUtilization(customerBooking)) {
             npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);

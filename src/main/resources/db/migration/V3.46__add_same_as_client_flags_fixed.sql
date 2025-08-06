@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS customer_booking ADD COLUMN IF NOT EXISTS is_shipper_client_equal BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS customer_booking ADD COLUMN IF NOT EXISTS is_consignee_client_equal BOOLEAN DEFAULT FALSE;

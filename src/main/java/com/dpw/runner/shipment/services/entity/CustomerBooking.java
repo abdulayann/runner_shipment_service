@@ -258,6 +258,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
 
+    @Column(name = "is_shipper_client_equal")
+    private Boolean isShipperClientEqual;
+
+    @Column(name = "is_consignee_client_equal")
+    private Boolean isConsigneeClientEqual;
+
     @Column(name = "is_bill_created")
     private Boolean isBillCreated;
 
