@@ -847,7 +847,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 && !Boolean.TRUE.equals(shipmentSettingsDetails.getIsShipmentLevelContainer())) {
             List<ContainerV3Request> splittedContainers = splitContainerIntoLineItems(containerRequestList);
             List<Containers> containers = commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate);
-            containerAssignedToShipmentCargo = shipmentV3Service.assignFirstBookingContainerToShipmentCargo(containers, customerBookingV3Request);
             List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(containers, id, (Long) null, true);
             if(!listIsNullOrEmpty(updatedContainers))
                 containerAssignedToShipmentCargo = updatedContainers.get(0).getId();
@@ -871,6 +870,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
+                    newContainer.setGrossWeight(newContainer.getGrossWeight());
                     expandedContainers.add(newContainer);
                 }
             }

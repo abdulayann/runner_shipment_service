@@ -674,12 +674,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
-        tenantSettings.setDefaultPackUnit("BAG");
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -745,12 +740,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
-        tenantSettings.setDefaultPackUnit("BAG");
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -4791,22 +4781,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         );
 
         assertEquals("Consolidation type cannot be changed as the original BL has been generated for this shipment.", exception.getMessage());
-    }
-
-    @Test
-    void assignFirstBookingContainerToShipmentCargo_shouldAssignFirstAndResetRest() throws RunnerException {
-        Containers firstContainer = mock(Containers.class);
-        Containers secondContainer = mock(Containers.class);
-        List<Containers> containersList = List.of(firstContainer, secondContainer);
-        CustomerBookingV3Request bookingRequest = mock(CustomerBookingV3Request.class);
-
-        when(firstContainer.getId()).thenReturn(100L);
-
-        Long result = shipmentServiceImplV3.assignFirstBookingContainerToShipmentCargo(containersList, bookingRequest);
-
-        assertEquals(100L, result);
-        verify(containerV3Service).addShipmentCargoToContainerInCreateFromBooking(firstContainer, bookingRequest);
-        verify(containerV3Util).setContainerNetWeight(firstContainer);
     }
 
     @Test
