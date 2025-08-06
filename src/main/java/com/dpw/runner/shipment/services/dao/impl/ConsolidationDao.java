@@ -917,11 +917,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
-        CarrierDetails carrierDetails = request.getCarrierDetails();
-        if (carrierDetails != null) {
-            if (!isStringNullOrEmpty(carrierDetails.getOriginPort()) && !isStringNullOrEmpty(carrierDetails.getDestinationPort()) && Objects.equals(carrierDetails.getOriginPort(), carrierDetails.getDestinationPort())) {
+        if (request.getCarrierDetails() != null && !isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) && !isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())
+                && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
                 errors.add("POL and POD fields cannot be the same.");
-            }
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");
