@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -58,11 +60,17 @@ public interface IPackingV3Service {
 
     List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
+    CargoDetailsResponse calculateCargoDetails(List<Packing> packings, CargoDetailsResponse response) throws RunnerException;
+    CargoDetailsResponse calculateCargoSummary(CommonGetRequest commonGetRequest) throws RunnerException;
+
     void processPacksAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails);
 
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException;
+
+    Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
+
     PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId);
 }

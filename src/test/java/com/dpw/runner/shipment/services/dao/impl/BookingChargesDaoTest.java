@@ -254,4 +254,22 @@ class BookingChargesDaoTest {
         assertEquals(testBookingCharges, bookingCharges);
     }
 
+    @Test
+    void testDeleteAdditionalPackingByCustomerBookingId() {
+        List<Long> bookingChargesIds = List.of(1L, 2L, 3L);
+        Long bookingId = 101L;
+        bookingChargesDao.deleteAdditionalPackingByCustomerBookingId(bookingChargesIds, bookingId);
+        verify(bookingChargesRepository, times(1))
+                .deleteAdditionalChargesByCustomerBookingId(bookingChargesIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPackingIdsAndBookingId() {
+        List<Long> bookingChargesIds = List.of(4L, 5L);
+        Long bookingId = 202L;
+        bookingChargesDao.revertSoftDeleteByPackingIdsAndBookingId(bookingChargesIds, bookingId);
+        verify(bookingChargesRepository, times(1))
+                .revertSoftDeleteByChargesAndBookingId(bookingChargesIds, bookingId);
+    }
+
 }

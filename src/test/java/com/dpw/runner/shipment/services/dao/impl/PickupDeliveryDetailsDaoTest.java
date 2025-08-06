@@ -166,4 +166,35 @@ class PickupDeliveryDetailsDaoTest {
         assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromShipment(pickupDeliveryDetailsList, 1L));
     }
 
+    @Test
+    void testFindByShipmentIdIn() {
+        Set<Long> shipmentIds = Set.of(1L, 2L);
+        List<PickupDeliveryDetails> expectedList = List.of(
+                new PickupDeliveryDetails(),
+                new PickupDeliveryDetails()
+        );
+        when(pickupDeliveryDetailsRepository.findByShipmentIdIn(shipmentIds)).thenReturn(expectedList);
+        List<PickupDeliveryDetails> actualList = pickupDeliveryDetailsDao.findByShipmentIdIn(shipmentIds);
+        assertEquals(expectedList, actualList);
+        verify(pickupDeliveryDetailsRepository, times(1)).findByShipmentIdIn(shipmentIds);
+    }
+
+    @Test
+    void testDeleteAdditionalPickupDeliveryDetailsByShipmentId() {
+        List<Long> detailsIds = List.of(3L, 4L);
+        Long shipmentId = 10L;
+        pickupDeliveryDetailsDao.deleteAdditionalPickupDeliveryDetailsByShipmentId(detailsIds, shipmentId);
+        verify(pickupDeliveryDetailsRepository, times(1))
+                .deleteAdditionalPickupDeliveryDetailsByShipmentId(detailsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId() {
+        List<Long> detailsIds = List.of(5L, 6L);
+        Long shipmentId = 20L;
+        pickupDeliveryDetailsDao.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(detailsIds, shipmentId);
+        verify(pickupDeliveryDetailsRepository, times(1))
+                .revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(detailsIds, shipmentId);
+    }
+
 }

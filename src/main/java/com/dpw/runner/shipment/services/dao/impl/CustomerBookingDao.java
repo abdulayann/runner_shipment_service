@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBoo
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidationsV3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -238,5 +240,30 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Override
     public Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber) {
         return customerBookingRepository.findByShipmentReferenceNumber(shipmentReferenceNumber);
+    }
+
+    @Override
+    public List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return customerBookingRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
+    public Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findCustomerBookingIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids) {
+        return customerBookingRepository.findCustomerBookingByIds(ids);
+    }
+
+    @Override
+    public void deleteCustomerBookingIds(Set<Long> ids) {
+         customerBookingRepository.deleteCustomerBookingIds(ids);
+    }
+
+    @Override
+    public Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId);
     }
 }

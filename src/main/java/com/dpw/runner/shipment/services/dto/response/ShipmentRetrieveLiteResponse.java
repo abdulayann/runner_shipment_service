@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -269,4 +270,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

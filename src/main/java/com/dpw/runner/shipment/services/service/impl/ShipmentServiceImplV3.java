@@ -690,6 +690,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         CompletableFuture<String> placeOfIssueFuture = getPlaceOfIssueFuture(request.getTransportMode());
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();

@@ -150,9 +150,11 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTestCatch() {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
@@ -166,9 +168,11 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTestOldEntityNotPresent() {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
@@ -194,9 +198,11 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTest2() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -208,9 +214,11 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTest3() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -248,6 +256,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -385,6 +394,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -424,6 +434,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -470,6 +481,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -516,6 +528,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1459,6 +1472,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1495,6 +1509,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1535,6 +1550,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1574,9 +1590,11 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveAll() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -1698,6 +1716,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1746,6 +1765,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1794,6 +1814,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1842,6 +1863,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -2310,5 +2332,48 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDao.updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
         verify(shipmentRepository, times(1))
                 .updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
+    }
+
+    @Test
+    void testFindShipmentIdsByTenantId() {
+        Integer tenantId = 1;
+        shipmentDao.findShipmentIdsByTenantId(tenantId);
+        verify(shipmentRepository, times(1)).findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testRevertSoftDeleteShipmentIdAndTenantId() {
+        List<Long> shipmentIds = List.of(10L, 20L);
+        Integer tenantId = 2;
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+        verify(shipmentRepository, times(1)).revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Test
+    void testFindAllShipmentIdsByTenantId() {
+        Integer tenantId = 3;
+        shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+        verify(shipmentRepository, times(1)).findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testDeleteShipmentDetailsByIds() {
+        Set<Long> shipmentIds = Set.of(100L, 200L);
+        shipmentDao.deleteShipmentDetailsByIds(shipmentIds);
+        verify(shipmentRepository, times(1)).deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Test
+    void testDeleteTriangularPartnerShipmentByShipmentId() {
+        Long shipmentId = 300L;
+        shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+        verify(shipmentRepository, times(1)).deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Test
+    void testUpdateTriggerMigrationWarning() {
+        Long shipmentId = 400L;
+        shipmentDao.updateTriggerMigrationWarning(shipmentId);
+        verify(shipmentRepository, times(1)).updateTriggerMigrationWarning(shipmentId);
     }
 }

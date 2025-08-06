@@ -42,4 +42,5 @@ public interface IConsoleShipmentMappingDao {
     Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestedType);
     Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType);
     Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId);
+    List<ConsoleShipmentMapping> findByConsolidationIdsByQuery(Set<Long> consolidationIds);
 }

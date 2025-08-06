@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -176,6 +177,9 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Long bookingAgent; //booking agent
     private Boolean borrowed;
     private String coLoadCarrierName; // Coloader
+    private Boolean isMigratedToV3 = false;
+
+    private MigrationStatus migrationStatus;
 
 
 }

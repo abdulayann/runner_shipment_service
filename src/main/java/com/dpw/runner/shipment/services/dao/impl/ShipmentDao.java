@@ -291,6 +291,10 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
+    @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
@@ -987,5 +991,35 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId){
         shipmentRepository.updateDgStatusInShipment(isHazardous, oceanDGStatus, shipmentId);
+    }
+
+    @Override
+    public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId) {
+        shipmentRepository.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Override
+    public Set<Long> findAllShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void deleteShipmentDetailsByIds(Set<Long> shipmentIds) {
+        shipmentRepository.deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Override
+    public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
+        shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Override
+    public void updateTriggerMigrationWarning(Long shipmentId) {
+        shipmentRepository.updateTriggerMigrationWarning(shipmentId);
     }
 }
