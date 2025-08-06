@@ -1024,6 +1024,10 @@ public class PackingV3Service implements IPackingV3Service {
         Long consolidationId = request.getConsolidationId();
         Long shipmentId = request.getShipmentEntityId();
 
+        return getPackSummaryV3Response(packingList, transportMode, module, consolidationId, shipmentId);
+    }
+
+    public PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId) {
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
 

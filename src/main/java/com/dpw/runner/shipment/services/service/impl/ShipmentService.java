@@ -6589,9 +6589,10 @@ public class ShipmentService implements IShipmentService {
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
 
-            this.createShipmentPayload(null, response);
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(null, response);
+            response.setMasterDataMap(masterDataResponse);
 
-            setOriginBranchMasterData(response);
+            this.createShipmentPayload(null, response, false);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

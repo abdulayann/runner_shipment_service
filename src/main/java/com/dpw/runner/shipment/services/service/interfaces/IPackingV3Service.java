@@ -69,5 +69,8 @@ public interface IPackingV3Service {
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException;
+
     Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
+
+    PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId);
 }

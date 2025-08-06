@@ -31,7 +31,9 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ContainerV3Service;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
+import com.dpw.runner.shipment.services.service.impl.PackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -160,6 +162,12 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     private INotificationDao notificationDao;
     @Mock
     private ExecutorService executorService;
+
+    @Mock
+    private PackingV3Service packingV3Service;
+
+    @Mock
+    private ContainerV3Service containerV3Service;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;

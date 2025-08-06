@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -126,6 +128,10 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
 
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
+
+    private PackSummaryV3Response packV3Summary;
+    private ShipmentWtVolResponse shipmentWtVolResponse;
+
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
 

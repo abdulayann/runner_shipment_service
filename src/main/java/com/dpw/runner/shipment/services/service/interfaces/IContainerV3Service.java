@@ -61,5 +61,9 @@ public interface IContainerV3Service {
     void pushContainersToDependentServices(List<Containers> containersList);
     ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request, String module) throws RunnerException;
 
+
     Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData);
+
+    ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException;
+
 }
