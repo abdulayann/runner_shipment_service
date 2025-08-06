@@ -21,82 +21,57 @@ public class AsyncConfig implements AsyncConfigurer {
     // Used for Async
     @Bean(name = "asyncExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(20);
-        executor.setMaxPoolSize(20);
-        executor.setThreadNamePrefix("MyAsyncThread-");
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
-        executor.initialize();
-        return executor;
+        return createBackupRestoreMigrationExecutor("MyAsyncThread-", 20, 20);
+    }
+
+    @Bean(name = "asyncShipmentBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
+        return createExecutor("BackupShipmentHandlerAsyncThread-", 10, 10);
     }
 
     @Bean(name = "asyncRestoreHandlerExecutor")
     public ThreadPoolTaskExecutor rollbackTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(5);
-        executor.setThreadNamePrefix("RestoreThread-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
+        return createBackupRestoreMigrationExecutor("RestoreThread-", 5, 5);
     }
 
-
-    // Used for Async
     @Bean(name = "asyncBackupHandlerExecutor")
     public ThreadPoolTaskExecutor backupHandlerExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(5);
-        executor.setThreadNamePrefix("BackupHandlerAsyncThread-");
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
-        executor.initialize();
-        return executor;
-    }
-
-    // Used for Async
-    @Bean(name = "asyncShipmentBackupHandlerExecutor")
-    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(10);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("BackupShipmentHandlerAsyncThread-");
-        executor.setAllowCoreThreadTimeOut(true);
-        executor.setKeepAliveSeconds(60);
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
-        executor.initialize();
-        return executor;
+        return createBackupRestoreMigrationExecutor("BackupHandlerAsyncThread-", 5, 5);
     }
 
 
-    // Used for Async
     @Bean(name = "asyncConsoleBackupHandlerExecutor")
-    public ThreadPoolTaskExecutor backupConsoleHandlerExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(10);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("BackupConsoleHandlerAsyncThread-");
-        executor.setAllowCoreThreadTimeOut(true);
-        executor.setKeepAliveSeconds(60);
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
-        executor.initialize();
-        return executor;
+    public ThreadPoolTaskExecutor asyncConsoleBackupHandlerExecutor() {
+        return createExecutor("BackupConsoleHandlerAsyncThread-", 10, 10);
     }
 
-    // Used for Async
     @Bean(name = "asyncBookingBackupHandlerExecutor")
     public ThreadPoolTaskExecutor backupBookingHandlerExecutor() {
+        return createExecutor("BackupBookingHandlerAsyncThread-", 10, 10);
+    }
+
+    @Bean(name = "asyncExecutorForMigration3")
+    public ThreadPoolTaskExecutor taskExecutorForMigration3() {
+        return createBackupRestoreMigrationExecutor("MyMigrationAsyncThread-", 10, 10);
+    }
+
+    private ThreadPoolTaskExecutor createBackupRestoreMigrationExecutor(String threadNamePrefix, int corePoolSize, int maxPoolSize) {
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(8);
-        executor.setMaxPoolSize(8);
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setThreadNamePrefix(threadNamePrefix);
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
+
+    private ThreadPoolTaskExecutor createExecutor(String threadNamePrefix, int corePoolSize, int maxPoolSize) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("BackupBookingHandlerAsyncThread-");
+        executor.setThreadNamePrefix(threadNamePrefix);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setKeepAliveSeconds(60);
         executor.setWaitForTasksToCompleteOnShutdown(true);
@@ -196,17 +171,6 @@ public class AsyncConfig implements AsyncConfigurer {
             }
         };
         return new ThreadPoolExecutor(corePool, maxPool, aliveTime, unit, workingQueue, executionHandler);
-    }
-
-    @Bean(name = "asyncExecutorForMigration3")
-    public ThreadPoolTaskExecutor taskExecutorForMigration3() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(10);
-        executor.setThreadNamePrefix("MyMigrationAsyncThread-");
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
-        executor.initialize();
-        return executor;
     }
 
     @Bean(name = "asyncHsCodeValidationExecutor")
