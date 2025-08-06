@@ -2418,7 +2418,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if(isFieldChanged(oldIncoTerms, newIncoTerms)){
                 shipmentDetails.setIncoterms(console.getIncoterms());
             }
-        }else{
+        }else if(!isStringNullOrEmpty(console.getIncoterms())) {
             shipmentDetails.setIncoterms(console.getIncoterms());
         }
     }
