@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -406,6 +407,73 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testContainerCreateShipment_withMigrationStatusAndConsolidationList_andCargoDetailsUpdate() throws RunnerException {
+
+        Long shipmentId = 999L;
+        Long consolidationId = 888L;
+        Long containerId = 777L;
+
+        ContainerV3Request containerV3Request = ContainerV3Request.builder()
+                .id(1L)
+                .containerCode("Code")
+                .commodityGroup("FCR")
+                .containerCount(2L)
+                .containerNumber("12345678910")
+                .shipmentsId(shipmentId)
+                .build();
+
+        Containers testContainer = new Containers();
+        testContainer.setId(containerId);
+
+        ConsolidationDetails mockConso = new ConsolidationDetails();
+        mockConso.setId(consolidationId);
+        Set<ConsolidationDetails> consolidationSet = new HashSet<>();
+        consolidationSet.add(mockConso);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(shipmentId);
+        shipment.setJobType("FCL");
+        shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+        shipment.setConsolidationList(consolidationSet);
+        shipment.setPackingList(Collections.emptyList());
+
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+        doNothing().when(containerValidationUtil).validateShipmentForContainer(any());
+        doNothing().when(containerValidationUtil).validateShipmentCargoType(any());
+
+        when(containerDao.findByShipmentId(shipmentId)).thenReturn(List.of(testContainer));
+        when(shipmentService.calculateShipmentSummary(any(), any(), any())).thenReturn(cargoDetailsResponse);
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(eq(shipment), eq(cargoDetailsResponse));
+        doNothing().when(shipmentDao).updateTriggerMigrationWarning(eq(shipmentId));
+
+        when(containerDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testContainer));
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().doNothing().when(shipmentsContainersMappingDao).assignShipments(eq(containerId), eq(Set.of(shipmentId)), eq(false));
+
+        ContainerResponse response = containerV3Service.create(containerV3Request, SHIPMENT);
+
+        assertNotNull(response);
+        assertEquals(consolidationId, containerV3Request.getConsolidationId());
+        verify(shipmentDao).updateTriggerMigrationWarning(shipmentId); // verify migration block
+        verify(shipmentsContainersMappingDao).assignShipments(containerId, Set.of(shipmentId), false); // verify ifPresent
+        verify(shipmentService).updateCargoDetailsInShipment(eq(shipment), eq(cargoDetailsResponse)); // cargo update
+    }
+
+
+    @Test
     void testContainerUpdate() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
@@ -452,7 +520,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertNotNull(response);
     }
 
-
     @Test
     void testList() throws RunnerException {
         testContainer.setId(1L);
@@ -467,6 +534,71 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
     }
+
+    @Test
+    void testUpdateBulk_removesMatchingContainerById() throws RunnerException {
+        UUID guid = UUID.randomUUID();
+
+        ContainerV3Request containerV3Request = ContainerV3Request.builder()
+                .id(1L)
+                .containerCode("Code")
+                .commodityGroup("FCR")
+                .containerCount(2L)
+                .consolidationId(1L)
+                .containerNumber("12345678910")
+                .build();
+
+        // Setting same Id as in ContainerV3Request
+        Containers containerInDb = new Containers();
+        containerInDb.setId(1L);
+        containerInDb.setGuid(guid);
+        containerInDb.setContainerCode("Code");
+        containerInDb.setContainerCount(2L);
+
+        when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId()))
+                .thenReturn(List.of(containerInDb));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
+                thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateBulk_withShipmentModuleAndMigratedStatus() throws RunnerException {
+        ContainerV3Request containerV3Request = ContainerV3Request.builder()
+                .id(1L)
+                .containerCode("Code")
+                .commodityGroup("FCR")
+                .containerCount(2L)
+                .consolidationId(1L)
+                .containerNumber("12345678910")
+                .shipmentsId(100L)
+                .build();
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(100L);
+        shipmentDetails.setJobType("LCL");
+        shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+
+        when(shipmentDao.findById(100L)).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
+                thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+
+
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "SHIPMENT");
+
+        assertNotNull(response);
+        verify(shipmentDao).updateTriggerMigrationWarning(100L);
+    }
+
 
     @Test
     void testList_shouldThrowRunnerException_whenDaoFails() {
