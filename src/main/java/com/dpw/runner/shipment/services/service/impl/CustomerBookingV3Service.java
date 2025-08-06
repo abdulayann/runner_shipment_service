@@ -964,6 +964,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             //fields related to cargo summary
             customerBookingResponse.setPackages(0L);
             customerBookingResponse.setContainers(0L);
+            customerBookingResponse.setTeuCount(null);
             customerBookingResponse.setGrossWeight(null);
             customerBookingResponse.setVolume(null);
             customerBookingResponse.setChargeable(null);
