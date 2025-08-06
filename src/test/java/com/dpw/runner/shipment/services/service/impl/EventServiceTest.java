@@ -1154,7 +1154,7 @@ class EventServiceTest extends CommonMocks {
     void populateBranchNames_shouldReturnEarly_whenV1ServiceReturnsNull() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(null);
+        when(v1Service.listCousinBranches(any())).thenReturn(null);
 
         // Act
         eventService.populateBranchNames(responses);
@@ -1178,7 +1178,7 @@ class EventServiceTest extends CommonMocks {
         eventService.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verify(v1Service).listCousinBranches(any());
         verifyNoInteractions(jsonHelper);
     }
 
@@ -1186,7 +1186,7 @@ class EventServiceTest extends CommonMocks {
     void populateBranchNames_shouldHandleV1ServiceExceptionGracefully() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenThrow(new V1ServiceException("failed"));
+        when(v1Service.listCousinBranches(any())).thenThrow(new V1ServiceException("failed"));
 
         // Act
         eventService.populateBranchNames(responses);
@@ -1260,7 +1260,7 @@ class EventServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(tenant));
 
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
                 .thenReturn(List.of(tenant));
 
