@@ -38,6 +38,7 @@ public class MasterDataImpl implements IMasterDataService {
     private final IMDMServiceAdapter mdmServiceAdapter;
     private final ModelMapper modelMapper;
     private final V1ServiceUtil v1ServiceUtil;
+    private final String tenantId = "TenantId";
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
@@ -423,7 +424,7 @@ public class MasterDataImpl implements IMasterDataService {
             if(criteria!=null)
                 addTenantsToCriteria(criteria, tenantIds);
             else {
-                criteria = convertToV1NotInCriteria("TenantId", tenantIds, null);
+                criteria = convertToV1NotInCriteria(tenantId, tenantIds, null);
             }
         }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
@@ -455,7 +456,7 @@ public class MasterDataImpl implements IMasterDataService {
         }
 
 
-        List<Object> tenantCondition = convertToV1NotInCriteria("TenantId", newTenants, null);
+        List<Object> tenantCondition = convertToV1NotInCriteria(tenantId, newTenants, null);
         if (isSingleCondition(criteria)) {
             // Turn single condition into compound condition
             List<Object> original = new ArrayList<>(criteria);
@@ -491,7 +492,7 @@ public class MasterDataImpl implements IMasterDataService {
 
         return fieldPart instanceof List
                 && ((List<?>) fieldPart).size() == 1
-                && "TenantId".equals(((List<?>) fieldPart).get(0))
+                && tenantId.equals(((List<?>) fieldPart).get(0))
                 && "not in".equals(operator);
     }
 
