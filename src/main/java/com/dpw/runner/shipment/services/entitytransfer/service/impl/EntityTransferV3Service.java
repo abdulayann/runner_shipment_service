@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Re
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferRoutings;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ConsolidationRequest;
@@ -865,7 +866,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         consolidationDetailsRequest.setHazardous(false); // setting it to false as it will be changed to true once attachment API is called
         ConsolidationDetailsResponse consolidationDetailsResponse;
         consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
-        removeFlightNumberInRoutings(consolidationDetailsRequest.getRoutingsList());
+        removeFlightNumberInRoutings(entityTransferConsolidationDetails.getRoutingsList());
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
@@ -969,7 +970,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             TenantContext.setCurrentTenant(entityTransferShipmentDetails.getSendToBranch());
         }
 
-        removeFlightNumberInRoutings(shipmentRequest.getRoutingsList());
+        removeFlightNumberInRoutings(entityTransferShipmentDetails.getRoutingsList());
 
         ShipmentDetailsResponse shipmentDetailsResponse = null;
         if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
@@ -1236,8 +1237,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         tenantIds.add(consolidationDetails.getTenantId());
         tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
         var tenantMap = getTenantMap(tenantIds);
-        setFlightNumberInRoutings(consolidationDetails.getRoutingsList());
         EntityTransferV3ConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferV3ConsolidationDetails.class);
+        setFlightNumberInRoutings(payload.getRoutingsList());
 
         setAdditionalParametersInPayload(consolidationDetails, payload);
 
@@ -1323,8 +1324,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private EntityTransferV3ShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) throws RunnerException {
-        setFlightNumberInRoutings(shipmentDetails.getRoutingsList());
         EntityTransferV3ShipmentDetails payload = jsonHelper.convertValue(shipmentDetails, EntityTransferV3ShipmentDetails.class);
+        setFlightNumberInRoutings(payload.getRoutingsList());
         // populate master data and other fields
         payload.setMasterData(getShipmentMasterData(shipmentDetails));
         payload.setPackingSummary(packingV3Service.getPackSummaryV3Response(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), SHIPMENT, null, shipmentDetails.getId()));
@@ -1340,9 +1341,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return payload;
     }
 
-    private void setFlightNumberInRoutings(List<Routings> routingsList) {
+    private void setFlightNumberInRoutings(List<EntityTransferRoutings> routingsList) {
         if(routingsList!=null && !routingsList.isEmpty()) {
-            for(Routings routing: routingsList) {
+            for(EntityTransferRoutings routing: routingsList) {
                 if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(routing.getMode())) {
                     routing.setVoyage(routing.getFlightNumber());
                 }
@@ -1350,9 +1351,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
     }
 
-    private void removeFlightNumberInRoutings(List<RoutingsRequest> routingsList) {
+    private void removeFlightNumberInRoutings(List<EntityTransferRoutings> routingsList) {
         if(routingsList!=null && !routingsList.isEmpty()) {
-            for(RoutingsRequest routing: routingsList) {
+            for(EntityTransferRoutings routing: routingsList) {
                 if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(routing.getMode())) {
                     routing.setVoyage(null);
                 }

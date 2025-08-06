@@ -38,6 +38,7 @@ public class MasterDataImpl implements IMasterDataService {
     private final IMDMServiceAdapter mdmServiceAdapter;
     private final ModelMapper modelMapper;
     private final V1ServiceUtil v1ServiceUtil;
+    private static final String TENANT_ID = "TenantId";
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
@@ -420,11 +421,10 @@ public class MasterDataImpl implements IMasterDataService {
         List<Object> criteria = request.getCriteria() ;
         List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request);
         if(tenantIds!=null && !tenantIds.isEmpty()) {
-            boolean isTenantConditionUpdated = false;
             if(criteria!=null)
-                isTenantConditionUpdated = addTenantsToCriteria(criteria, tenantIds);
-            if(!isTenantConditionUpdated) {
-                criteria = convertToV1NotInCriteria("TenantId", tenantIds, null);
+                addTenantsToCriteria(criteria, tenantIds);
+            else {
+                criteria = convertToV1NotInCriteria(TENANT_ID, tenantIds, null);
             }
         }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
@@ -440,21 +440,47 @@ public class MasterDataImpl implements IMasterDataService {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
     }
 
-    public boolean addTenantsToCriteria(List<Object> criteria, List<Long> newTenants) {
+    public void addTenantsToCriteria(List<Object> criteria, List<Long> newTenants) {
         // Case 1: criteria IS a single condition
         if (isTenantCondition(criteria)) {
             updateTenantIds(criteria, newTenants);
-            return true;
+            return;
         }
 
         // Case 2: criteria contains multiple conditions (and/or + conditions)
         for (Object item : criteria) {
             if (item instanceof List<?> innerList && isTenantCondition(innerList)) {
                 updateTenantIds(innerList, newTenants);
-                return true;
+                return;
             }
         }
-        return false;
+
+
+        List<Object> tenantCondition = convertToV1NotInCriteria(TENANT_ID, newTenants, null);
+        if (isSingleCondition(criteria)) {
+            // Turn single condition into compound condition
+            List<Object> original = new ArrayList<>(criteria);
+            criteria.clear();
+            criteria.add(original);
+            criteria.add("and");
+            criteria.add(tenantCondition);
+        } else {
+            // Append to compound criteria
+            criteria.add("and");
+            criteria.add(tenantCondition);
+        }
+    }
+
+    private boolean isSingleCondition(List<Object> criteria) {
+        if (criteria.size() != 3) return false;
+
+        Object first = criteria.get(0);
+        Object second = criteria.get(1);
+
+        return first instanceof List
+                && ((List<?>) first).size() == 1
+                && ((List<?>) first).get(0) instanceof String
+                && second instanceof String;
     }
 
     private boolean isTenantCondition(Object obj) {
@@ -466,7 +492,7 @@ public class MasterDataImpl implements IMasterDataService {
 
         return fieldPart instanceof List
                 && ((List<?>) fieldPart).size() == 1
-                && "TenantId".equals(((List<?>) fieldPart).get(0))
+                && TENANT_ID.equals(((List<?>) fieldPart).get(0))
                 && "not in".equals(operator);
     }
 
