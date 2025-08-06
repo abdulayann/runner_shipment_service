@@ -27,7 +27,7 @@ public class V1AuthHelper {
         headers.add("Authorization", RequestAuthContext.getAuthToken());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
-        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
         return headers;
     }
 
@@ -38,7 +38,7 @@ public class V1AuthHelper {
         headers.add("X-USER-NAME", UserContext.getUser().getUsername());
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         headers.add("X-SYNC-REQUEST", "true");
-        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
         headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         return headers;
@@ -52,7 +52,7 @@ public class V1AuthHelper {
         headers.add("X-UPDATE-USER", updateUsername);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
         headers.add("X-SYNC-REQUEST", "true");
-        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
         headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         return headers;

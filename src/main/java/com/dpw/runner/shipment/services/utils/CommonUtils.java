@@ -68,6 +68,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -3047,5 +3048,14 @@ public class CommonUtils {
         if (address.toString().endsWith(ReportConstants.COMM))
             address = new StringBuilder(address.substring(0, address.length() - COMM.length()));
         return address.toString();
+    }
+
+    public static String getSourceService() {
+        try {
+            return Objects.nonNull(MDC.get(Constants.ORIGINATED_FROM)) ? MDC.get(Constants.ORIGINATED_FROM) : Constants.SHIPMENT;
+        } catch (Exception e) {
+            log.error("{}, getSourceService: Message: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+            return Constants.SHIPMENT;
+        }
     }
 }

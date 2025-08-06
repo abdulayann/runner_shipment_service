@@ -5220,7 +5220,8 @@ public abstract class IReport {
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
         dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff()));
-        dictionary.put(S_LAT, convertToDPWDateFormat(LocalTimeZoneHelper.getDateTime(details.getLatestArrivalTime())));
+        dictionary.put(S_DG, convertToDPWDateFormat(details.getDgCutoff(), "ddMMMyyyy HH:mm", true));
+        dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime(), "ddMMMyyyy HH:mm", true));
     }
 
     private void addAdditionalFields(Map<String, Object> dictionary, ShipmentDetails details) {

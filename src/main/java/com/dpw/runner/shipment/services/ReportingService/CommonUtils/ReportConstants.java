@@ -1491,6 +1491,7 @@ public class ReportConstants {
     public static final String S_EAR_DROP_OFF = "S_EarDropoff";
     public static final String S_REEFER = "S_Reefer";
     public static final String S_LAT = "S_LAT";
+    public static final String S_DG = "S_DG";
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
