@@ -528,7 +528,7 @@ public class HblService implements IHblService {
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
-            shipmentDao.save(shipmentDetail, false);
+            shipmentDao.save(shipmentDetail, false, false);
             syncShipment = true;
         }
         return syncShipment;

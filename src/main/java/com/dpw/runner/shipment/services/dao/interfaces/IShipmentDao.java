@@ -19,7 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface IShipmentDao {
-    ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException;
+    ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync, boolean isFromBooking) throws RunnerException;
     ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync);
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);

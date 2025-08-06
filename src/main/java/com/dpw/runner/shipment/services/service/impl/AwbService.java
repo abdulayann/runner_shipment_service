@@ -1590,7 +1590,7 @@ public class AwbService implements IAwbService {
             if (!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))) {
                 shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             }
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, false);
             syncShipment = true;
         }
         return syncShipment;

@@ -1272,7 +1272,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(shipmentService).findById(shipmentId);
         verify(shipmentValidationV3Util).processDGValidations(eq(shipmentDetails), isNull(), anySet());
         verify(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, containerRequest);
-        verify(shipmentDao).save(shipmentDetails, false);
+        verify(shipmentDao).save(shipmentDetails, false, false);
     }
 
     @Test

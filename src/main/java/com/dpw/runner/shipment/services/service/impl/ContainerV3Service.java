@@ -425,7 +425,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     shipmentDetails.setContainsHazardous(true);
                     shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                     callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                    shipmentDao.save(shipmentDetails, false);
+                    shipmentDao.save(shipmentDetails, false, false);
                 }
             }
         }
@@ -521,7 +521,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
                     callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                    shipmentDao.save(shipmentDetails, false);
+                    shipmentDao.save(shipmentDetails, false, false);
                 }
             }
         }
