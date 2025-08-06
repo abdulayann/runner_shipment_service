@@ -1302,7 +1302,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         payload.setShipmentWtVolResponse(consolidationService.calculateShipmentWtVol(consolidationDetails));
 
         payload.setPackV3Summary(packingV3Service.getPackSummaryV3Response(packingList, consolidationDetails.getTransportMode(), CONSOLIDATION, consolidationDetails.getId(), null));
-        payload.setContainerSummary(containerV3Service.getContainerSummaryResponse(new ArrayList<>(consolidationDetails.getContainersList()), false, NETWORK_TRANSFER));
+        if(consolidationDetails.getContainersList()!=null && !consolidationDetails.getContainersList().isEmpty())
+            payload.setContainerSummary(containerV3Service.getContainerSummaryResponse(new ArrayList<>(consolidationDetails.getContainersList()), false, NETWORK_TRANSFER));
     }
 
     private void processContainersList(ShipmentDetails shipmentDetails, Map<UUID, List<UUID>> containerVsShipmentGuid, UUID shipmentGuid) {
