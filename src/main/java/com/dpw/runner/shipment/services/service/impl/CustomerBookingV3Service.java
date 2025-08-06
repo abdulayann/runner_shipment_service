@@ -961,6 +961,16 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBookingResponse.setOrderManagementId(null);
             customerBookingResponse.setOrderManagementNumber(null);
 
+            //fields related to cargo summary
+            customerBookingResponse.setPackages(0L);
+            customerBookingResponse.setContainers(0L);
+            customerBookingResponse.setGrossWeight(null);
+            customerBookingResponse.setVolume(null);
+            customerBookingResponse.setChargeable(null);
+            customerBookingResponse.setWeightVolume(null);
+            customerBookingResponse.setDescription(null);
+            customerBookingResponse.setMarksnNumbers(null);
+            customerBookingResponse.setAdditionalTerms(null);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
 
             return customerBookingResponse;
