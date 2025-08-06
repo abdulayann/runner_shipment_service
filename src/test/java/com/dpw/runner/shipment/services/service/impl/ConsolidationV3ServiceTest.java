@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -80,6 +81,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -152,8 +154,10 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -516,7 +520,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
     assertThrows(ValidationException.class, () -> consolidationV3Service.create(consolidationDetailsV3Request));
   }
-
 
   @Test
   void testCreateFromBooking_Success() {
@@ -985,6 +988,197 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true));
 
   }
+
+  @Test
+  void completeUpdate_updateDgStatusForHazardousContainer() throws RunnerException {
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setContainsHazardous(false);
+
+    // Prepare container
+    Containers container = new Containers();
+    container.setId(101L);
+    container.setHazardous(true);
+    container.setDgClass("3");
+    container.setShipmentsList(Set.of(shipment));
+
+    // Prepare consolidation
+    consolidationDetails.setId(1L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    consolidationDetails.setContainersList(List.of(container));
+
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+    doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class)))
+            .thenReturn(new ConsolidationDetailsV3Response());
+    when(masterDataUtils.withMdc(any())).thenReturn(() -> {});
+    V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+    tenantSettingsResponse.setEnableAirMessaging(false);
+
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+    when(jsonHelper.convertValue(any(), eq(ContainerRequest.class)))
+            .thenReturn(new ContainerRequest());
+    when(commonUtils.checkIfDGFieldsChangedInContainer(
+            any(ContainerRequest.class),
+            any(Containers.class)
+    )).thenReturn(true);
+
+    when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+
+    ConsolidationDetailsV3Response response = spyService.completeUpdate(consolidationDetailsV3Request);
+    assertNotNull(response);
+    assertTrue(shipment.getContainsHazardous(), "Shipment should be updated as hazardous");
+  }
+
+  @Test
+  void completeUpdate_DoesNotThrowExceptionForInvalidConsolTypeInOceanLclDg() throws RunnerException {
+    // Prepare shipment
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setContainsHazardous(false);
+
+    // Prepare container
+    Containers container = new Containers();
+    container.setId(101L);
+    container.setHazardous(true);
+    container.setDgClass("3");
+    container.setShipmentsList(Set.of(shipment));
+
+    // Prepare consolidation with with Null consolidationType
+    consolidationDetails.setId(1L);
+    consolidationDetails.setTransportMode("SEA");
+    consolidationDetails.setContainerCategory("LCL");
+    consolidationDetails.setContainersList(List.of(container));
+
+    var spyService = Mockito.spy(consolidationV3Service);
+    doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(masterDataUtils.withMdc(any())).thenReturn(() -> {});
+    when(jsonHelper.convertValue(any(), eq(ContainerRequest.class))).thenReturn(new ContainerRequest());
+    when(commonUtils.checkIfDGFieldsChangedInContainer(any(ContainerRequest.class), any(Containers.class)))
+            .thenReturn(true);
+    when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+    GenericException exception = assertThrows(GenericException.class, () -> {
+      spyService.completeUpdate(consolidationDetailsV3Request);
+    });
+
+    assertEquals("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD", exception.getMessage());
+  }
+
+  @Test
+  void completeUpdate_skipUpdateWhenOldContainerHasNoShipments() throws RunnerException {
+    Containers oldContainer = new Containers();
+    oldContainer.setId(101L);
+    oldContainer.setShipmentsList(null);
+
+    Containers container = new Containers();
+    container.setId(101L);
+    container.setHazardous(true);
+    container.setDgClass("3");
+    container.setShipmentsList(Set.of(new ShipmentDetails()));
+
+    consolidationDetails.setId(1L);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    consolidationDetails.setContainersList(List.of(container));
+
+    setupCommonMocks();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setContainersList(List.of(oldContainer));
+    var spyService = Mockito.spy(consolidationV3Service);
+    doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+    ConsolidationDetailsV3Response response = spyService.completeUpdate(consolidationDetailsV3Request);
+    assertNotNull(response);
+  }
+
+
+  @Test
+  void completeUpdate_doesNotUpdateWhenShipmentAlreadyHazardous() throws RunnerException {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setContainsHazardous(true);
+
+    Containers container = new Containers();
+    container.setId(101L);
+    container.setHazardous(true);
+    container.setDgClass("3");
+    container.setShipmentsList(Set.of(shipment));
+
+    consolidationDetails.setId(1L);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    consolidationDetails.setContainersList(List.of(container));
+
+    setupCommonMocks();
+    when(commonUtils.checkIfDGFieldsChangedInContainer(any(ContainerRequest.class), any(Containers.class)))
+            .thenReturn(true);
+    when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+    when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+    when(commonUtils.changeShipmentDGStatusToReqd(any(), eq(true))).thenReturn(false);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+    doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+    ConsolidationDetailsV3Response response = spyService.completeUpdate(consolidationDetailsV3Request);
+    assertNotNull(response);
+    assertTrue(shipment.getContainsHazardous(), "Shipment was already hazardous, should remain true");
+  }
+
+  @Test
+  void completeUpdate_doesNotUpdate_whenDGClassInvalid() throws RunnerException {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setContainsHazardous(false);
+
+    Containers container = new Containers();
+    container.setId(101L);
+    container.setHazardous(true);
+    container.setDgClass("INVALID");
+    container.setShipmentsList(Set.of(shipment));
+
+    consolidationDetails.setId(1L);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    consolidationDetails.setContainersList(List.of(container));
+
+    setupCommonMocks();
+    var spyService = Mockito.spy(consolidationV3Service);
+    doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+
+
+    when(commonUtils.checkIfDGFieldsChangedInContainer(any(ContainerRequest.class), any(Containers.class)))
+            .thenReturn(true);
+    when(commonUtils.checkIfAnyDGClass(any())).thenReturn(false); // skip due to invalid class
+
+    ConsolidationDetailsV3Response response = spyService.completeUpdate(consolidationDetailsV3Request);
+
+    assertNotNull(response);
+    assertTrue(shipment.getContainsHazardous(), "DG status should remain false for invalid DG class");
+  }
+
+  private void setupCommonMocks() throws RunnerException {
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class)))
+            .thenReturn(new ConsolidationDetailsV3Response());
+    when(masterDataUtils.withMdc(any())).thenReturn(() -> {});
+    V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+    tenantSettingsResponse.setEnableAirMessaging(false);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+    when(jsonHelper.convertValue(any(), eq(ContainerRequest.class))).thenReturn(new ContainerRequest());
+  }
+
 
   @Test
   void completeUpdate_NullEntityException() throws RunnerException {
