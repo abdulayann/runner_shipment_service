@@ -1570,7 +1570,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setLockedBy("user");
 
         Mockito.when(shipmentDao.findById(1L)).thenReturn(Optional.of(mockShipment));
-        Mockito.when(shipmentDao.save(any(), eq(false), false )).thenReturn(mockShipment.setIsLocked(false));
+        Mockito.when(shipmentDao.save(any(), eq(false), eq(false))).thenReturn(mockShipment.setIsLocked(false));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.toggleLock(commonRequestModel);
 
@@ -8916,7 +8916,7 @@ ShipmentServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         doNothing().when(shipmentDao).entityDetach(any());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build()));
-        when(shipmentDao.save(any(), anyBoolean(), false )).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean() )).thenReturn(shipmentDetails1);
         shipmentService.makeShipmentsDG(new HashMap<>() {{
             put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
         }}, shipmentDetails1);

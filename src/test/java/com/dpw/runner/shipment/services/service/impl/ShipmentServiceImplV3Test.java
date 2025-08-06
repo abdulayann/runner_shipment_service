@@ -649,7 +649,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails1);
+        lenient().when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
@@ -718,7 +718,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         when(notesDao.saveAll(any())).thenReturn(List.of(notes));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
