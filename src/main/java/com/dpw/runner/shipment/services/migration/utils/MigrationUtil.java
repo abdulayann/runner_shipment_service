@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.migration.utils;
 
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,7 @@ import java.util.concurrent.Future;
 
 @Slf4j
 @Component
+@Generated
 public class MigrationUtil {
 
     private MigrationUtil() {}
