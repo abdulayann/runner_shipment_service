@@ -967,7 +967,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBookingResponse.setGrossWeight(null);
             customerBookingResponse.setVolume(null);
             customerBookingResponse.setChargeable(null);
+            customerBookingResponse.setChargeableUnit(null);
             customerBookingResponse.setWeightVolume(null);
+            customerBookingResponse.setWeightVolumeUnit(null);
             customerBookingResponse.setDescription(null);
             customerBookingResponse.setMarksnNumbers(null);
             customerBookingResponse.setAdditionalTerms(null);
