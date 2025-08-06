@@ -202,6 +202,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.tomcat.util.bcel.Const;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -4248,12 +4249,6 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
     consolidationDetails.setAchievedQuantities(new AchievedQuantities());
     // Mocks
-    lenient().when(shipmentDao.findShipmentsByIds(anySet()))
-        .thenReturn(List.of(shipmentDetails));
-    lenient().when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), anyList(), any(), anySet(), anySet(), any()))
-        .thenReturn(new HashSet<>(List.of(1L)));
-    when(consoleShipmentMappingDao.findAll(any(), any()))
-        .thenReturn(new PageImpl<>(List.of()));
 
     // other essential mocks
     doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
@@ -4262,8 +4257,11 @@ if (unitConversionUtilityMockedStatic != null) {
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
     when(consoleShipmentMappingDao.assignShipments(any(), any(), any(), any(), any(), any(), any())).thenReturn(hashSet);
-    when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+//    when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
     when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+    doReturn(true)
+            .when(consolidationValidationV3Util)
+            .checkConsolidationTypeValidation(any());
     when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());

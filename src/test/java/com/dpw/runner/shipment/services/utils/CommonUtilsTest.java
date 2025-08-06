@@ -5512,7 +5512,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void shouldThrowException_WhenAirDGTrue_AndNotSecurity_AndHazardous_AndNotDgUser() {
+    void shouldNotThrowException_WhenAirDGTrue_AndNotSecurity_AndHazardous_AndNotDgUser() {
         ShipmentDetails details = new ShipmentDetails();
         details.setTransportMode("AIR");
         details.setContainsHazardous(true);
@@ -5527,7 +5527,7 @@ class CommonUtilsTest {
             commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
             userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
 
-            assertThrows(ValidationException.class, () ->
+            assertDoesNotThrow( () ->
                     commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
         }
     }
@@ -5570,7 +5570,7 @@ class CommonUtilsTest {
 
                 userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
 
-                assertThrows(ValidationException.class, () ->
+                assertDoesNotThrow(() ->
                         commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
             }
         }

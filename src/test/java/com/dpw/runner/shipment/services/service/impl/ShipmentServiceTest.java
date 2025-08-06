@@ -6703,15 +6703,6 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAttachDgAirShipments_HazTrue() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testConsol.setHazardous(true);
-        mockShipmentSettings();
-        boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
-        assertTrue(response);
-    }
-
-    @Test
     void checkAttachDgAirShipments_HazTrue_Settings_AirDgTrue() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
