@@ -7,7 +7,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -173,22 +172,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 
 @Slf4j
 @SuppressWarnings({"unchecked", "java:S2259"})
