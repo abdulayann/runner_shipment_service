@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipment
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -182,7 +183,7 @@ class ShipmentJobExecutorServiceTest {
 
 
     @Test
-    void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment2() {
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment2() throws RunnerException {
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -373,7 +374,7 @@ class ShipmentJobExecutorServiceTest {
     }
 
     @Test
-    void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation2() {
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation2() throws RunnerException {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);

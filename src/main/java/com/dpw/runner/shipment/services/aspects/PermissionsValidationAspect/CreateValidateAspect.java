@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,41 +23,33 @@ public class CreateValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.create(..)) && args(commonRequestModel)")
     public void validateShipmentCreateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
-        this.validateShipmentCreate(commonRequestModel);
+        ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
+        this.validateShipmentCreate(shipment.getTransportMode(), shipment.getDirection(), shipment.getShipmentType(), shipment.getIsDomestic());
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.create(..)) && args(commonRequestModel)")
     public void validateShipmentCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
-        this.validateShipmentCreate(commonRequestModel);
+        ShipmentV3Request shipment = (ShipmentV3Request) commonRequestModel.getData();
+        this.validateShipmentCreate(shipment.getTransportMode(), shipment.getDirection(), shipment.getShipmentType(), shipment.getIsDomestic());
     }
 
-    private void validateShipmentCreate(CommonRequestModel commonRequestModel) throws ValidationException {
-        ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
+    private void validateShipmentCreate(String transportMode, String direction, String shipmentType, Boolean domesticType) throws ValidationException {
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        if(shipment != null){
-            String transportMode = null;
-            String direction = null;
-            String shipmentType = null;
-            Boolean domesticType = null;
-            if(shipment.getTransportMode() != null)
-                transportMode = shipment.getTransportMode().toLowerCase();
-            if(shipment.getDirection() != null)
-                direction = shipment.getDirection().toLowerCase();
-            if(shipment.getShipmentType() != null)
-                shipmentType = shipment.getShipmentType().toLowerCase();
-            if(shipment.getIsDomestic() != null)
-                domesticType = shipment.getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
+        transportMode = StringUtility.toLowerCase(transportMode);
+        direction = StringUtility.toLowerCase(direction);
+        shipmentType = StringUtility.toLowerCase(shipmentType);
 
-            if (getValidatedFields(mappedPermissionList, transportMode, validatedFields, direction, shipmentType, domesticType, retrieveValidationFields))
-                return;
+        List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
-            if (validatedFields.size() < retrieveValidationFields)
-                throw new ValidationException("Unable to create record due to insufficient create permissions");
-        }
+        if (getValidatedFields(mappedPermissionList, transportMode, validatedFields, direction, shipmentType, domesticType, retrieveValidationFields))
+            return;
+
+        if (validatedFields.size() < retrieveValidationFields)
+            throw new ValidationException("Unable to create record due to insufficient create permissions");
+
     }
 
     private boolean getValidatedFields(List<String> mappedPermissionList, String transportMode, Set<String> validatedFields, String direction, String shipmentType, Boolean domesticType, int retrieveValidationFields) {
