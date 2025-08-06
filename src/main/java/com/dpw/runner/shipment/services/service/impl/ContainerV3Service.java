@@ -1402,9 +1402,12 @@ public class ContainerV3Service implements IContainerV3Service {
     public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) {
         boolean isDG = false;
         boolean isDGClass1Added = false;
+        boolean isDGContainer = false;
+        boolean isDGPackage = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
             isDGClass1Added = commonUtils.checkIfDGClass1(container.getDgClass());
             isDG = true;
+            isDGContainer = true;
         }
 
         if(!isDGClass1Added && !isDG && container.getPacksList() != null) {
@@ -1412,8 +1415,13 @@ public class ContainerV3Service implements IContainerV3Service {
                 if (Boolean.TRUE.equals(packing.getHazardous())) {
                     isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
                     isDG = true;
+                    isDGPackage = true;
                 }
             }
+        }
+
+        if(!isDGContainer && isDGPackage){
+            throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
         }
 
         if(isDG) {
