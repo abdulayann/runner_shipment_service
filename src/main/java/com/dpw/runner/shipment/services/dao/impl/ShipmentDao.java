@@ -419,8 +419,8 @@ public class ShipmentDao implements IShipmentDao {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
 
-        // Non dg user cannot save dg shipment
-        if (!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
+        // Non dg user can save/edit dg shipment
+        if (!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails))
             errors.add("You don't have permission to update DG Shipment");
     }
 
