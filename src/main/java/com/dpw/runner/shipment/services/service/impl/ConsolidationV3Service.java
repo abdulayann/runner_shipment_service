@@ -2368,7 +2368,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
@@ -2412,19 +2411,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Update export/import brokers if inter-branch logic applies
         updateNonInterBranchConsoleData(console, shipmentDetails);
-    }
-
-    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
-        if (Boolean.FALSE.equals(fromAttachShipment)) {
-            String oldIncoTerms = oldEntity.getIncoterms();
-            String newIncoTerms = console.getIncoterms();
-
-            if(isFieldChanged(oldIncoTerms, newIncoTerms)){
-                shipmentDetails.setIncoterms(console.getIncoterms());
-            }
-        }else{
-            shipmentDetails.setIncoterms(console.getIncoterms());
-        }
     }
 
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
