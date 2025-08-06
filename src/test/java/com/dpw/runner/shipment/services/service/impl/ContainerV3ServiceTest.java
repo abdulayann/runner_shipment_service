@@ -445,8 +445,8 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         when(containerDao.findByShipmentId(shipmentId)).thenReturn(List.of(testContainer));
         when(shipmentService.calculateShipmentSummary(any(), any(), any())).thenReturn(cargoDetailsResponse);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(eq(shipment), eq(cargoDetailsResponse));
-        doNothing().when(shipmentDao).updateTriggerMigrationWarning(eq(shipmentId));
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(shipment, cargoDetailsResponse);
+        doNothing().when(shipmentDao).updateTriggerMigrationWarning(shipmentId);
 
         when(containerDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
@@ -461,7 +461,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         });
 
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
-        lenient().doNothing().when(shipmentsContainersMappingDao).assignShipments(eq(containerId), eq(Set.of(shipmentId)), eq(false));
+        lenient().doNothing().when(shipmentsContainersMappingDao).assignShipments(containerId, Set.of(shipmentId), false);
 
         ContainerResponse response = containerV3Service.create(containerV3Request, SHIPMENT);
 
@@ -469,7 +469,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertEquals(consolidationId, containerV3Request.getConsolidationId());
         verify(shipmentDao).updateTriggerMigrationWarning(shipmentId); // verify migration block
         verify(shipmentsContainersMappingDao).assignShipments(containerId, Set.of(shipmentId), false); // verify ifPresent
-        verify(shipmentService).updateCargoDetailsInShipment(eq(shipment), eq(cargoDetailsResponse)); // cargo update
+        verify(shipmentService).updateCargoDetailsInShipment(shipment, cargoDetailsResponse); // cargo update
     }
 
 
