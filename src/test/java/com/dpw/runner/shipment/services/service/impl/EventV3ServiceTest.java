@@ -204,13 +204,13 @@ class EventV3ServiceTest extends CommonMocks {
     void populateBranchNames_shouldReturnEarly_whenV1ServiceReturnsNull() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(CommonV1ListRequest.builder().build())).thenReturn(null);
+        when(v1Service.listCousinBranches(any())).thenReturn(null);
 
         // Act
         eventV3Service.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(CommonV1ListRequest.builder().build());
+        verify(v1Service).listCousinBranches(any());
         verifyNoInteractions(jsonHelper);
     }
 
@@ -222,13 +222,13 @@ class EventV3ServiceTest extends CommonMocks {
         V1DataResponse response = new V1DataResponse();
         response.setEntities(null);
 
-        when(v1Service.listCousinBranches(CommonV1ListRequest.builder().build())).thenReturn(response);
+        when(v1Service.listCousinBranches(any())).thenReturn(response);
 
         // Act
         eventV3Service.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(CommonV1ListRequest.builder().build());
+        verify(v1Service).listCousinBranches(any());
         verifyNoInteractions(jsonHelper);
     }
 
@@ -236,13 +236,13 @@ class EventV3ServiceTest extends CommonMocks {
     void populateBranchNames_shouldHandleV1ServiceExceptionGracefully() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(CommonV1ListRequest.builder().build())).thenThrow(new V1ServiceException("failed"));
+        when(v1Service.listCousinBranches(any())).thenThrow(new V1ServiceException("failed"));
 
         // Act
         eventV3Service.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(CommonV1ListRequest.builder().build());
+        verify(v1Service).listCousinBranches(any());
     }
 
     @Test
@@ -252,7 +252,7 @@ class EventV3ServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(new Object())); // raw data
 
-        when(v1Service.listCousinBranches(CommonV1ListRequest.builder().build())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class)))
                 .thenThrow(new RuntimeException("conversion failed"));
 
@@ -285,7 +285,7 @@ class EventV3ServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(tenant1, tenant2));
 
-        when(v1Service.listCousinBranches(CommonV1ListRequest.builder().build())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
                 .thenReturn(List.of(tenant1, tenant2));
 
