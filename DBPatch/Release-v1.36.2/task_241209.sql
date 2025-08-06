@@ -7,7 +7,7 @@ set
 	entity_id = null,
 	ship_cons_number = null
 where
-	mawb_number = '157-05955935'
+	mawb_number = '157-05955935';
 
 update
 	consolidation_details
@@ -22,4 +22,4 @@ update
 set
 	awb_number = '157-05955935'
 where
-	consolidation_id = 63931
+	consolidation_id = 63931;
