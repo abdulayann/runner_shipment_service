@@ -123,7 +123,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
+    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync, boolean isFromBookingV3) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails), Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if (shipmentDetails.getId() != null) {
@@ -135,7 +135,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setContainersList(new HashSet<>());
         }
         try {
-            onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+            onSave(shipmentDetails, errors, oldShipment, fromV1Sync, isFromBookingV3);
         } catch (Exception e) {
             String errorMessage = e.getMessage();
             if (e.getClass().equals(ConstraintViolationException.class))
@@ -168,7 +168,7 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException {
         List<ShipmentDetails> res = new ArrayList<>();
         for (ShipmentDetails req : shipments) {
-            req = save(req, false);
+            req = save(req, false, false);
             res.add(req);
         }
         return res;
@@ -200,13 +200,13 @@ public class ShipmentDao implements IShipmentDao {
             }
             shipmentDetails.setUpdatedAt(LocalDateTime.now());
         }
-        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        onSave(shipmentDetails, errors, oldShipment, fromV1Sync, false);
         return shipmentDetails;
     }
 
-    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
+    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync, boolean isFromBookingV3) {
         setHouseBill(shipmentDetails, oldShipment);
-        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync, isFromBookingV3));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         validateCarrierDetails(shipmentDetails);
@@ -352,14 +352,14 @@ public class ShipmentDao implements IShipmentDao {
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync, boolean isFromBookingV3) {
         Set<String> errors = new LinkedHashSet<>();
 
         if (Boolean.TRUE.equals(request.getContainsHazardous()) &&
                 Constants.TRANSPORT_MODE_SEA.equals(request.getTransportMode()) &&
                 Constants.SHIPMENT_TYPE_LCL.equals(request.getShipmentType()) &&
                 !Constants.CONSOLIDATION_TYPE_AGT.equals(request.getJobType()) &&
-                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType())) {
+                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType()) && !isFromBookingV3) {
             errors.add("For Ocean DG shipments LCL Cargo Type, we can have only AGT and Co Load Master");
         }
         if (request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {

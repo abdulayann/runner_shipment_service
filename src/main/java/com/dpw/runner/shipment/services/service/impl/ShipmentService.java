@@ -775,7 +775,7 @@ public class ShipmentService implements IShipmentService {
              * Carrier Details*
              */
 
-            shipmentDetail = shipmentDao.save(shipmentDetail, false);
+            shipmentDetail = shipmentDao.save(shipmentDetail, false, false);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetail, true, false, shipmentDetail.getContainersList());
         }
 
@@ -1181,7 +1181,7 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getShipmentId() == null){
             shipmentDetails.setShipmentId(generateShipmentId(shipmentDetails));
         }
-        shipmentDetails = shipmentDao.save(shipmentDetails, false);
+        shipmentDetails = shipmentDao.save(shipmentDetails, false, false);
         return shipmentDetails;
     }
 
@@ -4898,7 +4898,7 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setContainsHazardous(true);
         saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
         if(saveShipment) {
-            shipmentDetails = shipmentDao.save(shipmentDetails, false);
+            shipmentDetails = shipmentDao.save(shipmentDetails, false, false);
             shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
         }
     }
@@ -5564,7 +5564,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);
         }
-        shipmentDetails = shipmentDao.save(shipmentDetails, false);
+        shipmentDetails = shipmentDao.save(shipmentDetails, false, false);
         shipmentSync.syncLockStatus(shipmentDetails);
         dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, shipmentDetails.getContainersList());
         return ResponseHelper.buildSuccessResponse();
@@ -5718,7 +5718,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setEntityTransfer(true);
             }
             if(id == null) {
-                entity = shipmentDao.save(entity, true);
+                entity = shipmentDao.save(entity, true, false);
                 id = entity.getId();
             } else {
                 operation = DBOperationType.UPDATE.name();
@@ -7410,7 +7410,7 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(id, SHIPMENT);
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
                 shipment.setEventsList(new ArrayList<>(eventDao.findAll(pair.getLeft(), pair.getRight()).getContent().stream().toList()));
-                shipmentDao.save(shipment, false);
+                shipmentDao.save(shipment, false, false);
                 try {
                     shipmentSync.sync(shipment, null, null, shipment.getGuid().toString(), false);
                 } catch (Exception e) {
@@ -8609,7 +8609,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
-        shipmentDao.save(shipmentDetails, false);
+        shipmentDao.save(shipmentDetails, false, false);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -8667,7 +8667,7 @@ public class ShipmentService implements IShipmentService {
         }
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
 
-        shipmentDao.save(shipmentDetails, false);
+        shipmentDao.save(shipmentDetails, false, false);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
