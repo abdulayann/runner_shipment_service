@@ -260,6 +260,7 @@ public class PackingV3Service implements IPackingV3Service {
                         Function.identity()
                 ));
 
+        addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
 
         boolean isDG = false;
         boolean isDGClass1Added = false;
@@ -288,6 +289,18 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
+    private void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
+
+        for (Long packingId : requestIds) {
+            Packing updatedPacking = updatedPackingMap.get(packingId);
+            Packing oldPacking = oldPackingMap.get(packingId);
+
+            if(oldPacking != null && updatedPacking.getContainerId() != null && isStringNullOrEmpty(oldPacking.getDGClass()) && !isStringNullOrEmpty(updatedPacking.getDGClass())){
+                    throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
+            }
+        }
+    }
+
     private boolean isnewDGPack(Packing updated, Packing old) throws RunnerException {
         return old == null && commonUtils.checkIfAnyDGClass(updated.getDGClass());
     }
@@ -295,7 +308,6 @@ public class PackingV3Service implements IPackingV3Service {
     private boolean isDGUpdated(Packing updated, Packing old) {
         return old != null && commonUtils.checkIfDGFieldsChangedInPackingV3(updated, old);
     }
-
 
     private List<Packing> updateCargoDetailsInShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null)
