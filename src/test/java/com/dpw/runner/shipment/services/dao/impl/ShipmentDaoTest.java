@@ -2333,4 +2333,47 @@ class ShipmentDaoTest extends CommonMocks {
         verify(shipmentRepository, times(1))
                 .updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
     }
+
+    @Test
+    void testFindShipmentIdsByTenantId() {
+        Integer tenantId = 1;
+        shipmentDao.findShipmentIdsByTenantId(tenantId);
+        verify(shipmentRepository, times(1)).findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testRevertSoftDeleteShipmentIdAndTenantId() {
+        List<Long> shipmentIds = List.of(10L, 20L);
+        Integer tenantId = 2;
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+        verify(shipmentRepository, times(1)).revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Test
+    void testFindAllShipmentIdsByTenantId() {
+        Integer tenantId = 3;
+        shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+        verify(shipmentRepository, times(1)).findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testDeleteShipmentDetailsByIds() {
+        Set<Long> shipmentIds = Set.of(100L, 200L);
+        shipmentDao.deleteShipmentDetailsByIds(shipmentIds);
+        verify(shipmentRepository, times(1)).deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Test
+    void testDeleteTriangularPartnerShipmentByShipmentId() {
+        Long shipmentId = 300L;
+        shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+        verify(shipmentRepository, times(1)).deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Test
+    void testUpdateTriggerMigrationWarning() {
+        Long shipmentId = 400L;
+        shipmentDao.updateTriggerMigrationWarning(shipmentId);
+        verify(shipmentRepository, times(1)).updateTriggerMigrationWarning(shipmentId);
+    }
 }

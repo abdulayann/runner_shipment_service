@@ -1268,4 +1268,61 @@ class ConsolidationDaoTest extends CommonMocks {
         assertEquals(expectedValue, result);
         Mockito.verify(consolidationRepository).getAllowAttachMentFromConsol(consolidationId);
     }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PARTIAL");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(101L, 102L);
+        when(consolidationRepository.findAllByMigratedStatuses(statuses, tenantId)).thenReturn(expected);
+        List<Long> result = consolidationsDao.findAllByMigratedStatuses(statuses, tenantId);
+        assertEquals(expected, result);
+        verify(consolidationRepository, times(1)).findAllByMigratedStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testFindConsolidationIdsByTenantId() {
+        Integer tenantId = 2;
+        Set<Long> expected = Set.of(201L, 202L);
+        when(consolidationRepository.findConsolidationIdsByTenantId(tenantId)).thenReturn(expected);
+        Set<Long> result = consolidationsDao.findConsolidationIdsByTenantId(tenantId);
+        assertEquals(expected, result);
+        verify(consolidationRepository, times(1)).findConsolidationIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testSave() {
+        ConsolidationDetails details = new ConsolidationDetails(); // Or mock if needed
+        ConsolidationDetails saved = new ConsolidationDetails();
+        when(consolidationRepository.save(details)).thenReturn(saved);
+        ConsolidationDetails result = consolidationsDao.save(details);
+        assertEquals(saved, result);
+        verify(consolidationRepository, times(1)).save(details);
+    }
+
+    @Test
+    void testDeleteAdditionalConsolidationsByConsolidationIdAndTenantId() {
+        List<Long> ids = List.of(301L, 302L);
+        Integer tenantId = 3;
+        consolidationsDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(ids, tenantId);
+        verify(consolidationRepository, times(1))
+                .deleteAdditionalConsolidationsByConsolidationIdAndTenantId(ids, tenantId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByByConsolidationIdAndTenantId() {
+        List<Long> ids = List.of(401L);
+        Integer tenantId = 4;
+        consolidationsDao.revertSoftDeleteByByConsolidationIdAndTenantId(ids, tenantId);
+        verify(consolidationRepository, times(1))
+                .revertSoftDeleteByByConsolidationIdAndTenantId(ids, tenantId);
+    }
+
+    @Test
+    void testDeleteTriangularPartnerConsolidationByConsolidationId() {
+        Long consolidationId = 501L;
+        consolidationsDao.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+        verify(consolidationRepository, times(1))
+                .deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
 }

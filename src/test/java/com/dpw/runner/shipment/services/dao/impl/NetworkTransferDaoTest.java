@@ -192,4 +192,46 @@ class NetworkTransferDaoTest {
         assertEquals(NetworkTransferStatus.SCHEDULED.name(), res);
     }
 
+    @Test
+    void testFindNteForMigrationStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PENDING");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(10L, 20L);
+
+        when(networkTransferRepository.findNteForMigrationStatuses(statuses, tenantId)).thenReturn(expected);
+
+        List<Long> actual = networkTransferDao.findNteForMigrationStatuses(statuses, tenantId);
+
+        assertEquals(expected, actual);
+        verify(networkTransferRepository).findNteForMigrationStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testFindNteByIds() {
+        List<Long> ids = List.of(100L, 200L);
+        NetworkTransfer nt1 = new NetworkTransfer();
+        nt1.setId(100L);
+        NetworkTransfer nt2 = new NetworkTransfer();
+        nt2.setId(200L);
+        List<NetworkTransfer> expected = List.of(nt1, nt2);
+        when(networkTransferRepository.findNteByIds(ids)).thenReturn(expected);
+        List<NetworkTransfer> actual = networkTransferDao.findNteByIds(ids);
+        assertEquals(expected, actual);
+        verify(networkTransferRepository).findNteByIds(ids);
+    }
+
+    @Test
+    void testFindByEntityIdsAndEntityType() {
+        Set<Long> entityIds = Set.of(1L, 2L);
+        String entityType = "SOME_TYPE";
+        NetworkTransfer nt1 = new NetworkTransfer();
+        nt1.setId(1L);
+        NetworkTransfer nt2 = new NetworkTransfer();
+        nt2.setId(2L);
+        List<NetworkTransfer> expected = List.of(nt1, nt2);
+        when(networkTransferRepository.findByEntityIdAndEntityType(entityIds, entityType)).thenReturn(expected);
+        List<NetworkTransfer> actual = networkTransferDao.findByEntityIdsAndEntityType(entityIds, entityType);
+        assertEquals(expected, actual);
+        verify(networkTransferRepository).findByEntityIdAndEntityType(entityIds, entityType);
+    }
 }

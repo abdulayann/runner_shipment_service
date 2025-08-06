@@ -360,4 +360,22 @@ class TruckDriverDetailsDaoTest {
         assertEquals(truckDriverDetailsList, truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L, map));
     }
 
+    @Test
+    void testDeleteAdditionalTruckDriverDetailsByShipmentId() {
+        List<Long> truckDriverDetailsIds = List.of(1L, 2L);
+        Long shipmentId = 100L;
+        truckDriverDetailsDao.deleteAdditionalTruckDriverDetailsByShipmentId(truckDriverDetailsIds, shipmentId);
+        verify(truckDriverDetailsRepository, times(1))
+                .deleteAdditionalTruckDriverDetailsByShipmentId(truckDriverDetailsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByTruckDriverDetailsIdsAndShipmentId() {
+        List<Long> truckDriverDetailsIds = List.of(3L, 4L);
+        Long shipmentId = 200L;
+        truckDriverDetailsDao.revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(truckDriverDetailsIds, shipmentId);
+        verify(truckDriverDetailsRepository, times(1))
+                .revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(truckDriverDetailsIds, shipmentId);
+    }
+
 }
