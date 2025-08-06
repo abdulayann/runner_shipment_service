@@ -2568,12 +2568,6 @@ public class CommonUtils {
 
     public void validateAirSecurityAndDGShipmentPermissions(ShipmentDetails shipmentDetails) {
         if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
-            // DG shipment can be updated only by DG users
-            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
-                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
-                    Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
-                throw new ValidationException("You don't have permission to update DG Shipment");
-            }
             // Air EXP shipment can be updated only by Air Security users
             if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
                     !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
@@ -2585,11 +2579,10 @@ public class CommonUtils {
     public void validateAirSecurityAndDGConsolidationPermissions(ConsolidationDetails consolidationDetails) {
         if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             // DG shipment can be updated only by DG users
-            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
-                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
-                    Boolean.TRUE.equals(consolidationDetails.getHazardous()) && !UserContext.isAirDgUser()) {
-                throw new ValidationException("You don't have permission to update DG Consolidation");
-            }
+//            if(  !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+//                    Boolean.TRUE.equals(consolidationDetails.getHazardous()) && !UserContext.isAirDgUser()) {
+//                throw new ValidationException("You don't have permission to update DG Consolidation");
+//            }
             // Air EXP shipment can be updated only by Air Security users
             if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
                     !CommonUtils.checkAirSecurityForConsolidation(consolidationDetails)) {

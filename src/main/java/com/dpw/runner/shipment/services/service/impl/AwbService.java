@@ -3085,7 +3085,7 @@ public class AwbService implements IAwbService {
     }
 
     private String getResForAirDgCase(List<AwbPackingInfo> awbPackingInfoList, Boolean dgFlag, String res) {
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
+        if (Boolean.TRUE.equals(dgFlag)) {
             Integer packs = getPacksCount(awbPackingInfoList);
             if (packs != 0) {
                 if (!isStringNullOrEmpty(res))

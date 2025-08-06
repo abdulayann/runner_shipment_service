@@ -272,11 +272,6 @@ public class ConsolidationValidationV3Util {
      * @return true if Air DG checks should be applied, false otherwise
      */
     private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        // First, check if Air DG processing is globally enabled via tenant settings
-        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag())) {
-            return false;
-        }
-
         // Return true only if the transport mode is AIR
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }

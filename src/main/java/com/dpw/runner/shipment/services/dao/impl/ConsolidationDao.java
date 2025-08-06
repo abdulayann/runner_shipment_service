@@ -261,9 +261,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+        return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode());
+
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
@@ -273,8 +272,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
-            return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
 
