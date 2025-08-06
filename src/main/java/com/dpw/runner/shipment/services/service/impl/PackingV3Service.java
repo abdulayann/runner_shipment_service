@@ -846,6 +846,7 @@ public class PackingV3Service implements IPackingV3Service {
             throw new ValidationException("Entity id is empty");
         }
         List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(Long.valueOf(request.getEntityId()));
+        commonUtils.setInterBranchContextForHub();
         if (ObjectUtils.isEmpty(consolidationDetailsEntity)) {
             return new PackingListResponse();
         }
@@ -871,7 +872,7 @@ public class PackingV3Service implements IPackingV3Service {
         packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
         packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
         //get shipment details and consolidation details
-        List<ShipmentDetails> shipmentDetailsList = shipmentService.findByIdIn(shipmentIds);
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         Map<Long, ShipmentDetails> shipmentIdMap = shipmentDetailsList.stream()
                 .collect(Collectors.toMap(
                         ShipmentDetails::getId,
