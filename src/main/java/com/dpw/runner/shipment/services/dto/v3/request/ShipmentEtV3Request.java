@@ -229,6 +229,12 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     private LocalDateTime brokerageAtOriginDate;
     @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
     private LocalDateTime shippingInstructionCutoff;
