@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CR_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
 
 @Component
@@ -25,6 +26,7 @@ public class V1AuthHelper {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Authorization", RequestAuthContext.getAuthToken());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
+        headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
@@ -37,6 +39,7 @@ public class V1AuthHelper {
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         headers.add("X-SYNC-REQUEST", "true");
         headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         return headers;
     }
@@ -50,6 +53,7 @@ public class V1AuthHelper {
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
         headers.add("X-SYNC-REQUEST", "true");
         headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        headers.add(CR_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         return headers;
     }

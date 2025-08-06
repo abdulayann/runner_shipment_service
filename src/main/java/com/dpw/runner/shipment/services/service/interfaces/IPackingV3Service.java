@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContaine
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
@@ -63,4 +64,5 @@ public interface IPackingV3Service {
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException;
+    PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId);
 }
