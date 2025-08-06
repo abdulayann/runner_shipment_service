@@ -26,7 +26,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private Long id;
   private UUID guid;
   private Long consolidationId;
-  private Long shipmentsId;
+  private Long shipmentId;
   private Long bookingId;
   private Long loggingId;
   @NonNull

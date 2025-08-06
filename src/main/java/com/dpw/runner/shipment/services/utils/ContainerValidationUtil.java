@@ -72,10 +72,10 @@ public class ContainerValidationUtil {
 
         for (int index = 0; index < requests.size(); index++) {
             ContainerV3Request container = requests.get(index);
-            if (container.getBookingId() == null && container.getConsolidationId() == null && container.getShipmentsId() == null) {
+            if (container.getBookingId() == null && container.getConsolidationId() == null && container.getShipmentId() == null) {
                 throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
             }
-            if(container.getBookingId() !=null && container.getConsolidationId() != null && container.getShipmentsId() != null){
+            if(container.getBookingId() !=null && container.getConsolidationId() != null && container.getShipmentId() != null){
                 throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not both.");
             }
         }

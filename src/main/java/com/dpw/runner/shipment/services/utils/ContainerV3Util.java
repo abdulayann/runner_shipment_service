@@ -636,7 +636,7 @@ public class ContainerV3Util {
     public static void setShipmentOrConsoleId(BulkUploadRequest request, String module, List<ContainerV3Request> requests) {
         requests.forEach(p -> {
             if (module.equalsIgnoreCase(SHIPMENT)) {
-                p.setShipmentsId(request.getShipmentId());
+                p.setShipmentId(request.getShipmentId());
             }
             if (module.equalsIgnoreCase(CONSOLIDATION)) {
                 p.setConsolidationId(request.getConsolidationId());

@@ -251,7 +251,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private void validateContainerRequest(ContainerV3Request containerRequest) {
         boolean hasBookingId = containerRequest.getBookingId() != null;
         boolean hasConsolidationId = containerRequest.getConsolidationId() != null;
-        boolean hasShipmentsId = containerRequest.getShipmentsId() != null;
+        boolean hasShipmentsId = containerRequest.getShipmentId() != null;
 
         if (!hasBookingId && !hasConsolidationId && !hasShipmentsId) {
             throw new ValidationException("Either BookingId, ConsolidationId, or ShipmentsId must be provided in the request.");
@@ -264,8 +264,8 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private ShipmentDetails processShipmentModule(ContainerV3Request containerRequest) {
-        ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentsId())
-                .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentsId()));
+        ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentId())
+                .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentId()));
 
         containerValidationUtil.validateShipmentForContainer(shipmentDetails);
         containerValidationUtil.validateShipmentCargoType(shipmentDetails);
@@ -288,17 +288,17 @@ public class ContainerV3Service implements IContainerV3Service {
         Optional.ofNullable(module)
                 .filter(SHIPMENT::equals)
                 .filter(m -> savedContainer.getId() != null)
-                .filter(m -> containerRequest.getShipmentsId() != null)
+                .filter(m -> containerRequest.getShipmentId() != null)
                 .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
                         savedContainer.getId(),
-                        Set.of(containerRequest.getShipmentsId()),
+                        Set.of(containerRequest.getShipmentId()),
                         false
                 ));
 
 
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
@@ -403,7 +403,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
@@ -504,7 +504,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         if(!containsHazardousContainer(containerRequestList)) return;
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentId());
             validateAndSaveDGShipment(oldShipmentContainers, shipmentDetails, containerRequestList, isCreate);
         } else {
                 Long consolidationId = containerRequestList.get(0).getConsolidationId();
@@ -889,7 +889,7 @@ public class ContainerV3Service implements IContainerV3Service {
     protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest, String module, String consoleType) {
         if (SHIPMENT.equalsIgnoreCase(module)) {
             if (SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
-                return containerDao.findByShipmentId(containerRequest.getShipmentsId());
+                return containerDao.findByShipmentId(containerRequest.getShipmentId());
             }
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
         }
@@ -1428,10 +1428,10 @@ public class ContainerV3Service implements IContainerV3Service {
       Optional.ofNullable(module)
           .filter(SHIPMENT::equals)
           .filter(m -> container.getId() != null)
-          .filter(m -> request.getShipmentsId() != null)
+          .filter(m -> request.getShipmentId() != null)
           .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
               container.getId(),
-              Set.of(request.getShipmentsId()),
+              Set.of(request.getShipmentId()),
               false
           ));
     }
