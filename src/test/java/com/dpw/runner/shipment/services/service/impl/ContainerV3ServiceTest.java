@@ -419,7 +419,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .commodityGroup("FCR")
                 .containerCount(2L)
                 .containerNumber("12345678910")
-                .shipmentsId(shipmentId)
+                .shipmentId(shipmentId)
                 .build();
 
         Containers testContainer = new Containers();
@@ -577,7 +577,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .containerCount(2L)
                 .consolidationId(1L)
                 .containerNumber("12345678910")
-                .shipmentsId(100L)
+                .shipmentId(100L)
                 .build();
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
@@ -1035,9 +1035,18 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Test
     void testGetSiblingContainersWithRequest() {
         ContainerV3Request request = new ContainerV3Request();
-        request.setShipmentsId(1L);
+        request.setShipmentId(1L);
         lenient().when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
         List<Containers> containersList = containerV3Service.getSiblingContainers(request,"","");
+        assertNotNull(containersList);
+    }
+
+    @Test
+    void testGetSiblingContainersWithRequest5() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setShipmentId(1L);
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,SHIPMENT,SHIPMENT_TYPE_DRT);
         assertNotNull(containersList);
     }
 
@@ -1157,7 +1166,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Test
     void testNonNullShipmentConsoleId_Creation(){
         ContainerV3Request request = new ContainerV3Request();
-        request.setShipmentsId(1L);
+        request.setShipmentId(1L);
         request.setConsolidationId(1L);
         request.setBookingId(1L);
         assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
@@ -2095,7 +2104,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         boolean isCreate = true;
         Long shipmentId = 1L;
         ContainerV3Request containerRequest = new ContainerV3Request();
-        containerRequest.setShipmentsId(shipmentId);
+        containerRequest.setShipmentId(shipmentId);
         List<ContainerV3Request> containerRequestList = List.of(containerRequest);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         List<Containers> oldContainers = List.of(new Containers());
