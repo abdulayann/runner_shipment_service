@@ -162,10 +162,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -2376,22 +2373,26 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBookingDao.save(booking);
     }
 
-    private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking) {
+    private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking) throws RunnerException {
+        Set<String> distinctContainerPackTypes = new HashSet<>();
         for(Containers containers: containersList) {
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
+            addDistinctContainersPackType(distinctContainerPackTypes, containers);
         }
         customerBooking.setContainers(getTotalContainerCount(containersList));
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
         customerBooking.setPackages(getTotalContainerPackages(containersList));
+        customerBooking.setPackageType(getPackUnit(distinctContainerPackTypes));
         customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+        customerBooking.setGrossWeightUnit(KG);
     }
 
-    public BigDecimal getTotalCargoWeight(List<Containers> containersList) {
+    public BigDecimal getTotalCargoWeight(List<Containers> containersList) throws RunnerException {
         BigDecimal totalCargoWeight = BigDecimal.ZERO;
         for (Containers container : containersList) {
-            BigDecimal containerCount = BigDecimal.valueOf(container.getContainerCount());
-            BigDecimal weightPerContainer = container.getCargoWeightPerContainer();
-            BigDecimal totalLineCargoWeight = containerCount.multiply(weightPerContainer);
+            BigDecimal containerCount = container.getContainerCount() != null ? new BigDecimal(container.getContainerCount()) : BigDecimal.ZERO;
+            BigDecimal weightPerContainer = container.getCargoWeightPerContainer() != null ? container.getCargoWeightPerContainer() : BigDecimal.ZERO;
+            BigDecimal totalLineCargoWeight = new BigDecimal(convertUnit(MASS, containerCount.multiply(weightPerContainer), container.getGrossWeightUnit(), KG).toString());
 
             totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
         }
@@ -2402,7 +2403,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         long totalLinePackages;
         long totalCargoSummaryPackages = 0L;
         for(Containers container: containersList) {
-            totalLinePackages = container.getContainerCount() * container.getPackagesPerContainer();
+            long containerCount = container.getContainerCount() != null ? container.getContainerCount() : 0L;
+            long packagesPerContainer = container.getPackagesPerContainer() != null ? container.getPackagesPerContainer() : 0L;
+            totalLinePackages = containerCount * packagesPerContainer;
+
             totalCargoSummaryPackages += totalLinePackages;
         }
         return totalCargoSummaryPackages;
@@ -2436,7 +2440,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
         Set<String> distinctPackTypes = new HashSet<>();
-        boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
         boolean stopWeightCalculation = false;
         customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
         customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
@@ -2484,6 +2487,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    private void addDistinctContainersPackType(Set<String> distinctContainerPackTypes, Containers containers) {
+        if (!isStringNullOrEmpty(containers.getContainerPackageType())) {
+            distinctContainerPackTypes.add(containers.getContainerPackageType());
+        }
+    }
+
     private String getPackUnit(Set<String> packTypes) {
         return (packTypes.size() == 1) ? packTypes.iterator().next() : PackingConstants.PKG;
     }
@@ -2505,13 +2514,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     double wtInKg = convertUnit(Constants.MASS, customerBooking.getGrossWeight(), customerBooking.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
                     chargeable = BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3));
                     customerBooking.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-                    vwOb = consolidationService.calculateVolumeWeight(
-                            customerBooking.getTransportType(),
-                            Constants.WEIGHT_UNIT_KG,
-                            Constants.VOLUME_UNIT_M3,
-                            BigDecimal.valueOf(wtInKg),
-                            BigDecimal.valueOf(volInM3)
-                    );
+                    vwOb = consolidationService.calculateVolumeWeight(customerBooking.getTransportType(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
                 } else {
                     customerBooking.setChargeableUnit(vwOb.getChargeableUnit());
                 }
