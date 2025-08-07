@@ -2624,7 +2624,7 @@ public class ShipmentService implements IShipmentService {
 
     public void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {
         if( ((Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()) && SHIPMENT_TYPE_LCL.equals(consolidationDetails1.getContainerCategory()))
-                || checkForAirDGFlag(consolidationDetails1))
+                || checkForAirTransportMode(consolidationDetails1))
                 && (Boolean.TRUE.equals(consolidationDetails1.getHazardous()) || Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))) {
             List<ConsoleShipmentMapping> consoleShipmentMapping = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails1.getId());
             if(!listIsNullOrEmpty(consoleShipmentMapping) && consoleShipmentMapping.size() + isNewConsoleAttached > 1) {
@@ -6877,12 +6877,12 @@ public class ShipmentService implements IShipmentService {
         return UserContext.isAirDgUser();
     }
 
-    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
+    private boolean checkForAirTransportMode(ConsolidationDetails consolidationDetails) {
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }
 
     private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails consolidationDetails) {
-        if(!checkForAirDGFlag(consolidationDetails))
+        if(!checkForAirTransportMode(consolidationDetails))
             return false;
         if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
@@ -8358,7 +8358,7 @@ public class ShipmentService implements IShipmentService {
         awbDao.validateAirMessaging(consoleId);
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
-        if(checkForAirDGFlag(consolidationDetails)) {
+        if(checkForAirTransportMode(consolidationDetails)) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 return ResponseHelper.buildFailedResponse(String.format(AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
             }

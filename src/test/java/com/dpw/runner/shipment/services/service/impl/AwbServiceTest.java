@@ -621,7 +621,6 @@ class AwbServiceTest extends CommonMocks {
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
-        mockShipmentSettings();
         mockTenantSettings();
         ShipmentDetails shipmentDetails = testShipment;
         shipmentDetails.setMasterBill("098-2343234");
