@@ -2427,9 +2427,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.error("Request is null for Shipment Create From Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        shipmentDetails.setIsShipperClientEqual(request.getIsShipperClientEqual());
-        shipmentDetails.setIsConsigneeClientEqual(request.getIsConsigneeClientEqual());
-        shipmentDetails.setIsNotifyConsigneeEqual(request.getIsNotifyConsigneeEqual());
         try {
             /*  Populate unloc code for entities */
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
