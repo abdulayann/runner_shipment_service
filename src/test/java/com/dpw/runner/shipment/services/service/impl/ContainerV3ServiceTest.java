@@ -910,6 +910,15 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testGetSiblingContainersWithRequest5() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setShipmentId(1L);
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,SHIPMENT,SHIPMENT_TYPE_DRT);
+        assertNotNull(containersList);
+    }
+
+    @Test
     void testGetSiblingContainersWithRequest1() {
         ContainerV3Request request = new ContainerV3Request();
         request.setBookingId(1L);

@@ -695,4 +695,30 @@ class ContainerValidationUtilTest extends CommonMocks {
         Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("AIR", "LCL");
     }
 
+    @Test
+    void testValidateCreateBulkRequest_NoIdProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request(); // all null
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Either BookingId or ConsolidationId or ShipmentId must be provided in the request.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateCreateBulkRequest_MultipleIdsProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setBookingId(1L);
+        request.setShipmentId(2L); // multiple IDs set
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.", exception.getMessage());
+    }
+
 }

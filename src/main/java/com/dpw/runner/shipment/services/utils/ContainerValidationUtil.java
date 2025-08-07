@@ -72,11 +72,17 @@ public class ContainerValidationUtil {
 
         for (int index = 0; index < requests.size(); index++) {
             ContainerV3Request container = requests.get(index);
-            if (container.getBookingId() == null && container.getConsolidationId() == null && container.getShipmentId() == null) {
-                throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+            int nonNullCount = 0;
+            if (container.getBookingId() != null) nonNullCount++;
+            if (container.getConsolidationId() != null) nonNullCount++;
+            if (container.getShipmentId() != null) nonNullCount++;
+
+            if (nonNullCount == 0) {
+                throw new ValidationException("Either BookingId or ConsolidationId or ShipmentId must be provided in the request.");
             }
-            if(container.getBookingId() !=null && container.getConsolidationId() != null && container.getShipmentId() != null){
-                throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not both.");
+
+            if (nonNullCount > 1) {
+                throw new ValidationException("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.");
             }
         }
     }
@@ -264,5 +270,4 @@ public class ContainerValidationUtil {
             default -> "Transport mode must be SEA/ROAD";
         };
     }
-
 }
