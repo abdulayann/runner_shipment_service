@@ -260,18 +260,20 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMaxId();
     }
 
-    private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+    private boolean checkForTransportModeAir(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
         return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode());
 
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+        if(checkForTransportModeAir(request, shipmentSettingsDetails))
             return false;
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
     private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForTransportModeAir(request, shipmentSettingsDetails))
+            return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
 

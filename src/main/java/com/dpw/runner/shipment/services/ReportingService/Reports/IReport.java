@@ -4668,7 +4668,7 @@ public abstract class IReport {
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
-        if (Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser() && !isAirSecurityUser()) {
+        if (Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
                 throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }

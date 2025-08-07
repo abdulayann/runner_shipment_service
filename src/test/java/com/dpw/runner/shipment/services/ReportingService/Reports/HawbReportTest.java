@@ -2205,7 +2205,12 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setContainsHazardous(true);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        UserContext.getUser().setPermissions(new HashMap<>());
+        ShipmentSettingsDetails mockSettings = ShipmentSettingsDetails.builder()  // Set to false to avoid air cargo security validation
+                .build();
+        mockSettings.setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, false);
+        hawbReport.printType= ORIGINAL;
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockSettings);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
     }

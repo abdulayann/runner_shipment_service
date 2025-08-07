@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
@@ -244,7 +245,11 @@ class MawbReportTest extends CommonMocks {
         consolidationModel.setHazardous(true);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
-        UserContext.getUser().setPermissions(new HashMap<>());
+        ShipmentSettingsDetails mockSettings = ShipmentSettingsDetails.builder()  // Set to false to avoid air cargo security validation
+                .build();
+        mockSettings.setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, false);
+        mawbReport.printType= ORIGINAL;
         mockShipmentSettings();
         Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
     }

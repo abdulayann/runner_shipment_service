@@ -334,18 +334,18 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findMaxId();
     }
 
-    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+    private boolean checkForAirTransportMode(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
         return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode() );
     }
 
     private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
+        if (checkForAirTransportMode(request, shipmentSettingsDetails))
             return false;
         return Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
     private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
+        if (checkForAirTransportMode(request, shipmentSettingsDetails))
             return false;
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
