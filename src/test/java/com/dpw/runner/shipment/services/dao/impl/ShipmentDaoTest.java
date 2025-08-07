@@ -287,7 +287,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -303,7 +303,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -322,7 +322,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -339,7 +339,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -359,7 +359,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .additionalDetails(additionalDetails)
                 .build();
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -379,7 +379,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .additionalDetails(additionalDetails)
                 .build();
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
