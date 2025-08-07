@@ -4257,7 +4257,7 @@ if (unitConversionUtilityMockedStatic != null) {
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
     when(consoleShipmentMappingDao.assignShipments(any(), any(), any(), any(), any(), any(), any())).thenReturn(hashSet);
-//    when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+    when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
     when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
     doReturn(true)
             .when(consolidationValidationV3Util)

@@ -1437,6 +1437,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void completeUpdate_efreightStausChanged() throws RunnerException {
+        // Set up user permissions to avoid NullPointerException
+        UserContext.getUser().setPermissions(new HashMap<>());
+
         shipmentDetails.setId(1L);
         ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -1448,12 +1451,9 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
         // Mock
-        when(shipmentDao.findById(any()))
-            .thenReturn(
-                Optional.of(
-                    shipmentDetails
-                        .setConsolidationList(new HashSet<>())
-                        .setContainersList(new HashSet<>())));
+        doReturn(Optional.of(shipmentDetails.setConsolidationList(new HashSet<>()).setContainersList(new HashSet<>())))
+                .when(shipmentDao)
+                .findById(any());
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -5789,10 +5789,14 @@ ShipmentServiceTest extends CommonMocks {
         additionalDetails.setImportBroker(Parties.builder().addressCode("code").build());
         additionalDetails.setExportBroker(Parties.builder().addressCode("code").build());
 
+        // Create ConsolidationDetails with an ID for proper mocking
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(100L);
+
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
-                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails)))
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
                 .additionalDetails(additionalDetails)
@@ -5802,6 +5806,9 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        // Mock the consolidationDetailsDao.findById call that happens during the partial update
+        when(consolidationDetailsDao.findById(100L)).thenReturn(Optional.of(consolidationDetails));
 
         HashMap<String, Object> hm = new HashMap<>();
         hm.put("RegulatedAgent", true);
@@ -6343,6 +6350,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void attachListShipmentEvents() {
+        // Set up user permissions to avoid NullPointerException
+        UserContext.getUser().setPermissions(new HashMap<>());
+
         long consolidationId = 1L;
         AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
         attachListShipmentRequest.setConsolidationId(consolidationId);
@@ -6373,6 +6383,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(consolidationId); // Set ID for proper mocking
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
