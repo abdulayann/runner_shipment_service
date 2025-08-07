@@ -162,7 +162,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
         assertThrows(ValidationException.class, () -> {
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, false);
         });
     }
 
@@ -180,7 +180,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
         assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, false);
         });
     }
 
@@ -209,7 +209,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -227,7 +227,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -242,7 +242,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -276,7 +276,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -419,7 +419,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -466,7 +466,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -513,7 +513,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -559,7 +559,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1494,7 +1494,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1535,7 +1535,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1584,7 +1584,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1621,7 +1621,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1634,7 +1634,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1650,7 +1650,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1750,7 +1750,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1799,7 +1799,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1848,7 +1848,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1897,7 +1897,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1938,7 +1938,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
     }
 
@@ -1958,7 +1958,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
@@ -1980,7 +1980,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
@@ -1999,7 +1999,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true, false);
         assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 

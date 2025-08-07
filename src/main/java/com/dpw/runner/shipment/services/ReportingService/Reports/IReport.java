@@ -5181,7 +5181,7 @@ public abstract class IReport {
     private void addPartnerFields(Map<String, Object> dictionary, ShipmentDetails details,
                                   Map<String, String> orderDpwMap, Map<String, String> orgMap) {
         dictionary.put(S_PARTNER_DROP_DOWN,
-                orderDpwMap != null ? orderDpwMap.get(details.getPartner()) : null);
+                orderDpwMap != null ? orderDpwMap.keySet().iterator().next() : null);
 
         String bookingAgentName = getOrgValue(orgMap, details.getBookingAgent());
         dictionary.put(S_CO_LOADER_NAME, bookingAgentName);
