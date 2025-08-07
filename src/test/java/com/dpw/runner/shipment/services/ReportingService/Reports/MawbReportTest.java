@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -244,7 +245,7 @@ class MawbReportTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         mockShipmentSettings();
         mawbReport.getDocumentModel(123L);
-        verify(consolidationDao).findConsolidationsById(any());
+        assertFalse(mawbReport.isDMawb);
     }
 
     @Test
