@@ -1411,8 +1411,10 @@ public class ContainerV3Service implements IContainerV3Service {
             isDGContainer = true;
         }
 
-        if(!isDGClass1Added && !isDG && container.getPacksList() != null) {
-            for (Packing packing : container.getPacksList()) {
+        List<Packing> containerPackings = packingDao.findByContainerIdIn(List.of(container.getId()));
+
+        if(containerPackings != null) {
+            for (Packing packing : containerPackings) {
                 if (Boolean.TRUE.equals(packing.getHazardous())) {
                     log.debug("Packing {} is hazardous", packing.getId());
                     isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
