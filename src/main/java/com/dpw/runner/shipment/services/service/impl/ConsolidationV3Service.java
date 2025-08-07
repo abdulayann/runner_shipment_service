@@ -60,13 +60,7 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -150,23 +144,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -470,6 +449,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
@@ -867,7 +847,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 && !Boolean.TRUE.equals(shipmentSettingsDetails.getIsShipmentLevelContainer())) {
             List<ContainerV3Request> splittedContainers = splitContainerIntoLineItems(containerRequestList);
             List<Containers> containers = commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate);
-            containerAssignedToShipmentCargo = shipmentV3Service.assignFirstBookingContainerToShipmentCargo(containers, customerBookingV3Request);
             List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(containers, id, (Long) null, true);
             if(!listIsNullOrEmpty(updatedContainers))
                 containerAssignedToShipmentCargo = updatedContainers.get(0).getId();
@@ -891,6 +870,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
+                    newContainer.setGrossWeight(newContainer.getGrossWeight());
                     expandedContainers.add(newContainer);
                 }
             }
@@ -3968,8 +3948,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             .orElse(Collections.emptyList());
     }
 
-    private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
+    private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) throws RunnerException{
         consolidationValidationV3Util.validateAirDGPermissionsInDetach(shipmentDetails, consolidationDetails);
+        // Validate messaging logic for air consolidations
+        awbDao.validateAirMessaging(consolidationDetails.getId());
+        log.info("{} | validateShipmentDetachment | Air messaging validated for consolidationId: {}", LoggerHelper.getRequestIdFromMDC(), consolidationDetails.getId());
         return validateOutstandingDuesForShipments(shipmentDetails);
     }
 
@@ -4760,6 +4743,23 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         achievedQuantitiesResponse.setTeuCount(shipmentWtVolResponse.getConsoleTeuCount());
         achievedQuantitiesResponse.setDgContainerCount(shipmentWtVolResponse.getConsoleDgContainerCount());
         return achievedQuantitiesResponse;
+    }
+
+    @Override
+    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException, JsonMappingException {
+        AchievedQuantities achievedQuantities = consolidationDetails.getAchievedQuantities();
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        jsonHelper.updateValue(achievedQuantities, shipmentWtVolResponse);
+        achievedQuantities.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
+        achievedQuantities.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
+        achievedQuantities.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
+        achievedQuantities.setConsolidatedVolumeUnit(shipmentWtVolResponse.getVolumeUnit());
+        achievedQuantities.setConsolidationChargeQuantity(shipmentWtVolResponse.getChargable());
+        achievedQuantities.setConsolidationChargeQuantityUnit(shipmentWtVolResponse.getChargeableUnit());
+        achievedQuantities.setContainerCount(shipmentWtVolResponse.getConsoleContainerCount());
+        achievedQuantities.setTeuCount(shipmentWtVolResponse.getConsoleTeuCount());
+        achievedQuantities.setDgContainerCount(shipmentWtVolResponse.getConsoleDgContainerCount());
+        return achievedQuantities;
     }
 
     private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {

@@ -644,6 +644,8 @@ public class Constants {
     public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String CR_ID = "CR-ID";
+    public static final String ORIGINATED_FROM = "OriginatedFrom";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
     public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
@@ -654,6 +656,7 @@ public class Constants {
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+    public static final String MIGRATION_API = "MIGRATION_API";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
 

@@ -17,10 +17,14 @@ public class ApiKeyAuthenticationService {
     @Value("${x-api-key.v2-tracking-push}")
     private String trackingPushApiKey;
 
+    @Value("${x-api-key.migration-3.0}")
+    private String migrationApiKey;
+
     public void authenticate(String module, String apiKey) {
         String expectedApiKey = switch (module) {
             case CacheConstants.CACHE -> cacheApiKey;
             case Constants.TRACKING_PUSH_API -> trackingPushApiKey;
+            case Constants.MIGRATION_API -> migrationApiKey;
             default -> null;
         };
 

@@ -813,4 +813,57 @@ class RoutingsDaoTest extends CommonMocks {
         verify(routingsRepository).deleteAll(existingRoutingsForDeletion);
     }
 
+    @Test
+    void testDeleteAdditionalDataByRoutingsIdsConsolidationId() {
+        List<Long> routingsIds = List.of(1L, 2L);
+        Long consolidationId = 100L;
+        routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByRoutingsIdsAndConsolidationId() {
+        List<Long> routingsIds = List.of(3L, 4L);
+        Long consolidationId = 200L;
+        routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByRoutingsIdsBookingId() {
+        List<Long> routingsIds = List.of(5L, 6L);
+        Long bookingId = 300L;
+        routingsDao.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByRoutingsIdsAndBookingId() {
+        List<Long> routingsIds = List.of(7L, 8L);
+        Long bookingId = 400L;
+        routingsDao.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+    }
+
+    @Test
+    void testDeleteAdditionalroutingsByShipmentId() {
+        List<Long> routingsIds = List.of(9L, 10L);
+        Long shipmentId = 500L;
+        routingsDao.deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByroutingsIdsAndShipmentId() {
+        List<Long> routingsIds = List.of(11L, 12L);
+        Long shipmentId = 600L;
+        routingsDao.revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
+    }
 }

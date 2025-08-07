@@ -12,6 +12,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -141,5 +142,35 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     @Query(value = "SELECT EXISTS (SELECT 1 FROM packing WHERE shipment_id = :shipmentId and is_deleted = false)", nativeQuery = true)
     boolean existsPackingByShipmentId(@Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = true WHERE id NOT IN (?1) and booking_id = ?2", nativeQuery = true)
+    void deleteAdditionalPackingByCustomerBookingId(List<Long> packingIds, Long bookingId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByPackingIdsAndBookingId(List<Long> packingIds, Long bookingId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalPackingByShipmentId(List<Long> packingIds, Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId);
 }
 

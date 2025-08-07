@@ -268,4 +268,6 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isBorrowed;
     private Long originBranch;
     private Integer slac;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

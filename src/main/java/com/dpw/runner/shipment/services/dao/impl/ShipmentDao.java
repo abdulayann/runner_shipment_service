@@ -291,6 +291,10 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
+    @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
@@ -453,11 +457,12 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addPolPodValidationsErrors(ShipmentDetails request, Set<String> errors) {
-        if ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) &&
+        if (!(Objects.equals(request.getDirection(), Constants.DIRECTION_DOM)) && (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) &&
                 (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())))
             errors.add("POL and POD fields are mandatory.");
-        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
-            errors.add("POL and POD fields cannot be same.");
+        CarrierDetails carrierDetails = request.getCarrierDetails();
+        if (carrierDetails != null && !isStringNullOrEmpty(carrierDetails.getOriginPort()) && !isStringNullOrEmpty(carrierDetails.getDestinationPort()) && Objects.equals(carrierDetails.getOriginPort(), carrierDetails.getDestinationPort())) {
+            errors.add("POL and POD fields cannot be the same.");
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");
@@ -986,5 +991,35 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId){
         shipmentRepository.updateDgStatusInShipment(isHazardous, oceanDGStatus, shipmentId);
+    }
+
+    @Override
+    public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId) {
+        shipmentRepository.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Override
+    public Set<Long> findAllShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void deleteShipmentDetailsByIds(Set<Long> shipmentIds) {
+        shipmentRepository.deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Override
+    public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
+        shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Override
+    public void updateTriggerMigrationWarning(Long shipmentId) {
+        shipmentRepository.updateTriggerMigrationWarning(shipmentId);
     }
 }

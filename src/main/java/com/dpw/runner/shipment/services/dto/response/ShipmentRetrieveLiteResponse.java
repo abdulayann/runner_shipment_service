@@ -11,8 +11,10 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -222,9 +224,17 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -260,4 +270,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

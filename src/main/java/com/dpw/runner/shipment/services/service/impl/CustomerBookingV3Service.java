@@ -83,6 +83,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -169,6 +170,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
@@ -445,10 +447,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(optionalCustomerBooking.isPresent()) {
             CustomerBooking customerBooking = optionalCustomerBooking.get();
             List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
+            List<Containers> containersList = containerDao.findByBookingIdIn(List.of(bookingId));
+            BigDecimal weightFromContainers = getTotalCargoWeight(containersList);
             if(packingList.isEmpty()) {
                 resetPackageCargoSummary(customerBooking);
             } else {
-                calculateCargoDetails(packingList, customerBooking);
+                calculateCargoDetails(packingList, customerBooking, weightFromContainers);
                 calculateVW(customerBooking, null);
             }
             customerBooking.setPackingList(packingList);
@@ -975,6 +979,19 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBookingResponse.setOrderManagementId(null);
             customerBookingResponse.setOrderManagementNumber(null);
 
+            //fields related to cargo summary
+            customerBookingResponse.setPackages(0L);
+            customerBookingResponse.setContainers(0L);
+            customerBookingResponse.setTeuCount(null);
+            customerBookingResponse.setGrossWeight(null);
+            customerBookingResponse.setVolume(null);
+            customerBookingResponse.setChargeable(null);
+            customerBookingResponse.setChargeableUnit(null);
+            customerBookingResponse.setWeightVolume(null);
+            customerBookingResponse.setWeightVolumeUnit(null);
+            customerBookingResponse.setDescription(null);
+            customerBookingResponse.setMarksnNumbers(null);
+            customerBookingResponse.setAdditionalTerms(null);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
 
             return customerBookingResponse;
@@ -1612,6 +1629,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             }
         }
         populateTotalRevenueDetails(customerBooking, request);
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
@@ -1920,7 +1938,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
-
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -2352,8 +2370,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         booking.setContainers(null);
         booking.setTeuCount(null);
         updateContainerInBooking(containers, codeTeuMap, booking);
+        BigDecimal weightFromContainers = booking.getGrossWeight();
         if(!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking);
+            calculateCargoDetails(packings, booking, weightFromContainers);
             calculateVW(booking, oldBooking);
         }
         customerBookingDao.save(booking);
@@ -2371,7 +2390,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     public BigDecimal getTotalCargoWeight(List<Containers> containersList) {
         BigDecimal totalCargoWeight = BigDecimal.ZERO;
-
         for (Containers container : containersList) {
             BigDecimal containerCount = BigDecimal.valueOf(container.getContainerCount());
             BigDecimal weightPerContainer = container.getCargoWeightPerContainer();
@@ -2379,7 +2397,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
             totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
         }
-
         return totalCargoWeight;
     }
 
@@ -2416,7 +2433,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .setScale(1, RoundingMode.UNNECESSARY);
     }
 
-    public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
+    public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking, BigDecimal weightFromContainers) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
@@ -2433,16 +2450,18 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             addDistinctPackType(distinctPackTypes, packing);
             if (!stopWeightCalculation) {
                 boolean hasWeight = hasWeightInfo(packing);
-                if (isAirTransport && !hasWeight) {
+                if (!hasWeight) {
                     stopWeightCalculation = true;
                     continue;
                 }
-                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()) : BigDecimal.ZERO;
+                BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString());
                 totalWeight = totalWeight.add(weight);
             }
         }
         if(!stopWeightCalculation) {
             customerBooking.setGrossWeight(totalWeight);
+        } else {
+            customerBooking.setGrossWeight(weightFromContainers);
         }
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);

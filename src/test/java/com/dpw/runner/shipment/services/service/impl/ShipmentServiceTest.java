@@ -1,32 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -258,6 +231,45 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -280,38 +292,47 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.poi.ss.formula.functions.T;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
-import org.openapitools.jackson.nullable.JsonNullable;
-import org.springframework.context.ApplicationContext;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -1709,6 +1730,7 @@ ShipmentServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
 
         when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         LocalDateTime mockDateTime = LocalDateTime.now();
 
@@ -1765,6 +1787,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         // Execute the method under test
         mockShipmentSettings();
@@ -1812,6 +1835,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         // Execute the method under test
         mockShipmentSettings();
@@ -3502,12 +3526,14 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().shipmentId(JsonNullable.of("AIR-CAN-00001")).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .build();
 
         doNothing().when(shipmentDetailsMapper).update(any(), any());
@@ -3631,12 +3657,14 @@ ShipmentServiceTest extends CommonMocks {
 
 
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(TruckDriverDetails.builder().build());
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .truckDriverDetails(truckDriverDetailsList)
                 .build();
 
@@ -3831,12 +3859,14 @@ ShipmentServiceTest extends CommonMocks {
 
         ServiceDetails serviceDetails = new ServiceDetails();
         serviceDetails.setShipmentId(1L);
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .servicesList(Arrays.asList(serviceDetails))
                 .build();
 
@@ -5115,6 +5145,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void partialUpdateTestSea() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setId(2L);
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
@@ -5123,7 +5156,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .jobType(Constants.SHIPMENT_TYPE_DRT)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
@@ -5539,8 +5572,10 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void update() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -5560,7 +5595,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithGuid(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -5575,7 +5612,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithContainerListNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -6546,8 +6585,11 @@ ShipmentServiceTest extends CommonMocks {
                 .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
                 .shipmentsList(new HashSet<>(Arrays.asList(ShipmentDetails.builder().shipmentType(Constants.CARGO_TYPE_FCL).build())))
                 .build()));
+        Containers container = Containers.builder().build();
+        container.setId(1L);
+        container.setGuid(UUID.randomUUID());
         Set<Containers> containers = new HashSet<>();
-        containers.add(new Containers());
+        containers.add(container);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
         shipmentDetails1.setGuid(UUID.randomUUID());
         shipmentDetails1.setContainersList(containers);
@@ -7349,6 +7391,7 @@ ShipmentServiceTest extends CommonMocks {
         Containers containers = new Containers();
         containers.setContainerCode("20GP");
         containers.setContainerCount(1L);
+        containers.setGuid(UUID.randomUUID());
         shipmentDetails.setContainersList(new HashSet<>(Arrays.asList(containers)));
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
@@ -8375,6 +8418,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         Events puedEvent  = Events.builder().build().setEventCode(EventConstants.PUED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         Events tredEvent  = Events.builder().build().setEventCode(EventConstants.TRED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -8384,7 +8429,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false,false))
                 .carrierDetails(carrierDetailsOld)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8401,7 +8446,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(additionalDetailsNew)
                 .carrierDetails(carrierDetailsNew)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8711,9 +8756,11 @@ ShipmentServiceTest extends CommonMocks {
             .hazardous(true)
             .build();
         containers1.setId(1l);
+        containers1.setGuid(UUID.randomUUID());
 
         Containers containers2 = Containers.builder().build();
         containers2.setId(2l);
+        containers2.setGuid(UUID.randomUUID());
 
         Packing packing1 = new Packing();
         packing1.setHazardous(true);

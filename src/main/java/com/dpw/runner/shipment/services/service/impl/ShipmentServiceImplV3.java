@@ -612,7 +612,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    protected void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
+    public void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
         if (!CollectionUtils.isEmpty(containersList)) {
             setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
         }
@@ -689,6 +689,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         CompletableFuture<String> placeOfIssueFuture = getPlaceOfIssueFuture(request.getTransportMode());
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -2311,26 +2312,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public Long assignFirstBookingContainerToShipmentCargo(List<Containers> expandedContainers, CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
-        Long containerId = null;
-        for (int i = 0; i < expandedContainers.size(); i++) {
-            Containers containers = expandedContainers.get(i);
-            containerV3Util.resetContainerDataForRecalculation(containers);
-            containers.setGrossWeightUnit(customerBookingV3Request.getGrossWeightUnit());
-            containers.setGrossVolumeUnit(customerBookingV3Request.getVolumeUnit());
-            containers.setPacksType(customerBookingV3Request.getPackageType());
-            if (i == 0) {
-                containerV3Service.addShipmentCargoToContainerInCreateFromBooking(containers, customerBookingV3Request);
-                containerV3Util.setContainerNetWeight(containers);
-                containerId = containers.getId();
-            } else {
-                containerV3Util.resetContainerDataForRecalculation(containers);
-            }
-        }
-        return containerId;
-    }
-
-    @Override
     public List<ShipmentDetails> findByIdIn(List<Long> shipmentIds) {
         return shipmentDao.findByIdIn(shipmentIds);
     }
@@ -2367,6 +2348,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                     coLoadBookingReference(customerBookingRequest.getPartnerBkgNumber()).
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
+                    bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                     carrierBookingRef(customerBookingRequest.getCarrierBookingNumber()).
                     build();
             // Set Department in case single department is available
@@ -2452,7 +2434,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Long shipmentId = shipmentDetails.getId();
             if (consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
-                processPacksAndContainers(customerBookingV3Request, containerList, consolidationId, shipmentDetails);
             }
             shipmentDao.save(shipmentDetails, false);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -2506,42 +2487,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             List<Notes> notes = jsonHelper.convertValueToList(notesRequests, Notes.class);
             notesDao.saveAll(notes);
         }
-    }
-
-    private void processPacksAndContainers(CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId, ShipmentDetails shipmentDetails) throws RunnerException {
-
-        if (customerBookingV3Request.getPackages() != 0L && (customerBookingV3Request.getPackages() < containerList.size())) {
-            throw new ValidationException("Booking packages should not be lesser than the container count. Please enter right amount.");
-        }
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        String packUnit = !isStringNullOrEmpty(v1TenantSettingsResponse.getDefaultPackUnit()) ? v1TenantSettingsResponse.getDefaultPackUnit() : PackingConstants.PKG;
-        List<PackingV3Request> packingV3RequestList = containerList.stream()
-                .map(container -> {
-                    PackingV3Request packingV3Request = new PackingV3Request();
-                    packingV3Request.setPacks(container.getContainerCount().toString());
-                    packingV3Request.setPacksType(packUnit);
-                    packingV3Request.setCommodity(container.getCommodityGroup());
-                    packingV3Request.setContainerId(container.getId());
-                    packingV3Request.setBookingId(customerBookingV3Request.getId());
-                    return packingV3Request;
-                })
-                .toList();
-
-        distributeWeightVolumePackages(packingV3RequestList, customerBookingV3Request);
-        assignShipmentIdToPacks(packingV3RequestList, consolidationId);
-        BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
-        shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
-
-        List<Containers> containersArrayList = jsonHelper.convertValueToList(containerList, Containers.class);
-        for (Containers container : containersArrayList) {
-            containerV3Util.resetContainerDataForRecalculation(container);
-        }
-        List<Packing> packingArrayList = jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class);
-        for (int i = 0; i < containersArrayList.size(); i++) {
-            containerV3Service.addPackageDataToContainer(containersArrayList.get(i), packingArrayList.get(i));
-        }
-        containerDao.saveAll(containersArrayList);
-        shipmentDetails.setContainersList(new HashSet<>(containersArrayList));
     }
 
     private void assignShipmentIdToPacks(List<PackingV3Request> packingList, Long consolidationId) {

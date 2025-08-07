@@ -207,6 +207,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
+    public List<ConsoleShipmentMapping> findByConsolidationIdsByQuery(Set<Long> consolidationIds) {
+        return consoleShipmentsMappingRepository.findByConsolidationIdsByQuery(consolidationIds);
+    }
+
+    @Override
     public Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType) {
         List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnConsolidation(consoleIds, requestedType);
         return this.convertResponseToMap(results);

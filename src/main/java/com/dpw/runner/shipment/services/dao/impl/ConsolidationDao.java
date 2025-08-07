@@ -687,6 +687,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
     public ConsolidationDetails findConsolidationsById(Long id) {
         return consolidationRepository.getConsolidationFromId(id);
     }
@@ -843,6 +848,31 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }
 
+    @Override
+    public Set<Long> findConsolidationIdsByTenantId(Integer tenantId) {
+        return consolidationRepository.findConsolidationIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        return consolidationRepository.save(consolidationDetails);
+    }
+
+    @Override
+    public void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId) {
+        consolidationRepository.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
         if (!errors.isEmpty())
@@ -935,9 +965,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             errors.add("Origin and POD fields cannot be same.");
         }
     }
+
     private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
-        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
-            errors.add("POL and POD fields cannot be same.");
+        if (request.getCarrierDetails() != null && !isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) && !isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())
+                && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+                errors.add("POL and POD fields cannot be the same.");
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");
