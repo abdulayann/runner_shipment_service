@@ -662,7 +662,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        lenient().when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
@@ -726,7 +726,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         when(notesDao.saveAll(any())).thenReturn(List.of(notes));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
@@ -1539,7 +1539,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1640,7 +1640,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1703,7 +1703,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1770,7 +1770,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1977,7 +1977,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -5819,7 +5819,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         doNothing().when(auditLogService).addAuditLog(any());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -5851,7 +5851,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         doNothing().when(auditLogService).addAuditLog(any());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -5880,7 +5880,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setId(2L);
         mockShipmentSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         doThrow(RunnerException.class).when(shipmentsV3Util).afterSaveforEt(any(), any(), eq(true), any(), any(), eq(true));
@@ -5911,7 +5911,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
         doThrow(IllegalAccessException.class).when(auditLogService).addAuditLog(any());

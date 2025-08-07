@@ -264,6 +264,7 @@ public class PackingV3Service implements IPackingV3Service {
                         Function.identity()
                 ));
 
+        addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
 
         boolean isDG = false;
         boolean isDGClass1Added = false;
@@ -288,6 +289,18 @@ public class PackingV3Service implements IPackingV3Service {
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
                 shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
+            }
+        }
+    }
+
+    private void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
+
+        for (Long packingId : requestIds) {
+            Packing updatedPacking = updatedPackingMap.get(packingId);
+            Packing oldPacking = oldPackingMap.get(packingId);
+
+            if(oldPacking != null && updatedPacking.getContainerId() != null && isStringNullOrEmpty(oldPacking.getDGClass()) && !isStringNullOrEmpty(updatedPacking.getDGClass())){
+                    throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
             }
         }
     }
@@ -491,6 +504,7 @@ public class PackingV3Service implements IPackingV3Service {
             shipmentDetails = (ShipmentDetails) entity;
             consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, updatedPackings);
             setConsolidationId(shipmentDetails, newPackings, consolidationId);
+            packingV3Util.setColoadingStation(shipmentDetails);
         }
 
         if(consolidationId == null && packingRequestList.get(0).getShipmentId() != null) {
