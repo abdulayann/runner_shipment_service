@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
 import java.util.Map;
+import java.util.Set;
 
 public class ContainerConstants {
 
@@ -99,7 +101,7 @@ public class ContainerConstants {
             Map.entry(KEY_CONTAINER_CODE,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build()),
             Map.entry(TABLE_SHIPMENTS_LIST,
-                    RunnerEntityMapping.builder().tableName(TABLE_SHIPMENTS_LIST).dataType(Long.class).fieldName(TABLE_SHIPMENTS_LIST).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Set.class).fieldName(TABLE_SHIPMENTS_LIST).build())
 
     );
 
