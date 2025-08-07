@@ -405,10 +405,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         // Dg consolidation validations
         if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
-            // Non dg user cannot save dg consolidation
-            if (!UserContext.isAirDgUser())
-                errors.add("You don't have permission to update DG Consolidation");
-
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = checkContainsDGShipment(request, creatingFromDgShipment);
             if (!containsDgShipment && !creatingFromDgShipment)
