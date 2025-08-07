@@ -1422,6 +1422,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
+        log.info("DG packages is present {}, DG container is present {}, Container {} is not marked hazardous", isDGPackage, isDGContainer, container.getId());
         if(!isDGContainer && isDGPackage ){
             log.error("DG packages found but container {} is not marked hazardous", container.getId());
             throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
