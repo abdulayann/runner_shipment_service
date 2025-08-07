@@ -8,11 +8,4 @@ where
 	and tenant_id = 536;
 
 
-update
-	public.consolidation_details
-set
-	receiving_branch = null,
-	updated_at = now()
-where
-	consolidation_number = 'SNZCSS25060555'
-	and tenant_id = 713;
+DELETE FROM triangulation_partner_consolidation WHERE consolidation_id = 50401;
