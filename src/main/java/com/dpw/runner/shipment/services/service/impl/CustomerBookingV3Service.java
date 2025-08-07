@@ -140,8 +140,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -170,7 +168,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
@@ -2360,6 +2357,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    @Override
     public void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap, CustomerBooking oldBooking) throws RunnerException {
         List<Containers> containers = new ArrayList<>();
         List<Packing> packings = new ArrayList<>();
