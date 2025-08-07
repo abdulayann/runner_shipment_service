@@ -7,7 +7,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -63,6 +65,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId) throws RunnerException {
@@ -342,11 +347,13 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("networkTransferFutures migration failed [id={}]: {}", nteId, e.getMessage(), e);
+                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
                     log.error("Async failure during networkTransferFutures setup [id={}]", nteId, e);
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -385,11 +392,13 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("NetworkTransfer migration failed [id={}]: {}", nteId, e.getMessage(), e);
+                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

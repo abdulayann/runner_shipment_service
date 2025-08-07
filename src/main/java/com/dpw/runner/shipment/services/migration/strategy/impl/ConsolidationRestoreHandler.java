@@ -6,10 +6,13 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
@@ -62,6 +65,9 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     @Autowired
     private INetworkTransferRepository networkTransferRepository;
 
+    @Autowired
+    private MigrationUtil migrationUtil;
+
     @Override
     public void restore(Integer tenantId) {
 
@@ -80,6 +86,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 processAndRestoreConsolidation(consolidationId, tenantId);
             } catch (Exception e) {
                 log.error("Failed to restore consolidation id: {}", consolidationId, e);
+                migrationUtil.saveErrorResponse(consolidationId, Constants.CONSOLIDATION, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                 throw new RestoreFailureException("Failed to restore consolidation: " + consolidationId, e);
             }
         }
