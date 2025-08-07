@@ -419,7 +419,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .commodityGroup("FCR")
                 .containerCount(2L)
                 .containerNumber("12345678910")
-                .shipmentsId(shipmentId)
+                .shipmentId(shipmentId)
                 .build();
 
         Containers testContainer = new Containers();
@@ -577,7 +577,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .containerCount(2L)
                 .consolidationId(1L)
                 .containerNumber("12345678910")
-                .shipmentsId(100L)
+                .shipmentId(100L)
                 .build();
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
