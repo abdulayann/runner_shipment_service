@@ -81,8 +81,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     private final ShipmentDao shipmentDao;
     private final ShipmentsContainersMappingDao shipmentsContainersMappingDao;
-    private NetworkTransferDao networkTransferDao;
-    private INetworkTransferRepository networkTransferRepository;
+    private final NetworkTransferDao networkTransferDao;
+    private final INetworkTransferRepository networkTransferRepository;
     private final V1ServiceImpl v1Service;
 
     @Autowired
