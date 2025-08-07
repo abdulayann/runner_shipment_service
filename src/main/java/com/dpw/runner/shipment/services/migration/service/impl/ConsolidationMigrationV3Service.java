@@ -13,7 +13,9 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -101,6 +103,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private HelperExecutor trxExecutor;
+
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     @Transactional
     @Override
@@ -603,6 +608,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     });
                 } catch (Exception e) {
                     log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

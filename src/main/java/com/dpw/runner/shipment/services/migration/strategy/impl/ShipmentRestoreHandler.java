@@ -7,10 +7,13 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
@@ -33,6 +36,7 @@ import com.google.common.collect.Sets;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
@@ -81,6 +85,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private INetworkTransferRepository networkTransferRepository;
     private final V1ServiceImpl v1Service;
 
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
@@ -332,6 +338,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 restoreShipmentTransaction(shipmentId, tenantId);
             } catch (Exception e) {
                 log.error("Failed to restore Shipment id: {}", shipmentId, e);
+                migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                 throw new RestoreFailureException("Failed to restore Shipment: " + shipmentId, e);
             }
         }
