@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -56,7 +57,8 @@ public class CustomerBookingBackupHandler {
     public List<CustomerBookingBackupEntity> backup(Integer tenantId) {
 
         log.info("Starting customer booking backup for tenantId: {}", tenantId);
-        Set<Long> customerBookingIds = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId);
+        Set<Long> customerBookingIds = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId,
+                List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()));
         log.info("Count of customerBooking Ids : {}", customerBookingIds.size());
         if (customerBookingIds.isEmpty()) {
             log.info("No customer booking records found for tenantId: {}", tenantId);

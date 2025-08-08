@@ -13,6 +13,9 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.IShipmentBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
@@ -83,6 +86,13 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private MigrationUtil migrationUtil;
 
+    @Autowired
+    private IConsolidationBackupRepository consolidationBackupRepository;
+
+    @Autowired
+    private IShipmentBackupRepository shipmentBackupRepository;
+
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
 
@@ -120,6 +130,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                 } catch (Exception e) {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
                     migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    consolidationBackupRepository.deleteBackupByTenantIdAndConsolidationId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -162,6 +173,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                 } catch (Exception e) {
                     log.error("Async failure during shipment setup [id={}]", id, e);
                     migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    shipmentBackupRepository.deleteBackupByTenantIdAndShipmentId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

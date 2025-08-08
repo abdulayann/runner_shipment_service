@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
@@ -85,6 +86,9 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     ConsolidationV3Service consolidationService;
+
+    @Autowired
+    private ICustomerBookingBackupRepository customerBookingBackupRepository;
 
     Map<String, String> v2ToV3ServiceTypeMap = Map.ofEntries(
             // AIR
@@ -175,6 +179,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 } catch (Exception e) {
                     log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, e.getLocalizedMessage());
                     migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -218,6 +223,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 } catch (Exception e) {
                     log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, e.getLocalizedMessage());
                     migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

@@ -34,7 +34,7 @@ public interface ICustomerBookingDao {
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
     List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
 
-    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId, List<String> migrationStatuses);
     List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
     void deleteCustomerBookingIds(Set<Long> ids);
     Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);

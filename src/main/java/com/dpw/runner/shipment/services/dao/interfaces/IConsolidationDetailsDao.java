@@ -64,7 +64,7 @@ public interface IConsolidationDetailsDao {
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
 
-    Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
+    Set<Long> findConsolidationIdsByTenantId(Integer tenantId, List<String> migrationStatuses);
 
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
 

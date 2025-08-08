@@ -283,8 +283,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
                                   @Param("oceanDGStatus") String oceanDGStatus,
                                   @Param("shipmentId") Long shipmentId);
 
-    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
-    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
+    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and s.is_deleted = false and s.migration_status in (?2)", nativeQuery = true)
+    Set<Long> findShipmentIdsByTenantId(Integer tenantId, List<String> migrationStatuses);
 
     @Modifying
     @Transactional
