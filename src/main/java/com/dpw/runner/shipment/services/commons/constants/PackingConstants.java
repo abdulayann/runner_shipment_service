@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
+import java.time.LocalDateTime;
 import java.util.Map;
 
 public class PackingConstants {
@@ -34,9 +36,9 @@ public class PackingConstants {
             Map.entry(Constants.PROPER_SHIPPING_NAME, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.PROPER_SHIPPING_NAME).isContainsText(true).build()),
             Map.entry(Constants.UN_NUMBER, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.UN_NUMBER).isContainsText(true).build()),
             Map.entry(Constants.PACKING_GROUP, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.PACKING_GROUP).isContainsText(true).build()),
-            Map.entry(Constants.SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.SHIPMENT_ID).isContainsText(false).build()),
-            Map.entry(Constants.CONSOLIDATION_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONSOLIDATION_ID).isContainsText(false).build()),
-            Map.entry("bookingId", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName("bookingId").isContainsText(false).build()),
-            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName("updatedAt").isContainsText(false).build())
+            Map.entry(Constants.SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.SHIPMENT_ID).build()),
+            Map.entry(Constants.CONSOLIDATION_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONSOLIDATION_ID).build()),
+            Map.entry("bookingId", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName("bookingId").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("updatedAt").build())
     );
 }
