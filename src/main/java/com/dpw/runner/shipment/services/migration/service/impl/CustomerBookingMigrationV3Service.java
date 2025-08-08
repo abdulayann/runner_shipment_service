@@ -148,11 +148,11 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     @Override
     public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId) {
         Map<String, Integer> map = new HashMap<>();
-        List<CustomerBooking> customerBookingList = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
-        map.put("Total Bookings", customerBookingList.size());
+        List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
+        map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
-        log.info("fetched {} bookings for Migrations", customerBookingList.size());
-        customerBookingList.forEach(booking -> {
+        log.info("fetched {} bookingIds for Migrations", bookingIds.size());
+        bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
 
@@ -164,13 +164,17 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     return trxExecutor.runInTrx(() -> {
                         try {
 
+                            log.info("Migrating Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
                             CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap);
+                            log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
+                    log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -181,18 +185,18 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
         List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
         map.put("Total Bookings Migrated", bookingsProcessed.size());
-        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), customerBookingList.size(), tenantId);
+        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), bookingIds.size(), tenantId);
         return map;
     }
 
     @Override
     public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId) {
         Map<String, Integer> map = new HashMap<>();
-        List<CustomerBooking> customerBookingList = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V2.name(), MigrationStatus.CREATED_IN_V3.name()), tenantId);
-        map.put("Total Bookings", customerBookingList.size());
+        List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V2.name(), MigrationStatus.CREATED_IN_V3.name()), tenantId);
+        map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
-        log.info("fetched {} bookings for Migrations", customerBookingList.size());
-        customerBookingList.forEach(booking -> {
+        log.info("fetched {} bookings for Migrations", bookingIds.size());
+        bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
 
@@ -203,15 +207,17 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
                     return trxExecutor.runInTrx(() -> {
                         try {
-
+                            log.info("Migrating v3 to v2 Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
                             CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap);
+                            log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
-                    migrationUtil.saveErrorResponse(booking.getId(), CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -222,15 +228,15 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
         List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
         map.put("Total Bookings Migrated", bookingsProcessed.size());
-        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), customerBookingList.size(), tenantId);
+        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), bookingIds.size(), tenantId);
         return map;
     }
 
     @Override
-    public CustomerBooking migrateBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
-        Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(customerBooking.getId());
+    public CustomerBooking migrateBookingV2ToV3(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+        Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Booking found with given id: " + customerBooking.getId());
+            throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
         mapBookingV2ToV3(booking, codeTeuMap);
@@ -256,10 +262,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     @Override
-    public CustomerBooking migrateBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(customerBooking.getId());
+    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Map<String, BigDecimal> codeTeuMap) {
+        Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Booking found with given id: " + customerBooking.getId());
+            throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
         mapBookingV3ToV2(booking, codeTeuMap);
@@ -415,7 +421,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         }
     }
 
-    private List<CustomerBooking> fetchBookingFromDB(List<String> migrationStatuses, Integer tenantId) {
+    private List<Long> fetchBookingFromDB(List<String> migrationStatuses, Integer tenantId) {
         return customerBookingDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 

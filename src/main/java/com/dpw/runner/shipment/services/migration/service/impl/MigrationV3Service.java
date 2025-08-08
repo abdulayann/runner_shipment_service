@@ -108,13 +108,12 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Consolidation [id={}]", id);
+                            log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
                             ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id);
-                            log.info("Successfully migrated Consolidation [oldId={}, newId={}]", id, migrated.getId());
+                            log.info("Successfully migrated Consolidation [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
@@ -151,13 +150,12 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Shipment [id={}]", id);
+                            log.info("Migrating Shipment [id={}] and start time: {}", id, System.currentTimeMillis());
                             ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id);
-                            log.info("Successfully migrated Shipment [oldId={}, newId={}]", id, migrated.getId());
+                            log.info("Successfully migrated Shipment [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });

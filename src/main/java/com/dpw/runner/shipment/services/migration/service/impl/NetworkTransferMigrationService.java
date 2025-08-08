@@ -386,13 +386,12 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating NetworkTransfer [id={}]", nteId);
+                            log.info("Migrating NetworkTransfer [id={}] and start time: {}", nteId, System.currentTimeMillis());
                             NetworkTransfer migrated = migrateNteFromV2ToV3(nteId);
-                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}]", nteId, migrated.getId());
+                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}] and end time: {}", nteId, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("NetworkTransfer migration failed [id={}]: {}", nteId, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
