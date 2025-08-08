@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
@@ -787,7 +788,7 @@ public class PackingV3Service implements IPackingV3Service {
             throw new ValidationException("Request cannot be null for list request.");
         }
         // construct specifications for filter request
-        Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
+        Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class, PackingConstants.TABLES_NAMES);
         Page<Packing> packingPage;
         if (Objects.equals(source, NETWORK_TRANSFER))
             packingPage = packingDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
