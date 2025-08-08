@@ -26,7 +26,6 @@ public class PackingConstants {
     public static final String PKG = "PKG";
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(Constants.PACKS_TYPE, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.PACKS_TYPE).isContainsText(true).build()),
-            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).fieldName("containerNumber").isContainsText(true).build()),
             Map.entry(Constants.COMMODITY_GROUP, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.COMMODITY_GROUP).isContainsText(true).build()),
             Map.entry(Constants.COMMODITY, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.COMMODITY).isContainsText(true).build()),
             Map.entry(Constants.HS_CODE, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName(Constants.HS_CODE).isContainsText(true).build()),

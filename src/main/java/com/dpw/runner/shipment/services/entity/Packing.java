@@ -266,9 +266,5 @@ public class Packing extends MultiTenancy {
     @Column(name = "pack_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String packWeightUnit;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "container_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private Containers containers;
 }
 
