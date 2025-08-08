@@ -37,6 +37,5 @@ public interface ICustomerBookingV3Service {
     Long getTotalContainerPackages(List<Containers> containersList);
 
     void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap, CustomerBooking oldBooking) throws RunnerException;
-
-    BigDecimal getTotalCargoWeight(List<Containers> containersList) throws RunnerException;
+    BigDecimal getTotalCargoWeight(List<Containers> containersList, String weightUnit) throws RunnerException;
 }

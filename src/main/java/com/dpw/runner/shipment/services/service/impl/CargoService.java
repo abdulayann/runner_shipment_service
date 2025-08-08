@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
@@ -13,10 +10,9 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,29 +24,20 @@ import java.util.*;
 @Slf4j
 public class CargoService implements ICargoService {
 
-    private final IMDMServiceAdapter mdmServiceAdapter;
     private final ICustomerBookingDao customerBookingDao;
-    private final IShipmentDao shipmentDao;
-    private final IConsolidationDetailsDao consolidationDetailsDao;
-    private final JsonHelper jsonHelper;
-    private final IConsolidationService consolidationService;
+    private final ConsolidationV3Service consolidationService;
     private final ICustomerBookingV3Service customerBookingV3Service;
+    private final CommonUtils commonUtils;
 
     @Autowired
-    public CargoService(IMDMServiceAdapter mdmServiceAdapter,
-                        ICustomerBookingDao customerBookingDao,
-                        IShipmentDao shipmentDao,
-                        IConsolidationDetailsDao consolidationDetailsDao,
-                        JsonHelper jsonHelper,
-                        IConsolidationService consolidationService,
-                        ICustomerBookingV3Service customerBookingV3Service) {
-        this.mdmServiceAdapter = mdmServiceAdapter;
+    public CargoService(ICustomerBookingDao customerBookingDao,
+                        ConsolidationV3Service consolidationService,
+                        ICustomerBookingV3Service customerBookingV3Service,
+                        CommonUtils commonUtils) {
         this.customerBookingDao = customerBookingDao;
-        this.shipmentDao = shipmentDao;
-        this.consolidationDetailsDao = consolidationDetailsDao;
-        this.jsonHelper = jsonHelper;
         this.consolidationService = consolidationService;
         this.customerBookingV3Service = customerBookingV3Service;
+        this.commonUtils = commonUtils;
     }
 
     @Override
@@ -100,8 +87,9 @@ public class CargoService implements ICargoService {
         if(containersList.isEmpty() || packingList.isEmpty()) {
             return false;
         }
-
-        BigDecimal totalContainerCargoWeight = customerBookingV3Service.getTotalCargoWeight(containersList);
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        String weightUnit = consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails);
+        BigDecimal totalContainerCargoWeight = customerBookingV3Service.getTotalCargoWeight(containersList, weightUnit);
         BigDecimal totalPackingSectionCargoWeight = BigDecimal.ZERO;
 
         for(Packing pack: packingList) {
