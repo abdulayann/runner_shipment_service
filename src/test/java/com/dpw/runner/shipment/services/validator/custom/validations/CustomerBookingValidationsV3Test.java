@@ -74,7 +74,7 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
         CustomerBooking booking = new CustomerBooking();
         CarrierDetails carrierDetails = new CarrierDetails();
         carrierDetails.setEta(LocalDateTime.of(2025, 7, 25, 10, 0));
-        booking.setDeliveryAtDestinationDate(LocalDateTime.of(2025, 7, 24, 10, 0));
+        booking.setEstimatedDeliveryAtDestinationDate(LocalDateTime.of(2025, 7, 24, 10, 0));
         booking.setCarrierDetails(carrierDetails);
 
         assertThrows(ValidationException.class, () -> customerBookingValidationsV3.onSave(null, booking));
@@ -83,7 +83,7 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
     @Test
     void shouldThrowIfPickupAtOriginIsAfterETD() {
         CustomerBooking booking = new CustomerBooking();
-        booking.setPickupAtOriginDate(LocalDateTime.of(2025, 8, 10, 10, 0)); // Aug 10, 2025
+        booking.setEstimatedPickupAtOriginDate(LocalDateTime.of(2025, 8, 10, 10, 0)); // Aug 10, 2025
         CarrierDetails carrierDetails = new CarrierDetails();
         carrierDetails.setEtd(LocalDateTime.of(2025, 8, 5, 10, 0)); // Aug 5, 2025
         booking.setCarrierDetails(carrierDetails);
