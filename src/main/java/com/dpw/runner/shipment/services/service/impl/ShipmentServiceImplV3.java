@@ -837,15 +837,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
     @NotNull
     private CompletableFuture<String> getPlaceOfIssueFuture(String transportMode) {
-        return CompletableFuture.supplyAsync(() -> {
-            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-            if (Constants.TRANSPORT_MODE_SEA.equals(transportMode)
-                    || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
-                return entityTransferAddress.getCity();
-            }
-            return null;
-        }, executorService);
+        try {
+            return CompletableFuture.supplyAsync(() -> {
+                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+                EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+                if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
+                    return entityTransferAddress.getCity();
+                }
+                return null;
+            }, executorService);
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+        }
+        return null;
     }
 
     private Boolean isContractUpdated(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails) {
