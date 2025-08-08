@@ -699,6 +699,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
             String placeOfIssue = placeOfIssueFuture.join();
+            log.info("placeOfIssue is - {}", placeOfIssue);
             setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, shipmentDetails);
             beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid, consoleShipmentData);
             shipmentDetails.setConsolidationList(null);
@@ -796,6 +797,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             entity.setContainersList(null);
             setShipmentCargoFields(entity, oldEntity.get());
             String placeOfIssue = placeOfIssueFuture.join();
+            log.info("placeOfIssue is - {}", placeOfIssue);
             setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, entity);
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
@@ -837,19 +839,41 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private CompletableFuture<String> getPlaceOfIssueFuture(String transportMode) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-                EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-                if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
-                    return entityTransferAddress.getCity();
-                }
-                return null;
-            } catch (Exception e) {
-                log.error("Error fetching place of issue: {}", e.getMessage(), e);
+        log.info("Entering getPlaceOfIssueFuture, transportMode: {}", transportMode);
+        try {
+            return CompletableFuture.supplyAsync(() -> fetchCity(transportMode), executorService);
+        } catch (Exception e) {
+            log.info("Unexpected error while creating CompletableFuture (transportMode: {}) - {}",
+                    transportMode, e.toString(), e);
+        }
+        return null;
+    }
+
+    @Nullable
+    private String fetchCity(String transportMode) {
+        try {
+            log.info("Starting city lookup for transportMode: {}", transportMode);
+            var tenantResponse = v1Service.retrieveTenant();
+            log.info("Tenant response received, entity present: {}", tenantResponse.getEntity() != null);
+            if (tenantResponse.getEntity() == null) {
+                log.info("Tenant entity is null - cannot proceed");
                 return null;
             }
-        }, executorService);
+            TenantModel tenantModel = modelMapper.map(tenantResponse.getEntity(), TenantModel.class);
+            log.info("TenantModel mapped successfully");
+            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+            log.info("EntityTransferAddress retrieved");
+            if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
+                String city = entityTransferAddress.getCity();
+                log.info("Valid transport mode ({}), returning city: {}", transportMode, city);
+                return city;
+            }
+            log.info("Transport mode {} not SEA/RAI, returning null", transportMode);
+        } catch (Exception e) {
+            log.info("Error processing city lookup (transportMode: {}) - {} - Cause: {}",
+                    transportMode, e.getClass().getSimpleName(), e.getMessage(), e);
+        }
+        return null;
     }
 
     private Boolean isContractUpdated(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails) {
