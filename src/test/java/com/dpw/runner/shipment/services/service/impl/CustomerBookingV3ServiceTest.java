@@ -3734,11 +3734,13 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setVolumeUnit("M3");
         packing.setWeight(BigDecimal.TEN);
         packing.setWeightUnit("KG");
+        packing.setPacksType("BAG");
         Packing packing1 = new Packing();
         packing1.setBookingId(2L);
         packing1.setVolume(BigDecimal.ONE);
         packing1.setVolumeUnit("M3");
         packing1.setWeightUnit("KG");
+        packing1.setPacksType("BAG");
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
@@ -3765,6 +3767,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         containers.setId(3L);
         containers.setPackagesPerContainer(1L);
         containers.setCargoWeightPerContainer(BigDecimal.TEN);
+        containers.setContainerPackageType("BAG");
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
@@ -3792,6 +3795,53 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of());
         customerBookingService.updateContainerInfoInBooking(2L);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testUpdateCargoInfoInBookingWithContainers() throws RunnerException {
+        Containers containers = new Containers();
+        containers.setContainerCode("20FR");
+        containers.setContainerCount(1L);
+        containers.setBookingId(2L);
+        containers.setId(3L);
+        containers.setPackagesPerContainer(1L);
+        containers.setCargoWeightPerContainer(BigDecimal.TEN);
+        containers.setContainerPackageType("BAG");
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        Map<String, BigDecimal> teuMap = new HashMap<>();
+        teuMap.put("20FR", BigDecimal.ONE);
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of());
+        customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testUpdateCargoInfoInBookingWithPackages() throws RunnerException {
+        Packing packing = new Packing();
+        packing.setBookingId(1L);
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("KG");
+        packing.setPacks("2");
+        packing.setPacksType("BAG");
+        Packing packing1 = new Packing();
+        packing1.setBookingId(2L);
+        packing1.setVolume(BigDecimal.ONE);
+        packing1.setVolumeUnit("M3");
+        packing1.setWeightUnit("KG");
+        packing1.setPacksType("BAG");
+        packing1.setPacks("3");
+        Map<String, BigDecimal> teuMap = new HashMap<>();
+        teuMap.put("20FR", BigDecimal.ONE);
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of());
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
 
