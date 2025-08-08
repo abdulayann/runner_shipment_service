@@ -143,7 +143,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
     @Mock
-    private IConsolidationV3Service consolidationService;
+    private ConsolidationV3Service consolidationService;
     @Mock
     private NpmContractV3Util npmContractV3Util;
     @Mock
@@ -1034,6 +1034,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        when(consolidationService.determineVolumeChargeableUnit(any())).thenReturn("M3");
+        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -3743,6 +3745,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing1.setPacksType("BAG");
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
+        when(consolidationService.determineVolumeChargeableUnit(any())).thenReturn("M3");
+        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
@@ -3813,6 +3817,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         teuMap.put("20FR", BigDecimal.ONE);
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of());
+        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
         customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
@@ -3840,6 +3845,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.determineVolumeChargeableUnit(any())).thenReturn("M3");
+        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
