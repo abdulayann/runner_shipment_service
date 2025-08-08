@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.Generated;
@@ -71,9 +70,6 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     IConsolidationV3Service consolidationV3Service;
-
-    @Autowired
-    ICustomerBookingV3Service customerBookingV3Service;
 
     @Autowired
     V1ServiceImpl v1Service;
