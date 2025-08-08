@@ -1,12 +1,7 @@
 package com.dpw.runner.shipment.services.entity.commons;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.google.common.base.Strings;
 import lombok.*;
 import lombok.Generated;
@@ -95,28 +90,6 @@ public class BaseEntity implements Serializable {
             if(Strings.isNullOrEmpty(parties.getAddressId()) && parties.getAddressData() != null && !parties.getAddressData().isEmpty() &&
                     parties.getAddressData().containsKey("Id")) {
                 parties.setAddressId(String.valueOf(parties.getAddressData().get("Id")));
-            }
-        }
-
-        if(this instanceof ShipmentDetails shipment && shipment.getMigrationStatus() == null) {
-            if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getIsRunnerV3Enabled())) {
-                shipment.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
-            } else{
-                shipment.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
-            }
-        }
-        if(this instanceof ConsolidationDetails console && console.getMigrationStatus() == null) {
-            if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getIsRunnerV3Enabled())) {
-                console.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
-            } else{
-                console.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
-            }
-        }
-        if(this instanceof CustomerBooking booking && booking.getMigrationStatus() == null) {
-            if(Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getIsRunnerV3Enabled())) {
-                booking.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
-            } else{
-                booking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
             }
         }
     }
