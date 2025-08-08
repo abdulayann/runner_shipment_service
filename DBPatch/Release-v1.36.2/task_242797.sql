@@ -1,0 +1,1 @@
+DELETE FROM network_transfer WHERE entity_number IN ('NJIS25062649', 'NJIS25062651');
