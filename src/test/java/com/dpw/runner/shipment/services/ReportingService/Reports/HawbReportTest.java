@@ -2202,13 +2202,21 @@ class HawbReportTest extends CommonMocks {
         packingModel.setHazardous(true);
         shipmentModel.setPackingList(List.of(packingModel));
         shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentModel.setContainsHazardous(true);
         shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         ShipmentSettingsDetails mockSettings = ShipmentSettingsDetails.builder()  // Set to false to avoid air cargo security validation
                 .build();
         mockSettings.setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, false);
+
+        // Set up user with DG permission set to false
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, false);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+
         hawbReport.printType= ORIGINAL;
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockSettings);
         mockShipmentSettings();

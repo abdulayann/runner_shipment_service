@@ -334,18 +334,12 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findMaxId();
     }
 
-    private boolean checkForAirTransportMode(ShipmentDetails request) {
-        return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode() );
+    private boolean isNonAirTransportMode(ShipmentDetails request) {
+        return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && !request.getDirection().equals(Constants.DIRECTION_EXP);
     }
 
-    private boolean checkForDGShipmentAndAirTransportMode(ShipmentDetails request) {
-        if (checkForAirTransportMode(request))
-            return false;
-        return Boolean.TRUE.equals(request.getContainsHazardous());
-    }
-
-    private boolean checkForNonDGShipmentAndAirTransportMode(ShipmentDetails request) {
-        if (checkForAirTransportMode(request))
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request) {
+        if(isNonAirTransportMode(request))
             return false;
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
@@ -369,7 +363,7 @@ public class ShipmentDao implements IShipmentDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addCargotSecurityValidationErrors(request, fromV1Sync, errors);
         } else {
-            addNonDgValidationErrors(request, fromV1Sync, errors);
+            addNonDgValidationErrors(request, errors);
         }
 
         // Routings leg no can not be repeated
@@ -413,15 +407,11 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
-    private void addNonDgValidationErrors(ShipmentDetails request, boolean fromV1Sync, Set<String> errors) {
+    private void addNonDgValidationErrors(ShipmentDetails request, Set<String> errors) {
         // Non dg Shipments can not have dg packs
-        if (checkForNonDGShipmentAndAirTransportMode(request) && checkContainsDGPackage(request)) {
+        if (checkForNonDGShipmentAndAirDGFlag(request) && checkContainsDGPackage(request)) {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
-
-        // Non dg user can save/edit dg shipment
-        if (!fromV1Sync && checkForDGShipmentAndAirTransportMode(request))
-            errors.add("You don't have permission to update DG Shipment");
     }
 
     private void addRoutingValidationsErrors(ShipmentDetails request, Set<String> errors) {

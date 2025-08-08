@@ -5807,9 +5807,6 @@ ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
-        // Mock the consolidationDetailsDao.findById call that happens during the partial update
-        when(consolidationDetailsDao.findById(100L)).thenReturn(Optional.of(consolidationDetails));
-
         HashMap<String, Object> hm = new HashMap<>();
         hm.put("RegulatedAgent", true);
 

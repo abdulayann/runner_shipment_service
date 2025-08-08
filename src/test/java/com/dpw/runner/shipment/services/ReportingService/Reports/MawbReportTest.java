@@ -242,13 +242,21 @@ class MawbReportTest extends CommonMocks {
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setShipmentType(Constants.DIRECTION_EXP); // Add missing shipmentType
         consolidationModel.setHazardous(true);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
         ShipmentSettingsDetails mockSettings = ShipmentSettingsDetails.builder()  // Set to false to avoid air cargo security validation
                 .build();
         mockSettings.setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, false);
+
+        // Set up user with DG permission set to false
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, false);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+
         mawbReport.printType= ORIGINAL;
         mockShipmentSettings();
         Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
