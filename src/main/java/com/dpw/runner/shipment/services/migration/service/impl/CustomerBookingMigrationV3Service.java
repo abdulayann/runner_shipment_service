@@ -378,7 +378,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return packing;
     }
 
-    private Boolean isDimensionsPresent(Packing packing) {
+    private boolean isDimensionsPresent(Packing packing) {
         return packing.getLength()!= null && packing.getWidth()!= null && packing.getHeight()!= null;
     }
 
