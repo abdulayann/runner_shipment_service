@@ -96,7 +96,7 @@ public class CargoService implements ICargoService {
         return Math.abs(totalContainerPackages - totalPackingSectionPackages) > 0L;
     }
 
-    private boolean calculateCargoWeightDifference(List<Containers> containersList, List<Packing> packingList) {
+    private boolean calculateCargoWeightDifference(List<Containers> containersList, List<Packing> packingList) throws RunnerException {
         if(containersList.isEmpty() || packingList.isEmpty()) {
             return false;
         }
