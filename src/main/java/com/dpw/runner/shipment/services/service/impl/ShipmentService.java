@@ -9457,6 +9457,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         ShipmentDetails shipment = shipmentOptional.get();
+        ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
 
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
@@ -9467,6 +9468,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
+        createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
         dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
