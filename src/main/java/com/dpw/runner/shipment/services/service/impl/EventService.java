@@ -512,7 +512,7 @@ public class EventService implements IEventService {
             boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
 
             if (isShipmentUpdateRequired) {
-                shipmentDao.save(shipment, false);
+                shipmentDao.save(shipment, false, false);
                 try {
                     shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {

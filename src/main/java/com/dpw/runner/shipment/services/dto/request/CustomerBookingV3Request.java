@@ -80,6 +80,8 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String currentPartyForQuote;
     private BookingSource source;
     private UUID sourceGuid;

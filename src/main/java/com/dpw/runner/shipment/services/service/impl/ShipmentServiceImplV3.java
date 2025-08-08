@@ -704,7 +704,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setConsolidationList(null);
             shipmentDetails.setContainersList(null);
 
-            shipmentDetails = getShipment(shipmentDetails);
+            shipmentDetails = getShipment(shipmentDetails, false);
 
             consoleShipmentData.setCreate(true);
             consoleShipmentData.setSyncConsole(syncConsole);
@@ -736,11 +736,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
     }
 
-    ShipmentDetails getShipment(ShipmentDetails shipmentDetails) throws RunnerException {
+    ShipmentDetails getShipment(ShipmentDetails shipmentDetails, boolean isFromBookingV3) throws RunnerException {
         if (shipmentDetails.getShipmentId() == null) {
             shipmentDetails.setShipmentId(shipmentsV3Util.generateShipmentId(shipmentDetails));
         }
-        shipmentDetails = shipmentDao.save(shipmentDetails, false);
+        shipmentDetails = shipmentDao.save(shipmentDetails, false, isFromBookingV3);
         return shipmentDetails;
     }
 
@@ -2424,12 +2424,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
-            shipmentDetails = getShipment(shipmentDetails);
+            shipmentDetails = getShipment(shipmentDetails, true);
             Long shipmentId = shipmentDetails.getId();
             if (consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
             }
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, true);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
@@ -3148,7 +3148,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
-        shipmentDao.save(shipmentDetails, false);
+        shipmentDao.save(shipmentDetails, false, false);
 
         return warning;
     }
@@ -3205,7 +3205,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
 
-        shipmentDao.save(shipmentDetails, false);
+        shipmentDao.save(shipmentDetails, false, false);
 
         return warning;
     }
@@ -4298,7 +4298,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
-            shipmentDetails = getShipment(shipmentDetails);
+            shipmentDetails = getShipment(shipmentDetails, false);
             Long shipmentId = shipmentDetails.getId();
 
             if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {

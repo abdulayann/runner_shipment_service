@@ -21,14 +21,14 @@ public class V2AuthHelper {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add(ApiConstants.X_ACCESS_TOKEN, billingServiceUrlConfig.getXApiKey());
-        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
 
     public HttpHeaders getOrderManagementServiceSourceHeader() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
 

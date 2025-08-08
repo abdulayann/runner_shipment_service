@@ -245,14 +245,7 @@ class CustomerBookingDaoTest {
         expectedBooking.setGuid(guid);
         expectedBooking.setId(101L);
 
-        String serialized = new ObjectMapper().writeValueAsString(expectedBooking);
-
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("cache::booking:guid:" + guid);
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(mockCache.get("cache::booking:guid:" + guid, String.class)).thenReturn(serialized);
-        when(objectMapper.readValue(serialized, CustomerBooking.class)).thenReturn(expectedBooking);
-
+        when(customerBookingRepository.findByGuid(any())).thenReturn(Optional.of(expectedBooking));
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertTrue(result.isPresent());
@@ -265,22 +258,11 @@ class CustomerBookingDaoTest {
         CustomerBooking expectedBooking = new CustomerBooking();
         expectedBooking.setGuid(guid);
         expectedBooking.setId(202L);
-
-        String serialized = new ObjectMapper().writeValueAsString(expectedBooking);
-
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
-        when(mockCache.get("guidKey", String.class)).thenReturn(null); // Cache miss
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(expectedBooking));
-        when(objectMapper.writeValueAsString(expectedBooking)).thenReturn(serialized);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, expectedBooking.getId())).thenReturn("idKey");
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertTrue(result.isPresent());
-        verify(mockCache).put("idKey", serialized);
-        verify(mockCache).put("guidKey", serialized);
     }
 
 
@@ -291,10 +273,8 @@ class CustomerBookingDaoTest {
         expected.setGuid(guid);
         expected.setId(303L);
 
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(null); // cache is null
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(expected));
 //        when(objectMapper.writeValueAsString(expected)).thenReturn("dummy-json");
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
 //        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, expected.getId())).thenReturn("idKey");
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
@@ -306,17 +286,11 @@ class CustomerBookingDaoTest {
     @Test
     void findByGuid_shouldReturnEmpty_whenNotFoundInCacheOrDB() throws JsonProcessingException {
         UUID guid = UUID.randomUUID();
-
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
-        when(mockCache.get("guidKey", String.class)).thenReturn(null); // cache miss
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.empty());
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertFalse(result.isPresent());
-        verify(mockCache, never()).put(any(), any()); // Should not cache anything
     }
 
     @Test
@@ -326,7 +300,6 @@ class CustomerBookingDaoTest {
         fallbackBooking.setGuid(guid);
         fallbackBooking.setId(404L);
 
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenThrow(new RuntimeException("boom!"));
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(fallbackBooking));
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);

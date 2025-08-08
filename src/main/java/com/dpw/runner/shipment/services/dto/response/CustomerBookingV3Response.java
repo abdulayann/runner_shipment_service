@@ -89,6 +89,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String parentContractId;
     private String salesBranch;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isBillCreated;

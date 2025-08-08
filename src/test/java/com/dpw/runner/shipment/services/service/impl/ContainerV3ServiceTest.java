@@ -1444,6 +1444,13 @@ class ContainerV3ServiceTest extends CommonMocks {
         ReflectionTestUtils.setField(serviceSpy, "shipmentService", shipmentService);
         ReflectionTestUtils.setField(serviceSpy, "shipmentDao", shipmentDao);
         ReflectionTestUtils.setField(serviceSpy, "shipmentValidationV3Util", shipmentValidationV3Util);
+        doNothing().when(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, containerRequest);
+        serviceSpy.processDGShipmentDetailsFromContainer(containerRequest);
+        verify(iShipmentsContainersMappingDao).findByContainerId(containerId);
+        verify(shipmentService).findById(shipmentId);
+        verify(shipmentValidationV3Util).processDGValidations(eq(shipmentDetails), isNull(), anySet());
+        verify(serviceSpy).callChangeShipmentDGStatusFromContainer(shipmentDetails, containerRequest);
+        verify(shipmentDao).save(shipmentDetails, false, false);
         serviceSpy.processDGShipmentDetailsFromContainer(List.of(containerRequest));
         assertEquals(123L , shipmentId);
     }
@@ -1989,7 +1996,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(shipmentValidationV3Util, never()).processDGValidations(any(), any(), any());
         verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
     }
-    
+
     @Test
     void testProcessDGShipmentDetailsFromContainer_WithMixedHazardousAndNonHazardousContainers_ShouldProcessOnlyHazardous() {
         // Arrange
