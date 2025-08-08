@@ -2354,6 +2354,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     consolidationDetailsV3Request.getTransportMode(), consolidationDetailsV3Request.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
 
+            consolidationDetailsV3Request.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+
             Pair<ConsolidationDetails, Long> createConsoleResponse = consolidationV3Service.createConsolidationForBooking(CommonRequestModel.buildRequest(consolidationDetailsV3Request), customerBookingRequest);
             ConsolidationDetails consolDetailsResponse = createConsoleResponse.getLeft();
 
@@ -2371,6 +2373,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
+
+        shipmentRequest.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
         shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
 
