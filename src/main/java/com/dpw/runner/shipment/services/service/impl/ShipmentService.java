@@ -7112,14 +7112,12 @@ public class ShipmentService implements IShipmentService {
         return null;
     }
 
-    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return false;
+    private boolean isNotAirExport(ShipmentDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getDirection()));
     }
 
     private boolean checkForDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
-        if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
+        if(isNotAirExport(shipment))
             return false;
         return Boolean.TRUE.equals(shipment.getContainsHazardous());
     }
@@ -7129,7 +7127,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean checkForNonDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
-        if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
+        if(isNotAirExport(shipment))
             return false;
         return !Boolean.TRUE.equals(shipment.getContainsHazardous());
     }

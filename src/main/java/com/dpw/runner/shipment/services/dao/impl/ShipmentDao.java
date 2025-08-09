@@ -48,6 +48,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
@@ -289,12 +290,12 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
 
-    private boolean isNonAirTransportMode(ShipmentDetails request) {
-        return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode());
+    private boolean isNotAirExport(ShipmentDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getDirection()));
     }
 
     private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request) {
-        if(isNonAirTransportMode(request))
+        if(isNotAirExport(request))
             return false;
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }

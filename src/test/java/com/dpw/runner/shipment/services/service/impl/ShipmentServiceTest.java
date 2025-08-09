@@ -5672,7 +5672,6 @@ ShipmentServiceTest extends CommonMocks {
     void partialUpdateTestAirMessaging() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
 
@@ -5685,7 +5684,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         consolidationDetails.setId(100L);
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+        shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails)))
@@ -5700,7 +5699,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
         // Mock the consolidationDetailsDao.findById call that happens during the partial update
-        when(consolidationDetailsDao.findById(100L)).thenReturn(Optional.of(consolidationDetails));
+        lenient().when(consolidationDetailsDao.findById(100L)).thenReturn(Optional.of(consolidationDetails));
 
         HashMap<String, Object> hm = new HashMap<>();
         hm.put("RegulatedAgent", true);
