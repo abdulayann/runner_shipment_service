@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -127,6 +128,8 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     IShipmentSync shipmentSync;
+    @Autowired
+    IShipmentsContainersMappingRepository iShipmentsContainersMappingRepository;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -497,6 +500,7 @@ public class ContainerV3Service implements IContainerV3Service {
         // update console achieved data
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId)
                 .orElseThrow(() -> new ValidationException("Consolidation not present with Id : {}, Container on shipment screen must be attached to consolidation as well" + consolidationId));
+        consolidationDetails.setContainersList(containerDao.findByConsolidationId(consolidationId));
         consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails,
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
 
@@ -824,16 +828,20 @@ public class ContainerV3Service implements IContainerV3Service {
 
     // Method to handle the deletion of containers and their associated entities
     private void deleteContainerAndAssociations(List<Long> containerIds,  List<Containers> containersToDelete) {
-        // Remove containers from packing associations
-        packingService.removeContainersFromPacking(containerIds);
 
         // container present in only one shipment , same container won't be avl in multiple shipments
         List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
-        shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappings);
+
+        List<Long> ids = shipmentsContainersMappings.stream()
+                .map(ShipmentsContainersMapping::getId)
+                .toList();
+
+        iShipmentsContainersMappingRepository.deleteByIds(ids);
 
         // Delete the containers from the database
         containerRepository.deleteAll(containersToDelete);
         //Clearing context , refetch the data
+        entityManager.flush();
         entityManager.clear();
     }
 
