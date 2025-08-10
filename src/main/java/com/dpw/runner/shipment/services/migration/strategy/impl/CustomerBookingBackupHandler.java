@@ -57,8 +57,7 @@ public class CustomerBookingBackupHandler {
     public List<CustomerBookingBackupEntity> backup(Integer tenantId) {
 
         log.info("Starting customer booking backup for tenantId: {}", tenantId);
-        Set<Long> customerBookingIds = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId,
-                List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()));
+        List<Long> customerBookingIds = customerBookingDao.findAllByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         log.info("Count of customerBooking Ids : {}", customerBookingIds.size());
         if (customerBookingIds.isEmpty()) {
             log.info("No customer booking records found for tenantId: {}", tenantId);

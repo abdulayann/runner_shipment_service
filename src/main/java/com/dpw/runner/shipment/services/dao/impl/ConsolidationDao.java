@@ -849,11 +849,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public Set<Long> findConsolidationIdsByTenantId(Integer tenantId, List<String> migrationStatuses) {
-        return consolidationRepository.findConsolidationIdsByTenantId(tenantId, migrationStatuses);
-    }
-
-    @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
         return consolidationRepository.save(consolidationDetails);
     }

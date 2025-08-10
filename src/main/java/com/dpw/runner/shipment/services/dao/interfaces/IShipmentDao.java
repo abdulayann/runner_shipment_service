@@ -76,7 +76,6 @@ public interface IShipmentDao {
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
 
     void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId);
-    Set<Long> findShipmentIdsByTenantId(Integer tenantId, List<String> migrationStatuses);
 
     void revertSoftDeleteShipmentIdAndTenantId(List<Long> allShipmentIdsFromContainerMap, Integer tenantId);
     Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);

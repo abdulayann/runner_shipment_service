@@ -190,9 +190,6 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             """)
     void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
 
-    @Query(value = "SELECT c.id FROM consolidation_details c WHERE c.tenant_id = ?1 and c.is_deleted = false and c.migration_status IN (?2)", nativeQuery = true)
-    Set<Long> findConsolidationIdsByTenantId(Integer tenantId, List<String> migrationStatuses);
-
     @Modifying
     @Transactional
     @Query(value = "UPDATE consolidation_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)

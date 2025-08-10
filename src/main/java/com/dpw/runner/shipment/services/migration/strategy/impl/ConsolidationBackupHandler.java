@@ -66,8 +66,8 @@ public class ConsolidationBackupHandler {
     public List<ConsolidationBackupEntity> backup(Integer tenantId) {
 
         log.info("Starting consolidation backup for tenantId: {}", tenantId);
-        Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId,
-                List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()));
+        List<Long> consolidationIds = consolidationDetailsDao.findAllByMigratedStatuses(
+                List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         log.info("Count of consolidation Ids : {}", consolidationIds.size());
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);

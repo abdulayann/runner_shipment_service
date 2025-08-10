@@ -994,11 +994,6 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public Set<Long> findShipmentIdsByTenantId(Integer tenantId, List<String> migrationStatuses) {
-        return shipmentRepository.findShipmentIdsByTenantId(tenantId, migrationStatuses);
-    }
-
-    @Override
     public void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId) {
         shipmentRepository.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
     }
