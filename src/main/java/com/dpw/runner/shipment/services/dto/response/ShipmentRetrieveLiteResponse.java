@@ -94,6 +94,8 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String bookingType;
     private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;

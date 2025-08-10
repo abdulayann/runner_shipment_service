@@ -708,6 +708,15 @@ public class Constants {
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
     public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
+    public static final String PACKING_LC = "packing";
+    public static final String COMMODITY_GROUP = "commodityGroup";
+    public static final String COMMODITY = "commodity";
+    public static final String HS_CODE = "HSCode";
+    public static final String GOODS_DESCRIPTION = "goodsDescription";
+    public static final String MARKS_N_NUMBERS = "marksnNums";
+    public static final String PROPER_SHIPPING_NAME = "properShippingName";
+    public static final String UN_NUMBER = "unNumber";
+    public static final String PACKING_GROUP = "packingGroup";
     private Constants() {
     }
 

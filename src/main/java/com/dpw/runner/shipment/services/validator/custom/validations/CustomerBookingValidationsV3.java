@@ -148,15 +148,15 @@ public class CustomerBookingValidationsV3 {
 
     private void validateDateFields(CustomerBooking entity) {
         LocalDateTime cargoReadyDate = entity.getCargoReadinessDate();
-        LocalDateTime pickupAtOriginDate = entity.getPickupAtOriginDate();
-        LocalDateTime deliveryAtDestinationDate = entity.getDeliveryAtDestinationDate();
+        LocalDateTime estimatedPickupAtOriginDate = entity.getEstimatedPickupAtOriginDate();
+        LocalDateTime estimatedDeliveryAtDestinationDate = entity.getEstimatedDeliveryAtDestinationDate();
         CarrierDetails carrier = entity.getCarrierDetails();
         LocalDateTime etd = carrier != null ? carrier.getEtd() : null;
         LocalDateTime eta = carrier != null ? carrier.getEta() : null;
 
         validateCargoReadyDate(cargoReadyDate, etd, eta);
         validateEtdAndEta(etd, eta, cargoReadyDate);
-        validatePickupAndDeliveryDates(pickupAtOriginDate, deliveryAtDestinationDate, etd, eta);
+        validatePickupAndDeliveryDates(estimatedPickupAtOriginDate, estimatedDeliveryAtDestinationDate, etd, eta);
     }
 
     private void validateCargoReadyDate(LocalDateTime cargoReadyDate, LocalDateTime etd, LocalDateTime eta) {
@@ -165,7 +165,6 @@ public class CustomerBookingValidationsV3 {
         if (etd != null && cargoReadyDate.isAfter(etd)) {
             throw new ValidationException("Cargo Ready Date must be less than or equal to ETD");
         }
-
         if (etd == null && eta != null && !cargoReadyDate.isBefore(eta)) {
             throw new ValidationException("Cargo Ready Date must be less than ETA");
         }
@@ -193,16 +192,16 @@ public class CustomerBookingValidationsV3 {
         }
     }
 
-    private void validatePickupAndDeliveryDates(LocalDateTime pickup, LocalDateTime delivery, LocalDateTime etd, LocalDateTime eta) {
-        if (pickup != null && etd != null && pickup.isAfter(etd)) {
+    private void validatePickupAndDeliveryDates(LocalDateTime estimatedPickupAtOriginDate, LocalDateTime estimatedDeliveryAtDestinationDate, LocalDateTime etd, LocalDateTime eta) {
+        if (estimatedPickupAtOriginDate != null && etd != null && estimatedPickupAtOriginDate.isAfter(etd)) {
             throw new ValidationException("Est. Origin Transport Date should be less than or equal to ETD");
         }
 
-        if (delivery != null && eta != null && delivery.isBefore(eta)) {
+        if (estimatedDeliveryAtDestinationDate != null && eta != null && estimatedDeliveryAtDestinationDate.isBefore(eta)) {
             throw new ValidationException("Est. Destination Transport Date should be more than or equal to ETA");
         }
 
-        if (pickup != null && delivery != null && delivery.isBefore(pickup)) {
+        if (estimatedPickupAtOriginDate != null && estimatedDeliveryAtDestinationDate != null && estimatedDeliveryAtDestinationDate.isBefore(estimatedPickupAtOriginDate)) {
             throw new ValidationException("Destination Transport Date must be greater than or equal to Origin Transport Date");
         }
     }
