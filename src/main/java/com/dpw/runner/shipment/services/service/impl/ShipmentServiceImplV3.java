@@ -681,7 +681,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
             request.setSlac(null);
         }
-        CompletableFuture<String> placeOfIssueFuture = getPlaceOfIssueFuture(request.getTransportMode());
+        String placeOfIssue = getPlaceOfIssue(request.getTransportMode());
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
 
@@ -698,7 +698,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
 
             ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
-            String placeOfIssue = placeOfIssueFuture.join();
             log.info("placeOfIssue is - {}", placeOfIssue);
             setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, shipmentDetails);
             beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid, consoleShipmentData);
@@ -773,7 +772,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentDetails entity = jsonHelper.convertValue(shipmentRequest, ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setId(oldEntity.get().getId());
-            CompletableFuture<String> placeOfIssueFuture = getPlaceOfIssueFuture(entity.getTransportMode());
+            String placeOfIssue = getPlaceOfIssue(entity.getTransportMode());
             mid = System.currentTimeMillis();
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
@@ -796,7 +795,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             entity.setConsolidationList(null);
             entity.setContainersList(null);
             setShipmentCargoFields(entity, oldEntity.get());
-            String placeOfIssue = placeOfIssueFuture.join();
             log.info("placeOfIssue is - {}", placeOfIssue);
             setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, entity);
             mid = System.currentTimeMillis();
@@ -830,7 +828,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
     private static void setPlaceOfIssueInAdditionalDetailsIfExist(String placeOfIssue, ShipmentDetails entity) {
         AdditionalDetails additionalDetailModel = entity.getAdditionalDetails();
-        if (null == additionalDetailModel) {
+        if (null == additionalDetailModel && null != placeOfIssue) {
             entity.setAdditionalDetails(new AdditionalDetails());
         }
         if (null != placeOfIssue) {
@@ -838,40 +836,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private CompletableFuture<String> getPlaceOfIssueFuture(String transportMode) {
-        log.info("Entering getPlaceOfIssueFuture, transportMode: {}", transportMode);
-        try {
-            return CompletableFuture.supplyAsync(() -> fetchCity(transportMode), executorService);
-        } catch (Exception e) {
-            log.info("Unexpected error while creating CompletableFuture (transportMode: {}) - {}",
-                    transportMode, e.toString(), e);
-        }
-        return null;
-    }
-
-    @Nullable
-    private String fetchCity(String transportMode) {
-        try {
-            log.info("Starting city lookup for transportMode: {}", transportMode);
-            var tenantResponse = v1Service.retrieveTenant();
-            log.info("Tenant response received, entity present: {}", tenantResponse.getEntity() != null);
-            if (tenantResponse.getEntity() == null) {
-                log.info("Tenant entity is null - cannot proceed");
-                return null;
-            }
-            TenantModel tenantModel = modelMapper.map(tenantResponse.getEntity(), TenantModel.class);
-            log.info("TenantModel mapped successfully");
-            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-            log.info("EntityTransferAddress retrieved");
-            if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
-                String city = entityTransferAddress.getCity();
-                log.info("Valid transport mode ({}), returning city: {}", transportMode, city);
-                return city;
-            }
-            log.info("Transport mode {} not SEA/RAI, returning null", transportMode);
-        } catch (Exception e) {
-            log.info("Error processing city lookup (transportMode: {}) - {} - Cause: {}",
-                    transportMode, e.getClass().getSimpleName(), e.getMessage(), e);
+    private String getPlaceOfIssue(String transportMode) {
+        TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+        if (Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
+            return entityTransferAddress.getCity();
         }
         return null;
     }

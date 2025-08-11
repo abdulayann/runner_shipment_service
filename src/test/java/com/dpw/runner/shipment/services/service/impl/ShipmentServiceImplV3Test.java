@@ -1589,7 +1589,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentRequest.getClient().setOrgCode("FRC1234");
         commonRequestModel.setData(mockShipmentRequest);
         mockShipment.setId(2L);
-
+        V1RetrieveResponse mockRes = mock(V1RetrieveResponse.class);
+        when(v1Service.retrieveTenant()).thenReturn(mockRes);
+        TenantModel tenantModel = new TenantModel();
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
+        when(commonUtils.getEntityTransferAddress(any())).thenReturn(mockAddress);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
@@ -2015,6 +2021,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         commonRequestModel.setData(mockShipmentRequest);
+        V1RetrieveResponse mockResponse = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        when(v1Service.retrieveTenant()).thenReturn(mockResponse);
+        when(mockResponse.getEntity()).thenReturn(tenantEntity);
+        TenantModel tenantModel = new TenantModel();
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
+        when(commonUtils.getEntityTransferAddress(any())).thenReturn(mockAddress);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
@@ -2193,7 +2208,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setShipmentId("SHIP001");
         mockShipment.setJobType("DRT");
         testShipment.setJobType("STD");
-
+        V1RetrieveResponse mockResponse = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        when(v1Service.retrieveTenant()).thenReturn(mockResponse);
+        when(mockResponse.getEntity()).thenReturn(tenantEntity);
+        TenantModel tenantModel = new TenantModel();
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
+        when(commonUtils.getEntityTransferAddress(any())).thenReturn(mockAddress);
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
