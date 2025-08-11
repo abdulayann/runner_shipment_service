@@ -1598,8 +1598,10 @@ public class ContainerV3Service implements IContainerV3Service {
             isDGContainer = true;
         }
 
-        if(!isDGClass1Added && !isDG && container.getPacksList() != null) {
-            for (Packing packing : container.getPacksList()) {
+        List<Packing> containerPackings = packingDao.findByContainerIdIn(List.of(container.getId()));
+
+        if(containerPackings != null) {
+            for (Packing packing : containerPackings) {
                 if (Boolean.TRUE.equals(packing.getHazardous())) {
                     log.debug("Packing {} is hazardous", packing.getId());
                     isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
@@ -1609,6 +1611,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
+        log.info("DG packages is present {}, DG container is present {}, Container {} is not marked hazardous", isDGPackage, isDGContainer, container.getId());
         if(!isDGContainer && isDGPackage ){
             log.error("DG packages found but container {} is not marked hazardous", container.getId());
             throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
