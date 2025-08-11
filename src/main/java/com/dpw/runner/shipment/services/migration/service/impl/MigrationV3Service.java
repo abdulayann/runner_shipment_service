@@ -17,7 +17,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
-import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.repository.IShipmentBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
@@ -47,6 +46,7 @@ import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.col
 @Service
 @Slf4j
 @Generated
+@SuppressWarnings("java:S112")
 public class MigrationV3Service implements IMigrationV3Service {
 
     @Autowired
