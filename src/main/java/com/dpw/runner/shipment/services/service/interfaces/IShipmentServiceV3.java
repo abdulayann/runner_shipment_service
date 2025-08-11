@@ -57,6 +57,9 @@ public interface IShipmentServiceV3 {
 
     ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData, String source) throws RunnerException, AuthenticationException;
 
+    ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdExternal(CommonRequestModel commonRequestModel, String source);
+    ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel commonRequestModel, String source);
+
     ShipmentDetailsV3Response completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 
     void createLogHistoryForShipment(ShipmentDetails shipmentDetails);

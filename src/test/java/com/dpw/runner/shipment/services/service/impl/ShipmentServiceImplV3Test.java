@@ -68,17 +68,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -214,12 +204,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7373,5 +7358,174 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_withoutId() {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_idPresent_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_guidPresent_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().guid(String.valueOf(UUID.randomUUID())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_retrieveForNteFails() {
+        CommonGetRequest request = CommonGetRequest.builder().guid(String.valueOf(UUID.randomUUID())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, NETWORK_TRANSFER);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_StatusNull_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_StatusNotPresent_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(Integer.MAX_VALUE);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(0);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        verify(shipmentDao).findById(123L);
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_withoutId() {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_idPresent_includeColumnNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_guidPresent_includeColumnNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_guidPresent_includeColumnsEmpty() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_retrieveForNteFails() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, NETWORK_TRANSFER);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder()
+                .id(123L)
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(0);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class))).thenReturn(shipmentRetrieveExternalResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        verify(shipmentDao).findById(123L);
     }
 }

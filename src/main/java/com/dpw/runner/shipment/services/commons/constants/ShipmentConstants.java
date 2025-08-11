@@ -282,5 +282,6 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
     public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
+    public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
 
 }
