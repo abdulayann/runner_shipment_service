@@ -117,4 +117,19 @@ class EmailServiceUtilityTest {
         verify(transport).sendMessage(any(), any());
         verify(transport).close();
     }
+
+    @Test
+    void sendMigrationAndRestoreEmail() throws MessagingException {
+
+        Session session = Session.getDefaultInstance(new Properties());
+
+        when(emailConfig.getSession()).thenReturn(session);
+        when(emailConfig.getTransport(any(Session.class))).thenReturn(transport);
+
+        emailServiceUtility.sendMigrationAndRestoreEmail(728, "", "Migration from V3 to V2", true);
+        verify(emailConfig).getSession();
+        verify(emailConfig).getTransport(any(Session.class));
+        verify(transport).sendMessage(any(), any());
+        verify(transport).close();
+    }
 }
