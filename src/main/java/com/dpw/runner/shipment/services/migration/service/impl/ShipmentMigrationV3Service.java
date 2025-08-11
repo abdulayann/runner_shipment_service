@@ -134,7 +134,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         notesUtil.addNotesForShipment(shipment);
         log.info("Notes added for Shipment [id={}]", shipment.getId());
-        mapShipmentV2ToV3(shipment, new HashMap<>());
+        mapShipmentV2ToV3(shipment, new HashMap<>(), true);
         log.info("Mapped V2 Shipment to V3 [id={}]", shipment.getId());
 
         // Save packing details
@@ -157,12 +157,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     @Override
-    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
+    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException {
 
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
-        updateTransportInstruction(shipmentDetails);
+        if(Objects.equals(canUpdateTransportInstructions, Boolean.TRUE))
+            updateTransportInstruction(shipmentDetails);
 
         // Migrated shipment fields
         updateShipmentFields(shipmentDetails);

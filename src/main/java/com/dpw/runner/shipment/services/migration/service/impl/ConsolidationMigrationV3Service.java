@@ -132,7 +132,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Step 3: Convert V2 console + its attached shipments into V3 structure
-        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
         // Step 4: Save all containers separately first, as they must be saved before referencing in packings
@@ -192,7 +192,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param packingVsContainerGuid map to record packing-to-container association during transformation
      * @return transformed V3-compatible consolidation
      */
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) {
 
         UUID consolGuid = consolidationDetails.getGuid();
         log.info("Mapping V2 to V3 for Consolidation [guid={}]", consolGuid);
@@ -246,7 +246,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
             for (ShipmentDetails shipment : shipmentDetailsList) {
                 try {
-                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid, canUpdateTransportInstructions);
                 } catch (Exception e) {
                     log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
                     throw new IllegalArgumentException("Shipment transformation failed", e);

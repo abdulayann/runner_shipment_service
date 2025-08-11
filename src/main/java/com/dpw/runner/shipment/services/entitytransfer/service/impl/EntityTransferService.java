@@ -338,7 +338,7 @@ public class EntityTransferService implements IEntityTransferService {
             if (Boolean.TRUE.equals(isV3)) {
                 if (v3Payload == null) {
                     ShipmentDetails v2Shipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
-                    ShipmentDetails v3ShipmentDetails = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null);
+                    ShipmentDetails v3ShipmentDetails = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false);
                     addNotesInShipment(v2Shipment, v3ShipmentDetails);
                     var entityTransferPayload = prepareShipmentPayload(v3ShipmentDetails);
                     entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
@@ -528,7 +528,7 @@ public class EntityTransferService implements IEntityTransferService {
                     ConsolidationDetails v2Consol = jsonHelper.convertValue(consol, ConsolidationDetails.class);
                     setNotesInConsol(v2Consol);
                     Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid);
+                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false);
                     var entityTransferConsolePayload = prepareConsolidationPayload(v3ConsolidationDetails, sendConsolidationRequest, true);
                     entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
                     setPackingVsContainerGuid(entityTransferConsolePayload, packingVsContainerGuid);
