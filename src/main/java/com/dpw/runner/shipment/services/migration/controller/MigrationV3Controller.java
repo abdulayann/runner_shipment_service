@@ -34,17 +34,14 @@ public class MigrationV3Controller {
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
         return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId());
-
     }
 
     @PostMapping(value = "/v3/v2")
-    public Map<String, Integer> migrationFromV3ToV2(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+    public ResponseEntity<IRunnerResponse> migrationFromV3ToV2(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
         log.info("Received migration request from V3 to V2 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        Map<String, Integer> result = migrationV3Service.migrateV3ToV2(request.getTenantId(), request.getBookingId());
-        log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", request.getTenantId(), result);
-        return result;
+        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId());
     }
 
 }

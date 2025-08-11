@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataRestoreService;
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -28,6 +31,27 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     private final List<RestoreServiceHandler> restoreHandlers;
     private final TransactionTemplate transactionTemplate;
     private final ThreadPoolTaskExecutor asyncRestoreHandlerExecutor;
+    private final EmailServiceUtility emailServiceUtility;
+    private final HelperExecutor trxExecutor;
+
+    @Override
+    public ResponseEntity<String> restoreTenantDataAsync(Integer tenantId) {
+
+        trxExecutor.runInAsync(() ->  {
+            try {
+                restoreTenantData(tenantId);
+                log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "", "Restore From V3 to V2",  false);
+            } catch (Exception e) {
+                log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Restore From V3 to V2", true);
+                throw new IllegalArgumentException(e);
+            }
+            return null;
+        });
+        return ResponseEntity.ok("Restore activity submitted successfully for tenant: " + tenantId);
+    }
+
 
     @Override
     public void restoreTenantData(Integer tenantId) {

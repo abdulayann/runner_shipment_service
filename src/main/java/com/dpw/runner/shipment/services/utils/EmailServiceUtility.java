@@ -83,22 +83,14 @@ public class EmailServiceUtility {
         this.sendEmailDefault("ERROR in Syncing Entity : " + entity + "\n id : " + id + " guid : " + guid + "\n" + "Error Message: " + error, sub);
     }
 
-    public void sendEmailForMigrationEntity(Integer tenantId, String response) {
+    public void sendMigrationAndRestoreEmail(Integer tenantId, String response, String action, boolean isError) {
         try {
-            String sub = "Migration From V2 to V3 for Tenant Id: " + tenantId + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
-            this.sendEmailDefault("Migration From V2 to V3 for Tenant Id: " + tenantId + "\n" + response, sub);
+            String prefix = isError ? "ERROR in " : "";
+            String subject = prefix + action + " for Tenant Id: " + tenantId + " in ENV: " + currentEnvironment + " DateTime: " + LocalDateTime.now();
+            String body = prefix + action + " for Tenant Id: " + tenantId + "\n" + response;
+            this.sendEmailDefault(body, subject);
         } catch (Exception ex) {
-            log.error("Not able to send email for Migration v2 to v3 due to: {}", ex.getMessage());
+            log.error("Not able to send email for {} due to: {}", action, ex.getMessage());
         }
     }
-
-    public void sendEmailForMigrationEntityFailure(Integer tenantId, String response) {
-        try {
-            String sub = "ERROR in Migration From V2 to V3 for Tenant Id: " + tenantId + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
-            this.sendEmailDefault("ERROR in Migration From V2 to V3 for Tenant Id: " + tenantId + "\n" + response, sub);
-        } catch (Exception ex) {
-            log.error("Not able to send email for Migration v2 to v3 due to: {}", ex.getMessage());
-        }
-    }
-
 }

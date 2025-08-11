@@ -106,20 +106,39 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Override
     public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId) {
 
-        trxExecutor.runInAsync(() -> trxExecutor.runInTrx(() -> {
+        trxExecutor.runInAsync(() -> {
             try {
                 var response = migrateV2ToV3(tenantId, consolId, bookingId);
                 log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", tenantId, response);
-                emailServiceUtility.sendEmailForMigrationEntity(tenantId, jsonHelper.convertToJson(response));
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V2 to V3", false);
             } catch (Exception e) {
                 log.error("Migration V2 to V3 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
-                emailServiceUtility.sendEmailForMigrationEntityFailure(tenantId, e.getMessage());
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Migration From V2 to V3", true);
                 throw new IllegalArgumentException(e);
             }
             return null;
-        }));
+        });
         return ResponseHelper.buildSuccessResponse("Migration v2 to v3 request submitted successfully for tenantId: " + tenantId);
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId) {
+
+        trxExecutor.runInAsync(() -> {
+            try{
+                var response = migrateV3ToV2(tenantId, bookingId);
+                log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", tenantId, response);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
+            } catch (Exception e) {
+                log.error("Migration V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Migration From V3 to V2", true);
+                throw new IllegalArgumentException(e);
+            }
+            return null;
+        });
+        return ResponseHelper.buildSuccessResponse("Migration from V3 to V2 request submitted successfully for tenantId: " + tenantId);
+    }
+
 
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
