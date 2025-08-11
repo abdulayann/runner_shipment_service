@@ -347,7 +347,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("networkTransferFutures migration failed [id={}]: {}", nteId, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
