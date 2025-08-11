@@ -21,7 +21,7 @@ public class ConsolidationBackupDao implements IConsolidationBackupDao {
     private IConsolidationBackupRepository consolidationBackupRepository;
 
     @Override
-    public List<Long> findConsolidationIdsByTenantId(Integer tenantId) {
+    public List<ConsolidationBackupEntity> findConsolidationIdsByTenantId(Integer tenantId) {
         return consolidationBackupRepository.findConsolidationIdsByTenantId(tenantId);
     }
 

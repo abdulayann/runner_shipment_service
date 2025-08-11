@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
 
@@ -69,13 +70,20 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     @Override
     public void restore(Integer tenantId) {
 
-        Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        List<CustomerBookingBackupEntity> customerBookingBackupEntities = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        Set<Long> allBackupBookingIds = customerBookingBackupEntities.stream().map(CustomerBookingBackupEntity::getBookingId)
+                .collect(Collectors.toSet());
+        log.info("Count of booking ids : {}", allBackupBookingIds.size());
         if (allBackupBookingIds.isEmpty()) {
             return;
         }
         customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
         customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
+        allBackupBookingIds =  customerBookingBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
+                .map(CustomerBookingBackupEntity::getBookingId).collect(Collectors.toSet());
+
+        log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
         for (Long bookingId : allBackupBookingIds) {
             try {
                 restoreCustomerBookingData(bookingId, tenantId);
@@ -89,7 +97,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     public void restoreCustomerBookingData(Long bookingId, Integer tenantId) {
         try {
-            log.info("Restoration started for customer booking for tenantId : {}", tenantId);
+            log.info("Restoration started for customer booking  : {} and tenantId : {}", bookingId, tenantId);
             v1Service.setAuthContext();
             TenantContext.setCurrentTenant(tenantId);
             UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
@@ -100,6 +108,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             customerBookingDao.save(backupData);
             backupRepository.makeIsDeleteTrueToMarkRestoreSuccessful(backup.getId());
             updateCacheByBookingId(bookingId, backupData);
+            log.info("Completed processing of customer booking id : {} and tenant id :{}", bookingId, tenantId);
 
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);

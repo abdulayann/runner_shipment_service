@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
-import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataRestoreService;
@@ -17,7 +16,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 @Service
 @RequiredArgsConstructor
@@ -69,7 +67,6 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
                 return null;
             } catch (Exception e) {
-                status.setRollbackOnly();
                 log.error("Restore failed for tenant: {}", tenantId, e);
                 throw new IllegalArgumentException(e);
             }

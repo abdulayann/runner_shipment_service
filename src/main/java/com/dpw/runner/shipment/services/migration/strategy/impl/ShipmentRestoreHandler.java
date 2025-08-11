@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -32,7 +31,6 @@ import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -139,7 +137,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         validateAndRestoreTriangularPartnerDetails(shipmentId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
         shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
-
+        log.info("Compelted shipment restore for shipmentId: {}", shipmentId);
         return shipmentDetails;
     }
 
@@ -194,6 +192,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
 
         for (NetworkTransfer incoming : networkTransferList) {
+            log.info("Started processing of network transfer id : {} and shipment id :{}", incoming.getId(), shipmentId);
             Long id = incoming.getId();
             UUID guid = incoming.getGuid();
 
@@ -210,6 +209,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
             // New record (or mismatched guid): remove id and save
             incoming.setId(null);
             toSaveList.add(incoming);
+            log.info("Completed processing of network transfer id : {} and shipment id :{}", incoming.getId(), shipmentId);
         }
 
         // All remaining in dbMap are to be deleted

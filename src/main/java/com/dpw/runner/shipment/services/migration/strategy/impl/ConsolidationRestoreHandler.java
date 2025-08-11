@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -73,13 +72,22 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
 
-        List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
+        List<ConsolidationBackupEntity> consolidationBackupEntities = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
+        Set<Long> consolidationIds = consolidationBackupEntities.stream().map(ConsolidationBackupEntity::getConsolidationId)
+                .collect(Collectors.toSet());
+
+        log.info("Total consolidation IDS : {}", consolidationIds.size());
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
             return;
         }
-        consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
-        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
+
+        consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
+        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
+
+
+        consolidationIds = consolidationBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
+                .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
 
         for (Long consolidationId : consolidationIds) {
             try {
@@ -95,6 +103,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
+            log.info("Started processing of consol id : {}", consolidationId);
             TenantContext.setCurrentTenant(tenantId);
             UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
@@ -109,6 +118,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
                 revertContainers(consolidationDetails);
                 for (Long shipmentId : shipmentIds) {
+                    log.info("Started processing of shipment id : {} and console id :{}", shipmentId, consolidationId);
                     if (consolidationDetails.getShipmentsList() == null) {
                         consolidationDetails.setShipmentsList(new HashSet<>());
                     }
@@ -116,6 +126,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                     if (shipmentDetails != null) {
                         consolidationDetails.getShipmentsList().add(shipmentDetails);
                     }
+                    log.info("Completed processing of shipment id : {} and console id :{}", shipmentId, consolidationId);
                 }
             }
             List<Long> allPartiesIds = getAllPartiesIds(consolidationDetails);
@@ -135,6 +146,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndRestoreTriangularPartnerDetails(consolidationId);
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
+            log.info("Completed processing of consol id : {}", consolidationId);
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new IllegalArgumentException(e);
@@ -154,6 +166,8 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
 
         for (NetworkTransfer incoming : networkTransferList) {
+            log.info("Started processing of network transfer id : {} and console id :{}", incoming.getId(), consolidationId);
+
             Long id = incoming.getId();
             UUID guid = incoming.getGuid();
 
@@ -169,6 +183,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
              incoming.setId(null);
             toSaveList.add(incoming);
+            log.info("Completed processing of network transfer id : {} and console id :{}", incoming.getId(), consolidationId);
         }
 
         List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());

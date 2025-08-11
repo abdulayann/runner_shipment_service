@@ -27,7 +27,10 @@ public class EmailServiceUtility {
 
     @Value("${spring.profiles.active}")
     private String currentEnvironment;
-    List<String> emailIds = List.of("pardeep.malik@dpworld.com", "isha.mittal@dpworld.com", "sonam.gupta@dpworld.com");
+    List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
+            "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
+            ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
+            "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 

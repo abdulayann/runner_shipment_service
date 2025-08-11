@@ -21,7 +21,7 @@ public interface IShipmentBackupRepository extends JpaRepository<ShipmentBackupE
     @Transactional
     Set<Long> findShipmentIdsByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and c.is_shipment_attached = false", nativeQuery = true)
+    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and c.is_shipment_attached = false and c.is_deleted = false", nativeQuery = true)
     @Transactional
     Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId);
 
