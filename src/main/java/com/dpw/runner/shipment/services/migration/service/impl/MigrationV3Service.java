@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
@@ -12,6 +13,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
@@ -32,9 +35,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
@@ -92,6 +97,29 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private IShipmentBackupRepository shipmentBackupRepository;
 
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private JsonHelper jsonHelper;
+
+
+    @Override
+    public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId) {
+
+        trxExecutor.runInAsync(() -> trxExecutor.runInTrx(() -> {
+            try {
+                var response = migrateV2ToV3(tenantId, consolId, bookingId);
+                log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", tenantId, response);
+                emailServiceUtility.sendEmailForMigrationEntity(tenantId, jsonHelper.convertToJson(response));
+            } catch (Exception e) {
+                log.error("Migration V2 to V3 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
+                emailServiceUtility.sendEmailForMigrationEntityFailure(tenantId, e.getMessage());
+                throw new IllegalArgumentException(e);
+            }
+            return null;
+        }));
+        return ResponseHelper.buildSuccessResponse("Migration v2 to v3 request submitted successfully for tenantId: " + tenantId);
+    }
 
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {

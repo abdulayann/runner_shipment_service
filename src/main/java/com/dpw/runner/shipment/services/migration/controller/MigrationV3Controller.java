@@ -3,12 +3,14 @@ package com.dpw.runner.shipment.services.migration.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.migration.dtos.ConsolidationMigrationRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -27,13 +29,12 @@ public class MigrationV3Controller {
     private ApiKeyAuthenticationService authenticationService;
 
     @PostMapping(value = "/v2/v3")
-    public Map<String, Integer> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+    public ResponseEntity<IRunnerResponse> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
         log.info("Received migration request from V2 to V3 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        Map<String, Integer> result = migrationV3Service.migrateV2ToV3(request.getTenantId(), request.getConsolId(), request.getBookingId());
-        log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", request.getTenantId(), result);
-        return result;
+        return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId());
+
     }
 
     @PostMapping(value = "/v3/v2")

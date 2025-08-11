@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.utils.config.EmailConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.Objects;
 
 @SuppressWarnings("ALL")
 @Component
+@Slf4j
 public class EmailServiceUtility {
 
     @Autowired
@@ -26,8 +28,9 @@ public class EmailServiceUtility {
     @Value("${spring.profiles.active}")
     private String currentEnvironment;
     List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
-            "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
-            "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
+            "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
+            ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
+            "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 
@@ -78,6 +81,24 @@ public class EmailServiceUtility {
     public void sendEmailForSyncEntity(String id, String guid, String entity, String error) throws MessagingException, IOException {
         String sub = "ERROR in Syncing Entity : " + entity + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
         this.sendEmailDefault("ERROR in Syncing Entity : " + entity + "\n id : " + id + " guid : " + guid + "\n" + "Error Message: " + error, sub);
+    }
+
+    public void sendEmailForMigrationEntity(Integer tenantId, String response) {
+        try {
+            String sub = "Migration From V2 to V3 for Tenant Id: " + tenantId + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
+            this.sendEmailDefault("Migration From V2 to V3 for Tenant Id: " + tenantId + "\n" + response, sub);
+        } catch (Exception ex) {
+            log.error("Not able to send email for Migration v2 to v3 due to: {}", ex.getMessage());
+        }
+    }
+
+    public void sendEmailForMigrationEntityFailure(Integer tenantId, String response) {
+        try {
+            String sub = "ERROR in Migration From V2 to V3 for Tenant Id: " + tenantId + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
+            this.sendEmailDefault("ERROR in Migration From V2 to V3 for Tenant Id: " + tenantId + "\n" + response, sub);
+        } catch (Exception ex) {
+            log.error("Not able to send email for Migration v2 to v3 due to: {}", ex.getMessage());
+        }
     }
 
 }
