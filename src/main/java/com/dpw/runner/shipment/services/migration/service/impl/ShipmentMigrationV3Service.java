@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -39,6 +41,7 @@ import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
@@ -51,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -78,6 +82,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentRepository shipmentRepository;
     @Autowired
     IContainerRepository containerRepository;
+    @Autowired
+    IReferenceNumbersRepository referenceNumbersRepository;
     @Autowired
     private HelperExecutor trxExecutor;
 
@@ -128,7 +134,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         notesUtil.addNotesForShipment(shipment);
         log.info("Notes added for Shipment [id={}]", shipment.getId());
-        mapShipmentV2ToV3(shipment, new HashMap<>());
+        mapShipmentV2ToV3(shipment, new HashMap<>(), true);
         log.info("Mapped V2 Shipment to V3 [id={}]", shipment.getId());
 
         // Save packing details
@@ -136,6 +142,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             packingRepository.saveAll(shipment.getPackingList());
             log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
         }
+        //Save Reference details
+        if (!CommonUtils.listIsNullOrEmpty(shipment.getReferenceNumbersList())) {
+            referenceNumbersRepository.saveAll(shipment.getReferenceNumbersList());
+            log.info("Saved updated references list for Shipment [id={}]", shipment.getId());
+        }
+
         // save shipment
         shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         shipment.setTriggerMigrationWarning(true);
@@ -145,12 +157,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     @Override
-    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
+    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException {
 
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
-        updateTransportInstruction(shipmentDetails);
+        if(Objects.equals(canUpdateTransportInstructions, Boolean.TRUE))
+            updateTransportInstruction(shipmentDetails);
 
         // Migrated shipment fields
         updateShipmentFields(shipmentDetails);
@@ -164,13 +177,33 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.setIsLocked(false);
         migrateServiceTypes(shipmentDetails);
 
-        if(shipmentDetails.getAdditionalDetails() != null)
+
+        if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+            //Existing values from Additional Details → HBL Details → Agent Reference field should be migrated to the References section with the type AGR
+            if (StringUtils.isNotBlank(shipmentDetails.getAdditionalDetails().getAgentReference())) {
+                saveReferenceData(shipmentDetails, shipmentDetails.getAdditionalDetails().getAgentReference(), "AGR");
+            }
+        }
+
+        //Existing values from Pickup → Other Info → UCR Reference field should be migrated to the References section with the type UCR
+        if (Objects.nonNull(shipmentDetails.getPickupDetails()) &&
+                StringUtils.isNotBlank(shipmentDetails.getPickupDetails().getUcrReference())) {
+            saveReferenceData(shipmentDetails, shipmentDetails.getPickupDetails().getUcrReference(), "UCR");
+        }
 
         // migrated deprecated shipment status
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
         }
+    }
+
+    private void saveReferenceData(ShipmentDetails shipmentDetails, String referenceNumber, String referenceType) {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setShipmentId(shipmentDetails.getId());
+        referenceNumbers.setReferenceNumber(referenceNumber);
+        referenceNumbers.setType(referenceType);
+        shipmentDetails.getReferenceNumbersList().add(referenceNumbers);
     }
 
     private void migrateServiceTypes(ShipmentDetails shipmentDetails){

@@ -73,7 +73,6 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
         Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
         if (allBackupBookingIds.isEmpty()) {
-            log.info("gvchgds");
             return;
         }
         Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);

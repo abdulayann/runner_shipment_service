@@ -25,4 +25,9 @@ public interface ICustomerBookingBackupRepository extends JpaRepository<Customer
     @Transactional
     @Query(value = "UPDATE customer_booking_backup SET is_deleted = true WHERE id = ?1", nativeQuery = true)
     void makeIsDeleteTrueToMarkRestoreSuccessful(Long backupId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM customer_booking_backup cb WHERE cb.booking_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    void deleteBackupByTenantIdAndBookingId(Long bookingId, Integer tenantId);
 }

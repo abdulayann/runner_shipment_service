@@ -1238,6 +1238,8 @@ public class ShipmentService implements IShipmentService {
             consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                     consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
+
+            consolidationDetailsRequest.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
             // Generate default routes based on O-D pairs
             if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(isRouteMasterEnabled)) {
                 var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
@@ -1260,6 +1262,7 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
+        shipmentRequest.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
@@ -1449,6 +1452,7 @@ public class ShipmentService implements IShipmentService {
         Set<ContainerRequest> containerList = new HashSet<>();
         if(shipmentRequest.getConsolidationList()!=null){
             for(ConsolidationDetailsRequest consolidationDetailsRequest: shipmentRequest.getConsolidationList()){
+                consolidationDetailsRequest.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
                 CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(consolidationDetailsRequest);
                 ConsolidationDetailsResponse consolidationDetailsResponse = consolidationService.createConsolidationForBooking(commonRequestModel);
                 ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
@@ -1465,6 +1469,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
+        shipmentRequest.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
         shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
@@ -9422,6 +9427,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         ShipmentDetails shipment = shipmentOptional.get();
+        ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
 
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
@@ -9432,6 +9438,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
+        createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
         dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())

@@ -93,7 +93,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
             return null;
         }
         ShipmentDetails v2Shipment = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
-        ShipmentDetails v3Shipment = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null);
+        ShipmentDetails v3Shipment = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false);
         log.info("Mapping completed for Network Transfer -> Shipment [id={}]", networkTransfer.getId());
         StringBuilder text = notesUtil.getShipmentNotes(v2Shipment);
         Notes notes = notesUtil.getNotes(v2Shipment.getId(), "SHIPMENT", text);
@@ -129,7 +129,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         }
         log.info("Notes added for Network Transfer Consolidation [id={}]", networkTransfer.getId());
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid);
+        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false);
         setMigrationStatus(v3Consol);
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v3Consol, EntityTransferV3ConsolidationDetails.class);
         log.info("Mapping completed for Network Transfer -> Consolidation [id={}]", networkTransfer.getId());
@@ -347,7 +347,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("networkTransferFutures migration failed [id={}]: {}", nteId, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
@@ -386,13 +385,12 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating NetworkTransfer [id={}]", nteId);
+                            log.info("Migrating NetworkTransfer [id={}] and start time: {}", nteId, System.currentTimeMillis());
                             NetworkTransfer migrated = migrateNteFromV2ToV3(nteId);
-                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}]", nteId, migrated.getId());
+                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}] and end time: {}", nteId, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("NetworkTransfer migration failed [id={}]: {}", nteId, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
