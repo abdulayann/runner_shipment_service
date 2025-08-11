@@ -8,7 +8,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -33,6 +36,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -187,7 +191,10 @@ class ContainerValidationUtilTest extends CommonMocks {
         testShipment.setContainerAssignedToShipmentCargo(1L);
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
         AssignContainerRequest request = new AssignContainerRequest();
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
     }
 
     @Test
@@ -199,7 +206,11 @@ class ContainerValidationUtilTest extends CommonMocks {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
         AssignContainerRequest request = new AssignContainerRequest();
-        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
     }
 
     @Test
@@ -211,7 +222,10 @@ class ContainerValidationUtilTest extends CommonMocks {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
         AssignContainerRequest request = new AssignContainerRequest();
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
     }
 
     @Test
@@ -227,7 +241,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(true).build()
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -247,7 +261,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(false).build() // This should trigger exception
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -269,7 +283,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(null).build() // null should be treated as false
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -323,7 +337,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetails = new ArrayList<>();
         consolidationDetails.add(null); // Add null object to list
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert - should not throw since null objects are filtered out
@@ -337,7 +351,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 Containers.builder().consolidationId(1L).build()
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(null); // DAO returns null
 
         // Act & Assert - should not throw when DAO returns null
@@ -390,6 +404,321 @@ class ContainerValidationUtilTest extends CommonMocks {
         shipmentPackIds.put(1L, List.of(1L));
         request.setShipmentPackIds(shipmentPackIds);
         assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithConsolidationList_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType("EXPORT");
+        shipmentDetails.setShipmentId("SHIP001");
+        shipmentDetails.setConsolidationList(Set.of(new ConsolidationDetails())); // Non-null consolidation list
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithDRTJobType_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT); // DRT job type
+        shipmentDetails.setShipmentId("SHIP002");
+        shipmentDetails.setConsolidationList(null); // Null consolidation list but DRT type
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithNullConsolidationAndNonDRTJobType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType("EXPORT"); // Non-DRT job type
+        shipmentDetails.setShipmentId("SHIP003");
+        shipmentDetails.setConsolidationList(null); // Null consolidation list
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+
+        assertEquals("Shipment: SHIP003 must be attached with consolidation to create container",
+                exception.getMessage());
+    }
+
+// Test for validateShipmentCargoType method
+
+    @Test
+    void testValidateShipmentCargoType_WithSeaFCL_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility method to return true for Sea FCL
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithRoadFCLorFTL_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility method to return true for Road FCL/FTL
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidSeaCargoType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL); // Invalid for SEA
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.SHIPMENT_TYPE_LCL, Constants.TRANSPORT_MODE_SEA, "FCL"),
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidRoadCargoType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL); // Invalid for ROAD
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.SHIPMENT_TYPE_LCL, Constants.TRANSPORT_MODE_ROA, "FCL or FTL"),
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidTransportMode_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR"); // Invalid transport mode
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.CARGO_TYPE_FCL, "AIR", "Transport mode must be SEA/ROAD"),
+                exception.getMessage());
+    }
+
+// Test for getExpectedCargoTypeForTransportMode method coverage (private method tested through public method)
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_SeaTransportMode_ReturnsFC() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA.toLowerCase()); // Test case sensitivity
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: FCL"));
+    }
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_RoadTransportMode_ReturnsFCLorFTL() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA.toLowerCase()); // Test case sensitivity
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: FCL or FTL"));
+    }
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_UnknownTransportMode_ReturnsDefaultMessage() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("UNKNOWN");
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: Transport mode must be SEA/ROAD"));
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenFCLShipmentAndConsolidationModule_ThrowsValidationException() {
+        Long shipmentId = 101L;
+        ShipmentDetails fclShipment = new ShipmentDetails();
+        fclShipment.setTransportMode("SEA");
+        fclShipment.setShipmentType("FCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L))); // mock some pack IDs
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, fclShipment));
+        String module = Constants.CONSOLIDATION_CONTAINER;
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL")).thenReturn(true);
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+        );
+        assertEquals("Use Shipment screen to unassign value to FCL container.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenAttachmentNotAllowed_ThrowsValidationException() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false); // not open
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(999L);
+        params.setConsolidationDetails(consolidationDetails);
+        String module = "OTHER_MODULE";
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+        );
+        assertEquals("Allow Shipment Attachment is Off, Please enable to proceed further.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenValidConditions_NoExceptionThrown() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(true);
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(999L);
+        params.setConsolidationDetails(consolidationDetails);
+        String module = "OTHER_MODULE";
+        Mockito.when(consolidationDetailsDao.getAllowAttachMentFromConsol(999L)).thenReturn(true);
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+    }
+
+    @Test
+    void testValidateBeforeUnAssignContainer_WhenConsolidationIdIsNull_NoExceptionThrown() {
+        Long shipmentId = 101L;
+        ShipmentDetails lclShipment = new ShipmentDetails();
+        lclShipment.setTransportMode("SEA");
+        lclShipment.setShipmentType("LCL");
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(shipmentId, List.of(1L)));
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setShipmentDetailsMap(Map.of(shipmentId, lclShipment));
+        params.setConsolidationId(null);
+        params.setConsolidationDetails(null);
+        String module = "OTHER_MODULE";
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+    }
+
+    @Test
+    void testCheckIfShipmentIsFclOrFtl_ReturnsTrue_WhenCommonUtilsReturnsTrue() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setShipmentType("FCL");
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL")).thenReturn(true);
+        boolean result = containerValidationUtil.checkIfShipmentIsFclOrFtl(shipmentDetails);
+        assertTrue(result);
+        Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("SEA", "FCL");
+    }
+
+    @Test
+    void testCheckIfShipmentIsFclOrFtl_ReturnsFalse_WhenCommonUtilsReturnsFalse() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        shipmentDetails.setShipmentType("LCL");
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL("AIR", "LCL")).thenReturn(false);
+        boolean result = containerValidationUtil.checkIfShipmentIsFclOrFtl(shipmentDetails);
+        assertFalse(result);
+        Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("AIR", "LCL");
+    }
+
+    @Test
+    void testValidateCreateBulkRequest_NoIdProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request(); // all null
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Either BookingId or ConsolidationId or ShipmentId must be provided in the request.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateCreateBulkRequest_MultipleIdsProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setBookingId(1L);
+        request.setShipmentId(2L); // multiple IDs set
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.", exception.getMessage());
     }
 
 }

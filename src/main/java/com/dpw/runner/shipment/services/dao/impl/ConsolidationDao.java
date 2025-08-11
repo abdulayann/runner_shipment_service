@@ -394,6 +394,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
+    private void addAgentOrganisationIdValidationErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getSendingAgent() != null && request.getReceivingAgent() != null) {
+
+            String sendingAgentOrganisationId = request.getSendingAgent().getOrgId();
+
+            if (sendingAgentOrganisationId != null && sendingAgentOrganisationId.equals(
+                    request.getReceivingAgent().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
+            }
+        }
+    }
+
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
         if(!isStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
@@ -771,6 +783,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails) {
+        return saveV3(consolidationDetails, false);
+    }
+
+    @Override
+    public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
@@ -785,7 +802,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSaveV3(consolidationDetails, errors, oldConsole, false);
+        onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
     }
 
@@ -822,13 +839,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
-        consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+    public Boolean getAllowAttachMentFromConsol(Long consolidationId) {
+        return consolidationRepository.getAllowAttachMentFromConsol(consolidationId);
     }
 
     @Override
-    public Set<Long> findConsolidationIdsByTenantId(Integer tenantId) {
-        return consolidationRepository.findConsolidationIdsByTenantId(tenantId);
+    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
+        consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }
 
     @Override
@@ -892,6 +909,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
 
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
+
         // Shipment restricted unlocations validation
         addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
 
@@ -940,9 +960,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             errors.add("Origin and POD fields cannot be same.");
         }
     }
+
     private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
-        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
-            errors.add("POL and POD fields cannot be same.");
+        if (request.getCarrierDetails() != null && !isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) && !isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())
+                && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+                errors.add("POL and POD fields cannot be the same.");
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");

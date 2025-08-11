@@ -178,6 +178,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT bookingNumber FROM ConsolidationDetails WHERE id = :consolidationId")
     String getBookingNumberFromConsol(@Param("consolidationId") Long consolidationId);
 
+    @Query(value = "SELECT openForAttachment FROM ConsolidationDetails WHERE id = :consolidationId")
+    Boolean getAllowAttachMentFromConsol(@Param("consolidationId") Long consolidationId);
+
     @Modifying
     @Transactional
     @Query("""
@@ -186,9 +189,6 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             WHERE s.id = :consolidationId
             """)
     void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
-
-    @Query(value = "SELECT c.id FROM consolidation_details c WHERE c.tenant_id = ?1", nativeQuery = true)
-    Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     @Modifying
     @Transactional

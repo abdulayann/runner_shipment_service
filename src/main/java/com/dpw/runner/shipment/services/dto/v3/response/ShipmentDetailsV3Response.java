@@ -85,6 +85,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String bookingType;
     private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
@@ -234,6 +236,12 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;

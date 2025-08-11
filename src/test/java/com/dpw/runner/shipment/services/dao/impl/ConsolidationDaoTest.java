@@ -1105,6 +1105,71 @@ class ConsolidationDaoTest extends CommonMocks {
     }
 
     @Test
+    void applyAgentOrganisationIdValidationTest_SendingAgentNullOnlyV3() {
+
+        Parties receivingAgent = mock(Parties.class);
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_ReceivingAgentNullOnlyV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(null);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_BothAgentsNullV3() {
+
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(null);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_SameOrganisationsFailureV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        Parties receivingAgent = mock(Parties.class);
+        when(sendingAgent.getOrgId()).thenReturn("123");
+        when(receivingAgent.getOrgId()).thenReturn("123");
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertTrue(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
+    void applyAgentOrganisationIdValidationTest_DifferentOrganisationsSuccessV3() {
+
+        Parties sendingAgent = mock(Parties.class);
+        Parties receivingAgent = mock(Parties.class);
+        when(sendingAgent.getOrgId()).thenReturn("324");
+        when(receivingAgent.getOrgId()).thenReturn("123");
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(sendingAgent);
+        consolidationDetails.setReceivingAgent(receivingAgent);
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails, false);
+        assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
+    }
+
+    @Test
     void applyConsolidationValidationsTest_CountryAirCargoSecurity2V3() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
 
@@ -1193,4 +1258,61 @@ class ConsolidationDaoTest extends CommonMocks {
         assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
     }
 
+    @Test
+    void testGetAllowAttachmentFromConsol_ReturnsExpectedValue() {
+        Long consolidationId = 123L;
+        Boolean expectedValue = true;
+        Mockito.when(consolidationRepository.getAllowAttachMentFromConsol(consolidationId))
+                .thenReturn(expectedValue);
+        Boolean result = consolidationsDao.getAllowAttachMentFromConsol(consolidationId);
+        assertEquals(expectedValue, result);
+        Mockito.verify(consolidationRepository).getAllowAttachMentFromConsol(consolidationId);
+    }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PARTIAL");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(101L, 102L);
+        when(consolidationRepository.findAllByMigratedStatuses(statuses, tenantId)).thenReturn(expected);
+        List<Long> result = consolidationsDao.findAllByMigratedStatuses(statuses, tenantId);
+        assertEquals(expected, result);
+        verify(consolidationRepository, times(1)).findAllByMigratedStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testSave() {
+        ConsolidationDetails details = new ConsolidationDetails(); // Or mock if needed
+        ConsolidationDetails saved = new ConsolidationDetails();
+        when(consolidationRepository.save(details)).thenReturn(saved);
+        ConsolidationDetails result = consolidationsDao.save(details);
+        assertEquals(saved, result);
+        verify(consolidationRepository, times(1)).save(details);
+    }
+
+    @Test
+    void testDeleteAdditionalConsolidationsByConsolidationIdAndTenantId() {
+        List<Long> ids = List.of(301L, 302L);
+        Integer tenantId = 3;
+        consolidationsDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(ids, tenantId);
+        verify(consolidationRepository, times(1))
+                .deleteAdditionalConsolidationsByConsolidationIdAndTenantId(ids, tenantId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByByConsolidationIdAndTenantId() {
+        List<Long> ids = List.of(401L);
+        Integer tenantId = 4;
+        consolidationsDao.revertSoftDeleteByByConsolidationIdAndTenantId(ids, tenantId);
+        verify(consolidationRepository, times(1))
+                .revertSoftDeleteByByConsolidationIdAndTenantId(ids, tenantId);
+    }
+
+    @Test
+    void testDeleteTriangularPartnerConsolidationByConsolidationId() {
+        Long consolidationId = 501L;
+        consolidationsDao.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+        verify(consolidationRepository, times(1))
+                .deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
 }

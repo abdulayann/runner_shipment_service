@@ -299,4 +299,22 @@ class BookingCarriageDaoTest {
         List<BookingCarriage> bookingCarriageList = List.of(bookingCarriage);
         assertEquals(bookingCarriageList, bookingCarriageDao.saveEntityFromShipment(bookingCarriageList, 1L, map));
     }
+
+    @Test
+    void testDeleteAdditionalbookingCarriageByShipmentId() {
+        List<Long> bookingCarriageIds = List.of(1L, 2L, 3L);
+        Long shipmentId = 100L;
+        bookingCarriageDao.deleteAdditionalbookingCarriageByShipmentId(bookingCarriageIds, shipmentId);
+        verify(bookingCarriageRepository, times(1))
+                .deleteAdditionalbookingCarriageByShipmentId(bookingCarriageIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteBybookingCarriageIdsAndShipmentId() {
+        List<Long> bookingCarriageIds = List.of(4L, 5L);
+        Long shipmentId = 200L;
+        bookingCarriageDao.revertSoftDeleteBybookingCarriageIdsAndShipmentId(bookingCarriageIds, shipmentId);
+        verify(bookingCarriageRepository, times(1))
+                .revertSoftDeleteBybookingCarriageIdsAndShipmentId(bookingCarriageIds, shipmentId);
+    }
 }

@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,15 +48,12 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
 
-    @Query(value = "SELECT cb.* FROM customer_booking cb " +
+    @Query(value = "SELECT cb.id FROM customer_booking cb " +
             "WHERE cb.migration_status IN (:statuses) " +
             "AND cb.tenant_id = :tenantId " +
             "AND cb.is_deleted = false",
             nativeQuery = true)
-    List<CustomerBooking> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
-
-    @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1 and cb.is_deleted = false", nativeQuery = true)
-    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+    List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
 
     @Query(value = "SELECT * FROM customer_booking WHERE id IN ?1", nativeQuery = true)
     List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);

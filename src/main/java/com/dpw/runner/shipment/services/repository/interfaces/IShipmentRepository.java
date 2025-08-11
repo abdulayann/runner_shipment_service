@@ -283,9 +283,6 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
                                   @Param("oceanDGStatus") String oceanDGStatus,
                                   @Param("shipmentId") Long shipmentId);
 
-    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
-    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
-
     @Modifying
     @Transactional
     @Query(value = "UPDATE shipment_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
@@ -303,4 +300,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Transactional
     @Query(value = "DELETE FROM triangulation_partner_shipment WHERE shipment_id = ?1", nativeQuery = true)
     void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update shipment_details set trigger_migration_warning = false WHERE id = ?1", nativeQuery = true)
+    void updateTriggerMigrationWarning(Long shipmentId);
+
 }

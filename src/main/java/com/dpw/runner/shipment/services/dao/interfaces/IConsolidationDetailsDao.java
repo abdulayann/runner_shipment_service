@@ -51,6 +51,7 @@ public interface IConsolidationDetailsDao {
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
     ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange);
     ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails);
     ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange);
 
@@ -59,10 +60,9 @@ public interface IConsolidationDetailsDao {
     void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId);
 
     String getBookingNumberFromConsol(Long consolidationId);
+    Boolean getAllowAttachMentFromConsol(Long consolidationId);
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
-
-    Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
 

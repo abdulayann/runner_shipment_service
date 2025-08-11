@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
@@ -330,7 +331,9 @@ class DocumentManagerServiceImplTest {
 
     @Test
     void testPushSystemGeneratedDocumentToDocMaster2() {
-
+        var request = new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1});
+        var fileName = "test.txt";
+        var uploadRequest = new DocUploadRequest();
         DocumentManagerResponse<DocumentManagerDataResponse> documentManagerResponse = new DocumentManagerResponse<>();
         documentManagerResponse.setCount(3L);
         documentManagerResponse.setData(new DocumentManagerDataResponse());
@@ -338,8 +341,7 @@ class DocumentManagerServiceImplTest {
         when(documentManagerRestClient.temporaryFileUpload(Mockito.<DocumentManagerTempFileUploadRequest>any()))
                 .thenReturn(documentManagerResponse);
 
-        documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1}), "test.txt", new DocUploadRequest());
-        verify(documentManagerRestClient).temporaryFileUpload(isA(DocumentManagerTempFileUploadRequest.class));
+        assertThrows(DocumentClientException.class, () -> documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(request, fileName, uploadRequest));
     }
 
 

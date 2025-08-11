@@ -512,7 +512,7 @@ public class EventService implements IEventService {
             boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
 
             if (isShipmentUpdateRequired) {
-                shipmentDao.save(shipment, false);
+                shipmentDao.save(shipment, false, false);
                 try {
                     shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {
@@ -1343,7 +1343,7 @@ public class EventService implements IEventService {
         List<V1TenantResponse> tenants = Collections.emptyList();
         try {
             // Step 1: Fetch cousin branches from V1 service
-            V1DataResponse dataResponse = v1Service.listCousinBranches(Collections.emptyMap());
+            V1DataResponse dataResponse = v1Service.listCousinBranches(CommonV1ListRequest.builder().build());
 
             if (dataResponse == null || dataResponse.getEntities() == null) {
                 log.warn("Received null or empty response from V1 service while fetching cousin branches.");

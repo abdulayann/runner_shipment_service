@@ -41,6 +41,7 @@ public class ReportConstants {
     public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
     public static final String CONTACT = "Contact";
     public static final String TI_TRANSPORTER_NAME = "TI_TransporterName";
+    public static final String TI_REFERENCE_NUMBER = "TI_ReferenceNumber";
     public static final String EXA_TYPE = "EXA";
     public static final String TI_EXPORT_AGENT_NAME = "TI_ExportAgentName";
     public static final String IMA_TYPE = "IMA";
@@ -54,7 +55,7 @@ public class ReportConstants {
     public static final String TI_TRANSPORTER_CONTACT = "TI_TransporterContact";
     public static final String TI_ORIGIN_EMAIL = "TI_OriginEmail";
     public static final String TI_ORIGIN_CONTACT = "TI_OriginContact";
-    public static final String TI_DESINATION_EMAIL = "TI_DestinationEmail";
+    public static final String TI_DESTINATION_EMAIL = "TI_DestinationEmail";
     public static final String TI_DESTINATION_CONTACT = "TI_DestinationContact";
     public static final String COMM = ",";
     public static final String TI_ORIGIN_ADDRESS = "TI_Origin_Address";
@@ -242,6 +243,9 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
     public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
+    public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
+    public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -1466,11 +1470,11 @@ public class ReportConstants {
     public static final String S_CONTROLLED = "S_Controlled";
     public static final String S_CONTROLLED_REF_NO = "S_ControlledRefNo";
     public static final String S_INCOTERM_LOCATION = "S_IncotermLocation";
-    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDrop-down";
-    public static final String S_CO_LOADER_NAME = "S_Co-LoaderName";
-    public static final String S_CO_LOADER_BKG_NO = "S_Co-LoaderBKGNo";
-    public static final String S_CO_LOADER_BL_NO = "S_Co-LoaderBLNo";
-    public static final String S_CO_LOADER_AWB_NO = "S_Co-LoaderAWBNo";
+    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDropdown";
+    public static final String S_CO_LOADER_NAME = "S_Co_LoaderName";
+    public static final String S_CO_LOADER_BKG_NO = "S_Co_LoaderBKGNo";
+    public static final String S_CO_LOADER_BL_NO = "S_Co_LoaderBLNo";
+    public static final String S_CO_LOADER_AWB_NO = "S_Co_LoaderAWBNo";
     public static final String S_BOOKING_AGENT = "S_BookingAgent";
     public static final String S_BOOKING_AGENT_BKG_NO = "S_BookingAgtBkgNo";
     public static final String S_BOOKING_AGENT_BL_NO = "S_BookingAgtBLNo";
@@ -1487,6 +1491,7 @@ public class ReportConstants {
     public static final String S_EAR_DROP_OFF = "S_EarDropoff";
     public static final String S_REEFER = "S_Reefer";
     public static final String S_LAT = "S_LAT";
+    public static final String S_DG = "S_DG";
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
@@ -1508,4 +1513,31 @@ public class ReportConstants {
 
     public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
     public static final String HAS_PACKS = "HasPacks1";
+
+    public static final String NOT_VALID_RELEASE_TYPE = "Release Type is not Valid";
+    public static final String SEAWAY_BILL_RELEASE_TYPE = "SWB";
+    public static final String SURRENDER_RELEASE_TYPE = "OBO";
+    public static final String HOUSE_BILL_RELEASE_TYPE = "OBL";
+
+    public static final String CARRIER_BOOKING_NUMBER = "CarrierBookingNumber";
+    public static final String HAS_PACKS2 = "HasPacks2";
+    public static final String HAS_CONTAINERS2 = "HasContainers2";
+    public static final String CONTAINER_TYPE_CODE2 = "ContainerTypeCode2";
+    public static final String CONTAINER_NUMBER2 = "ContainerNumber2";
+    public static final String CARRIER_SEAL_NUMBER2 = "CarrierSealNumber2";
+    public static final String MARKS_NUMS2 = "MarksnNums2";
+    public static final String GOODS_DESCRIPTION2 = "GoodsDescription2";
+    public static final String PACKS_UNIT2 = "PacksUnit2";
+    public static final String GROSS_WEIGHT2 = "GrossWeight2";
+    public static final String GROSS_WEIGHT_UNIT2 = "GrossWeightUnit2";
+    public static final String PACKS2 = "Packs2";
+    public static final String GROSS_VOLUME2 = "GrossVolume2";
+    public static final String GROSS_VOLUME_UNIT2 = "GrossVolumeUnit2";
+
+    public static final String PACKS_MARKS_NUMBER2 = "PacksMarksNumber2";
+    public static final String PACKS_GOODS_DESCRIPTION2 = "PacksGoodsDescription2";
+    public static final String PACKAGES = "Packages";
+
+
+
 }

@@ -60,6 +60,8 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String CONSOLIDATION_PACKING = "CONSOLIDATION_PACKING";
+    public static final String SHIPMENT_PACKING = "SHIPMENT_PACKING";
     public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
@@ -67,6 +69,8 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CONSOLIDATION_CONTAINER = "CONSOLIDATION_CONTAINER";
+    public static final String SHIPMENT_CONTAINER = "SHIPMENT_CONTAINER";
     public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
@@ -415,6 +419,10 @@ public class Constants {
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
     public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String GROSS_WEIGHT_UNIT = "grossWeightUnit";
+    public static final String GROSS_VOLUME = "grossVolume";
+    public static final String GROSS_VOLUME_UNIT = "grossVolumeUnit";
+    public static final String PACKS_TYPE = "packsType";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String ORGANIZATIONS = "Organizations";
@@ -448,7 +456,7 @@ public class Constants {
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+            GROSS_WEIGHT,GROSS_WEIGHT_UNIT,GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
@@ -580,7 +588,7 @@ public class Constants {
 
     public static final String CONSOLIDATION_V3_IMPORT_EMAIL_TYPE = "CONSOLIDATION_IMPORT_V3";
     public static final String DEFAULT_CONSOLIDATION_V3_RECEIVED_SUBJECT = "Received consolidation {#CONSOLIDATION_NUMBER} with {#NUMBER_OF_SHIPMENTS} shipments from {#SOURCE_BRANCH}";
-    public static final String GROUPED_SHIPMENT_BODY = "{#SD_ShipmentDetails}<p><strong>Shipment:</strong> {SD_ShipmentNumber}<br /><strong>HAWB/HBL Number:</strong> {SD_HAWB_HBL_Number}<br /><strong>Client:</strong> {SD_ClientName}<br /><strong>Consignor:</strong> {SD_ConsignorName}<br /><strong>Consignee:</strong> {SD_ConsigneeName}</p>{/SD_ShipmentDetails} <br /><strong>Consignor:</strong> {SD_ConsignorName}<br />  <br /><strong>From Branch:</strong> {SD_FromBranchName}<br /> <br /><strong>To Branch:</strong> {SD_ToBranchName}<br /> <p>&nbsp;</p>";
+    public static final String GROUPED_SHIPMENT_BODY = "{#SD_ShipmentDetails}<p><strong>Shipment:</strong> {SD_ShipmentNumber}<br /><strong>HAWB/HBL Number:</strong> {SD_HAWB_HBL_Number}<br /><strong>Client:</strong> {SD_ClientName}<br /><strong>Consignor:</strong> {SD_ConsignorName}<br /><strong>Consignee:</strong> {SD_ConsigneeName}<br /> <strong>From Branch:</strong> {SD_FromBranchName}<br /> <strong>To Branch:</strong> {SD_ToBranchName}<br />   </p>{/SD_ShipmentDetails} <br /> <p>&nbsp;</p>";
     public static final String DEFAULT_CONSOLIDATION_V3_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a consolidation with {#NUMBER_OF_SHIPMENTS} shipments has been sent from {#SOURCE_BRANCH} on {#TRANSFERRED_DATE} for you to accept.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Consolidation Details:</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Consolidation number:</strong>&nbsp;{#CONSOLIDATION_NUMBER}</p>  <p><strong>MAWB/MBL Number</strong>: {#MBL_NUMBER}</p>  <p>&nbsp;</p> <p><strong>Shipment Details:</strong></p>  {#GROUPED_SHIPMENT_BODY} <p>This email contains confidential content, kindly treat with caution.</p> <p>Regards,&nbsp;<br /> CargoesRunner Team</p>";
     public static final String TRANSFERRED_DATE_PLACEHOLDER = "{#TRANSFERRED_DATE}";
 
@@ -636,6 +644,8 @@ public class Constants {
     public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String CR_ID = "CR-ID";
+    public static final String ORIGINATED_FROM = "OriginatedFrom";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
     public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
@@ -697,7 +707,16 @@ public class Constants {
     public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
-
+    public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
+    public static final String PACKING_LC = "packing";
+    public static final String COMMODITY_GROUP = "commodityGroup";
+    public static final String COMMODITY = "commodity";
+    public static final String HS_CODE = "HSCode";
+    public static final String GOODS_DESCRIPTION = "goodsDescription";
+    public static final String MARKS_N_NUMBERS = "marksnNums";
+    public static final String PROPER_SHIPPING_NAME = "properShippingName";
+    public static final String UN_NUMBER = "unNumber";
+    public static final String PACKING_GROUP = "packingGroup";
     private Constants() {
     }
 

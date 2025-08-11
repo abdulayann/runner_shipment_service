@@ -14,7 +14,9 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,6 +50,9 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
+
+import com.dpw.runner.shipment.services.utils.Generated;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +61,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@Generated
 @SuppressWarnings("java:S112")
 public class ConsolidationMigrationV3Service implements IConsolidationMigrationV3Service {
 
@@ -100,6 +106,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private HelperExecutor trxExecutor;
+
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
@@ -161,14 +170,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             shp.getConsolidationList().add(console);
             shp.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
             shp.setTriggerMigrationWarning(true);
-//            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
         // Step 8: Mark consolidation itself as migrated and save
-//        console.setIsMigratedToV3(Boolean.TRUE);
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
         console.setTriggerMigrationWarning(true);
         consolidationRepository.save(console);
@@ -233,6 +240,30 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         log.info("Distributed containers. Total after split: {}", splitContainers.size());
 
         // Step 5: Re-link containers <→ shipments for V3 structure
+        relinkContainerToShipment(containerGuidToShipments, guidToShipment, guidVsContainer);
+
+        // Step 6: Transform each Shipment to V3 (populates packingVsContainerGuid)
+        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
+            for (ShipmentDetails shipment : shipmentDetailsList) {
+                try {
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
+                } catch (Exception e) {
+                    log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
+                    throw new IllegalArgumentException("Shipment transformation failed", e);
+                }
+            }
+        }
+
+        log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
+
+        clonedConsole.setOpenForAttachment(true);
+        clonedConsole.setTriggerMigrationWarning(true);
+        clonedConsole.setIsLocked(false);
+        log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
+        return clonedConsole;
+    }
+
+    private void relinkContainerToShipment(Map<UUID, List<UUID>> containerGuidToShipments, Map<UUID, ShipmentDetails> guidToShipment, Map<UUID, Containers> guidVsContainer) {
         containerGuidToShipments.forEach((containerGuid, shipmentGuids) -> {
             for (UUID shipmentGuid : shipmentGuids) {
                 ShipmentDetails shipment = guidToShipment.get(shipmentGuid);
@@ -255,38 +286,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 }
             }
         });
-
-        // Step 6: Transform each Shipment to V3 (populates packingVsContainerGuid)
-        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
-            for (ShipmentDetails shipment : shipmentDetailsList) {
-                try {
-                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
-                } catch (Exception e) {
-                    log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
-                    throw new IllegalArgumentException("Shipment transformation failed", e);
-                }
-            }
-        }
-
-        log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
-
-//        // Step 7: Attach packings to correct containers using packingVsContainerGuid
-//        assignPackingsToContainers(shipmentDetailsList, packingVsContainerGuid, guidVsContainer);
-//        log.info("Packings assigned to containers for Consolidation [guid={}]", consolGuid);
-
-        // Step 8: Update console-level summary like weight/volume/counts/etc.
-//        try {
-//            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
-//        } catch (Exception e) {
-//            log.error("Failed to compute achieved quantities for Consolidation [guid={}]", consolGuid, e);
-//            throw new IllegalArgumentException("Summary calculation failed", e);
-//        }
-
-        clonedConsole.setOpenForAttachment(true);
-        clonedConsole.setTriggerMigrationWarning(true);
-        clonedConsole.setIsLocked(false);
-        log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
-        return clonedConsole;
     }
 
     private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
@@ -299,66 +298,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
         shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
         shipmentDetails.setLatestArrivalTime(console.getLatDate());
-    }
-
-    private void assignPackingsToContainers(List<ShipmentDetails> shipmentDetailsList, Map<UUID, UUID> packingVsContainerGuid, Map<UUID, Containers> guidVsContainer) {
-
-        log.info("Starting packing-to-container assignment. Packings to map: {}", packingVsContainerGuid.size());
-
-        // Step 1: Pre-clear container fields to re-aggregate packing data from scratch
-        packingVsContainerGuid.forEach((packGuid, containerGuid) -> {
-            Containers container = guidVsContainer.get(containerGuid);
-            if (container != null) {
-                container.setGrossWeight(BigDecimal.ZERO);
-                container.setGrossWeightUnit(null);
-                container.setGrossVolume(BigDecimal.ZERO);
-                container.setGrossVolumeUnit(null);
-                container.setPacks(null);
-                container.setPacksType(null);
-                log.info("Cleared aggregation fields for container [guid={}]", containerGuid);
-            } else {
-                log.info("Container [guid={}] not found while clearing pre-aggregation fields", containerGuid);
-            }
-        });
-
-        // Step 2: Process each shipment and assign their packings
-        for (ShipmentDetails shipment : shipmentDetailsList) {
-            UUID shipmentGuid = shipment.getGuid();
-            List<Packing> packingList = shipment.getPackingList();
-
-            if (packingList == null || packingList.isEmpty()) {
-                log.debug("No packings found for Shipment [guid={}], skipping...", shipmentGuid);
-                continue;
-            }
-
-            // Prepare packing lookup map for faster access
-            Map<UUID, Packing> packingByGuid = packingList.stream()
-                    .collect(Collectors.toMap(Packing::getGuid, Function.identity()));
-
-            for (Map.Entry<UUID, Packing> entry : packingByGuid.entrySet()) {
-                UUID packingGuid = entry.getKey();
-                Packing packing = entry.getValue();
-
-                UUID containerGuid = packingVsContainerGuid.get(packingGuid);
-                Containers container = guidVsContainer.get(containerGuid);
-
-                if (container == null) {
-                    log.warn("No container found for Packing [guid={}]. Skipping assignment.", packingGuid);
-                    continue;
-                }
-
-                try {
-                    // Add packing data to container aggregation (e.g. weight, volume)
-                    containerV3Service.addPackageDataToContainer(container, packing);
-                    log.debug("Assigned Packing data [guid={}] to Container [guid={}]", packingGuid, containerGuid);
-                } catch (RunnerException e) {
-                    log.error("Failed to assign Packing [guid={}] to Container [guid={}]", packingGuid, containerGuid, e);
-                    throw new IllegalArgumentException("Failed to add packing to container", e);
-                }
-            }
-        }
-
-        log.info("Completed packing data-to-container assignment for {} shipments", shipmentDetailsList.size());
     }
 
     @Override
@@ -513,10 +452,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) {
-        // TODO: Change Distribution logic
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
-        BigDecimal totalPacks = BigDecimal.valueOf(Long.parseLong(original.getPacks()));
+        BigDecimal totalPacks = StringUtility.isNotEmpty(original.getPacks()) ? BigDecimal.valueOf(Long.parseLong(original.getPacks())): BigDecimal.ZERO;
 
         // Divide weight and volume equally, remainder added to last container
         BigDecimal[] weightParts = totalWeight.divideAndRemainder(BigDecimal.valueOf(count));
@@ -552,7 +490,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Step 2: Generate new containers for remaining (count - 1)
         for (int i = 1; i < count; i++) {
-//            boolean isLast = (i == count - 1);
 
             resultContainers.add(
                     createDistributedCopy(
@@ -679,6 +616,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     });
                 } catch (Exception e) {
                     log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

@@ -168,4 +168,6 @@ public class ContainersExcelModel {
     private Boolean isPart;
     @ExcelCell(displayName = "IsAttached")
     private Boolean isAttached;
+    @ExcelCell(displayName = "ShipmentNumber")
+    private String shipmentNumbers;
 }

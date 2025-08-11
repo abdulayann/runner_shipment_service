@@ -197,5 +197,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isFrob;
     private Long containerAssignedToShipmentCargo;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 
 }

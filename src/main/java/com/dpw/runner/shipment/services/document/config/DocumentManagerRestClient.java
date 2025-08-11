@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientExcep
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
 
 @Component
 @Generated
@@ -102,7 +105,7 @@ public class DocumentManagerRestClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
-        headers.add(Constants.SOURCE_SERVICE_TYPE, LoggingConstants.SHIPMENT);
+        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
         return headers;
     }
 
@@ -141,10 +144,13 @@ public class DocumentManagerRestClient {
             );
             log.info("{} | {} URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(),LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(responseEntity.getBody()));
             return responseEntity.getBody();
-        }
-        catch (Exception ex) {
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("saveFile", request, ex);
-            throw new DocumentClientException(ex.getMessage());
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
         }
 
     }

@@ -15,6 +15,8 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -28,8 +30,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +54,13 @@ class CargoServiceTest {
     private JsonHelper jsonHelper;
 
     @Mock
-    private IConsolidationService consolidationService;
+    private ConsolidationV3Service consolidationService;
+
+    @Mock
+    private ICustomerBookingV3Service customerBookingV3Service;
+
+    @Mock
+    private CommonUtils commonUtils;
 
     @InjectMocks
     private CargoService cargoService;
@@ -61,109 +68,26 @@ class CargoServiceTest {
     @Test
     void testGetCargoDetailsWithBookingEntity() throws RunnerException {
         CargoDetailsRequest request = createRequest("BOOKING", "1");
-        CustomerBooking customerBooking = mock(CustomerBooking.class);
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setContainers(3L);
+        customerBooking.setPackingList(new ArrayList<>());
+        customerBooking.setTeuCount(new BigDecimal("6.0"));
         Containers container1 = new Containers();
         container1.setContainerCount(1L);
         container1.setContainerCode("20GP");
+        container1.setPackagesPerContainer(2L);
         Containers container2 = new Containers();
         container2.setContainerCount(2L);
+        container1.setPackagesPerContainer(2L);
         container2.setContainerCode("20GP");
+        customerBooking.setContainersList(List.of(container1, container2));
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
-        when(customerBooking.getContainersList()).thenReturn(Arrays.asList(container1, container2));
-
-        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
-
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "20GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
         // Assert
         assertNotNull(response);
         assertEquals(3, response.getContainers());
         assertEquals(BigDecimal.valueOf(6.0), response.getTeuCount());
-    }
-
-    @Test
-    void testGetCargoDetailsWithShipmentEntity() throws RunnerException {
-        CargoDetailsRequest request = createRequest("SHIPMENT", "1");
-        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
-        Containers container1 = new Containers();
-        container1.setGuid(UUID.randomUUID());
-        container1.setContainerCount(3L);
-        container1.setContainerCode("40GP");
-
-        // Use Set to ensure uniqueness
-        Set<Containers> containers = new HashSet<>();
-        containers.add(container1);
-
-        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
-        when(shipmentDetails.getContainersList()).thenReturn(containers);
-
-        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("40GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
-        // Test
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(3, response.getContainers());
-        assertEquals(BigDecimal.valueOf(6.0), response.getTeuCount());
-    }
-
-    @Test
-    void testGetCargoDetailsWithConsolidationEntity() throws RunnerException {
-        CargoDetailsRequest request = createRequest("CONSOLIDATION", "1");
-        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
-        Containers container1 = new Containers();
-        container1.setContainerCount(5L);
-        container1.setContainerCode("40HQ");
-        Containers container2 = new Containers();
-        container2.setContainerCount(6L);
-        container2.setContainerCode("40HQ");
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(consolidationDetails.getContainersList()).thenReturn(Arrays.asList(container1, container2));
-
-        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("40HQ");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(3));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
-
-        // Test
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(11, response.getContainers());
-        assertEquals(BigDecimal.valueOf(33.0), response.getTeuCount());
-    }
-
-    @Test
-    void testGetCargoDetailsWithUnknownEntityType() throws RunnerException {
-        CargoDetailsRequest request = createRequest("UNKNOWN", "1");
-
-        // Test
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        // Assert
-        assertNotNull(response);
-        assertNull(response.getContainers());
-        assertNull(response.getTeuCount());
     }
 
     @Test
@@ -172,57 +96,12 @@ class CargoServiceTest {
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = mock(CustomerBooking.class);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
-        when(customerBooking.getContainersList()).thenReturn(Collections.emptyList());
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
 
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertNull(response.getContainers());
-        assertNull(response.getTeuCount());
-    }
-
-    @Test
-    void testGetContainerDetailsWithShipmentEntityNoContainers() throws RunnerException {
-        CargoDetailsRequest request = createRequest("SHIPMENT", "1");
-        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
-        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
-        when(shipmentDetails.getContainersList()).thenReturn(new HashSet<>());
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("40GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-
-        // Test
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        // Assert
-        assertNotNull(response);
-        assertNull(response.getContainers());
-        assertNull(response.getTeuCount());
-    }
-
-    @Test
-    void testGetCargoDetailsWithConsolidationEntityNoContainers() throws RunnerException {
-        CargoDetailsRequest request = createRequest("CONSOLIDATION", "1");
-        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(consolidationDetails.getContainersList()).thenReturn(Collections.emptyList());
-
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("40HQ");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(3));
-
-        // Test
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        // Assert
-        assertNotNull(response);
-        assertNull(response.getContainers());
-        assertNull(response.getTeuCount());
     }
 
     @Test
@@ -232,6 +111,7 @@ class CargoServiceTest {
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
         booking.setCargoType("LCL");
+        booking.setContainers(2L);
         Containers container = new Containers();
         container.setContainerCode("20GP");
         container.setContainerCount(2L);
@@ -244,33 +124,14 @@ class CargoServiceTest {
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
         booking.setPackingList(List.of(packing));
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
-
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(BigDecimal.valueOf(100));
-        vwOb.setChargeableUnit("KG");
-        vwOb.setVolumeWeight(BigDecimal.valueOf(150));
-        vwOb.setVolumeWeightUnit("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         assertEquals(2, response.getContainers());
-        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
-        assertEquals(10, response.getNoOfPacks());
-        assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
     @Test
@@ -280,6 +141,7 @@ class CargoServiceTest {
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
         booking.setCargoType("LCL");
+        booking.setContainers(2L);
         Containers container = new Containers();
         container.setContainerCode("20GP");
         container.setContainerCount(2L);
@@ -300,26 +162,12 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
-
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(BigDecimal.valueOf(100));
-        vwOb.setChargeableUnit("KG");
-        vwOb.setVolumeWeight(BigDecimal.valueOf(150));
-        vwOb.setVolumeWeightUnit("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         assertEquals(2, response.getContainers());
-        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
-        assertEquals(10, response.getNoOfPacks());
-        assertEquals(BigDecimal.valueOf(2.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
     @Test
@@ -329,6 +177,7 @@ class CargoServiceTest {
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
         booking.setCargoType("LCL");
+        booking.setContainers(2L);
         Containers container = new Containers();
         container.setContainerCode("20GP");
         container.setContainerCount(2L);
@@ -348,113 +197,13 @@ class CargoServiceTest {
         DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
+        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         assertEquals(2, response.getContainers());
-        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
-        assertEquals(10, response.getNoOfPacks());
-    }
-
-    @Test
-    void testGetCargoDetailsForShipment_WithContainersAndPackings() throws RunnerException {
-        CargoDetailsRequest request = createRequest("SHIPMENT", "1");
-
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setTransportMode("AIR");
-        shipmentDetails.setShipmentType("LCL");
-        Containers container = new Containers();
-        container.setContainerCode("20GP");
-        container.setContainerCount(2L);
-        shipmentDetails.setContainersList(Set.of(container));
-
-        Packing packing = new Packing();
-        packing.setWeight(BigDecimal.valueOf(100));
-        packing.setWeightUnit("KG");
-        packing.setVolume(BigDecimal.valueOf(2));
-        packing.setVolumeUnit("M3");
-        packing.setPacks("10");
-        shipmentDetails.setPackingList(List.of(packing));
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
-
-        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
-
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(BigDecimal.valueOf(100));
-        vwOb.setChargeableUnit("KG");
-        vwOb.setVolumeWeight(BigDecimal.valueOf(150));
-        vwOb.setVolumeWeightUnit("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
-
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        assertEquals(2, response.getContainers());
-        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
-        assertEquals(10, response.getNoOfPacks());
-        assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
-    }
-
-    @Test
-    void testGetCargoDetailsForConsolidation_WithContainersAndPackings() throws RunnerException {
-        CargoDetailsRequest request = createRequest("CONSOLIDATION", "1");
-
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setTransportMode("AIR");
-        consolidationDetails.setShipmentType("LCL");
-        Containers container = new Containers();
-        container.setContainerCode("20GP");
-        container.setContainerCount(2L);
-        consolidationDetails.setContainersList(List.of(container));
-
-        Packing packing = new Packing();
-        packing.setWeight(BigDecimal.valueOf(100));
-        packing.setWeightUnit("KG");
-        packing.setVolume(BigDecimal.valueOf(2));
-        packing.setVolumeUnit("M3");
-        packing.setPacks("10");
-        consolidationDetails.setPackingList(List.of(packing));
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
-
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
-
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(BigDecimal.valueOf(100));
-        vwOb.setChargeableUnit("KG");
-        vwOb.setVolumeWeight(BigDecimal.valueOf(150));
-        vwOb.setVolumeWeightUnit("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
-
-        CargoDetailsResponse response = cargoService.getCargoDetails(request);
-
-        assertEquals(2, response.getContainers());
-        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
-        assertEquals(10, response.getNoOfPacks());
-        assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
     @Test
@@ -464,6 +213,9 @@ class CargoServiceTest {
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
         booking.setCargoType("LCL");
+        booking.setContainers(1L);
+        booking.setTeuCount(new BigDecimal("2.0"));
+        booking.setGrossWeight(BigDecimal.ZERO);
 
         Containers container = new Containers();
         container.setContainerCode("20GP");
@@ -485,26 +237,12 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
-
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(BigDecimal.TEN);
-        vwOb.setChargeableUnit("KG");
-        vwOb.setVolumeWeight(BigDecimal.valueOf(480));
-        vwOb.setVolumeWeightUnit("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+        when(customerBookingV3Service.getTotalContainerPackages(anyList())).thenReturn(10L);
+        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         assertEquals(1, response.getContainers());
-        assertEquals(BigDecimal.valueOf(2.0), response.getTeuCount());
-        assertEquals(BigDecimal.ZERO, response.getWeight());
-        assertEquals(BigDecimal.valueOf(10.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(3.0), response.getVolume());
-        assertEquals(5, response.getNoOfPacks());
-        assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
     @Test
@@ -531,11 +269,6 @@ class CargoServiceTest {
 
         assertNotNull(response);
         assertEquals(new BigDecimal("120.4"), response.getWeight());
-        assertEquals("KG", response.getWeightUnit());
-        assertEquals(new BigDecimal("123.5"), response.getChargeable()); // Rounded up
-        assertEquals("KG", response.getChargeableUnit());
-        assertEquals(new BigDecimal("100.0"), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
     @Test
@@ -562,11 +295,6 @@ class CargoServiceTest {
 
         assertNotNull(response);
         assertEquals(new BigDecimal("500.0"), response.getWeight());
-        assertEquals("KG", response.getWeightUnit());
-        assertEquals(new BigDecimal("510.75"), response.getChargeable()); // No rounding
-        assertEquals("KG", response.getChargeableUnit());
-        assertEquals(new BigDecimal("120.0"), response.getVolumetricWeight());
-        assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
 

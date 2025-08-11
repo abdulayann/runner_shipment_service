@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -58,7 +59,7 @@ public class ShipmentBackupHandler {
     private final INetworkTransferDao networkTransferDao;
 
     public List<ShipmentBackupEntity> backup(Integer tenantId) {
-        Set<Long> shipmentIds = shipmentDao.findShipmentIdsByTenantId(tenantId);
+        List<Long> shipmentIds = shipmentDao.findAllByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         log.info("Count of shipment Ids : {}", shipmentIds.size());
 
         if (shipmentIds.isEmpty()) {

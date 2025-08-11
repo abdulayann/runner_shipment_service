@@ -110,20 +110,12 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     public Optional<CustomerBooking> findById(Long id) {
-        try {
-            return findWithCache(id, CacheConstants.CUSTOMER_BOOKING_ID);
-        } catch (Exception e) {
-            return customerBookingRepository.findById(id);
-        }
+        return customerBookingRepository.findById(id);
     }
 
     @Override
     public Optional<CustomerBooking> findByGuid(UUID guid) {
-        try {
-            return findWithCache(guid, CacheConstants.CUSTOMER_BOOKING_GUID);
-        } catch (Exception e) {
-            return customerBookingRepository.findByGuid(guid);
-        }
+        return customerBookingRepository.findByGuid(guid);
     }
 
     private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) throws JsonProcessingException {
@@ -243,13 +235,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     }
 
     @Override
-    public List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
         return customerBookingRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
-    }
-
-    @Override
-    public Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId) {
-        return customerBookingRepository.findCustomerBookingIdsByTenantId(tenantId);
     }
 
     @Override

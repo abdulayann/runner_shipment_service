@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.migration.service.interfaces;
 
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 import java.util.Map;
 

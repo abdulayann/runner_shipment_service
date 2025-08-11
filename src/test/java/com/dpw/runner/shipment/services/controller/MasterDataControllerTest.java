@@ -342,9 +342,9 @@ class MasterDataControllerTest {
     @Test
     void testListContainerType() {
         // Mock
-        when(iMasterDataService.listContainerType(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(iMasterDataService.listContainerType(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = masterDataController.listContainerType(new Object());
+        var responseEntity = masterDataController.listContainerType(new Object(), "");
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -352,9 +352,9 @@ class MasterDataControllerTest {
     @Test
     void testListContainerType2() {
         // Mock
-        when(iMasterDataService.listContainerType(any())).thenThrow(new RuntimeException());
+        when(iMasterDataService.listContainerType(any(), any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = masterDataController.listContainerType(new Object());
+        var responseEntity = masterDataController.listContainerType(new Object(), "");
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -362,9 +362,9 @@ class MasterDataControllerTest {
     @Test
     void testListContainerType3() {
         // Mock
-        when(iMasterDataService.listContainerType(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(iMasterDataService.listContainerType(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = masterDataController.listContainerType(new Object());
+        var responseEntity = masterDataController.listContainerType(new Object(), "");
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

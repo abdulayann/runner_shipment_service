@@ -172,7 +172,9 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean isTransferredToReceivingBranch;
     private Long originBranch;
     private String incoterms;
+    private String incotermsLocation;
     private String coLoadCarrierName;
     private String partner;
+    private Boolean reefer;
     private MigrationStatus migrationStatus;
 }

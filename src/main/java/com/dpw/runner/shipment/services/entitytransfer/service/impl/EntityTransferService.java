@@ -33,7 +33,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -72,7 +79,14 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
@@ -121,15 +135,6 @@ import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -147,6 +152,26 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.transaction.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -567,6 +592,7 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentDetails shipment = shipmentDetails.get();
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setDirection(Constants.IMP);
+        entityTransferPayload.setAdditionalDocs(sendFileToExternalRequest.getAdditionalDocs());
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
         prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
 
@@ -580,8 +606,12 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         ConsolidationDetails console = consolidationDetails.get();
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .additionalDocs(sendFileToExternalRequest.getAdditionalDocs())
+                .shipAdditionalDocs(sendFileToExternalRequest.getShipAdditionalDocs())
+                .build();
 
-        EntityTransferV3ConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest(), false);
+        EntityTransferV3ConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, sendConsolidationRequest, false);
         entityTransferPayload.setShipmentType(Constants.IMP);
         if(!entityTransferPayload.getShipmentsList().isEmpty()) {
             for (var ship : entityTransferPayload.getShipmentsList()) {
@@ -604,6 +634,7 @@ public class EntityTransferService implements IEntityTransferService {
         BridgeRequest request = BridgeRequest.builder()
                 .requestCode(sendFileToExternalRequest.getSendToBranch())
                 .transactionId(UUID.randomUUID().toString())
+                .referenceId(entityNumber)
                 .payload(networkTransfer)
                 .build();
         log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
@@ -1667,7 +1698,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void processNTEValidations(ConsolidationDetails consolidationDetails) {
-        if(!Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid()) && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) {
+        if(consolidationDetails.getSourceGuid() != null && !Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid()) && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) {
             throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
         }
         SendConsoleValidationResponse response;
@@ -2076,7 +2107,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void validateNteSendShipmentValidations(ShipmentDetails shipmentDetails) {
-        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS)) {
+        if(shipmentDetails.getSourceGuid() != null && !Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS)) {
             throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
         }
         var sendShipmentValidationResponse = this.networkTransferValidationsForShipment(shipmentDetails, false);

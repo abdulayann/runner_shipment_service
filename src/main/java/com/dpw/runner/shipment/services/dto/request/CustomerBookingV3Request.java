@@ -70,6 +70,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private Boolean isCustomerAddressFreeText;
     private Boolean isNotifyPartyAddressFreeText;
     private LocalDateTime shipmentCreatedDate;
+    private LocalDateTime createdAt;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
@@ -79,6 +80,8 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String currentPartyForQuote;
     private BookingSource source;
     private UUID sourceGuid;
@@ -108,12 +111,16 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String brokerageAtDestinationType;
     private LocalDateTime pickupAtOriginDate;
     private LocalDateTime deliveryAtDestinationDate;
+    private LocalDateTime estimatedPickupAtOriginDate;
+    private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     private LocalDateTime brokerageAtOriginDate;
     private LocalDateTime brokerageAtDestinationDate;
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
     private LocalDateTime shippingInstructionCutoff;

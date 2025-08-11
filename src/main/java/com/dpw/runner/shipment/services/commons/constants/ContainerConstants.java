@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
 import java.util.Map;
+import java.util.Set;
 
 public class ContainerConstants {
 
@@ -21,8 +23,11 @@ public class ContainerConstants {
     public static final String GET_CONTAINERS = "/get/containers";
     public static final String ASSIGN_CONTAINERS = "/assignContainers";
     public static final String ASSIGN_PACKAGES = "/assignPackages";
+    public static final String ASSIGN_PACKAGES_SHIPMENT = "/shipment-assign-packages";
     public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
     public static final String UN_ASSIGN_PACKAGES = "/unAssignPackages";
+    public static final String UN_ASSIGN_PACKAGES_SHIPMENT = "/shipment-unAssign-packages";
+    public static final String CALCULATE_CARGO_SUMMARY = "calculate-cargo-summary";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
     public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
@@ -41,11 +46,13 @@ public class ContainerConstants {
     public static final String SHIPMENT_CONTAINERS = "/shipment-containers";
     public static final String CONSOLIDATION_CONTAINERS = "/consolidation-containers";
     public static final String CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT = "/consolidation-containers-assign-package";
+    public static final String SHIPMENT_CONTAINERS_FOR_PACKAGE_ASSIGNMENT = "/shipment-containers-assign-package";
     // Table names
     public static final String TABLE_CONTAINERS = "containers";
     public static final String TABLE_SHIPMENTS_LIST = "shipmentsList";
     // Keys for TABLES_NAMES
     public static final String KEY_CONTAINER_NUMBER = "containerNumber";
+    public static final String KEY_SHIPMENT_ID = "shipmentId";
     public static final String KEY_PACKS = "packs";
     public static final String KEY_PACKS_TYPE = "packsType";
     public static final String KEY_COMMODITY_CODE = "commodityCode";
@@ -60,10 +67,13 @@ public class ContainerConstants {
     public static final String KEY_UPDATED_AT = "updatedAt";
     public static final String KEY_CONTAINER_CODE = "containerCode";
     public static final String CONTAINER_ALREADY_ASSIGNED_MSG = "Shipment already Assigned to Container - ";
+    public static final String HS_CODE_OR_COMMODITY_IS_INVALID = "HsCode/Commodity is invalid at row: %d";
 
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(KEY_CONTAINER_NUMBER,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_SHIPMENT_ID,
+                    RunnerEntityMapping.builder().tableName(TABLE_SHIPMENTS_LIST).dataType(String.class).fieldName(KEY_SHIPMENT_ID).isContainsText(true).build()),
             Map.entry(KEY_PACKS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_PACKS).isContainsText(true).build()),
             Map.entry(KEY_PACKS_TYPE,
@@ -89,7 +99,9 @@ public class ContainerConstants {
             Map.entry(KEY_UPDATED_AT,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Long.class).fieldName(KEY_UPDATED_AT).build()),
             Map.entry(KEY_CONTAINER_CODE,
-                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build()),
+            Map.entry(TABLE_SHIPMENTS_LIST,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Set.class).fieldName(TABLE_SHIPMENTS_LIST).build())
 
     );
 

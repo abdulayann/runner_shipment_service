@@ -116,18 +116,22 @@ public class Containers extends MultiTenancy {
     private Long containerCount;
 
     @Column(name = "carrier_seal_number")
+    @Size(max = 100, message = "max size is 100 for carrier_seal_number")
     private String carrierSealNumber;
 
     @Column(name = "shipper_seal_number")
+    @Size(max = 100, message = "max size is 100 for shipper_seal_number")
     private String shipperSealNumber;
 
     @Column(name = "terminal_operator_seal_number")
     private String terminalOperatorSealNumber;
 
     @Column(name = "veterinary_seal_number")
+    @Size(max = 100, message = "max size is 100 for veterinary_seal_number")
     private String veterinarySealNumber;
 
     @Column(name = "customs_seal_number")
+    @Size(max = 100, message = "max size is 100 for customs_seal_number")
     private String customsSealNumber;
 
     @Column(name = "customs_release_code")
@@ -399,6 +403,20 @@ public class Containers extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     @Column(name = "pra_status")
     private ContainerPraStatus praStatus;
+
+    @Column(name = "packages_per_container")
+    private Long packagesPerContainer;
+
+    @Column(name = "container_package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String containerPackageType;
+
+    @Column(name = "cargo_weight_per_container")
+    private BigDecimal cargoWeightPerContainer;
+
+    @Column(name = "container_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
+    private String containerWeightUnit;
 
     @Override
     public boolean equals(Object o) {

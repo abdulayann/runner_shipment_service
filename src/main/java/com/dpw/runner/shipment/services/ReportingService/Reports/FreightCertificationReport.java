@@ -135,6 +135,7 @@ public class FreightCertificationReport extends IReport{
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
+        populateShippedOnboardFields(freightCertificationModel.shipmentDetails, dictionary);
         processBillingList(freightCertificationModel, dictionary);
 
         if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {

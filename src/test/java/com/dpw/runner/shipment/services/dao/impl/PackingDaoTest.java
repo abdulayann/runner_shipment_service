@@ -941,4 +941,58 @@ class PackingDaoTest {
         assertDoesNotThrow(() -> packingDao.checkPackingExistsForShipment(1L));
     }
 
+    @Test
+    void testDeleteAdditionalPackingByConsolidationId() {
+        List<Long> packingIds = List.of(1L, 2L);
+        Long consolidationId = 10L;
+        packingDao.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
+        verify(packingRepository, times(1))
+                .deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPackingIdsAndConsolidationId() {
+        List<Long> packingIds = List.of(3L, 4L);
+        Long consolidationId = 20L;
+        packingDao.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
+        verify(packingRepository, times(1))
+                .revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalPackingByCustomerBookingId() {
+        List<Long> packingIds = List.of(5L, 6L);
+        Long bookingId = 30L;
+        packingDao.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
+        verify(packingRepository, times(1))
+                .deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPackingIdsAndBookingId() {
+        List<Long> packingIds = List.of(7L, 8L);
+        Long bookingId = 40L;
+        packingDao.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
+        verify(packingRepository, times(1))
+                .revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
+    }
+
+    @Test
+    void testDeleteAdditionalPackingByShipmentId() {
+        List<Long> packingIds = List.of(9L, 10L);
+        Long shipmentId = 50L;
+        packingDao.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
+        verify(packingRepository, times(1))
+                .deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPackingIdsAndShipmentId() {
+        List<Long> packingIds = List.of(11L, 12L);
+        Long shipmentId = 60L;
+        packingDao.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
+        verify(packingRepository, times(1))
+                .revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
+    }
+
 }

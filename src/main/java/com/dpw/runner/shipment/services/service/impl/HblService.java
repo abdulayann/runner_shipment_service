@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -55,6 +56,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.HblConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -313,6 +315,39 @@ public class HblService implements IHblService {
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateSealNumberWarning(Long shipmentId) {
+        // Get shipment
+        ShipmentDetails shipment = shipmentDao.findById(shipmentId)
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
+
+        // Check mandatory conditions (Sea + Export + has containers)
+        if (!isSeaExportShipment(shipment) || shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) {
+            return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
+        }
+        // Find containers missing all seals
+        List<String> containersWithoutSeals = shipment.getContainersList().stream().filter(this::isSealEmpty).map(Containers::getContainerNumber).filter(Objects::nonNull).collect(Collectors.toList());
+        // Return warning only if containers are missing seals
+        if (!containersWithoutSeals.isEmpty()) {
+            return ResponseEntity.ok(
+                    RunnerResponse.builder().success(true).warning("Seal Number not entered against the Container Number - " + String.join(", ", containersWithoutSeals)).build());
+        }
+        return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
+    }
+
+    private boolean isSeaExportShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection());
+    }
+
+    private boolean isSealEmpty(Containers container) {
+        return StringUtility.isEmpty(container.getCarrierSealNumber())
+                && StringUtility.isEmpty(container.getCustomsSealNumber())
+                && StringUtility.isEmpty(container.getShipperSealNumber())
+                && StringUtility.isEmpty(container.getVeterinarySealNumber());
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
@@ -528,7 +563,7 @@ public class HblService implements IHblService {
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
-            shipmentDao.save(shipmentDetail, false);
+            shipmentDao.save(shipmentDetail, false, false);
             syncShipment = true;
         }
         return syncShipment;

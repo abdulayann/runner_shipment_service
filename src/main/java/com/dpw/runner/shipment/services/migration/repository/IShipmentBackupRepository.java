@@ -29,4 +29,9 @@ public interface IShipmentBackupRepository extends JpaRepository<ShipmentBackupE
     @Query(value = "UPDATE shipment_backup SET is_deleted = true WHERE id = ?1", nativeQuery = true)
     @Transactional
     void makeIsDeleteTrueToMarkRestoreSuccessful(Long id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM shipment_backup cb WHERE cb.shipment_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    void deleteBackupByTenantIdAndShipmentId(Long shipmentId, Integer tenantId);
 }

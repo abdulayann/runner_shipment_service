@@ -2,32 +2,37 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.IShipmentBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,6 +41,7 @@ import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.col
 
 @Service
 @Slf4j
+@Generated
 public class MigrationV3Service implements IMigrationV3Service {
 
     @Autowired
@@ -77,6 +83,16 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private TenantDataBackupService backupService;
 
+    @Autowired
+    private MigrationUtil migrationUtil;
+
+    @Autowired
+    private IConsolidationBackupRepository consolidationBackupRepository;
+
+    @Autowired
+    private IShipmentBackupRepository shipmentBackupRepository;
+
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
 
@@ -102,9 +118,9 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Consolidation [id={}]", id);
+                            log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
                             ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id);
-                            log.info("Successfully migrated Consolidation [oldId={}, newId={}]", id, migrated.getId());
+                            log.info("Successfully migrated Consolidation [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
@@ -113,6 +129,8 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
+                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    consolidationBackupRepository.deleteBackupByTenantIdAndConsolidationId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -128,8 +146,6 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         // Step 2: Fetch all V2 shipments for tenant
         List<Long> shipmentIds = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
-//        Optional<ShipmentDetails> shipmentByIdWithQuery = shipmentDao.findShipmentByIdWithQuery(consolId);
-//        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentByIdWithQuery.get());
         map.put("Total Shipment", shipmentIds.size());
         log.info("Starting Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentIds.size());
 
@@ -145,9 +161,9 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Shipment [id={}]", id);
+                            log.info("Migrating Shipment [id={}] and start time: {}", id, System.currentTimeMillis());
                             ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id);
-                            log.info("Successfully migrated Shipment [oldId={}, newId={}]", id, migrated.getId());
+                            log.info("Successfully migrated Shipment [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
@@ -156,6 +172,8 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during shipment setup [id={}]", id, e);
+                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    shipmentBackupRepository.deleteBackupByTenantIdAndShipmentId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

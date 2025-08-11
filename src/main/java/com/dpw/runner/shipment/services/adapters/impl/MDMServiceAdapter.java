@@ -256,7 +256,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         try {
             log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
             ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
-                RequestEntity.post(URI.create(url)).body(request),
+                RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
                 DependentServiceResponse.class
             );
             log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));

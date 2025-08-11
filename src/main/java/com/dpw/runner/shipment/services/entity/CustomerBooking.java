@@ -259,6 +259,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
 
+    @Column(name = "is_shipper_client_equal")
+    private Boolean isShipperClientEqual;
+
+    @Column(name = "is_consignee_client_equal")
+    private Boolean isConsigneeClientEqual;
+
     @Column(name = "is_bill_created")
     private Boolean isBillCreated;
 
@@ -351,6 +357,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "delivery_at_destination_date")
     private LocalDateTime deliveryAtDestinationDate;
 
+    @Column(name = "est_pickup_at_origin_date")
+    private LocalDateTime estimatedPickupAtOriginDate;
+
+    @Column(name = "est_delivery_at_destination_date")
+    private LocalDateTime estimatedDeliveryAtDestinationDate;
+
     @Column(name = "pickup_at_origin")
     @OrganizationMasterData
     private Long pickupAtOrigin;
@@ -366,6 +378,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "brokerage_at_destination")
     @OrganizationMasterData
     private Long brokerageAtDestination;
+
+    @Column(name = "est_brokerage_at_origin_date")
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @Column(name = "est_brokerage_at_destination_date")
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
 
     @Column(name = "brokerage_at_origin_date")
     private LocalDateTime brokerageAtOriginDate;

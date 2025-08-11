@@ -36,9 +36,12 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String weightUnit;
     private BigDecimal volume;
     private String volumeUnit;
+    private BigDecimal volumePerPack;
+    private String volumePerPackUnit;
+    private BigDecimal cargoWeightPerPack;
+    private String packWeightUnit;
     private String inspections;
     private String origin;
-    @NotBlank(message = "Commodity is required")
     private String commodity;
     private String packingOrder;
     private BigDecimal length;

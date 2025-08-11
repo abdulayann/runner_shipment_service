@@ -21,5 +21,5 @@ public interface IHblService extends ICommonService {
     ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
     Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings);
     ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException;
-
+    ResponseEntity<IRunnerResponse> validateSealNumberWarning(Long shipmentId);
 }

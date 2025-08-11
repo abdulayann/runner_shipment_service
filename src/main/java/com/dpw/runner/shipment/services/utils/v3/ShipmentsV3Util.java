@@ -2,29 +2,72 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerResult;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -32,12 +75,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Component
 @Slf4j
@@ -402,6 +455,164 @@ public class ShipmentsV3Util {
         log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+    }
+
+    public ShipmentSummaryWarningsResponse generateSummaryResponseWarnings(ShipmentDetails shipmentDetails, CargoDetailsResponse packsSummary, CargoDetailsResponse containerSummary) throws RunnerException {
+        ShipmentSummaryWarningsResponse.WarningDetail packagesWarning = null;
+        ShipmentSummaryWarningsResponse.WarningDetail weightWarning = null;
+        ShipmentSummaryWarningsResponse.WarningDetail volumeWarning = null;
+
+        if (packsSummary != null && containerSummary != null) {
+            // Packages Warning
+            Integer packCountPkg = packsSummary.getNoOfPacks();
+            Integer packCountCont = containerSummary.getNoOfPacks();
+
+            if (packCountPkg != null && packCountCont != null && !packCountPkg.equals(packCountCont)) {
+                packagesWarning = new ShipmentSummaryWarningsResponse.WarningDetail(
+                        true,
+                        packCountCont + " " + containerSummary.getPacksUnit(),
+                        packCountPkg + " " + packsSummary.getPacksUnit(),
+                        Math.abs(packCountCont - packCountPkg) + " " + packsSummary.getPacksUnit()
+                );
+            }
+
+            // Weight
+            weightWarning = generateWarning(
+                    packsSummary.getWeight(),
+                    packsSummary.getWeightUnit(),
+                    containerSummary.getWeight(),
+                    containerSummary.getWeightUnit(),
+                    MASS,
+                    shipmentDetails.getWeightUnit()
+            );
+
+            // Volume
+            if (packsSummary.getVolume() != null && containerSummary.getVolume() != null) {
+                volumeWarning = generateWarning(
+                        packsSummary.getVolume(),
+                        packsSummary.getVolumeUnit(),
+                        containerSummary.getVolume(),
+                        containerSummary.getVolumeUnit(),
+                        VOLUME,
+                        shipmentDetails.getVolumeUnit()
+                );
+            }
+        }
+
+        return ShipmentSummaryWarningsResponse.builder()
+                .packagesWarning(packagesWarning)
+                .weightWarning(weightWarning)
+                .volumeWarning(volumeWarning)
+                .build();
+    }
+
+    public String resolveUnit(List<String> unitsFromData, String branchDefaultUnit) {
+        Set<String> distinctUnits = unitsFromData.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return (distinctUnits.size() == 1) ? distinctUnits.iterator().next() : branchDefaultUnit;
+    }
+
+    public CargoDetailsResponse buildShipmentResponse(Integer packs, Integer dgPacks, String packsType, String dgPacksType, VolumeWeightChargeable vwOb,
+                                                      ContainerResult result, BigDecimal weight, String weightUnit, BigDecimal volume, String volumeUnit) {
+        return CargoDetailsResponse.builder()
+                .weight(weight)
+                .weightUnit(weightUnit)
+                .volume(volume)
+                .volumeUnit(volumeUnit)
+                .noOfPacks((packs != null && packs == 0) ? null : packs)
+                .packsUnit(packsType)
+                .dgPacks(dgPacks)
+                .dgPacksUnit(dgPacksType)
+                .containers(result.getContainerCount())
+                .teuCount(result.getTeuCount())
+                .chargable(vwOb.getChargeable())
+                .chargeableUnit(vwOb.getChargeableUnit())
+                .volumetricWeight(vwOb.getVolumeWeight())
+                .volumetricWeightUnit(vwOb.getVolumeWeightUnit())
+                .build();
+    }
+
+    public ShipmentSummaryWarningsResponse.WarningDetail generateWarning(BigDecimal packVal, String packUnit, BigDecimal contVal, String contUnit, String valueType, String shipmentUnit) throws RunnerException {
+        // Convert both container and package values to shipmentUnit before comparison
+        BigDecimal convertedContVal = contVal == null ? null
+                : new BigDecimal(convertUnit(valueType, contVal, contUnit, shipmentUnit).toString());
+        BigDecimal convertedPackVal = packVal == null ? null
+                : new BigDecimal(convertUnit(valueType, packVal, packUnit, shipmentUnit).toString());
+
+        boolean mismatch = (convertedPackVal != null && convertedContVal != null && convertedPackVal.compareTo(convertedContVal) != 0);
+
+        String containerDisplay = contVal != null ? contVal.stripTrailingZeros().toPlainString() + " " + contUnit : "";
+        String packageDisplay = packVal != null ? packVal.stripTrailingZeros().toPlainString() + " " + packUnit : "";
+        String difference = (mismatch)
+                ? convertedPackVal.subtract(convertedContVal).abs().stripTrailingZeros().toPlainString() + " " + shipmentUnit
+                : null;
+
+        return mismatch
+                ? new ShipmentSummaryWarningsResponse.WarningDetail(true, containerDisplay, packageDisplay, difference)
+                : null; // No warning
+    }
+
+    public List<String> getPacksType(List<Packing> packingList) {
+        List<String> packsUnit = new ArrayList<>();
+        List<String> dgPacksUnit = new ArrayList<>();
+        packingList.forEach(packing -> {
+            packsUnit.add(packing.getPacksType());
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                dgPacksUnit.add(packing.getPacksType());
+            }
+        });
+        List<String> packsTypeList = new ArrayList<>();
+        packsTypeList.add(resolveUnit(packsUnit, PackingConstants.PKG));
+        packsTypeList.add(resolveUnit(dgPacksUnit, PackingConstants.PKG));
+        return packsTypeList;
+    }
+
+    public List<String> getPacksType(Set<Containers> containersSet) {
+        List<String> packsUnit = new ArrayList<>();
+        List<String> dgPacksUnit = new ArrayList<>();
+        containersSet.forEach(containers -> {
+            packsUnit.add(containers.getPacksType());
+            if (Boolean.TRUE.equals(containers.getHazardous())) {
+                dgPacksUnit.add(containers.getPacksType());
+            }
+        });
+        List<String> packsTypeList = new ArrayList<>();
+        packsTypeList.add(resolveUnit(packsUnit, PackingConstants.PKG));
+        packsTypeList.add(resolveUnit(dgPacksUnit, PackingConstants.PKG));
+        return packsTypeList;
+    }
+
+    public ContainerResult getContainerResult(Set<Containers> containersSet) {
+        if (CommonUtils.setIsNullOrEmpty(containersSet))
+            return new ContainerResult();
+        int containerCount = 0;
+        int dgContCount = 0;
+        BigDecimal teuCount = BigDecimal.ZERO;
+        for(Containers containers: containersSet) {
+            containerCount += Math.toIntExact(containers.getContainerCount());
+            if(Objects.nonNull(containers.getTeu()))
+                teuCount = teuCount.add(containers.getTeu());
+            if(Boolean.TRUE.equals(containers.getHazardous()))
+                dgContCount++;
+        }
+        return new ContainerResult(containerCount, dgContCount, teuCount);
+    }
+
+    public ContainerResult calculateWeightFromContainersFallBack(Set<Containers> containers, String weightUnit) throws RunnerException {
+        int containerCount = 0;
+        int dgContainerCount = 0;
+        BigDecimal teus = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        for (Containers c : containers) {
+            containerCount += Math.toIntExact(c.getContainerCount());
+            if (Boolean.TRUE.equals(c.getHazardous())) dgContainerCount += Math.toIntExact(c.getContainerCount());
+            if (Objects.nonNull(c.getTeu())) teus = teus.add(c.getTeu());
+            BigDecimal containerWeight = Optional.ofNullable(c.getGrossWeight()).orElse(BigDecimal.ZERO);
+            totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, containerWeight, c.getGrossWeightUnit(), weightUnit).toString()));
+        }
+        return new ContainerResult(containerCount, dgContainerCount, teus, totalWeight);
     }
 
 }

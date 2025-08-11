@@ -25,4 +25,9 @@ public interface IConsolidationBackupRepository extends JpaRepository<Consolidat
     @Transactional
     @Query(value = "UPDATE consolidation_backup SET is_deleted = true WHERE id = ?1", nativeQuery = true)
     void makeIsDeleteTrueToMarkRestoreSuccessful(Long id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM consolidation_backup cb WHERE cb.consolidation_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    void deleteBackupByTenantIdAndConsolidationId(Long consolidationId, Integer tenantId);
 }

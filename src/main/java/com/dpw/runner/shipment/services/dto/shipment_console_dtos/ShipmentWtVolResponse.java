@@ -42,4 +42,5 @@ public class ShipmentWtVolResponse implements IRunnerResponse {
     private Integer consoleContainerCount;
     private BigDecimal consoleTeuCount;
     private Integer consoleDgContainerCount;
+    private Boolean isNonFtlOrFclAttached;
 }

@@ -7,7 +7,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -20,6 +22,7 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -30,6 +33,7 @@ import java.util.concurrent.Future;
 
 @Slf4j
 @Service
+@Generated
 public class NetworkTransferMigrationService implements INetworkTransferMigrationService {
 
     @Autowired
@@ -61,6 +65,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
+    @Autowired
+    private MigrationUtil migrationUtil;
 
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId) throws RunnerException {
@@ -345,6 +352,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during networkTransferFutures setup [id={}]", nteId, e);
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -377,9 +385,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating NetworkTransfer [id={}]", nteId);
+                            log.info("Migrating NetworkTransfer [id={}] and start time: {}", nteId, System.currentTimeMillis());
                             NetworkTransfer migrated = migrateNteFromV2ToV3(nteId);
-                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}]", nteId, migrated.getId());
+                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}] and end time: {}", nteId, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("NetworkTransfer migration failed [id={}]: {}", nteId, e.getMessage(), e);
@@ -388,6 +396,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

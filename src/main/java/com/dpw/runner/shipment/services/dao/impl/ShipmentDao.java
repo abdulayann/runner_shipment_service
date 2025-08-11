@@ -123,7 +123,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
+    public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync, boolean isFromBookingV3) throws RunnerException {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails), Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if (shipmentDetails.getId() != null) {
@@ -135,7 +135,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setContainersList(new HashSet<>());
         }
         try {
-            onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+            onSave(shipmentDetails, errors, oldShipment, fromV1Sync, isFromBookingV3);
         } catch (Exception e) {
             String errorMessage = e.getMessage();
             if (e.getClass().equals(ConstraintViolationException.class))
@@ -168,7 +168,7 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException {
         List<ShipmentDetails> res = new ArrayList<>();
         for (ShipmentDetails req : shipments) {
-            req = save(req, false);
+            req = save(req, false, false);
             res.add(req);
         }
         return res;
@@ -200,13 +200,13 @@ public class ShipmentDao implements IShipmentDao {
             }
             shipmentDetails.setUpdatedAt(LocalDateTime.now());
         }
-        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        onSave(shipmentDetails, errors, oldShipment, fromV1Sync, false);
         return shipmentDetails;
     }
 
-    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
+    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync, boolean isFromBookingV3) {
         setHouseBill(shipmentDetails, oldShipment);
-        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync, isFromBookingV3));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         validateCarrierDetails(shipmentDetails);
@@ -356,14 +356,14 @@ public class ShipmentDao implements IShipmentDao {
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync, boolean isFromBookingV3) {
         Set<String> errors = new LinkedHashSet<>();
 
         if (Boolean.TRUE.equals(request.getContainsHazardous()) &&
                 Constants.TRANSPORT_MODE_SEA.equals(request.getTransportMode()) &&
                 Constants.SHIPMENT_TYPE_LCL.equals(request.getShipmentType()) &&
                 !Constants.CONSOLIDATION_TYPE_AGT.equals(request.getJobType()) &&
-                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType())) {
+                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType()) && !isFromBookingV3) {
             errors.add("For Ocean DG shipments LCL Cargo Type, we can have only AGT and Co Load Master");
         }
         if (request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
@@ -392,6 +392,9 @@ public class ShipmentDao implements IShipmentDao {
 
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
+
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
 
         // Shipment must be attached to consolidation with same master bill
         addMasterBillValidationErrors(request, errors);
@@ -454,11 +457,12 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addPolPodValidationsErrors(ShipmentDetails request, Set<String> errors) {
-        if ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) &&
+        if (!(Objects.equals(request.getDirection(), Constants.DIRECTION_DOM)) && (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) &&
                 (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())))
             errors.add("POL and POD fields are mandatory.");
-        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
-            errors.add("POL and POD fields cannot be same.");
+        CarrierDetails carrierDetails = request.getCarrierDetails();
+        if (carrierDetails != null && !isStringNullOrEmpty(carrierDetails.getOriginPort()) && !isStringNullOrEmpty(carrierDetails.getDestinationPort()) && Objects.equals(carrierDetails.getOriginPort(), carrierDetails.getDestinationPort())) {
+            errors.add("POL and POD fields cannot be the same.");
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");
@@ -496,6 +500,19 @@ public class ShipmentDao implements IShipmentDao {
 
                 String message = (duplicatePartyTypes.size() == 1) ? " is a duplicate Party Type." : " are duplicate Party Types.";
                 errors.add(types + message);
+            }
+        }
+    }
+
+    private void addAgentOrganisationIdValidationErrors(ShipmentDetails request, Set<String> errors) {
+        if (request.getAdditionalDetails() != null && request.getAdditionalDetails().getExportBroker() != null
+                && request.getAdditionalDetails().getImportBroker() != null) {
+
+            String exportAgentOrganisationId = request.getAdditionalDetails().getExportBroker().getOrgId();
+
+            if (exportAgentOrganisationId != null && exportAgentOrganisationId.equals(
+                    request.getAdditionalDetails().getImportBroker().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
             }
         }
     }
@@ -977,11 +994,6 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
-        return shipmentRepository.findShipmentIdsByTenantId(tenantId);
-    }
-
-    @Override
     public void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId) {
         shipmentRepository.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
     }
@@ -999,5 +1011,10 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
         shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Override
+    public void updateTriggerMigrationWarning(Long shipmentId) {
+        shipmentRepository.updateTriggerMigrationWarning(shipmentId);
     }
 }

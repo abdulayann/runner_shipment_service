@@ -17,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
@@ -37,6 +39,7 @@ import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
@@ -77,6 +80,7 @@ import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
@@ -88,6 +92,7 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -142,12 +147,10 @@ import org.springframework.transaction.TransactionSystemException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -231,19 +234,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -316,7 +307,12 @@ class CommonUtilsTest {
     private ConsolidationDao consolidationDetailsDao;
 
     @Mock
+    private QuoteContractsDao quoteContractsDao;
+
+    @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+    @Mock
+    private IV1Service v1Service;
 
 
     private PdfContentByte dc;
@@ -4977,6 +4973,105 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testUpdateContainerTypeWithQuoteId_withMatchingCodes_setsIsQuotedTrue() {
+        String quoteId = "Q123";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("20GP")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertTrue(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withNoMatchingCodes_allIsQuotedFalse() {
+        String quoteId = "Q999";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("45HC")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertFalse(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenDefaultAddressIdIsNull_returnsNull() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(null);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNull(result);
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenNoAddressFound_returnsEmptyEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        CommonV1ListRequest expectedRequest = new CommonV1ListRequest();
+        expectedRequest.setCriteriaRequests(List.of(List.of("Id", "=", 123L)));
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = new ArrayList<>();
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(Collections.emptyList());
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(new EntityTransferAddress(), result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenAddressFound_returnsEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        EntityTransferAddress expectedAddress = EntityTransferAddress.builder()
+                .id(123L)
+                .Address1("Test Address")
+                .build();
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = List.of(Map.of());
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class)))
+                .thenReturn(List.of(expectedAddress));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(expectedAddress, result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    private ContainerTypeMasterResponse buildResponse(String code, boolean isQuoted) {
+        ContainerTypeMasterResponse response = new ContainerTypeMasterResponse();
+        response.setCode(code);
+        response.setIsQuoted(isQuoted);
+        return response;
+    }
+
+    @Test
     void testGetAddress_withAllFields() {
         // Arrange
         Map<String, Object> addressData = new HashMap<>();
@@ -5084,4 +5179,420 @@ class CommonUtilsTest {
         String expected = "Company XYZ";
         assertEquals(expected, result);
     }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_NoChanges() {
+        // Test case when all fields are identical - should return false
+        Packing oldPack = createTestPacking();
+        Packing newPack = createTestPacking();
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_HazardousChanged() {
+        // Test case when Hazardous field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideDGClassChangeCases")
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassChanges(String oldDGClass, String newDGClass) {
+        Packing oldPack = createDGTestPacking();
+        oldPack.setDGClass(oldDGClass);
+
+        Packing newPack = createDGTestPacking();
+        newPack.setDGClass(newDGClass);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+        assertTrue(result);
+    }
+
+    private static Stream<Arguments> provideDGClassChangeCases() {
+        return Stream.of(
+                Arguments.of("Class1", "Class2"), // value change
+                Arguments.of(null, "Class1"),     // null to value
+                Arguments.of("Class1", null)      // value to null
+        );
+    }
+
+    // Mocked or test utility method
+    private Packing createDGTestPacking() {
+        Packing packing = new Packing();
+        packing.setDGClass("Class1"); // default, can be overridden
+        // set other default fields if needed
+        return packing;
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_UnNumberChanged() {
+        // Test case when UnNumber field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setUnNumber("UN1001");
+
+        Packing newPack = createTestPacking();
+        newPack.setUnNumber("UN1002");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_ProperShippingNameChanged() {
+        // Test case when ProperShippingName field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setProperShippingName("Old Name");
+
+        Packing newPack = createTestPacking();
+        newPack.setProperShippingName("New Name");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_PackingGroupChanged() {
+        // Test case when PackingGroup field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setPackingGroup("I");
+
+        Packing newPack = createTestPacking();
+        newPack.setPackingGroup("II");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointChanged() {
+        // Test case when MinimumFlashPoint field changes - should return true
+        // Assuming compareBigDecimals returns false when values are different
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPoint(new BigDecimal("10.5"));
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPoint(new BigDecimal("15.5"));
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointUnitChanged() {
+        // Test case when MinimumFlashPointUnit field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPointUnit("C");
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPointUnit("F");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MarinePollutantChanged() {
+        // Test case when MarinePollutant field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMarinePollutant(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setMarinePollutant(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_AllFieldsNull() {
+        // Test case when all nullable fields are null in both objects - should return false
+        Packing oldPack = new Packing();
+        oldPack.setHazardous(false);
+        oldPack.setMarinePollutant(false);
+        oldPack.setDGClass(null);
+        oldPack.setUnNumber(null);
+        oldPack.setProperShippingName(null);
+        oldPack.setPackingGroup(null);
+        oldPack.setMinimumFlashPoint(null);
+        oldPack.setMinimumFlashPointUnit(null);
+
+        Packing newPack = new Packing();
+        newPack.setHazardous(false);
+        newPack.setMarinePollutant(false);
+        newPack.setDGClass(null);
+        newPack.setUnNumber(null);
+        newPack.setProperShippingName(null);
+        newPack.setPackingGroup(null);
+        newPack.setMinimumFlashPoint(null);
+        newPack.setMinimumFlashPointUnit(null);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MultipleFieldsChanged() {
+        // Test case when multiple fields change - should return true (early return on first change)
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+        oldPack.setDGClass("Class1");
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false); // This will cause early return
+        newPack.setDGClass("Class2"); // This won't be evaluated due to early return
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    // Helper method to create a test packing object with default values
+    private Packing createTestPacking() {
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+        packing.setDGClass("TestClass");
+        packing.setUnNumber("UN1234");
+        packing.setProperShippingName("Test Shipping Name");
+        packing.setPackingGroup("I");
+        packing.setMinimumFlashPoint(new BigDecimal("20.0"));
+        packing.setMinimumFlashPointUnit("C");
+        packing.setMarinePollutant(false);
+        return packing;
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FCL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FTL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_Valid() {
+        assertTrue(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_AIR, "FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FCL() {
+        assertTrue(commonUtils.isFCLorFTL("FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FTL() {
+        assertTrue(commonUtils.isFCLorFTL("FTL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_Invalid() {
+        assertFalse(commonUtils.isFCLorFTL("LCL"));
+        assertFalse(commonUtils.isFCLorFTL(null));
+        assertFalse(commonUtils.isFCLorFTL(""));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenSeaFCL_ReturnsTrue() {
+        assertTrue(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenNeither_ReturnsFalse() {
+        assertFalse(commonUtils.isSeaFCLOrRoadFTL("AIR", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotRoad() {
+        assertFalse(commonUtils.isRoadLCLorLTL("SEA", "LCL"));  // transport mode is not ROAD
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotLCLorLTL() {
+        assertFalse(commonUtils.isRoadLCLorLTL("ROAD", "FCL")); // cargo type not LCL or LTL
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenTransportModeAndCargoTypeInvalid() {
+        assertFalse(commonUtils.isRoadLCLorLTL("AIR", "FCL"));
+    }
+
+    @Test
+    void testCapitalizeV3() {
+        String result = commonUtils.capitalizeV3("example");
+        assertEquals("Example", result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings() {
+        List<String> result = CommonUtils.splitAndTrimStrings(" a , b, c ");
+        assertEquals(List.of("a", "b", "c"), result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings_EmptyInput() {
+        List<String> result = CommonUtils.splitAndTrimStrings("");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testIncludeRequiredColumns() {
+        Set<String> columns = new HashSet<>();
+        CommonUtils.includeRequiredColumns(columns);
+        assertTrue(columns.contains("id"));
+        assertTrue(columns.contains("guid"));
+    }
+
+    @Test
+    void testRoundBigDecimal() {
+        BigDecimal input = new BigDecimal("10.12345");
+        BigDecimal result = CommonUtils.roundBigDecimal(input, 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("10.12"), result);
+    }
+
+    @Test
+    void testDivide_NormalCase() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("5.00"), result);
+    }
+
+    @Test
+    void testDivide_DivideByZero() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(BigDecimal.ZERO, result);
+    }
+
+    @Test
+    void testCalculatePercentage_Normal() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("2"), new BigDecimal("4"), 2, RoundingMode.HALF_UP);
+        assertEquals(50.0, result);
+    }
+
+    @Test
+    void testCalculatePercentage_DivideByZero() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("1"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(0.0, result);
+    }
+
+    @Test
+    void shouldThrowException_WhenAirDGTrue_AndNotSecurity_AndHazardous_AndNotDgUser() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+        details.setContainsHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenAirSecurityTrue_AndCheckAirSecurityFails() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> mockedStatic = mockStatic(CommonUtils.class)) {
+            mockedStatic.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            mockedStatic.when(() -> CommonUtils.checkAirSecurityForShipment(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenConsolidationHazardousAndNotDgUser() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+        details.setHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        // If getShipmentSettingFromContext is static:
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+                // Mock static method getShipmentSettingFromContext() returning Optional
+                commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+
+                userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+                assertThrows(ValidationException.class, () ->
+                        commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+            }
+        }
+    }
+
+    @Test
+    void shouldThrowException_WhenConsolidationSecurityCheckFails() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            commonUtilsMock.when(() -> CommonUtils.checkAirSecurityForConsolidation(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+        }
+    }
+
+
 }
