@@ -1123,6 +1123,7 @@ public class ContainerV3Service implements IContainerV3Service {
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
                 if (uniqueContainers.contains(containerBaseResponse.getId())) {
                     containerBaseResponse.setAssignedContainer(Constants.YES);
+                    containerBaseResponse.setIsContainerAssigned(true);
                     assignedContainerCount.getAndIncrement();
                 } else {
                     containerBaseResponse.setAssignedContainer(Constants.NO);
