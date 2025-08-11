@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -101,6 +102,10 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private IV1Service v1Service;
+    @Mock
+    private IConsoleShipmentMappingDao iConsoleShipmentMappingDao;
+    @Mock
+    private IShipmentsContainersMappingRepository iShipmentsContainersMappingRepository;
     @Mock
     private ModelMapper modelMapper;
     @Mock
@@ -422,7 +427,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .shipmentId(shipmentId)
                 .build();
 
-        Containers testContainer = new Containers();
+        testContainer = new Containers();
         testContainer.setId(containerId);
 
         ConsolidationDetails mockConso = new ConsolidationDetails();
@@ -448,7 +453,8 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentService).updateCargoDetailsInShipment(shipment, cargoDetailsResponse);
         doNothing().when(shipmentDao).updateTriggerMigrationWarning(shipmentId);
 
-        when(containerDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testContainer));
+        when(iConsoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(consolidationId).build()));
+        lenient().when(containerDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
