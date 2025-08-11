@@ -107,6 +107,10 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             TenantContext.setCurrentTenant(tenantId);
             UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
+            if (Objects.isNull(consolidationBackupDetails)) {
+                log.info("No Consolidation records found for consol id : {}", consolidationId);
+                return;
+            }
             ConsolidationDetails consolidationDetails = objectMapper.readValue(consolidationBackupDetails.getConsolidationDetails(), ConsolidationDetails.class);
             Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
             if (consolidationBackupDetails.getConsoleShipmentMapping() != null) {

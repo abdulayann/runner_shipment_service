@@ -91,7 +91,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
         ShipmentBackupEntity shipmentBackupDetails = shipmentBackupDao.findByShipmentId(shipmentId);
         Set<Long> shipmentsContainersMapping = new HashSet<>(shipmentsContainersMappingDao.findByShipmentId(shipmentId).stream().map(ShipmentsContainersMapping::getContainerId).toList());
-        if (null == shipmentBackupDetails) {
+        if (Objects.isNull(shipmentBackupDetails)) {
             log.info("No Shipment records found for ShipmentId: {}", shipmentId);
             return null;
         }

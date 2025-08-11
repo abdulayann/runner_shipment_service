@@ -103,6 +103,10 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
 
             CustomerBookingBackupEntity backup = backupRepository.findCustomerBookingDetailsById(bookingId);
+            if (Objects.isNull(backup)) {
+                log.info("No Booking records found for booking id : {}", bookingId);
+                return;
+            }
             CustomerBooking backupData = objectMapper.readValue(backup.getCustomerBookingDetails(), CustomerBooking.class);
             restoreOneToManyMapping(backupData, bookingId);
             customerBookingDao.save(backupData);
