@@ -1027,7 +1027,7 @@ public class AwbService implements IAwbService {
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         ArrayList<String> addressIdsList = collectAddressIds(consolidationDetails);
-        Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(addressIdsList);
+        Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(addressIdsList);
         PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         Awb awb = Awb.builder()
                 .awbNumber(consolidationDetails.getMawb())
@@ -1105,7 +1105,7 @@ public class AwbService implements IAwbService {
             if (orgRow.getType().equals(Constants.FAG)) {
                 ArrayList<String> issuingAgentAddressList = new ArrayList<>();
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                Map<Long, AddressDataV1> issuingAgentAddressDataMap = fetchAddressData(issuingAgentAddressList);
+                Map<Long, AddressDataV1> issuingAgentAddressDataMap = commonUtils.fetchAddressData(issuingAgentAddressList);
                 AddressDataV1 issuingAgentAddressData = null;
                 if(orgRow.getAddressId() != null){
                     String addressId = orgRow.getAddressId();
@@ -1273,7 +1273,7 @@ public class AwbService implements IAwbService {
                     .filter(parties -> parties.getAddressId() !=null)
                     .map(Parties::getAddressId)
                     .collect(Collectors.toList()));
-            Map<Long, AddressDataV1> notifyPartyAddressDataMap = fetchAddressData(notifyAddressIdList);
+            Map<Long, AddressDataV1> notifyPartyAddressDataMap = commonUtils.fetchAddressData(notifyAddressIdList);
             for (var party : consolidationDetails.getConsolidationAddresses()) {
                 processConsolidationAddress(consolidationDetails, request, party, alpha2DigitToCountry, notifyPartyList, notifyAddressIdList, notifyPartyAddressDataMap);
             }
@@ -1542,7 +1542,7 @@ public class AwbService implements IAwbService {
         V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
         TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
         ArrayList<String> addressIds = collectAddressIds(shipmentDetails);
-        Map<Long, AddressDataV1> addressIdToAddressEntityMap = fetchAddressData(addressIds);
+        Map<Long, AddressDataV1> addressIdToAddressEntityMap = commonUtils.fetchAddressData(addressIds);
         // generate Awb Entity
         Awb awb = Awb.builder()
                 .awbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill())
@@ -1610,7 +1610,7 @@ public class AwbService implements IAwbService {
             if (orgRow.getType().equals(Constants.FAG)) {
                 ArrayList<String> issuingAgentAddressList = new ArrayList<>();
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                Map<Long, AddressDataV1> issuingAgentAddressDataMap = fetchAddressData(issuingAgentAddressList);
+                Map<Long, AddressDataV1> issuingAgentAddressDataMap = commonUtils.fetchAddressData(issuingAgentAddressList);
                 String addressId = orgRow.getAddressId();
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
@@ -1670,12 +1670,6 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
         constructConsigneeAddress(awbShipmentInfo, shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null, alpha2DigitToCountry, consigneeAddressData);
         awbShipmentInfo.setConsigneeReferenceNumber(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getId().toString() : null);
-    }
-
-    private CommonV1ListRequest createCriteriaToFetchAddressList(ArrayList<String> addressIdList) {
-        List<Object> addressIdField = new ArrayList<>(List.of(Constants.ID));
-        List<Object> addressCriteria = new ArrayList<>(List.of(addressIdField, Constants.IN, List.of(addressIdList)));
-        return CommonV1ListRequest.builder().criteriaRequests(addressCriteria).build();
     }
 
     private List<AwbNotifyPartyInfo> generateAwbNotifyPartyinfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, Map<Long, AddressDataV1> addressDataV1Map) {
@@ -2040,7 +2034,7 @@ public class AwbService implements IAwbService {
         if(shipmentDetails.isPresent()) {
             shipmentAddressIds = collectAddressIds(shipmentDetails.get());
         }
-        Map<Long, AddressDataV1> shipmentAddressIdToAddressEntityMap = fetchAddressData(shipmentAddressIds);
+        Map<Long, AddressDataV1> shipmentAddressIdToAddressEntityMap = commonUtils.fetchAddressData(shipmentAddressIds);
 
         if (shipmentDetails.isEmpty() && consolidationDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -2226,7 +2220,7 @@ public class AwbService implements IAwbService {
     private void updateAwbFromShipment(Awb awb, CreateAwbRequest request, ShipmentSettingsDetails shipmentSettingsDetails) {
         Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getShipmentId());
         ArrayList<String> addressIds = collectAddressIds(optionalShipmentDetails.get());
-        Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(addressIds);
+        Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(addressIds);
         if (optionalShipmentDetails.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -2794,7 +2788,7 @@ public class AwbService implements IAwbService {
         }
         Map<String, Boolean> awbGroupLocks = AwbUtility.getGroupLockStatus(awb, null, mawbLockSettings);
         ArrayList<String> addressIds = collectAddressIds(consolidationDetails);
-        Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(addressIds);
+        Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(addressIds);
         awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails));
         updateMawbShipmentInfoFromShipment(consolidationDetails, awb, addressDataV1Map, awbGroupLocks);
         generateMawbNotifyPartyinfo(consolidationDetails, request, awb, awbGroupLocks);
@@ -2903,7 +2897,7 @@ public class AwbService implements IAwbService {
         ArrayList<String> notifyPartyIdList = new ArrayList<>();
         if(party.getAddressId() != null)
             notifyPartyIdList.add(party.getAddressId());
-        Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(notifyPartyIdList);
+        Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(notifyPartyIdList);
         var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
         awbParty.setName(name == null ? name : name.toUpperCase());
         if (party.getAddressId() != null && party.getAddressData() != null) {
@@ -2934,7 +2928,7 @@ public class AwbService implements IAwbService {
                 ArrayList<String> partyAddressList = new ArrayList<>();
                 if(party.getAddressId() != null)
                     partyAddressList.add(party.getAddressId());
-                Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(partyAddressList);
+                Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(partyAddressList);
                 AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
                 var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
                 notifyPartyInfo.setName(name == null ? name : name.toUpperCase());
@@ -3686,7 +3680,7 @@ public class AwbService implements IAwbService {
             if (awbType.equalsIgnoreCase(MAWB)) {
                 ConsolidationDetails consol = consolidationDetailsDao.findById(awb.getConsolidationId()).get();
                 ArrayList<String> addressIdsList = collectAddressIds(consol);
-                Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(addressIdsList);
+                Map<Long, AddressDataV1> addressDataV1Map = commonUtils.fetchAddressData(addressIdsList);
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant(), addressDataV1Map), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateMawbRoutingInfo(consol, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateMawbNotifyPartyinfo(consol, createAwbRequest);
@@ -3696,7 +3690,7 @@ public class AwbService implements IAwbService {
             } else {
                 ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
                 ArrayList<String> addressIds = collectAddressIds(shipment);
-                Map<Long, AddressDataV1> addressIdToEntityOrgMap = fetchAddressData(addressIds);
+                Map<Long, AddressDataV1> addressIdToEntityOrgMap = commonUtils.fetchAddressData(addressIds);
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant(), addressIdToEntityOrgMap), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateAwbRoutingInfo(shipment, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateAwbNotifyPartyinfo(shipment, createAwbRequest, addressIdToEntityOrgMap);
@@ -3785,7 +3779,7 @@ public class AwbService implements IAwbService {
 
         if (!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             // Step 2: Fetch address data
-            Map<Long, AddressDataV1> addressIdToEntityOrgMap = fetchAddressData(addressIdList);
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = commonUtils.fetchAddressData(addressIdList);
 
             setTaxRegistrationForConsginer(shipmentDetails, addressIdToEntityOrgMap, awbResponse);
             setTaxRegistrationForConsginee(shipmentDetails, addressIdToEntityOrgMap, awbResponse);
@@ -3828,21 +3822,6 @@ public class AwbService implements IAwbService {
         if (party != null && party.getAddressId() != null) {
             addressIdList.add(party.getAddressId());
         }
-    }
-
-    /**
-     * Fetches address data for the given address IDs.
-     */
-    private Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
-        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
-            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
-            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-
-            return addressDataList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        }
-        return new HashMap<>();
     }
 
     private void setTaxRegistrationForConsginer(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {

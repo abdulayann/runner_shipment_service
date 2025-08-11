@@ -48,18 +48,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 
 @SuppressWarnings(ALL)
@@ -899,4 +896,18 @@ public class ShipmentController {
         return shipmentService.retrieveByIdV3(CommonRequestModel.buildRequest(request), getMasterData);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.PARTY_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PutMapping(ApiConstants.API_UPDATE_PARTIES)
+    @PreAuthorize("hasAuthority('" + PermissionConstants.TENANT_SUPER_ADMIN + "')")
+    public ResponseEntity<String> updateShipmentParty(@Valid @RequestBody ShipmentPartyRequestV2 request) {
+        log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String responseMsg;
+        try {
+            return shipmentService.updateShipmentParties(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }
