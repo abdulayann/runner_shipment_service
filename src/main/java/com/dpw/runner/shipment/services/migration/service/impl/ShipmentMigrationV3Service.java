@@ -136,6 +136,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             packingRepository.saveAll(shipment.getPackingList());
             log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
         }
+        //Save Reference details
+        if (!CommonUtils.listIsNullOrEmpty(shipment.getReferenceNumbersList())) {
+            referenceNumbersRepository.saveAll(shipment.getReferenceNumbersList());
+            log.info("Saved updated references list for Shipment [id={}]", shipment.getId());
+        }
+
         // save shipment
         shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         shipment.setTriggerMigrationWarning(true);
@@ -194,7 +200,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         referenceNumbers.setShipmentId(shipmentDetails.getId());
         referenceNumbers.setReferenceNumber(referenceNumber);
         referenceNumbers.setType(referenceType);
-        referenceNumbersRepository.save(referenceNumbers);
+        shipmentDetails.getReferenceNumbersList().add(referenceNumbers);
     }
 
     private void migrateServiceTypes(ShipmentDetails shipmentDetails){

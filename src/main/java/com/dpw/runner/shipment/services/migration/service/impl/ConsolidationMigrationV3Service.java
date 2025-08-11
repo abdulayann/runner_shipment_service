@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -99,6 +101,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private HelperExecutor trxExecutor;
 
+    @Autowired
+    private IReferenceNumbersRepository referenceNumbersRepository;
+
     @Transactional
     @Override
     public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId) {
@@ -135,6 +140,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
             List<Packing> packingList = consolShipment.getPackingList();
+            List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
                 UUID containerGuid = packingVsContainerGuid.get(packing.getGuid());
                 Containers containers = uuidVsUpdatedContainers.get(containerGuid);
@@ -144,6 +150,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     log.info("No container mapping found for Packing [guid={}] in Shipment [id={}]", packing.getGuid(), consolShipment.getId());
                 }
             }
+            referenceNumbersRepository.saveAll(referenceNumbersList);
             packingRepository.saveAll(packingList);
             log.info("Saved {} packing(s) for Shipment [id={}]", packingList.size(), consolShipment.getId());
         }
