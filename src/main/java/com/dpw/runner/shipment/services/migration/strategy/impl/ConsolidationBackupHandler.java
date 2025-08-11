@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -65,7 +66,8 @@ public class ConsolidationBackupHandler {
     public List<ConsolidationBackupEntity> backup(Integer tenantId) {
 
         log.info("Starting consolidation backup for tenantId: {}", tenantId);
-        Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId);
+        List<Long> consolidationIds = consolidationDetailsDao.findAllByMigratedStatuses(
+                List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         log.info("Count of consolidation Ids : {}", consolidationIds.size());
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);

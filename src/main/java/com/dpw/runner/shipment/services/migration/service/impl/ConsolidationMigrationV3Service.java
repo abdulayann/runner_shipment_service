@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -446,7 +447,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) {
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
-        BigDecimal totalPacks = BigDecimal.valueOf(Long.parseLong(original.getPacks()));
+        BigDecimal totalPacks = StringUtility.isNotEmpty(original.getPacks()) ? BigDecimal.valueOf(Long.parseLong(original.getPacks())): BigDecimal.ZERO;
 
         // Divide weight and volume equally, remainder added to last container
         BigDecimal[] weightParts = totalWeight.divideAndRemainder(BigDecimal.valueOf(count));

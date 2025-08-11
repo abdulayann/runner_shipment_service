@@ -2335,13 +2335,6 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void testFindShipmentIdsByTenantId() {
-        Integer tenantId = 1;
-        shipmentDao.findShipmentIdsByTenantId(tenantId);
-        verify(shipmentRepository, times(1)).findShipmentIdsByTenantId(tenantId);
-    }
-
-    @Test
     void testRevertSoftDeleteShipmentIdAndTenantId() {
         List<Long> shipmentIds = List.of(10L, 20L);
         Integer tenantId = 2;

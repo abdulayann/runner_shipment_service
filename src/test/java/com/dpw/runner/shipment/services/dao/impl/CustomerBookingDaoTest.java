@@ -549,21 +549,11 @@ class CustomerBookingDaoTest {
     void testFindAllByMigratedStatuses() {
         List<String> statuses = List.of("MIGRATED", "PARTIAL");
         Integer tenantId = 1;
-        List<CustomerBooking> expected = List.of(new CustomerBooking(), new CustomerBooking());
+        List<Long> expected = List.of(23L);
         when(customerBookingRepository.findAllByMigratedStatuses(statuses, tenantId)).thenReturn(expected);
-        List<CustomerBooking> result = customerBookingDao.findAllByMigratedStatuses(statuses, tenantId);
+        List<Long> result = customerBookingDao.findAllByMigratedStatuses(statuses, tenantId);
         assertEquals(expected, result);
         verify(customerBookingRepository, times(1)).findAllByMigratedStatuses(statuses, tenantId);
-    }
-
-    @Test
-    void testFindCustomerBookingIdsByTenantId() {
-        Integer tenantId = 2;
-        Set<Long> expected = Set.of(101L, 102L);
-        when(customerBookingRepository.findCustomerBookingIdsByTenantId(tenantId)).thenReturn(expected);
-        Set<Long> result = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId);
-        assertEquals(expected, result);
-        verify(customerBookingRepository, times(1)).findCustomerBookingIdsByTenantId(tenantId);
     }
 
     @Test

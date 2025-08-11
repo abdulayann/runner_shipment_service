@@ -1281,16 +1281,6 @@ class ConsolidationDaoTest extends CommonMocks {
     }
 
     @Test
-    void testFindConsolidationIdsByTenantId() {
-        Integer tenantId = 2;
-        Set<Long> expected = Set.of(201L, 202L);
-        when(consolidationRepository.findConsolidationIdsByTenantId(tenantId)).thenReturn(expected);
-        Set<Long> result = consolidationsDao.findConsolidationIdsByTenantId(tenantId);
-        assertEquals(expected, result);
-        verify(consolidationRepository, times(1)).findConsolidationIdsByTenantId(tenantId);
-    }
-
-    @Test
     void testSave() {
         ConsolidationDetails details = new ConsolidationDetails(); // Or mock if needed
         ConsolidationDetails saved = new ConsolidationDetails();
