@@ -1,0 +1,1 @@
+Delete from network_transaction where id = 2101;
