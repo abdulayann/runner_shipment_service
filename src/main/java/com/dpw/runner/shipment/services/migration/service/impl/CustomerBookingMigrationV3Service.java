@@ -171,6 +171,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
+                    migrationUtil.saveErrorResponse(booking.getId(), CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

@@ -114,7 +114,6 @@ public class MigrationV3Service implements IMigrationV3Service {
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
@@ -157,7 +156,6 @@ public class MigrationV3Service implements IMigrationV3Service {
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
-                            migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
