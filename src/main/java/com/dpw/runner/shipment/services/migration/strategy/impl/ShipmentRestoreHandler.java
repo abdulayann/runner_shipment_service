@@ -324,13 +324,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         if (allBackupShipmentIds.isEmpty()) {
             return;
         }
-        Set<Long> allOriginalShipmentIds = shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+        shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(allBackupShipmentIds), tenantId);
 
-        // Soft delete bookings not present in backup
-        Set<Long> idsToDelete = Sets.difference(allBackupShipmentIds, allOriginalShipmentIds);
-        if (!idsToDelete.isEmpty()) {
-            shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
-        }
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
 
         for (Long shipmentId : nonAttachedShipmentIds) {
@@ -339,7 +335,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
             } catch (Exception e) {
                 log.error("Failed to restore Shipment id: {}", shipmentId, e);
                 migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new RestoreFailureException("Failed to restore Shipment: " + shipmentId, e);
+                throw new IllegalArgumentException(e);
             }
         }
     }

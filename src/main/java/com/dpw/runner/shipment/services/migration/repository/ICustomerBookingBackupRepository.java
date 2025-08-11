@@ -13,11 +13,11 @@ import java.util.Set;
 public interface ICustomerBookingBackupRepository extends JpaRepository<CustomerBookingBackupEntity, Long> {
     void deleteByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT c.booking_id FROM customer_booking_backup c WHERE c.tenant_id = ?1 and c.is_deleted = false", nativeQuery = true)
+    @Query(value = "SELECT c.booking_id FROM customer_booking_backup c WHERE c.tenant_id = ?1", nativeQuery = true)
     @Transactional
     Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT * FROM customer_booking_backup c WHERE c.booking_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM customer_booking_backup c WHERE c.booking_id = ?1 and c.is_deleted = false", nativeQuery = true)
     @Transactional
     CustomerBookingBackupEntity findCustomerBookingDetailsById(Long bookingId);
 

@@ -71,7 +71,7 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
             } catch (Exception e) {
                 status.setRollbackOnly();
                 log.error("Restore failed for tenant: {}", tenantId, e);
-                throw new RestoreFailureException("Restore failed for tenant: " + tenantId, e);
+                throw new IllegalArgumentException(e);
             }
         });
     }
@@ -87,7 +87,7 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
         } catch (Exception e) {
             log.error("Handler {} failed during serial execution",
                     handler.getClass().getSimpleName(), e);
-            throw new CompletionException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 }

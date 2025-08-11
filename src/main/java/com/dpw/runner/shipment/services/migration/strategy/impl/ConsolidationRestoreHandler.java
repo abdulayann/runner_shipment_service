@@ -87,7 +87,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             } catch (Exception e) {
                 log.error("Failed to restore consolidation id: {}", consolidationId, e);
                 migrationUtil.saveErrorResponse(consolidationId, Constants.CONSOLIDATION, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new RestoreFailureException("Failed to restore consolidation: " + consolidationId, e);
+                throw new IllegalArgumentException(e);
             }
         }
         log.info("Completed consolidation backup for tenant: {}", tenantId);
@@ -137,7 +137,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
-            throw new RestoreFailureException("Failed to backup consolidation id: " + consolidationId, e);
+            throw new IllegalArgumentException(e);
         } finally {
             v1Service.clearAuthContext();
         }

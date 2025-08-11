@@ -15,7 +15,6 @@ import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -30,7 +29,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepositor
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,13 +73,8 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         if (allBackupBookingIds.isEmpty()) {
             return;
         }
-        Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
-
-        // Soft delete bookings not present in backup
-        Set<Long> idsToDelete = Sets.difference(allOriginalBookingIds, allBackupBookingIds);
-        if (!idsToDelete.isEmpty()) {
-            customerBookingDao.deleteCustomerBookingIds(idsToDelete);
-        }
+        customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
+        customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         for (Long bookingId : allBackupBookingIds) {
             try {
@@ -89,7 +82,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             } catch (Exception e) {
                 log.error("Failed to restore Booking id: {}", bookingId, e);
                 migrationUtil.saveErrorResponse(bookingId, Constants.CUSTOMER_BOOKING, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new RestoreFailureException("Failed to restore Booking: " + bookingId, e);
+                throw new IllegalArgumentException(e);
             }
         }
     }
@@ -109,7 +102,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             updateCacheByBookingId(bookingId, backupData);
 
         } catch (JsonProcessingException e) {
-            throw new RestoreFailureException("Failed to deserialize CustomerBooking JSON", e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -150,13 +143,17 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     private void validateAndRestoreBookingChargesDetails(Long bookingId, CustomerBooking backupData) {
 
         Set<Long> existingIds = bookingChargesDao.findByBookingId(bookingId);
-        bookingChargesDao.deleteAllById(existingIds);
-        backupData.getBookingCharges().forEach(charge -> {
-            if (!existingIds.contains(charge.getId())) {
-                charge.setId(null);
-            }
-        });
-        bookingChargesDao.saveAll(backupData.getBookingCharges());
+        if (!existingIds.isEmpty()) {
+            bookingChargesDao.deleteAllById(existingIds);
+        }
+        if (backupData.getBookingCharges() != null && !backupData.getBookingCharges().isEmpty()) {
+            backupData.getBookingCharges().forEach(charge -> {
+                if (!existingIds.contains(charge.getId())) {
+                    charge.setId(null);
+                }
+            });
+            bookingChargesDao.saveAll(backupData.getBookingCharges());
+        }
     }
 
     private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIdsList, CustomerBooking backupData) {
