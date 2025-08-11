@@ -837,11 +837,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private String getPlaceOfIssue(String transportMode) {
-        TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-        EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-        if (Constants.TRANSPORT_MODE_SEA.equals(transportMode)
-                || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) {
-            return entityTransferAddress.getCity();
+        try {
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+            if ((Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                    || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) && null != entityTransferAddress) {
+                return entityTransferAddress.getCity();
+            }
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
         }
         return null;
     }
