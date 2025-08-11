@@ -5605,7 +5605,7 @@ class CommonUtilsTest {
         List<AddressDataV1> addressDataList = List.of(addr1, addr2);
 
         when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
-        when(jsonHelper.convertValueToList(eq(mockResponse.getEntities()), eq(AddressDataV1.class)))
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), AddressDataV1.class))
                 .thenReturn(addressDataList);
 
         Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(addressIds);
@@ -5645,7 +5645,7 @@ class CommonUtilsTest {
         List<OrgDataV1> orgDataList = List.of(org1, org2);
 
         when(v1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
-        when(jsonHelper.convertValueToList(eq(mockResponse.getEntities()), eq(OrgDataV1.class)))
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), OrgDataV1.class))
                 .thenReturn(orgDataList);
 
         Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(orgIds);

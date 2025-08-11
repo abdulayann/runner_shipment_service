@@ -11322,13 +11322,4 @@ ShipmentServiceTest extends CommonMocks {
         });
         assertTrue(ex.getMessage().contains("Field 'nonExistentField' not found"));
     }
-
-    @Test
-    void setFieldValue_shouldThrowIllegalStateException_whenIllegalAccess() throws Exception {
-        Object obj = new Object() {
-            @SuppressWarnings("unused")
-            private final String finalField = "constant";
-        };
-    }
-
 }
