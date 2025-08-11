@@ -392,10 +392,10 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Test
     void testContainerCreateShipment() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
-        when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
+        lenient().when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
-        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        lenient().when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         when(containerDao.save(testContainer)).thenReturn(testContainer);
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
@@ -405,10 +405,26 @@ class ContainerV3ServiceTest extends CommonMocks {
         });
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-
+        lenient().when(iConsoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
         ContainerResponse response = containerV3Service.create(containerV3Request, SHIPMENT);
         assertNotNull(response);
+    }
+
+    @Test
+    void testContainerCreateShipment_Error(){
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        Runnable mockRunnable = mock(Runnable.class);
+        lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        lenient().when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+        assertThrows(ValidationException.class, () ->  containerV3Service.create(containerV3Request, SHIPMENT));
     }
 
     @Test
@@ -596,8 +612,8 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
                 thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
-        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
-
+        lenient().when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        when(iConsoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
 
         BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "SHIPMENT");
 

@@ -285,6 +285,8 @@ public class ContainerV3Service implements IContainerV3Service {
         if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
             Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
             for(ContainerV3Request containerV3Request : containerV3RequestList) containerV3Request.setConsolidationId(consolidationId);
+        }else{
+            throw new ValidationException("Shipment : " + shipmentDetails.getShipmentId() + ", must be attached to consolidation to Create container");
         }
 
         return shipmentDetails;
@@ -499,7 +501,10 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // update console achieved data
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId)
-                .orElseThrow(() -> new ValidationException("Consolidation not present with Id : {}, Container on shipment screen must be attached to consolidation as well" + consolidationId));
+                .orElseThrow(() -> new ValidationException(
+                "Consolidation not present with Id : " + consolidationId
+                        + ", Container on shipment screen must be attached to consolidation"
+        ));
         consolidationDetails.setContainersList(containerDao.findByConsolidationId(consolidationId));
         consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails,
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
@@ -827,23 +832,36 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     // Method to handle the deletion of containers and their associated entities
-    private void deleteContainerAndAssociations(List<Long> containerIds,  List<Containers> containersToDelete) {
+    private void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
+        log.info("Starting deletion process for containers. Container IDs: {}", containerIds);
 
-        // container present in only one shipment , same container won't be avl in multiple shipments
-        List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
+        // container present in only one shipment, same container won't be available in multiple shipments
+        List<ShipmentsContainersMapping> shipmentsContainersMappings =
+                shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
+
+        log.debug("Found {} shipment-container mapping(s) for given container IDs.", shipmentsContainersMappings.size());
 
         List<Long> ids = shipmentsContainersMappings.stream()
                 .map(ShipmentsContainersMapping::getId)
                 .toList();
 
+        log.debug("Shipment-Container Mapping IDs to delete: {}", ids);
+
         iShipmentsContainersMappingRepository.deleteByIds(ids);
+        log.info("Deleted {} shipment-container mapping(s) from the database.", ids.size());
 
         // Delete the containers from the database
         containerRepository.deleteAll(containersToDelete);
-        //Clearing context , refetch the data
+        log.info("Deleted {} container(s) from the database.", containersToDelete.size());
+
+        // Clearing context, refetch the data
         entityManager.flush();
         entityManager.clear();
+        log.debug("EntityManager context flushed and cleared.");
+
+        log.info("Completed deletion process for containers. Container IDs: {}", containerIds);
     }
+
 
     private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
         Map<Long, Containers> oldContainerMap = Optional.ofNullable(oldContainers).orElse(List.of()).stream()
