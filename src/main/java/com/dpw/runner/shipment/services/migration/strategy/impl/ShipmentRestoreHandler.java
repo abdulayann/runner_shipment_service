@@ -325,10 +325,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
             return;
         }
         shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
-        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(allBackupShipmentIds), tenantId);
 
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
-
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
         for (Long shipmentId : nonAttachedShipmentIds) {
             try {
                 restoreShipmentTransaction(shipmentId, tenantId);

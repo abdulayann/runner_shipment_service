@@ -78,10 +78,10 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             return;
         }
         customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
-        customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         allBackupBookingIds =  customerBookingBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
                 .map(CustomerBookingBackupEntity::getBookingId).collect(Collectors.toSet());
+        customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
         for (Long bookingId : allBackupBookingIds) {

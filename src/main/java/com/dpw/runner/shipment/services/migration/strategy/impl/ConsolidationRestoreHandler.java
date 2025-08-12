@@ -83,11 +83,10 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         }
 
         consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
-        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
-
 
         consolidationIds = consolidationBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
                 .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
+        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
 
         for (Long consolidationId : consolidationIds) {
             try {
