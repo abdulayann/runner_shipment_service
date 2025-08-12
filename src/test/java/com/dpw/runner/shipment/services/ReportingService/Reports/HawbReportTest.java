@@ -1,12 +1,47 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_NOTIFY_PARTY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DIMENSIONS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DRAFT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HS_CODE1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NATURE_OF_GOODS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_CODE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AwbGoodsDescriptionInfoModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -51,6 +86,17 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,17 +108,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -2643,6 +2678,43 @@ class HawbReportTest extends CommonMocks {
         when( masterDataUtils.getCommodityGroupDataFromCache(any())).thenReturn(commodityResponse);
         assertNotNull(hawbReport.populateDictionary(newHawbModel));
     }
+
+    @Test
+    void processDestinationTags_populatesDictionaryCorrectly() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+
+        // Mock masterListsMap
+        MasterData countryData = new MasterData();
+        countryData.setItemDescription("India");
+        Map<String, MasterData> countriesMap = new HashMap<>();
+        countriesMap.put("IND", countryData);
+        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
+        masterListsMap.put(MasterDataType.COUNTRIES.getId(), countriesMap);
+
+        // Mock tenant settings
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLegalEntityCode("EntityCode");
+
+        // Mock destination
+        UnlocationsResponse destination = new UnlocationsResponse();
+        destination.setName("Bangalore");
+        destination.setCountry("IND");
+        destination.setLocCode("BLR");
+
+        // Time format
+        String tsDateTimeFormat = "dd-MMM-yyyy HH:mm";
+
+        // Act
+        hawbReport.processDestinationTags(dictionary, masterListsMap, tenantSettings, destination, tsDateTimeFormat);
+
+        // Assert
+        assertEquals("Bangalore", dictionary.get(ReportConstants.DESTINATION_NAME));
+        assertEquals("BANGALORE", dictionary.get(ReportConstants.DESTINATION_NAME_IN_CAPS));
+        assertEquals("INDIA", dictionary.get(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS));
+        assertNotNull(dictionary.get(ReportConstants.PRINT_DATE));
+    }
+
 
     @Test
     void populateDictionaryDMawb4() {

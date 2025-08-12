@@ -1090,7 +1090,8 @@ public abstract class IReport {
         }
     }
 
-    private void processDestinationTags(Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, UnlocationsResponse destination, String tsDateTimeFormat) {
+    public void processDestinationTags(Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse,
+            UnlocationsResponse destination, String tsDateTimeFormat) {
         dictionary.put(ReportConstants.DESTINATION_NAME, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
