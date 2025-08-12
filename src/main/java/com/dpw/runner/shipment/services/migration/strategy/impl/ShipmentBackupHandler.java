@@ -59,7 +59,9 @@ public class ShipmentBackupHandler {
     private final INetworkTransferDao networkTransferDao;
 
     public List<ShipmentBackupEntity> backup(Integer tenantId) {
-        List<Long> shipmentIds = shipmentDao.findAllByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
+        log.info("Processing Shipment backup for tenant id : {}", tenantId);
+        List<Long> shipmentIds = shipmentDao.findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+                MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         log.info("Count of shipment Ids : {}", shipmentIds.size());
 
         if (shipmentIds.isEmpty()) {
@@ -89,7 +91,6 @@ public class ShipmentBackupHandler {
                     })
                     .flatMap(List::stream)
                     .toList();
-
         } catch (TimeoutException e) {
             futures.forEach(f -> f.cancel(true));
             throw new BackupFailureException("Shipment Backup processing timed out", e);
