@@ -102,7 +102,7 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     private void batchSaveAll(List<CustomerBookingBackupEntity> bookings,
                               List<ShipmentBackupEntity> shipments,
                               List<ConsolidationBackupEntity> consolidations) {
-
+        log.info("Started saving in db for tenant id");
         saveBatch(bookings);
         saveBatch(shipments);
         saveBatch(consolidations);

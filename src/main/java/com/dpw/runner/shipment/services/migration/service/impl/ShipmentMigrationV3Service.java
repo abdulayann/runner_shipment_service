@@ -68,7 +68,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 @Slf4j
 @Service
 @Generated
-@SuppressWarnings("java:S112")
+@SuppressWarnings("all")
 public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     IV1Service v1Service;
@@ -207,16 +207,16 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void migrateServiceTypes(ShipmentDetails shipmentDetails){
-        if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+        if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getServiceType())) {
             shipmentDetails.setServiceType(airMap.containsKey(shipmentDetails.getServiceType())? airMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
         }
-        if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+        if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getServiceType())) {
             shipmentDetails.setServiceType(seaMap.containsKey(shipmentDetails.getServiceType())? seaMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
         }
-        if (Constants.TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode())) {
+        if (Constants.TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getServiceType())) {
             shipmentDetails.setServiceType(railMap.containsKey(shipmentDetails.getServiceType())? railMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
         }
-        if (Constants.TRANSPORT_MODE_ROA.equals(shipmentDetails.getTransportMode())) {
+        if (Constants.TRANSPORT_MODE_ROA.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getServiceType())) {
             shipmentDetails.setServiceType(roadMap.containsKey(shipmentDetails.getServiceType())? roadMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
         }
 

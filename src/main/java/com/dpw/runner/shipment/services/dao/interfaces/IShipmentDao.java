@@ -85,4 +85,5 @@ public interface IShipmentDao {
     void updateTriggerMigrationWarning(Long shipmentId);
 
     void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
+    List<Long> findAllShipmentIdsByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
 }

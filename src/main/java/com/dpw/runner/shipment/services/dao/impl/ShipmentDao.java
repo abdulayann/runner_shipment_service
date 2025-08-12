@@ -297,6 +297,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public List<Long> findAllShipmentIdsByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentRepository.findAllShipmentIdsByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
     public void delete(ShipmentDetails shipmentDetails) {
         validateLockStatus(shipmentDetails);
         shipmentRepository.delete(shipmentDetails);

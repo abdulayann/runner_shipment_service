@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -2377,5 +2378,13 @@ class ShipmentDaoTest extends CommonMocks {
         Long shipmentId = 400L;
         shipmentDao.updateTriggerMigrationWarning(shipmentId);
         verify(shipmentRepository, times(1)).updateTriggerMigrationWarning(shipmentId);
+    }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        shipmentDao.findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+                MigrationStatus.MIGRATED_FROM_V3.name()), 400);
+        verify(shipmentRepository, times(1)).findAllByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+                MigrationStatus.MIGRATED_FROM_V3.name()), 400);
     }
 }
