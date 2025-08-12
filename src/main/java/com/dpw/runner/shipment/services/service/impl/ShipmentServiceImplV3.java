@@ -2617,6 +2617,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 paymentTerms(customerBookingRequest.getPaymentTerms()).
                 isReefer(customerBookingRequest.getIsReefer()).
                 incotermsLocation(customerBookingRequest.getIncotermsLocation()).
+                cargoReadyDate(customerBookingRequest.getCargoReadinessDate()).
                 cargoReadinessDate(customerBookingRequest.getCargoReadinessDate()).
                 controlled(customerBookingRequest.getControlled()).
                 controlledReferenceNumber(customerBookingRequest.getControlledReferenceNumber()).
