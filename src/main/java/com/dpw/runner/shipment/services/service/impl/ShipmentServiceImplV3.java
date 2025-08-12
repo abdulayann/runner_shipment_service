@@ -2331,6 +2331,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .atd(customerBookingRequest.getCarrierDetails().getAtd())
                             .build()).
                     consolidationType("STD").
+                    incoterms(customerBookingRequest.getIncoTerms()).
                     transportMode(customerBookingRequest.getTransportType()).
                     containerCategory(customerBookingRequest.getCargoType()).
                     shipmentType(customerBookingRequest.getDirection()).
@@ -2339,6 +2340,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     deliveryMode(customerBookingRequest.getServiceMode()).
                     partner(customerBookingRequest.getPartner()).
+                    bookingAgent(customerBookingRequest.getBookingAgent()).
                     coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                     coLoadBookingReference(customerBookingRequest.getPartnerBkgNumber()).
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
