@@ -5671,4 +5671,17 @@ class CommonUtilsTest {
         verifyNoInteractions(v1Service, jsonHelper);
     }
 
+    @Test
+    void getEntityTransferAddress_shouldReturnNullForAirTransport() {
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_AIR);
+        assertNull(result);
+    }
+
+    @Test
+    void getEntityTransferAddress_shouldReturnNullWhenExceptionOccurs() {
+        when(v1Service.retrieveTenant()).thenThrow(new RuntimeException("Test exception"));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNull(result);
+    }
+
 }
