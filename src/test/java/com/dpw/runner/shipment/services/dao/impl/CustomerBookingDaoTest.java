@@ -611,10 +611,8 @@ class CustomerBookingDaoTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         CustomerBooking result = customerBookingDao.save(updatedBooking);
         // Assert: direction is preserved as Import
-        assertTrue("Import".equals(result.getDirection()),
-                "Direction should remain 'Import' when only the quote changes");
-        assertTrue("QUOTE-NEW".equals(result.getCurrentPartyForQuote()),
-                "Quote ID should be updated to 'QUOTE-NEW'");
+        assertEquals("Import", result.getDirection());
+        assertEquals("QUOTE-NEW",result.getCurrentPartyForQuote());
         verify(customerBookingRepository).save(updatedBooking);
     }
 }
