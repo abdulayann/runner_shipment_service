@@ -271,7 +271,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         packing.setPacksType(PackingConstants.PKG);
         packing.setVolume(BigDecimal.ZERO);
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        packing.setCommodity(container.getCommodityCode());
+        packing.setCommodity("MISC");
     }
 
     private void createPacksForUnassignedContainers(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
