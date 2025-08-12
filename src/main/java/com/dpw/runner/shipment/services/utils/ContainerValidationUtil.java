@@ -156,7 +156,7 @@ public class ContainerValidationUtil {
         }
         if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), assignContainerParams.getShipmentDetailsMap(), module))
             throw new ValidationException("Use Shipment screen to assign value to FCL container.");
-        allowAssignUnAssignOnlyWhenAttachmentAllowed(assignContainerParams.getConsolidationId(), assignContainerParams.getConsolidationDetails());
+        validateOpenForAttachment(assignContainerParams.getConsolidationId(), assignContainerParams.getConsolidationDetails());
     }
 
     public boolean checkIfShipmentIsFclOrFtl(ShipmentDetails shipmentDetails) {
@@ -166,7 +166,7 @@ public class ContainerValidationUtil {
     public void validateBeforeUnAssignContainer(UnAssignContainerParams unAssignContainerParams, UnAssignContainerRequest request, String module) {
         if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module))
             throw new ValidationException("Use Shipment screen to unassign value to FCL container.");
-        allowAssignUnAssignOnlyWhenAttachmentAllowed(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
+        validateOpenForAttachment(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
     }
 
     private boolean fclRequestNotAllowedAtConsole(Set<Long> shipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, String module) {
@@ -181,7 +181,7 @@ public class ContainerValidationUtil {
         return false;
     }
 
-    public void allowAssignUnAssignOnlyWhenAttachmentAllowed(Long consolidationId, ConsolidationDetails consolidationDetails) {
+    public void validateOpenForAttachment(Long consolidationId, ConsolidationDetails consolidationDetails) {
         if(Objects.isNull(consolidationId)) {
             return;
         }
