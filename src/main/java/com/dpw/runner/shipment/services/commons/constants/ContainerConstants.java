@@ -59,6 +59,10 @@ public class ContainerConstants {
     public static final String KEY_COMMODITY_GROUP = "commodityGroup";
     public static final String KEY_HS_CODE = "hsCode";
     public static final String KEY_CARRIER_SEAL_NUMBER = "carrierSealNumber";
+    public static final String KEY_SHIPPER_SEAL_NUMBER = "shipperSealNumber";
+    public static final String KEY_CUSTOMS_SEAL_NUMBER = "customsSealNumber";
+    public static final String KEY_VETERINART_SEAL_NUMBER = "veterinarySealNumber";
+    public static final String KEY_DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String KEY_MARKS_NUMS = "marksNums";
     public static final String KEY_DG_CLASS = "dgClass";
     public static final String KEY_UN_NUMBER = "unNumber";
@@ -88,6 +92,14 @@ public class ContainerConstants {
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CARRIER_SEAL_NUMBER).isContainsText(true).build()),
             Map.entry(KEY_MARKS_NUMS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_MARKS_NUMS).isContainsText(true).build()),
+            Map.entry(KEY_SHIPPER_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_SHIPPER_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_CUSTOMS_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CUSTOMS_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_VETERINART_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_VETERINART_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_DESCRIPTION_OF_GOODS,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_DESCRIPTION_OF_GOODS).isContainsText(true).build()),
             Map.entry(KEY_DG_CLASS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_DG_CLASS).isContainsText(true).build()),
             Map.entry(KEY_UN_NUMBER,
