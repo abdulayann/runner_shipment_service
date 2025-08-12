@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.controller;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -81,6 +83,15 @@ class ReportControllerTest {
         var responseEntity = reportController.createReport(new ReportRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createReport5()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        // Mock
+        when(reportService.getDocumentData(any())).thenThrow(new ReportExceptionWarning("ReportExceptionWarning"));
+        // Assert
+        assertThrows(ReportExceptionWarning.class, () -> reportController.createReport(new ReportRequest()));
     }
 
     @Test
