@@ -1097,12 +1097,12 @@ public abstract class IReport {
 
         dictionary.put(ReportConstants.PRINT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         if(destination != null) {
-            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
+            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
             dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
             dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
-            dictionary.put(ReportConstants.FPOD_IN_CAPS, destination.getName().toUpperCase());
-            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
+            dictionary.put(ReportConstants.FPOD_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
+            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, StringUtility.toUpperCase(destinationCountry));
             dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
         }
     }
