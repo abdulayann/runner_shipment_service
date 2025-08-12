@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface IShipmentMigrationV3Service {
     ShipmentDetails migrateShipmentV2ToV3(Long shipId) throws RunnerException;
-    ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException;
+    ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException;
 
     ShipmentDetails migrateShipmentV3ToV2(Long shipId) throws RunnerException;
     ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException;

@@ -253,4 +253,5 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId) {
         return customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId);
     }
+
 }

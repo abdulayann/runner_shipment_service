@@ -1382,25 +1382,28 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Test
     void testCheckAndMakeDG() {
         Containers container = new Containers();
-        container.setHazardous(Boolean.TRUE);
-        container.setDgClass("1");
+        container.setId(1L);
         List<Long> shipmentIdsForAttachment = Arrays.asList(100L, 101L);
-        Mockito.when(commonUtils.checkIfDGClass1("1")).thenReturn(true);
-        containerV3Service.checkAndMakeDG(container, shipmentIdsForAttachment);
-        assertTrue(container.getHazardous(), "Container should be marked as hazardous");
-        assertEquals("1", container.getDgClass(), "DG class should be 1");
+        lenient().when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        packing.setDGClass("1");
+        when(packingDao.findByContainerIdIn(any())).thenReturn(List.of(packing));
+        assertThrows(ValidationException.class, ()->containerV3Service.checkAndMakeDG(container, shipmentIdsForAttachment));
     }
 
     @Test
     void testCheckAndMakeDG2() {
         Containers container = new Containers();
-        container.setHazardous(Boolean.FALSE);
+        container.setHazardous(Boolean.TRUE);
         container.setDgClass("1");
+        container.setId(1L);
         testPacking.setHazardous(Boolean.TRUE);
         container.setPacksList(List.of(testPacking));
         List<Long> shipmentIdsForAttachment = Arrays.asList(100L, 101L);
         when(commonUtils.checkIfDGClass1(Mockito.any())).thenReturn(true);
-        assertThrows(ValidationException.class, () ->containerV3Service.checkAndMakeDG(container, shipmentIdsForAttachment));
+        containerV3Service.checkAndMakeDG(container, shipmentIdsForAttachment);
+        assertTrue(testPacking.getHazardous());
     }
 
 

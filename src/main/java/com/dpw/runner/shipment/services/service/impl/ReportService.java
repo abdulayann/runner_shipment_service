@@ -54,8 +54,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerEntityFileRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
@@ -2816,13 +2820,13 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
+                // Count how many documents already exist for this type & identifier
+                int existingCount = getExistingDocumentCount(identifier, docType, childType);
+                String suffix = existingCount > 0 ? DocumentConstants.DASH + existingCount : "";
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
-                    customFileName = baseDocName
-                            + DocumentConstants.DASH
-                            + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier
-                            + DocumentConstants.DOT_PDF;
+                    customFileName = baseDocName + DocumentConstants.DASH + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else {
-                    customFileName = baseDocName + DocumentConstants.DASH + identifier + DocumentConstants.DOT_PDF;
+                    customFileName = baseDocName + DocumentConstants.DASH + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
                 log.info("Custom file name generated: {}", customFileName);
@@ -2887,6 +2891,24 @@ public class ReportService implements IReportService {
         Map<String, Object> result = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
         result.put("fileName", docUploadRequest.getFileName());
         return result;
+    }
+     // Counting generated documents
+    int getExistingDocumentCount(String identifier, String docType, String childType) {
+        try {
+            DocumentManagerEntityFileRequest entityRequest = DocumentManagerEntityFileRequest.builder().entityKey(identifier).build();
+            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder().entities(Collections.singletonList(entityRequest)).build();
+            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
+                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
+            if (response != null && response.getData() != null) {
+                return (int) response.getData().stream()
+                        .filter(file -> docType.equalsIgnoreCase(file.getFileType())
+                                && (childType == null || childType.equalsIgnoreCase(file.getChildType())))
+                        .count();
+            }
+        } catch (Exception e) {
+            log.error("Error fetching existing document count: {}", e.getMessage(), e);
+        }
+        return 0;
     }
 
     // Main orchestrator method that populates the data dump dictionary with all required details

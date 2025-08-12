@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +68,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -4778,6 +4781,51 @@ class ReportServiceTest extends CommonMocks {
         mockShipmentSettings();
         assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
+    @Test
+    void count_ShouldReturnZero_WhenNoFilesExist() {
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> emptyResponse = new DocumentManagerListResponse<>();
+        emptyResponse.setData(Collections.emptyList());
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(emptyResponse);
+        int count = reportService.getExistingDocumentCount("SHIP123", CARGO_MANIFEST_DISPLAY_NAME, null);
+        assertEquals(0, count);
+    }
 
+    @Test
+    void shouldAppendSuffix_WhenFileAlreadyExists() {
+        DocUploadRequest request = new DocUploadRequest();
+        request.setDocType(DocumentConstants.HBL);
+        request.setChildType(ReportConstants.DRAFT);
+        DocumentManagerEntityFileResponse file1 = new DocumentManagerEntityFileResponse();
+        file1.setFileType(DocumentConstants.HBL);
+        file1.setChildType(ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(Collections.singletonList(file1));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
+        System.out.println("Generated filename: " + fileName);
+        assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName, "Expected count=1 so filename should have _1");
+    }
+    @Test
+    void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
+        DocUploadRequest request = new DocUploadRequest();
+        request.setDocType(DocumentConstants.HBL);
+        request.setChildType(ReportConstants.DRAFT);
+        DocumentManagerEntityFileResponse file1 = new DocumentManagerEntityFileResponse();
+        file1.setFileType(DocumentConstants.HBL);
+        file1.setChildType(ReportConstants.DRAFT);
+        DocumentManagerEntityFileResponse file2 = new DocumentManagerEntityFileResponse();
+        file2.setFileType(DocumentConstants.HBL);
+        file2.setChildType(ReportConstants.DRAFT);
+        DocumentManagerEntityFileResponse file3 = new DocumentManagerEntityFileResponse();
+        file3.setFileType(DocumentConstants.HBL);
+        file3.setChildType(ReportConstants.DRAFT);
+        // Response with 3 files
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(Arrays.asList(file1, file2, file3));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
+        System.out.println("Generated filename: " + fileName);
+        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName, "Expected suffix _3 because 3 files already exist");
+    }
 
 }
