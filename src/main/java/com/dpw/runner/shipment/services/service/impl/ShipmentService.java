@@ -4275,7 +4275,8 @@ public class ShipmentService implements IShipmentService {
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
             log.warn("No shipment data found for export. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
-        } else {
+        }
+        else {
             log.info("Shipment data fetched. Total records: {}", shipmentDetailsPage.getTotalElements());
         }
 
@@ -4329,6 +4330,107 @@ public class ShipmentService implements IShipmentService {
         }
 
         log.info("Export Excel process completed. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+    }
+
+    // Main method that orchestrates the process
+    public void exportShipmentListToExcel(Page<ShipmentDetails> shipmentDetailsPage, HttpServletResponse response) {
+        // Build the Excel workbook
+        Workbook workbook = buildExcelWorkbook(shipmentDetailsPage);
+
+        // Generate filename with timestamp
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
+
+        // Get export limit configuration
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT : Integer.parseInt(configuredLimitValue);
+
+        List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
+        log.info("Export Excel limit is: {}. Records to export: {}", exportExcelLimit, shipmentListResponseData.size());
+
+        if (shipmentListResponseData.size() > exportExcelLimit) {
+            // Send via email if limit exceeded
+            sendExcelViaEmail(workbook, filenameWithTimestamp);
+        } else {
+            // Download directly
+            downloadExcelFile(workbook, filenameWithTimestamp, response);
+        }
+    }
+
+    // Method 1: Build Excel workbook
+    private Workbook buildExcelWorkbook(Page<ShipmentDetails> shipmentDetailsPage) {
+        try {
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            Map<String, Integer> headerMap = new HashMap<>();
+            for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
+                headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
+            }
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("ShipmentList");
+            makeHeadersInSheet(sheet, workbook);
+            log.info("Excel headers created successfully.");
+
+            // Filling the data
+            List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
+            log.info("Converted entity list to DTOs for export. Total DTO records: {}", shipmentListResponseData.size());
+
+            for (int i = 0; i < shipmentListResponseData.size(); i++) {
+                processShipmentListResponseData(sheet, i, shipmentListResponseData, headerMap);
+            }
+            log.info("Filled data into Excel sheet. Total rows written (excluding header): {}", shipmentListResponseData.size());
+
+            return workbook;
+        } catch (Exception e) {
+            log.error("Error building Excel workbook: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to build Excel workbook", e);
+        }
+    }
+
+    // Method 2: Send Excel via email
+    private void sendExcelViaEmail(Workbook workbook, String filename) {
+        try {
+            log.info("Record count exceeds export limit. Sending Excel via email.");
+            commonUtils.sendExcelFileViaEmail(workbook, filename);
+            log.info("Excel file sent via email successfully with filename: {}", filename);
+        } catch (Exception e) {
+            log.error("Error sending Excel file via email: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to send Excel file via email", e);
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Method 3: Download Excel file
+    private void downloadExcelFile(Workbook workbook, String filename, HttpServletResponse response) {
+        try {
+            response.reset();
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
+                workbook.write(outputStream);
+                log.info("Excel file written to response successfully with filename: {}", filename);
+            } catch (IOException e) {
+                log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to write Excel file to response", e);
+            }
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Utility method to safely close workbook
+    private void closeWorkbook(Workbook workbook) {
+        if (workbook != null) {
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                log.warn("Error closing workbook: {}", e.getMessage(), e);
+            }
+        }
     }
 
     private void processShipmentListResponseData(Sheet sheet, int i, List<IRunnerResponse> shipmentListResponseData, Map<String, Integer> headerMap) throws IllegalAccessException {
