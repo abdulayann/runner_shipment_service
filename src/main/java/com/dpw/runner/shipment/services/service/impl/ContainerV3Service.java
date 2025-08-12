@@ -183,8 +183,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     IShipmentSync shipmentSync;
-    @Autowired
-    IShipmentsContainersMappingRepository iShipmentsContainersMappingRepository;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -255,9 +253,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
-
-    @Autowired
-    private EntityManager entityManager;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
