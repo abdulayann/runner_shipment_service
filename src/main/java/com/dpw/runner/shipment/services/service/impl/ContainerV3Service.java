@@ -78,7 +78,6 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -125,7 +124,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -278,7 +276,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
             }
         }
-
+        containerValidationUtil.validateOpenForAttachment(containerRequest.getConsolidationId(), null);
         // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
         updateAllocationDateInRequest(List.of(containerRequest));
 
@@ -433,6 +431,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
+        containerValidationUtil.validateOpenForAttachment(containerRequestList.get(0).getConsolidationId(), null);
         // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
         updateAllocationDateInRequest(containerRequestList);
 
