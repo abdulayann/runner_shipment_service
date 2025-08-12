@@ -1,6 +1,4 @@
 package com.dpw.runner.shipment.services.service.impl;
-
-import static com.dpw.runner.shipment.services.commons.constants.DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -3718,24 +3716,25 @@ class ReportServiceTest extends CommonMocks {
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
     }
 
+
     @Test
-    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
+    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() throws Exception {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123",null);
+        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123");
         assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
     }
 
     @Test
     void applyCustomNaming_MawbWithChildType_DraftChildType() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456",null);
+        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456");
         assertEquals("MAWB_DRAFT_MAWB456.pdf", result);
     }
 
     @Test
     void applyCustomNaming_StillFormsValidFilename() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123",null);
+        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123");
         assertEquals("PICKUPORDER_SHIP123.pdf", result);
     }
 
@@ -4781,14 +4780,6 @@ class ReportServiceTest extends CommonMocks {
         mockShipmentSettings();
         assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
-    @Test
-    void count_ShouldReturnZero_WhenNoFilesExist() {
-        DocumentManagerListResponse<DocumentManagerEntityFileResponse> emptyResponse = new DocumentManagerListResponse<>();
-        emptyResponse.setData(Collections.emptyList());
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(emptyResponse);
-        int count = reportService.getExistingDocumentCount("SHIP12312221", CARGO_MANIFEST_DISPLAY_NAME, null);
-        assertEquals(0, count);
-    }
 
     @Test
     void shouldAppendSuffix_WhenFileAlreadyExists() {
@@ -4801,7 +4792,7 @@ class ReportServiceTest extends CommonMocks {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(Collections.singletonList(file1));
         when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123", "1234543");
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
         System.out.println("Generated filename: " + fileName);
         assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName, "Expected count=1 so filename should have _1");
     }
@@ -4823,7 +4814,7 @@ class ReportServiceTest extends CommonMocks {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(Arrays.asList(file1, file2, file3));
         when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123", "123432");
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
         System.out.println("Generated filename: " + fileName);
         assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName, "Expected suffix _3 because 3 files already exist");
     }

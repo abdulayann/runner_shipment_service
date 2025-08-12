@@ -2816,8 +2816,9 @@ String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, Stri
             // Initialize from DocMaster if not already cached
             namingCache.computeIfAbsent(key, k -> getExistingDocumentCount(identifier, docType, childType));
             // Increment count in memory for every generation
-            int count = namingCache.compute(key, (k, v) -> v == null ? 0 : v + 1);
+            int count = namingCache.get(key);
             String suffix = count > 0 ? "_" + count : "";
+            namingCache.put(key, count + 1);
             if ((docType.equals(DocumentConstants.HBL)
                     || docType.equals(ReportConstants.MAWB)
                     || docType.equals(ReportConstants.HAWB))
