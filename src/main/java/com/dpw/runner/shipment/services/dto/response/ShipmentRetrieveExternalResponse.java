@@ -258,4 +258,5 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private Set<ContainerResponse> containersList;
     private List<NotesResponse> customerBookingNotesList;
     private List<Notes> notesList;
+    private Set<ConsolidationListIdExternalResponse> consolidationList;
 }
