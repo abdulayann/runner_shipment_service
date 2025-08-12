@@ -1090,59 +1090,21 @@ public abstract class IReport {
         }
     }
 
-    private void processDestinationTags(
-            Map<String, Object> dictionary,
-            Map<Integer, Map<String, MasterData>> masterListsMap,
-            V1TenantSettingsResponse v1TenantSettingsResponse,
-            UnlocationsResponse destination,
-            String tsDateTimeFormat) {
+    private void processDestinationTags(Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, UnlocationsResponse destination, String tsDateTimeFormat) {
+        dictionary.put(ReportConstants.DESTINATION_NAME, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
 
-        dictionary.put(ReportConstants.DESTINATION_NAME, getSafe(destination, UnlocationsResponse::getName));
-        dictionary.put(ReportConstants.DESTINATION, getSafe(destination, UnlocationsResponse::getName));
-        dictionary.put(ReportConstants.DESTINATION_COUNTRY, getSafe(destination, UnlocationsResponse::getCountry));
-
-        dictionary.put(ReportConstants.PRINT_DATE,
-                convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
-
-        if (destination == null) {
-            return;
+        dictionary.put(ReportConstants.PRINT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        if(destination != null) {
+            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
+            String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
+            dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, StringUtility.toUpperCase(destinationCountry));
+            dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
+            dictionary.put(ReportConstants.FPOD_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
+            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, StringUtility.toUpperCase(destinationCountry));
+            dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
         }
-
-        String destinationName = toUpperCaseSafe(destination.getName());
-        String destinationCode = toUpperCaseSafe(destination.getLocCode());
-        String destinationCountry = resolveDestinationCountry(destination.getCountry(), masterListsMap);
-        String destinationCountryCaps = toUpperCaseSafe(destinationCountry);
-
-        dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destinationName);
-        dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountryCaps);
-        dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
-        dictionary.put(ReportConstants.FPOD_IN_CAPS, destinationName);
-        dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountryCaps);
-        dictionary.put(DESTINATION_CODE_IN_CAPS, destinationCode);
-    }
-
-    private String resolveDestinationCountry(String countryCode, Map<Integer, Map<String, MasterData>> masterListsMap) {
-        if (countryCode == null || masterListsMap == null) {
-            return "";
-        }
-
-        Map<String, MasterData> countriesMap = masterListsMap.get(MasterDataType.COUNTRIES.getId());
-        if (countriesMap == null) {
-            return "";
-        }
-
-        MasterData countryItem = countriesMap.get(countryCode);
-        return (countryItem != null && countryItem.getItemDescription() != null)
-                ? countryItem.getItemDescription()
-                : "";
-    }
-
-    private String getSafe(UnlocationsResponse destination, Function<UnlocationsResponse, String> getter) {
-        return destination != null ? getter.apply(destination) : null;
-    }
-
-    public static String toUpperCaseSafe(String value) {
-        return value != null ? value.toUpperCase() : "";
     }
 
     private int getContainerCount(ShipmentModel shipment) {
