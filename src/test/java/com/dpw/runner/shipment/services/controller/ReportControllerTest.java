@@ -86,12 +86,17 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport5()
-            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
-        // Mock
-        when(reportService.getDocumentData(any())).thenThrow(new ReportExceptionWarning("ReportExceptionWarning"));
-        // Assert
-        assertThrows(ReportExceptionWarning.class, () -> reportController.createReport(new ReportRequest()));
+    void createReport5() throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        // Arrange
+        when(reportService.getDocumentData(any()))
+                .thenThrow(new ReportExceptionWarning("ReportExceptionWarning"));
+
+        // Act & Assert
+        assertThrows(ReportExceptionWarning.class, this::invokeCreateReport);
+    }
+
+    private void invokeCreateReport() {
+        reportController.createReport(new ReportRequest());
     }
 
     @Test
