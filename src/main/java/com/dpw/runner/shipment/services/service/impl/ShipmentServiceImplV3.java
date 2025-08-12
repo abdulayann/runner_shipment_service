@@ -824,7 +824,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new ValidationException(e.getMessage());
         }
     }
-    private static void setPlaceOfIssueInAdditionalDetailsIfExist(EntityTransferAddress entityTransferAddress, ShipmentDetails entity) {
+    public void setPlaceOfIssueInAdditionalDetailsIfExist(EntityTransferAddress entityTransferAddress, ShipmentDetails entity) {
         AdditionalDetails additionalDetailModel = entity.getAdditionalDetails();
         if (null == additionalDetailModel && null != entityTransferAddress && null != entityTransferAddress.getCity()) {
             entity.setAdditionalDetails(new AdditionalDetails());

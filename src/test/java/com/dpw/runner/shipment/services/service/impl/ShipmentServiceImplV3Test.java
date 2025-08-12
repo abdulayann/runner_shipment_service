@@ -7297,7 +7297,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentDetails.setAdditionalDetails(null);
         EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
         entityTransferAddress.setCity("New York");
-        ShipmentServiceImplV3.setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
+        shipmentServiceImplV3.setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
         assertNotNull(shipmentDetails.getAdditionalDetails(), "AdditionalDetails should have been created");
         assertEquals("New York", shipmentDetails.getAdditionalDetails().getPlaceOfIssue());
     }
