@@ -253,9 +253,9 @@ public class ContainerValidationUtil {
         String shipmentType = shipmentDetails.getShipmentType();
 
         boolean isSeaFCL = commonUtils.isSeaFCL(transportMode, shipmentType);
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(transportMode, shipmentType);
+        boolean roadFTLOrRailFCL = commonUtils.isRoadFTLOrRailFCL(transportMode, shipmentType);
 
-        if (!isSeaFCL && !isRoadFCLorFTL) {
+        if (!isSeaFCL && !roadFTLOrRailFCL) {
             String expectedType = getExpectedCargoTypeForTransportMode(transportMode);
             throw new ValidationException(String.format(
                     "Invalid cargoType: %s for transportMode: %s. Expected: %s.",

@@ -44,7 +44,6 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
-import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -97,7 +96,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -527,7 +525,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void setShipmentSummaryWarnings(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) throws RunnerException {
         boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFTLOrRailFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
         if (isSeaFCL || isRoadFCLorFTL) {
             ShipmentSummaryWarningsResponse summaryWarningsResponse = getShipmentSummaryWarnings(shipmentDetails);
             response.setSummaryWarningsResponse(summaryWarningsResponse);
@@ -588,7 +586,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void setCargoSummaryEditablbeFlags(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) {
         boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFTLOrRailFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
         if ((isSeaFCL || isRoadFCLorFTL) && !Boolean.TRUE.equals(response.getIsPacksAvailable())) {
             if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
                 boolean volumeMissingInContainers = false;
@@ -4360,7 +4358,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
         boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFTLOrRailFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
         if ((isSeaFCL || isRoadFCLorFTL)) {
             applySeaRoadFCLCargoSummaryOverride(shipmentDetails, oldShipment, packsAvailable);
         } else if (packsAvailable) {
