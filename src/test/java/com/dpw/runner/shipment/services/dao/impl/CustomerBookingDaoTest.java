@@ -592,4 +592,29 @@ class CustomerBookingDaoTest {
         assertEquals(expected, result);
         verify(customerBookingRepository, times(1)).findAllCustomerBookingIdsByTenantId(tenantId);
     }
+    @Test
+    void save_shouldPreserveDirectionWhenQuoteIsUpdated() {
+        //existing booking with direction Import
+        CustomerBooking oldBooking = new CustomerBooking();
+        oldBooking.setId(1L);
+        oldBooking.setDirection("Import");
+        oldBooking.setBookingNumber("BN1001");
+        oldBooking.setCurrentPartyForQuote("QUOTE-OLD");
+        //  same booking, but quote changed
+        CustomerBooking updatedBooking = new CustomerBooking();
+        updatedBooking.setId(1L);
+        updatedBooking.setDirection("Export");
+        updatedBooking.setBookingNumber("BN1001");
+        updatedBooking.setCurrentPartyForQuote("QUOTE-NEW"); // Quote changed
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(oldBooking));
+        when(customerBookingRepository.save(any(CustomerBooking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        CustomerBooking result = customerBookingDao.save(updatedBooking);
+        // Assert: direction is preserved as Import
+        assertTrue("Import".equals(result.getDirection()),
+                "Direction should remain 'Import' when only the quote changes");
+        assertTrue("QUOTE-NEW".equals(result.getCurrentPartyForQuote()),
+                "Quote ID should be updated to 'QUOTE-NEW'");
+        verify(customerBookingRepository).save(updatedBooking);
+    }
 }

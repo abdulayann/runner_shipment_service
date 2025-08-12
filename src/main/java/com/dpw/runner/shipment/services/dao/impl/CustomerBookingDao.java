@@ -68,6 +68,13 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             old = oldEntity.get();
+            // Preserve shipment type (direction) if already set
+            if (old.getDirection() != null && customerBooking.getDirection() != null &&
+                    !old.getDirection().equals(customerBooking.getDirection())) {
+                log.warn("Preserving existing shipment type [{}], ignoring update value [{}]",
+                        old.getDirection(), customerBooking.getDirection());
+                customerBooking.setDirection(old.getDirection());
+            }
         } else {
             Optional<CustomerBooking> oldEntity = this.findByBookingNumber(customerBooking.getBookingNumber());
             if (oldEntity.isPresent()) {
