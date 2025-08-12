@@ -2891,7 +2891,7 @@ public class CommonUtils {
             workbook.write(out);
             out.close();
             MultipartFile multipartFile = new WorkbookMultipartFile(workbook, filenameWithTimestamp);
-            request.setTo(UserContext.getUser().getEmail());
+            request.setTo("himanshu.chhikara@dpworld.com");
             request.setSubject("Export Excel");
             request.setFile(multipartFile);
             notificationService.sendEmail(request);
