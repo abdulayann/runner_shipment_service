@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -32,7 +31,6 @@ import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,7 +91,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
         ShipmentBackupEntity shipmentBackupDetails = shipmentBackupDao.findByShipmentId(shipmentId);
         Set<Long> shipmentsContainersMapping = new HashSet<>(shipmentsContainersMappingDao.findByShipmentId(shipmentId).stream().map(ShipmentsContainersMapping::getContainerId).toList());
-        if (null == shipmentBackupDetails) {
+        if (Objects.isNull(shipmentBackupDetails)) {
             log.info("No Shipment records found for ShipmentId: {}", shipmentId);
             return null;
         }
@@ -139,7 +137,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         validateAndRestoreTriangularPartnerDetails(shipmentId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
         shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
-
+        log.info("Compelted shipment restore for shipmentId: {}", shipmentId);
         return shipmentDetails;
     }
 
@@ -194,6 +192,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
 
         for (NetworkTransfer incoming : networkTransferList) {
+            log.info("Started processing of network transfer id : {} and shipment id :{}", incoming.getId(), shipmentId);
             Long id = incoming.getId();
             UUID guid = incoming.getGuid();
 
@@ -210,6 +209,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
             // New record (or mismatched guid): remove id and save
             incoming.setId(null);
             toSaveList.add(incoming);
+            log.info("Completed processing of network transfer id : {} and shipment id :{}", incoming.getId(), shipmentId);
         }
 
         // All remaining in dbMap are to be deleted
@@ -324,22 +324,17 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         if (allBackupShipmentIds.isEmpty()) {
             return;
         }
-        Set<Long> allOriginalShipmentIds = shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+        shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
 
-        // Soft delete bookings not present in backup
-        Set<Long> idsToDelete = Sets.difference(allBackupShipmentIds, allOriginalShipmentIds);
-        if (!idsToDelete.isEmpty()) {
-            shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
-        }
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
-
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
         for (Long shipmentId : nonAttachedShipmentIds) {
             try {
                 restoreShipmentTransaction(shipmentId, tenantId);
             } catch (Exception e) {
                 log.error("Failed to restore Shipment id: {}", shipmentId, e);
                 migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new RestoreFailureException("Failed to restore Shipment: " + shipmentId, e);
+                throw new IllegalArgumentException(e);
             }
         }
     }

@@ -83,4 +83,6 @@ public interface IShipmentDao {
 
     void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
     void updateTriggerMigrationWarning(Long shipmentId);
+
+    void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
 }

@@ -2343,6 +2343,15 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void testDeleteAdditionalShipmentsByTenantId() {
+        Set<Long> shipmentIds = Set.of(10L, 20L);
+        Integer tenantId = 2;
+        shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(shipmentIds, tenantId);
+        verify(shipmentRepository, times(1)).deleteAdditionalShipmentsByShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+
+    @Test
     void testFindAllShipmentIdsByTenantId() {
         Integer tenantId = 3;
         shipmentDao.findAllShipmentIdsByTenantId(tenantId);

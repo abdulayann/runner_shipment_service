@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,4 +65,14 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1", nativeQuery = true)
     Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE customer_booking SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalBookingsByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE customer_booking SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
 }
