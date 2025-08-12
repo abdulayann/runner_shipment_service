@@ -2384,7 +2384,7 @@ class ShipmentDaoTest extends CommonMocks {
     void testFindAllByMigratedStatuses() {
         shipmentDao.findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
                 MigrationStatus.MIGRATED_FROM_V3.name()), 400);
-        verify(shipmentRepository, times(1)).findAllByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+        verify(shipmentRepository, times(1)).findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
                 MigrationStatus.MIGRATED_FROM_V3.name()), 400);
     }
 }
