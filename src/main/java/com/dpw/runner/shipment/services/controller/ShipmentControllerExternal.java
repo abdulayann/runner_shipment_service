@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Optional;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
+
 @RestController
 @RequestMapping(ShipmentConstants.SHIPMENT_EXTERNAL_API_HANDLE)
 @Slf4j
@@ -44,20 +46,20 @@ public class ShipmentControllerExternal {
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id,
                                                         @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid,
-                                                        @RequestHeader(value = "x-source", required = false) String xSource) {
+                                                        @RequestHeader(SOURCE_SERVICE_TYPE) String source) {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveShipmentDataByIdExternal(CommonRequestModel.buildRequest(request), xSource);
+        return shipmentService.retrieveShipmentDataByIdExternal(CommonRequestModel.buildRequest(request), source);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestBody @Valid CommonGetRequest retrieveCommonRequest,
-                                                        @RequestHeader(value = "x-source", required = false) String xSource) {
+                                                        @RequestHeader(SOURCE_SERVICE_TYPE) String source) {
         CommonGetRequest request = CommonGetRequest.builder().build();
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel.buildRequest(retrieveCommonRequest), xSource);
+        return shipmentService.retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel.buildRequest(retrieveCommonRequest), source);
     }
 }

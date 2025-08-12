@@ -6,15 +6,9 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.Generated;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
@@ -115,7 +109,6 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private PartiesExternalResponse consignee;
     private AdditionalDetailExternalResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
-    private PickupDeliveryDetailsResponse deliveryDetails;
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
     private String jobStatus;
@@ -257,26 +250,12 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private Integer slac;
     private Boolean isVolumeEditable = Boolean.FALSE;
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
-    private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
 
-    private List<ServiceDetailsResponse> servicesList;
     private List<RoutingsResponse> routingsList;
     private List<PackingResponse> packingList;
-    private List<FileRepoResponse> fileRepoList;
     private List<EventsResponse> eventsList;
-    private List<ELDetailsResponse> elDetailsList;
-    private List<BookingCarriageResponse> bookingCarriagesList;
-    private List<JobResponse> jobsList;
-    @JsonIgnoreProperties("shipmentsList")
-    private Set<ConsolidationListResponse> consolidationList;
     private Set<ContainerResponse> containersList;
-    private List<AuditLogResponse> logsList;
-    private List<ShipmentOrderResponse> shipmentOrders;
-    private ContainerSummaryResponse containerSummary;
-    private PackSummaryResponse packSummary;
     private List<NotesResponse> customerBookingNotesList;
     private List<Notes> notesList;
-    private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
-    private List<ConsoleShipmentMapping> consoleShipmentMappings;
 }
