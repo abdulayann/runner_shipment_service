@@ -7290,4 +7290,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(shipmentDao).update(existingShipment, false);
         verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(any());
     }
+
+    @Test
+    void testSetPlaceOfIssueInAdditionalDetailsIfExist_FirstIfBlockCovered() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(null);
+        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        entityTransferAddress.setCity("New York");
+        ShipmentServiceImplV3.setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
+        assertNotNull(shipmentDetails.getAdditionalDetails(), "AdditionalDetails should have been created");
+        assertEquals("New York", shipmentDetails.getAdditionalDetails().getPlaceOfIssue());
+    }
 }

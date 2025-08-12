@@ -126,12 +126,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -253,6 +248,7 @@ class CommonUtilsTest {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @InjectMocks
+    @Spy
     private CommonUtils commonUtils;
 
     @Mock
@@ -307,6 +303,12 @@ class CommonUtilsTest {
     private IMDMServiceAdapter mdmServiceAdapter;
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private TenantModel tenantModel;
+
+    @Mock
+    private EntityTransferAddress entityTransferAddress;
 
 
     private PdfContentByte dc;
@@ -5684,4 +5686,29 @@ class CommonUtilsTest {
         assertNull(result);
     }
 
+    @Test
+    void testGetEntityTransferAddress_SeaMode_ReturnsAddress() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNotNull(result);
+        assertEquals(entityTransferAddress, result);
+    }
+
+
+    @Test
+    void testGetEntityTransferAddress_InvalidMode_ReturnsNull() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress("AIR");
+        assertNull(result);
+    }
 }
