@@ -13,15 +13,15 @@ import java.util.Set;
 public interface IShipmentBackupRepository extends JpaRepository<ShipmentBackupEntity, Long> {
     void deleteByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT * FROM shipment_backup s WHERE s.shipment_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM shipment_backup s WHERE s.shipment_id = ?1 and s.is_deleted=false", nativeQuery = true)
     @Transactional
     ShipmentBackupEntity findByShipmentId(Long shipmentId);
 
-    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and c.is_deleted = false", nativeQuery = true)
+    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1", nativeQuery = true)
     @Transactional
     Set<Long> findShipmentIdsByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and c.is_shipment_attached = false", nativeQuery = true)
+    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and c.is_shipment_attached = false and c.is_deleted = false", nativeQuery = true)
     @Transactional
     Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId);
 

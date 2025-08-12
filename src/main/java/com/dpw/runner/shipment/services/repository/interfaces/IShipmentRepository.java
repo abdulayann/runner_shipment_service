@@ -306,4 +306,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "Update shipment_details set trigger_migration_warning = false WHERE id = ?1", nativeQuery = true)
     void updateTriggerMigrationWarning(Long shipmentId);
 
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
 }
