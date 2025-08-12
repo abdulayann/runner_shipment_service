@@ -72,7 +72,7 @@ public class ShipmentValidationV3Util {
         }
     }
 
-    private void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {
+    private void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) {
         if( ((Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()) && SHIPMENT_TYPE_LCL.equals(consolidationDetails1.getContainerCategory()))
                 || checkForAirDGFlag(consolidationDetails1))
                 && (Boolean.TRUE.equals(consolidationDetails1.getHazardous()) || Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))) {
@@ -83,14 +83,14 @@ public class ShipmentValidationV3Util {
         }
     }
 
-    private void throwErrorMaxOneShipmentAllowedInDgConsolidation(ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {
+    private void throwErrorMaxOneShipmentAllowedInDgConsolidation(ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) {
         if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()))
-            throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, and can have only 1 shipment");
+            throw new ValidationException("For Ocean DG Consolidation LCL Cargo Type, and can have only 1 shipment");
         else {
             if(isNewConsoleAttached == 1)
-                throw new RunnerException(String.format(CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL, consolidationDetails1.getConsolidationNumber()));
+                throw new ValidationException(String.format(CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL, consolidationDetails1.getConsolidationNumber()));
             else
-                throw new RunnerException(CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS);
+                throw new ValidationException(CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS);
         }
     }
 

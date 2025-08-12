@@ -228,7 +228,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+        ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
 
         assertTrue(ex.getMessage().contains("LCL Cargo Type"));
@@ -255,10 +255,9 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+     ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
-
-        assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
+     assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
     }
 
     @Test
