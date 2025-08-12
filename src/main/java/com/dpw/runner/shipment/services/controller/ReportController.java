@@ -13,13 +13,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-
 import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
@@ -67,6 +67,9 @@ public class ReportController {
         } catch (UnexpectedRollbackException e) {
             responseMsg = "An error occurred while printing the report. Please contact the support team.";
             log.error(responseMsg, e);
+        } catch (ReportExceptionWarning e) {
+            log.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
