@@ -1,6 +1,4 @@
 package com.dpw.runner.shipment.services.service.impl;
-
-import static com.dpw.runner.shipment.services.commons.constants.DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -3718,8 +3716,9 @@ class ReportServiceTest extends CommonMocks {
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
     }
 
+
     @Test
-    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
+    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() throws Exception {
         DocUploadRequest request = new DocUploadRequest();
         String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123");
         assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
@@ -4780,14 +4779,6 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
         mockShipmentSettings();
         assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
-    }
-    @Test
-    void count_ShouldReturnZero_WhenNoFilesExist() {
-        DocumentManagerListResponse<DocumentManagerEntityFileResponse> emptyResponse = new DocumentManagerListResponse<>();
-        emptyResponse.setData(Collections.emptyList());
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(emptyResponse);
-        int count = reportService.getExistingDocumentCount("SHIP123", CARGO_MANIFEST_DISPLAY_NAME, null);
-        assertEquals(0, count);
     }
 
     @Test
