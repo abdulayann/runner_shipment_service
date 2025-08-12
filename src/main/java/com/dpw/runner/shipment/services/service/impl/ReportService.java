@@ -193,17 +193,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -311,6 +301,8 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    private final Map<String, Integer> namingCache = new ConcurrentHashMap<>();
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
@@ -2847,47 +2839,78 @@ public class ReportService implements IReportService {
         return null;
     }
 
-    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
-        String customFileName = null;
+String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
+    String customFileName = null;
 
+    try {
+        if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
+            Map<String, String> docNamingMap = Map.ofEntries(
+                    Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
+                    Map.entry(ReportConstants.MAWB, "MAWB"),
+                    Map.entry(ReportConstants.HAWB, "HAWB"),
+                    Map.entry("CSD", "Consignment Security Declaration (CSD)"),
+                    Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
+                    Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
+                    Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
+                    Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
+                    Map.entry(ReportConstants.HBL, "HBL"),
+                    Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                    Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
+                    Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
+            );
+
+            String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
+            String key = docType + "|" + identifier + "|" + (childType != null ? childType : "");
+            // Initialize from DocMaster if not already cached
+            namingCache.computeIfAbsent(key, k -> getExistingDocumentCount(identifier, docType, childType));
+            // Increment count in memory for every generation
+            int count = namingCache.get(key);
+            String suffix = count > 0 ? "_" + count : "";
+            namingCache.put(key, count + 1);
+            if ((docType.equals(DocumentConstants.HBL)
+                    || docType.equals(ReportConstants.MAWB)
+                    || docType.equals(ReportConstants.HAWB))
+                    && childType != null && !childType.isBlank()) {
+                customFileName = baseDocName + "_"
+                        + StringUtility.convertToString(childType).toUpperCase()
+                        + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+            } else {
+                customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+            }
+
+            docUploadRequest.setFileName(customFileName);
+            log.info("Custom file name generated: {}", customFileName);
+        }
+    } catch (Exception e) {
+        log.error("Error generating custom document filename: {}", e.getMessage(), e);
+    }
+    return customFileName;
+}
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
         try {
-            if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
-                Map<String, String> docNamingMap = Map.ofEntries(
-                        Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
-                        Map.entry(ReportConstants.MAWB, "MAWB"),
-                        Map.entry(ReportConstants.HAWB, "HAWB"),
-                        Map.entry("CSD", "Consignment Security Declaration (CSD)"),
-                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
-                        Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
-                        Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
-                        Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
-                        Map.entry(ReportConstants.HBL, "HBL"),
-                        Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
-                        Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
-                        Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
-                );
+            DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
+                    .entityKey(entityGuid)
+                    .build();
+            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder().entities(Collections.singletonList(request)).build();
 
-                String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-                // Count how many documents already exist for this type & identifier
-                int existingCount = getExistingDocumentCount(identifier, docType, childType);
-                String suffix = existingCount > 0 ? DocumentConstants.DASH + existingCount : "";
-                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
-                    customFileName = baseDocName + DocumentConstants.DASH + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier + suffix + DocumentConstants.DOT_PDF;
-                } else {
-                    customFileName = baseDocName + DocumentConstants.DASH + identifier + suffix + DocumentConstants.DOT_PDF;
-                }
-                docUploadRequest.setFileName(customFileName);
-                log.info("Custom file name generated: {}", customFileName);
+            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
+                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
+
+            if (response != null && response.getData() != null) {
+                return (int) response.getData().stream()
+                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
+                        .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
+                                file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
             }
         } catch (Exception e) {
-            log.error("Error generating custom document filename: {}", e.getMessage(), e);
+            log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
         }
-        return customFileName;
+        return 0;
     }
 
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
@@ -2945,25 +2968,6 @@ public class ReportService implements IReportService {
         result.put("fileName", docUploadRequest.getFileName());
         return result;
     }
-     // Counting generated documents
-    int getExistingDocumentCount(String identifier, String docType, String childType) {
-        try {
-            DocumentManagerEntityFileRequest entityRequest = DocumentManagerEntityFileRequest.builder().entityKey(identifier).build();
-            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder().entities(Collections.singletonList(entityRequest)).build();
-            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
-                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
-            if (response != null && response.getData() != null) {
-                return (int) response.getData().stream()
-                        .filter(file -> docType.equalsIgnoreCase(file.getFileType())
-                                && (childType == null || childType.equalsIgnoreCase(file.getChildType())))
-                        .count();
-            }
-        } catch (Exception e) {
-            log.error("Error fetching existing document count: {}", e.getMessage(), e);
-        }
-        return 0;
-    }
-
     // Main orchestrator method that populates the data dump dictionary with all required details
     public void populateConsolidationReportData(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
         if (consolidationDetails == null) {
