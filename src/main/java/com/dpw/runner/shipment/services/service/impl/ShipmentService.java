@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.dao.impl.AdditionalDetailDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
@@ -84,32 +85,7 @@ import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -144,25 +120,9 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
-import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
@@ -194,25 +154,7 @@ import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.JobState;
-import com.dpw.runner.shipment.services.entity.enums.JobType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -233,6 +175,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -276,6 +219,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -317,9 +261,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidParameterException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -632,6 +578,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IDocumentManagerService documentManagerService;
 
+    @Autowired
+    private IPartiesRepository iPartiesRepository;
+
     @Value("${include.master.data}")
     private Boolean includeMasterData;
 
@@ -754,6 +703,21 @@ public class ShipmentService implements IShipmentService {
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(FileStatus.class).fieldName("fileStatus").build()),
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build())
     );
+
+    private static final Map<PartyType, String> partyTypeToColumnMap = new EnumMap<>(PartyType.class);
+    private static final Map<PartyType, String> partyTypeToDpsColumnMap = new EnumMap<>(PartyType.class);
+
+    static {
+        partyTypeToColumnMap.put(PartyType.CLIENT, "clientId");
+        partyTypeToColumnMap.put(PartyType.CONSIGNOR, "consignerId");
+        partyTypeToColumnMap.put(PartyType.CONSIGNEE, "consigneeId");
+        partyTypeToColumnMap.put(PartyType.NOTIFY_PARTY, "notifyPartyId");
+        partyTypeToDpsColumnMap.put(PartyType.CLIENT, "clientDpsAddressId");
+        partyTypeToDpsColumnMap.put(PartyType.CONSIGNOR, "consignorDpsAddressId");
+        partyTypeToDpsColumnMap.put(PartyType.CONSIGNEE, "consigneeDpsAddressId");
+        partyTypeToDpsColumnMap.put(PartyType.NOTIFY_PARTY, "notifyPartyDpsAddressId");
+    }
+
 
     @Override
     @Transactional
@@ -6634,7 +6598,8 @@ public class ShipmentService implements IShipmentService {
                 EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
                 if ((Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode())
                         || Constants.TRANSPORT_MODE_RAI.equals(response.getTransportMode()))
-                        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled())) {
+                        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled())
+                        && null != entityTransferAddress) {
                     response.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
                 } else {
                     response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
@@ -9686,6 +9651,132 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<String> updateShipmentParties(ShipmentPartyRequestV2 request) throws RunnerException {
+
+        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
+                .orElseThrow(() -> {
+                    log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getShipmentId(), LoggerHelper.getRequestIdFromMDC());
+                    return new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                });
+        ShipmentDetails oldShipment = shipmentDetails;
+        validateTenantId(request.getTenantId(), shipmentDetails);
+        List<String> addressIdsList = request.getParties().stream()
+                .map(p -> String.valueOf(p.getAddressId()))
+                .distinct()
+                .toList();
+        List<String> orgAddressIdsList = request.getParties().stream()
+                .map(p -> String.valueOf(p.getOrgId()))
+                .distinct()
+                .toList();
+        Map<Long, AddressDataV1> partiesAddressIdMap = commonUtils.fetchAddressData(addressIdsList);
+        Map<Long, OrgDataV1> partiesOrgAddressIdMap = commonUtils.fetchOrgAddressData(orgAddressIdsList);
+        if (MapUtils.isEmpty(partiesAddressIdMap) || MapUtils.isEmpty(partiesOrgAddressIdMap)) {
+            throw new ValidationException("No data Found for partyAddressId and orgId.");
+        }
+        String username = UserContext.getUser().getUsername();
+        LocalDateTime now = LocalDateTime.now();
+        for (PartiesData party : request.getParties()) {
+            String columnName = getColumnName(party.getType(), partyTypeToColumnMap);
+            Object value = getFieldValue(shipmentDetails, columnName, shipmentDetails);
+            Long partyId = getPartyLongId(value);
+            if (partyId == null) {
+                log.debug(ErrorConstants.CANNOT_UPDATE_PARTY, party.getType());
+                throw new ValidationException("Can't update party as it's not present for shipment: " + party.getType());
+            }
+            Parties partyData = iPartiesRepository.findById(partyId)
+                    .orElseThrow(() -> {
+                        log.debug(ErrorConstants.CANNOT_UPDATE_PARTY, party.getType());
+                        return new ValidationException("Can't update party as it's not present for shipment: " + party.getType());
+                    });
+            Parties prev = partyData;
+            AddressDataV1 addressDataV1 = partiesAddressIdMap.get(party.getAddressId());
+            OrgDataV1 orgDataV1 = partiesOrgAddressIdMap.get(party.getOrgId());
+            if (addressDataV1 == null || orgDataV1 == null) {
+                throw new ValidationException("Address or Org data not found for PartyType: " + party.getType());
+            }
+            TenantFilterRequest searchEntityRequest = TenantFilterRequest.builder().orgId(party.getOrgId()).addressId(party.getAddressId()).build();
+            partyData.setAddressId(String.valueOf(party.getAddressId()));
+            partyData.setAddressData(jsonHelper.convertValue(addressDataV1, Map.class));
+            partyData.setAddressCode(addressDataV1.getAddressShortCode());
+            partyData.setOrgId(String.valueOf(party.getOrgId()));
+            partyData.setOrgData(jsonHelper.convertValue(orgDataV1, Map.class));
+            partyData.setOrgCode(orgDataV1.getOrganizationCode());
+            partyData.setUpdatedBy(username);
+            partyData.setUpdatedAt(now);
+            partiesDao.save(partyData);
+            setFieldValue(shipmentDetails, getColumnName(party.getType(), partyTypeToDpsColumnMap), v1Service.retrieveSearchEntityDpsId(searchEntityRequest));
+            addAuditLogParties(partyData, prev, request.getShipmentId(), DBOperationType.UPDATE.name());
+        }
+        shipmentDao.save(shipmentDetails, false, false);
+        createAuditLog(shipmentDetails, jsonHelper.convertToJson(oldShipment), DBOperationType.UPDATE.name());
+        return ResponseEntity.ok("Parties updated successfully");
+    }
+    private void validateTenantId(Integer requestTenantId, ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getTenantId() != null &&
+                !Objects.equals(requestTenantId, shipmentDetails.getTenantId())) {
+            log.debug(ErrorConstants.INVALID_TENANT_ID_FOR_SHIPMENT_ID, requestTenantId, shipmentDetails.getId());
+            throw new ValidationException("Tenant ID from request does not match the tenant ID retrieved from shipment details.");
+        }
+    }
+
+    public static String getColumnName(PartyType partyType, Map<PartyType, String> columnMap) {
+        return columnMap.get(partyType);
+    }
+    public Object getFieldValue(Object obj, String fieldName, ShipmentDetails shipmentDetails) {
+        try {
+            if ("notifyPartyId".equals(fieldName)) {
+                return Optional.ofNullable(shipmentDetails.getAdditionalDetailId()).flatMap(additionalDetailDao::findById).map(AdditionalDetails::getNotifyParty).map(Parties::getId).orElse(null);
+            }
+            Field field = obj.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(obj);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static Long getPartyLongId(Object value) {
+        if (value != null) {
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else if (value instanceof String) {
+                return Long.parseLong((String) value);
+            } else {
+                throw new IllegalArgumentException("Unsupported Party ID type: " + value.getClass());
+            }
+        }
+        return null;
+    }
+    private void addAuditLogParties(Parties parties, Parties prev, Long shipmentId, String operationName) throws RunnerException {
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(parties)
+                            .prevData(prev)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentId)
+                            .operation(operationName).build()
+            );
+        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+        }
+    }
+    public void setFieldValue(Object obj, String fieldName, Object value) {
+        try {
+            Field field = obj.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(obj, value);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalArgumentException("Field '" + fieldName + "' not found on " + obj.getClass().getSimpleName(), e);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Cannot access field '" + fieldName + "' on " + obj.getClass().getSimpleName(), e);
+        }
     }
 
     private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {

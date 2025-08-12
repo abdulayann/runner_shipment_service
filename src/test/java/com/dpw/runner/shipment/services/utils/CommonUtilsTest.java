@@ -55,13 +55,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -344,7 +338,7 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-
+        MockitoAnnotations.openMocks(this);
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
@@ -5594,5 +5588,87 @@ class CommonUtilsTest {
         }
     }
 
+    @Test
+    void fetchAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> addressIds = List.of("1", "2");
+        CommonV1ListRequest expectedRequest = commonUtils.createCriteriaToFetchAddressList(addressIds);
+
+        // Mock response from v1Service.addressList
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities"); // Could be any object, your jsonHelper mock will handle conversion
+
+        // Mock list of AddressDataV1
+        AddressDataV1 addr1 = new AddressDataV1();
+        addr1.setId(1L);
+        AddressDataV1 addr2 = new AddressDataV1();
+        addr2.setId(2L);
+        List<AddressDataV1> addressDataList = List.of(addr1, addr2);
+
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), AddressDataV1.class))
+                .thenReturn(addressDataList);
+
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(addressIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(1L));
+        assertTrue(result.containsKey(2L));
+        verify(v1Service).addressList(any());
+        verify(jsonHelper).convertValueToList(any(), eq(AddressDataV1.class));
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> orgIds = List.of("10", "20");
+
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities");
+
+        OrgDataV1 org1 = new OrgDataV1();
+        org1.setId(10L);
+        OrgDataV1 org2 = new OrgDataV1();
+        org2.setId(20L);
+        List<OrgDataV1> orgDataList = List.of(org1, org2);
+
+        when(v1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), OrgDataV1.class))
+                .thenReturn(orgDataList);
+
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(orgIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(10L));
+        assertTrue(result.containsKey(20L));
+        verify(v1Service).fetchOrganization(any());
+        verify(jsonHelper).convertValueToList(any(), eq(OrgDataV1.class));
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
 
 }

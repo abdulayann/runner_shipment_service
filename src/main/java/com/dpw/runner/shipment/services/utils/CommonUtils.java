@@ -50,14 +50,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListReques
 import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -3057,5 +3050,38 @@ public class CommonUtils {
             log.error("{}, getSourceService: Message: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
             return Constants.SHIPMENT;
         }
+    }
+
+    /**
+     * Fetches address data for the given address IDs.
+     */
+    public Map<Long, AddressDataV1> fetchAddressData(List<String> addressIdList) {
+        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+            return addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+        }
+        return new HashMap<>();
+    }
+
+    public CommonV1ListRequest createCriteriaToFetchAddressList(List<String> addressIdList) {
+        List<Object> addressIdField = new ArrayList<>(List.of(Constants.ID));
+        List<Object> addressCriteria = new ArrayList<>(List.of(addressIdField, Constants.IN, List.of(addressIdList)));
+        return CommonV1ListRequest.builder().criteriaRequests(addressCriteria).build();
+    }
+
+    public Map<Long, OrgDataV1> fetchOrgAddressData(List<String> orgAddressIdList) {
+        if(!CommonUtils.listIsNullOrEmpty(orgAddressIdList)) {
+            CommonV1ListRequest orgAddressRequest = createCriteriaToFetchAddressList(orgAddressIdList);
+            V1DataResponse addressResponse = v1Service.fetchOrganization(orgAddressRequest);
+            List<OrgDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, OrgDataV1.class);
+
+            return addressDataList.stream()
+                    .collect(Collectors.toMap(OrgDataV1::getId, entity -> entity));
+        }
+        return new HashMap<>();
     }
 }
