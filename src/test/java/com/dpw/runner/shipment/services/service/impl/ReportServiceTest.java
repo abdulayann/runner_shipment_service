@@ -3721,21 +3721,21 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123");
+        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123",null);
         assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
     }
 
     @Test
     void applyCustomNaming_MawbWithChildType_DraftChildType() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456");
+        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456",null);
         assertEquals("MAWB_DRAFT_MAWB456.pdf", result);
     }
 
     @Test
     void applyCustomNaming_StillFormsValidFilename() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123");
+        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123",null);
         assertEquals("PICKUPORDER_SHIP123.pdf", result);
     }
 
@@ -4786,7 +4786,7 @@ class ReportServiceTest extends CommonMocks {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> emptyResponse = new DocumentManagerListResponse<>();
         emptyResponse.setData(Collections.emptyList());
         when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(emptyResponse);
-        int count = reportService.getExistingDocumentCount("SHIP123", CARGO_MANIFEST_DISPLAY_NAME, null);
+        int count = reportService.getExistingDocumentCount("SHIP12312221", CARGO_MANIFEST_DISPLAY_NAME, null);
         assertEquals(0, count);
     }
 
@@ -4801,7 +4801,7 @@ class ReportServiceTest extends CommonMocks {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(Collections.singletonList(file1));
         when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123", "1234543");
         System.out.println("Generated filename: " + fileName);
         assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName, "Expected count=1 so filename should have _1");
     }
@@ -4823,7 +4823,7 @@ class ReportServiceTest extends CommonMocks {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(Arrays.asList(file1, file2, file3));
         when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123");
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, "SHIP123", "123432");
         System.out.println("Generated filename: " + fileName);
         assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName, "Expected suffix _3 because 3 files already exist");
     }

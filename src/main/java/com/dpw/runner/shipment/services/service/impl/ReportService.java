@@ -151,17 +151,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -2794,7 +2784,7 @@ public class ReportService implements IReportService {
         return null;
     }
 
-    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
+    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier, String entityGuid) {
         String customFileName = null;
 
         try {
@@ -2820,8 +2810,8 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-                // Count how many documents already exist for this type & identifier
-                int existingCount = getExistingDocumentCount(identifier, docType, childType);
+                // Count how many documents already exist for this type & entityGuid
+                int existingCount = getExistingDocumentCount(entityGuid, docType, childType);
                 String suffix = existingCount > 0 ? DocumentConstants.DASH + existingCount : "";
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + DocumentConstants.DASH + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier + suffix + DocumentConstants.DOT_PDF;
@@ -2837,6 +2827,22 @@ public class ReportService implements IReportService {
         return customFileName;
     }
 
+int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+    try {
+        DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder().entityKey(entityGuid).build();
+        DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder().entities(Collections.singletonList(request)).build();
+
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
+        if (response != null && response.getData() != null) {
+            return (int) response.getData().stream()
+                    .filter(file -> file.getFileType() != null && file.getFileType().equalsIgnoreCase(docType))
+                    .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null && file.getChildType().equalsIgnoreCase(childType))).count();
+        }
+    } catch (Exception e) {
+        log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
+    }
+    return 0;
+}
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
         String shipmentType;
@@ -2879,7 +2885,7 @@ public class ReportService implements IReportService {
         docUploadRequest.setConsolidationType(consolidationType);
         // Apply custom naming if applicable and override
         try {
-            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
+            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier, entityGuid);
             if (customFileName != null) {
                 docUploadRequest.setFileName(customFileName); // override default
             }
@@ -2892,25 +2898,6 @@ public class ReportService implements IReportService {
         result.put("fileName", docUploadRequest.getFileName());
         return result;
     }
-     // Counting generated documents
-    int getExistingDocumentCount(String identifier, String docType, String childType) {
-        try {
-            DocumentManagerEntityFileRequest entityRequest = DocumentManagerEntityFileRequest.builder().entityKey(identifier).build();
-            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder().entities(Collections.singletonList(entityRequest)).build();
-            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
-                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
-            if (response != null && response.getData() != null) {
-                return (int) response.getData().stream()
-                        .filter(file -> docType.equalsIgnoreCase(file.getFileType())
-                                && (childType == null || childType.equalsIgnoreCase(file.getChildType())))
-                        .count();
-            }
-        } catch (Exception e) {
-            log.error("Error fetching existing document count: {}", e.getMessage(), e);
-        }
-        return 0;
-    }
-
     // Main orchestrator method that populates the data dump dictionary with all required details
     public void populateConsolidationReportData(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
         if (consolidationDetails == null) {
