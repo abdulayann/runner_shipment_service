@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -98,6 +99,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IContainerDao containerDao;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -297,8 +301,22 @@ public class PackingV3Service implements IPackingV3Service {
             Packing updatedPacking = updatedPackingMap.get(packingId);
             Packing oldPacking = oldPackingMap.get(packingId);
 
-            if(oldPacking != null && updatedPacking.getContainerId() != null && isStringNullOrEmpty(oldPacking.getDGClass()) && !isStringNullOrEmpty(updatedPacking.getDGClass())){
+            if(oldPacking != null && updatedPacking.getContainerId() != null) {
+
+                Containers container = containerDao.findById(updatedPacking.getContainerId())
+                        .orElseThrow(() -> new ValidationException("Container not present with id : " + updatedPacking.getContainerId()));
+
+                boolean dgClassAdded = isStringNullOrEmpty(oldPacking.getDGClass())
+                        && !isStringNullOrEmpty(updatedPacking.getDGClass());
+
+                boolean missingContainerDGFields = isStringNullOrEmpty(container.getDgClass())
+                        || isStringNullOrEmpty(container.getUnNumber())
+                        || isStringNullOrEmpty(container.getProperShippingName());
+
+                if (dgClassAdded && missingContainerDGFields) {
                     throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
+                }
+
             }
         }
     }
