@@ -2477,19 +2477,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setBookingAgent(console.getBookingAgent());
         serviceTypeAutoPopulation(console, shipmentDetails);
 
-        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
-            //Non-Editable Fields
-            shipmentDetails.setPartner(console.getPartner());
-
-            shipmentDetails.setMasterBill(console.getBol());
-            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
-            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-            //Editable Fields
-            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
-            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+        if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
@@ -2500,6 +2488,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+        } else{
+            // SEA, Rail , Road behaviour will be same
+            //Non-Editable Fields
+            shipmentDetails.setPartner(console.getPartner());
+
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+
+            //Editable Fields
+            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
         if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
