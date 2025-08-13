@@ -867,6 +867,7 @@ public class PackingV3Service implements IPackingV3Service {
             packingListResponse.setTriggerMigrationWarning(shipmentDetails.getTriggerMigrationWarning());
             packingListResponse.getPackings().forEach(packingResponse -> {
                 packingResponse.setShipmentNumber(shipmentDetails.getShipmentId());
+                packingResponse.setShipmentType(shipmentDetails.getShipmentType());
                 if(Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
                     packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
             });
@@ -932,6 +933,7 @@ public class PackingV3Service implements IPackingV3Service {
             packingListResponse.getPackings().forEach(packingResponse -> {
                 ShipmentDetails shipmentDetails = shipmentIdMap.get(packingResponse.getShipmentId());
                 packingResponse.setShipmentNumber(shipmentDetails.getShipmentId());
+                packingResponse.setShipmentType(shipmentDetails.getShipmentType());
                 if(Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
                    packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
             });
