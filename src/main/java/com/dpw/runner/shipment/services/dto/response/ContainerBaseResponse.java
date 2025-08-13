@@ -135,4 +135,8 @@ public class ContainerBaseResponse implements IRunnerResponse {
     private String assignedContainer;
     private Boolean isContainerAssigned;
     private List<AttachedShipmentResponse> attachedShipmentResponses;
+    private Long packagesPerContainer;
+    private String containerPackageType;
+    private BigDecimal cargoWeightPerContainer;
+    private String containerWeightUnit;
 }

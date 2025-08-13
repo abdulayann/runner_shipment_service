@@ -41,19 +41,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3DeleteResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3ListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
@@ -132,6 +120,7 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -190,6 +179,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private NpmContractV3Util npmContractV3Util;
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    @Lazy
+    private CargoService cargoService;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -846,6 +838,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             double nextTime = System.currentTimeMillis();
             log.info("Time taken to fetch details from db: {} Request Id {}", nextTime - current, LoggerHelper.getRequestIdFromMDC());
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            updateCargoSummaryInBookingResponse(customerBookingResponse, customerBooking.get());
             return customerBookingResponse;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1566,11 +1559,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     @Override
-    public CustomerBookingV3Response findByBookingNumber(String bookingNumber) {
+    public CustomerBookingV3Response findByBookingNumber(String bookingNumber) throws RunnerException {
         CustomerBooking byBookingNumber = customerBookingDao.findByBookingNumber(bookingNumber)
                 .orElseThrow(() -> new IllegalArgumentException("No booking found with booking number: "+bookingNumber));
-
-        return jsonHelper.convertValue(byBookingNumber, CustomerBookingV3Response.class);
+        CustomerBookingV3Response customerBookingResponse = jsonHelper.convertValue(byBookingNumber, CustomerBookingV3Response.class);
+        updateCargoSummaryInBookingResponse(customerBookingResponse, byBookingNumber);
+        return customerBookingResponse;
     }
 
     @Override
@@ -1609,6 +1603,17 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 return r;
             }).toList());
         }
+    }
+
+    private void updateCargoSummaryInBookingResponse(CustomerBookingV3Response customerBookingResponse, CustomerBooking customerBooking) throws RunnerException {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        List<Containers> containersList = customerBooking.getContainersList();
+        List<Packing> packingList = customerBooking.getPackingList();
+        cargoService.updateEditableFlags(cargoDetailsResponse, containersList, packingList);
+        cargoService.updateSummaryWarnings(cargoDetailsResponse, containersList, packingList);
+        customerBookingResponse.setIsVolumeEditable(cargoDetailsResponse.getIsVolumeEditable());
+        customerBookingResponse.setIsCargoSummaryEditable(cargoDetailsResponse.getIsCargoSummaryEditable());
+        customerBookingResponse.setShipmentSummaryWarningsResponse(cargoDetailsResponse.getShipmentSummaryWarningsResponse());
     }
 
     private void createEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, Map<String, BigDecimal> containerTeuMap) throws RunnerException {

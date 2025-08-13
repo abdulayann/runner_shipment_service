@@ -80,7 +80,7 @@ public class CargoService implements ICargoService {
         return response;
     }
 
-    private void updateSummaryWarnings(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) throws RunnerException {
+    public void updateSummaryWarnings(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) throws RunnerException {
         //For Packings warnings
         ShipmentSummaryWarningsResponse.WarningDetail packageWarningDetails = getPackageSummaryWarning(containers, packings);
         //For Weight warnings
@@ -148,7 +148,7 @@ public class CargoService implements ICargoService {
         return packageWarningDetails;
     }
 
-    private void updateEditableFlags(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) {
+    public void updateEditableFlags(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) {
         if(packings.isEmpty() && containers.isEmpty()) {
             response.setIsCargoSummaryEditable(Boolean.TRUE);
         } else if(packings.isEmpty()) {
