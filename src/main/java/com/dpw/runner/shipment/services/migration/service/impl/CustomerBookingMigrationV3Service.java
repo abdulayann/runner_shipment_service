@@ -448,7 +448,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             calculateCargoDetails(packings, containers, booking, shipmentSettingsDetails);
             calculateVW(booking, oldBooking);
         }
-        customerBookingDao.save(booking);
+        customerBookingRepository.save(booking);
     }
 
     private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
