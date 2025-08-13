@@ -1,0 +1,1 @@
+Delete from network_transfer where id = 2101;
