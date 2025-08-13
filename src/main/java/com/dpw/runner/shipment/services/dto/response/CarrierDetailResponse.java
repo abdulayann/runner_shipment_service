@@ -52,6 +52,8 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private Map<String, String> unlocationData;
     private Map<String, String> carrierMasterData;
     private Map<String, String> vesselsMasterData;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime vesselBerthingDate;
     private String voyageOrFlightNumber;
     private String carrierCountry;

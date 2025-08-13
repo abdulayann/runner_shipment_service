@@ -55,19 +55,40 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String printOtherDocs;
     private String awbDims;
     private String releaseType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime masterBillIssueDate;
     private String dgClass;
     private String dgSubstance;
     private Boolean override;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime estimatedTerminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime terminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime verifiedGrossMassCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime reeferCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime bookingCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime shipInstructionCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime hazardousBookingCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime latestFullEquDeliveredToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime earliestDropOffFullEquToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
@@ -80,20 +101,27 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String description;
     private String marksnNums;
     private String additionalTerms;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime docsClosingTime;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoClosingTime;
     private String mrnNumber;
     private String msnNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime igmFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime igmInwardDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime inwardDateAndTime;
     private String igmFileNo;
     private String smtpigmNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime smtpigmDate;
     private Boolean isInland;
     private Integer original;
     private Integer copy;
     private String doPlaceOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
