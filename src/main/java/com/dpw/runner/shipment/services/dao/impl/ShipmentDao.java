@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -133,6 +134,11 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setConsolidationList(new HashSet<>());
             if (shipmentDetails.getContainersList() == null)
                 shipmentDetails.setContainersList(new HashSet<>());
+        }
+        if(shipmentDetails.getMigrationStatus() == null && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        } else if (shipmentDetails.getMigrationStatus() == null){
+            shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         }
         try {
             onSave(shipmentDetails, errors, oldShipment, fromV1Sync, isFromBookingV3);
