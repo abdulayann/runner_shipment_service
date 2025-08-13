@@ -2810,10 +2810,6 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-
-                String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
-
-                // Initialize & increment atomically
                 int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
 
                 String suffix = count > 0 ? "_" + count : "";
