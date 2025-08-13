@@ -172,7 +172,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void updateShipmentFields(ShipmentDetails shipmentDetails) {
-        shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
         shipmentDetails.setTriggerMigrationWarning(true);
         shipmentDetails.setIsLocked(false);
         migrateServiceTypes(shipmentDetails);
@@ -330,7 +329,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         // need to add shipment details transformation logic
         shipmentDetails.setAutoUpdateWtVol(true);
         shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
-        shipmentDetails.setCargoReadyDate(shipmentDetails.getCargoReadinessDate());
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
