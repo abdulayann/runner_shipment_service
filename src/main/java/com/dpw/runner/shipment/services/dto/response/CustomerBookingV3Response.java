@@ -162,9 +162,9 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
     private BigDecimal teuCount;
-    private long containers;
+    private Long containers;
     private String packageType;
-    private long packages;
+    private Long packages;
     private String description;
     private String marksnNumbers;
     private String additionalTerms;

@@ -2578,7 +2578,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 contractId(customerBookingRequest.getContractId()).
                 parentContractId(customerBookingRequest.getParentContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
-                noOfPacks((int) customerBookingRequest.getPackages()).
+                noOfPacks(Math.toIntExact(
+                        customerBookingRequest.getPackages() != null ? customerBookingRequest.getPackages() : 0L
+                )).
                 goodsDescription(customerBookingRequest.getDescription()).
                 marksNum(customerBookingRequest.getMarksnNumbers()).
                 packsUnit(customerBookingRequest.getPackageType()).
