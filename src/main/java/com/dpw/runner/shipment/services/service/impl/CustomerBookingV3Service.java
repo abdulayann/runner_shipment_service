@@ -2395,7 +2395,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
         List<String> weightUnits = containersList.stream()
-                                        .map(Containers::getGrossWeightUnit)
+                                        .map(Containers::getContainerWeightUnit)
                                         .filter(Objects::nonNull)
                                         .collect(Collectors.toList());
         String weightUnit = resolveUnit(weightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
