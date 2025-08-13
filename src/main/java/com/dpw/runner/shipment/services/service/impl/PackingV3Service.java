@@ -295,7 +295,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
+    void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
 
         for (Long packingId : requestIds) {
             Packing updatedPacking = updatedPackingMap.get(packingId);
