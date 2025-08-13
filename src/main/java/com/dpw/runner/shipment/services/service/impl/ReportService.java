@@ -2813,22 +2813,21 @@ public class ReportService implements IReportService {
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
 
-                // Unique key for counting in-memory
-                String key = docType + "|" + entityGuid + "|" + (childType != null ? childType : "");
-                // Increment the in-memory count (start at 0 if not present)
-                int count = namingCache.merge(key, 0, (oldVal, newVal) -> oldVal + 1);
-                String suffix = count == 0 ? "" : "_" + count;
-                if ((docType.equals(DocumentConstants.HBL)
-                        || docType.equals(ReportConstants.MAWB)
-                        || docType.equals(ReportConstants.HAWB))
+                String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
+
+                // Initialize & increment atomically
+                int count = namingCache.compute(key, (k, v) -> (v == null)
+                        ? getExistingDocumentCount(entityGuid, docType, childType)
+                        : v + 1);
+
+                String suffix = count > 0 ? "_" + count : "";
+
+                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
-                    customFileName = baseDocName + "_"
-                            + StringUtility.convertToString(childType).toUpperCase()
-                            + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                    customFileName = baseDocName + "_" + StringUtility.convertToString(childType).toUpperCase() + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else {
                     customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
-
                 docUploadRequest.setFileName(customFileName);
                 log.info("Custom file name generated: {}", customFileName);
             }
@@ -2837,7 +2836,29 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+        try {
+            DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
+                    .entityKey(entityGuid)
+                    .build();
+            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
+                    .entities(Collections.singletonList(request))
+                    .build();
 
+            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
+                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
+
+            if (response != null && response.getData() != null) {
+                return (int) response.getData().stream()
+                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
+                        .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
+                                file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
+            }
+        } catch (Exception e) {
+            log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
+        }
+        return 0;
+    }
 
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;

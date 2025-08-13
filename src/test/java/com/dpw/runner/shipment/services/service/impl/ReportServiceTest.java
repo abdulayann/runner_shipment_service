@@ -4806,15 +4806,16 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void shouldAppendSuffix_WhenFileAlreadyExists() throws Exception {
+    void shouldNotAppendSuffix_WhenNoFileExists() throws Exception {
         DocUploadRequest request = new DocUploadRequest();
         request.setDocType(DocumentConstants.HBL);
         request.setChildType(ReportConstants.DRAFT);
         String entityGuid = "1234565431";
         String identifier = "SHIP123";
         setNamingCache(reportService, DocumentConstants.HBL, entityGuid, ReportConstants.DRAFT, 0);
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName);
+        String fileName = reportService.applyCustomNaming(
+                request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
+        assertEquals("HBL_DRAFT_SHIP123.pdf", fileName); // no suffix for first file
     }
 
 }
