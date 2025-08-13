@@ -72,7 +72,9 @@ public class AuthFilter extends OncePerRequestFilter {
             "/rollback/**",
             "/api/v2/enums/**",
             "/api/v2/events/push-tracking-events",
-            "/api/v2/cache/**"};
+            "/api/v2/cache/**",
+            "/api/v2/network-transfer/create/external/bridge"
+    };
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
