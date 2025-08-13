@@ -421,7 +421,7 @@ class TrackingServiceAdapterTest {
     void convertTrackingEventCodeToShortCode_GateInWithContainerEmpty_Origin() {
         Event event = new Event();
         event.setLocationRole(EventConstants.ORIGIN);
-        event.setEventType(EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY);
+        event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
         event.setDescription("some description");
         Container container = Container.builder()
                 .journey(Journey.builder().scacCode("").build())
