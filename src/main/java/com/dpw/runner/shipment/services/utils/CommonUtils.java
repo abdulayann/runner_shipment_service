@@ -3084,4 +3084,18 @@ public class CommonUtils {
         }
         return new HashMap<>();
     }
+
+    public EntityTransferAddress getEntityTransferAddress(String transportMode) {
+        try {
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            EntityTransferAddress entityTransferAddress = getEntityTransferAddress(tenantModel);
+            if ((Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                    || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) && null != entityTransferAddress) {
+                return entityTransferAddress;
+            }
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+        }
+        return null;
+    }
 }

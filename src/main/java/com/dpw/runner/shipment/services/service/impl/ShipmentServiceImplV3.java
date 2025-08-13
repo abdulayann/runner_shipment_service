@@ -679,7 +679,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
             request.setSlac(null);
         }
-        String placeOfIssue = getPlaceOfIssue(request.getTransportMode());
+        EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(request.getTransportMode());
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
 
@@ -696,8 +696,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
 
             ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
-            log.info("placeOfIssue is - {}", placeOfIssue);
-            setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, shipmentDetails);
+            setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
             beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid, consoleShipmentData);
             shipmentDetails.setConsolidationList(null);
             shipmentDetails.setContainersList(null);
@@ -770,7 +769,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentDetails entity = jsonHelper.convertValue(shipmentRequest, ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setId(oldEntity.get().getId());
-            String placeOfIssue = getPlaceOfIssue(entity.getTransportMode());
+            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(entity.getTransportMode());
             mid = System.currentTimeMillis();
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
@@ -793,8 +792,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             entity.setConsolidationList(null);
             entity.setContainersList(null);
             setShipmentCargoFields(entity, oldEntity.get());
-            log.info("placeOfIssue is - {}", placeOfIssue);
-            setPlaceOfIssueInAdditionalDetailsIfExist(placeOfIssue, entity);
+            setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, entity);
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
@@ -824,28 +822,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new ValidationException(e.getMessage());
         }
     }
-    private static void setPlaceOfIssueInAdditionalDetailsIfExist(String placeOfIssue, ShipmentDetails entity) {
+    public void setPlaceOfIssueInAdditionalDetailsIfExist(EntityTransferAddress entityTransferAddress, ShipmentDetails entity) {
         AdditionalDetails additionalDetailModel = entity.getAdditionalDetails();
-        if (null == additionalDetailModel && null != placeOfIssue) {
+        if (null == additionalDetailModel && null != entityTransferAddress && null != entityTransferAddress.getCity()) {
             entity.setAdditionalDetails(new AdditionalDetails());
         }
-        if (null != placeOfIssue) {
-            entity.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(placeOfIssue));
+        if (null != entityTransferAddress && null != entityTransferAddress.getCity()) {
+            log.info("placeOfIssue is - {}", entityTransferAddress.getCity());
+            entity.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
         }
-    }
-
-    private String getPlaceOfIssue(String transportMode) {
-        try {
-            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-            EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-            if ((Constants.TRANSPORT_MODE_SEA.equals(transportMode)
-                    || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) && null != entityTransferAddress) {
-                return entityTransferAddress.getCity();
-            }
-        } catch (Exception e) {
-            log.error(e.getLocalizedMessage());
-        }
-        return null;
     }
 
     private Boolean isContractUpdated(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails) {
