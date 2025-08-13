@@ -50,7 +50,7 @@ public class ContainersExcelModel {
     private Boolean isShipperOwned;
     @ExcelCell(displayName = "IsEmpty")
     private Boolean isEmpty;
-    @ExcelCell(displayName = "ContainerCount")
+    @ExcelCell(displayName = "ContainerCount", requiredInV3 = false)
     private Long containerCount;
     @ExcelCell(displayName = "CarrierSealNumber")
     private String carrierSealNumber;
