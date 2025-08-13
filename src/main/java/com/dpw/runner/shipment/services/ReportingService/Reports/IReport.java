@@ -549,11 +549,11 @@ public abstract class IReport {
 
         if (Objects.isNull(shipmentModel) || Objects.isNull(shipmentModel.getAdditionalDetails())) return;
 
-        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
+        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboard();
         if (Objects.nonNull(shippedOnboardDate)) {
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
-                    shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
+                    shippedOnboardDate, "ddMMMyyyy", false));
         }
     }
 
@@ -2821,7 +2821,7 @@ public abstract class IReport {
             else
                 strDate = formatedDate.format(getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
-        return strDate;
+        return strDate.toUpperCase();
     }
 
     public String convertToWeightNumberFormat(BigDecimal weight) {
