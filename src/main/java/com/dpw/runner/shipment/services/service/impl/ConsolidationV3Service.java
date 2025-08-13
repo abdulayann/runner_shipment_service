@@ -121,6 +121,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -2943,7 +2944,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationDetailsV3Response retrieveById(CommonGetRequest request, String source) throws RunnerException, AuthenticationException {
         if (request.getId() == null && request.getGuid() == null) {
             log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
         }
         Long id = request.getId();
         Optional<ConsolidationDetails> consolidationDetails;
@@ -3047,6 +3048,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         consolidationDetailsV3Response.setShipmentWtVolResponse(shipmentWtVolResponse);
         consolidationDetailsV3Response.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
+    }
+
+    protected void calculateShipmentWtVolForExternal(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3ExternalResponse consolidationDetailsV3ExternalResponse) throws RunnerException{
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        consolidationDetailsV3ExternalResponse.setShipmentWtVolResponse(shipmentWtVolResponse);
+        consolidationDetailsV3ExternalResponse.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
     }
 
     @Override
@@ -4915,4 +4922,87 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
 
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternal(CommonGetRequest request) throws RunnerException, AuthenticationException {
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        Long id = request.getId();
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // logging data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        ConsolidationDetailsV3ExternalResponse response = jsonHelper.convertValue(consolDetails, ConsolidationDetailsV3ExternalResponse.class);
+
+        // calc shipment weight and volume
+        calculateShipmentWtVolDetail(consolDetails, response);
+
+        return response;
+
+    }
+    
+    private  ConsolidationDetails getConsolDetailsByIdorGuid(Long id, CommonGetRequest request) throws RunnerException, AuthenticationException{
+        Optional<ConsolidationDetails> consolidationDetails;
+
+        // retrieve data based on id/guid
+        if (id != null) {
+            consolidationDetails = consolidationDetailsDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        return consolidationDetails.get();
+    }
+
+    private void calculateShipmentWtVolDetail(ConsolidationDetails consolDetails, ConsolidationDetailsV3ExternalResponse response){
+        try {
+            // calculate Shipment Weight and Volume
+            this.calculateShipmentWtVolForExternal(consolDetails, response);
+        } catch (Exception e) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, e.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternalPartial(CommonGetRequest request) throws RunnerException, AuthenticationException{
+
+        // validate id's and non empty includedColumns in request
+        validateRequest(request);
+
+        Long id = request.getId();
+
+        // get consolidation details acc to source
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // log data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        // building response based on filtered Columns
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        ConsolidationDetailsV3ExternalResponse response = (ConsolidationDetailsV3ExternalResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, includeColumns, new ConsolidationDetailsV3ExternalResponse());
+        // calculate Shipment Weight and Volume for external resp
+        calculateShipmentWtVolDetail(consolDetails, response);
+
+        return response;
+    }
+
+    private void validateRequest(CommonGetRequest request) throws RunnerException{
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external partial retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        if (listIsNullOrEmpty(request.getIncludeColumns())) {
+            throw new RunnerException("IncludeColumns can't be null or empty");
+        }
+    }
 }
