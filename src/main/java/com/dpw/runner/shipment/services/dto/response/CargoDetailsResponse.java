@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,6 +33,7 @@ public class CargoDetailsResponse {
     private BigDecimal teuCount;
     private Integer dgPacks;
     private String dgPacksUnit;
-    private Boolean isDifferenceInPackages;
-    private Boolean isDifferenceInCargoWeight;
+    private Boolean isVolumeEditable = Boolean.FALSE;;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;;
+    private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
 }

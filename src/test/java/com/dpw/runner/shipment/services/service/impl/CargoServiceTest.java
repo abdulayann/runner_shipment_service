@@ -11,12 +11,14 @@ import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -57,7 +59,10 @@ class CargoServiceTest {
     private ConsolidationV3Service consolidationService;
 
     @Mock
-    private ICustomerBookingV3Service customerBookingV3Service;
+    private CustomerBookingV3Service customerBookingV3Service;
+
+    @Mock
+    private ShipmentsV3Util shipmentsV3Util;
 
     @Mock
     private CommonUtils commonUtils;
@@ -123,6 +128,7 @@ class CargoServiceTest {
         packing.setVolume(BigDecimal.valueOf(2));
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
+        packing.setPacksType("PKG");
         booking.setPackingList(List.of(packing));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
@@ -154,6 +160,7 @@ class CargoServiceTest {
         packing.setVolume(BigDecimal.valueOf(2));
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
+        packing.setPacksType("PKG");
         booking.setPackingList(List.of(packing));
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("20GP");
@@ -185,6 +192,8 @@ class CargoServiceTest {
         booking.setTransportType(null);
 
         Packing packing = new Packing();
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
         packing.setWeight(BigDecimal.valueOf(100));
         packing.setWeightUnit("KG");
         packing.setVolume(BigDecimal.valueOf(2));
@@ -224,6 +233,8 @@ class CargoServiceTest {
 
         Packing packing = new Packing();
         packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
         packing.setWeightUnit("KG");
         packing.setVolume(BigDecimal.valueOf(3));
         packing.setVolumeUnit("M3");

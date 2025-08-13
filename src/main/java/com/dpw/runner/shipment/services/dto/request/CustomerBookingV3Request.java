@@ -131,9 +131,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     private LocalDateTime latestArrivalTime;
     private BigDecimal teuCount;
-    private long containers;
+    private Long containers;
     private String packageType;
-    private long packages;
+    private Long packages;
     private String description;
     private String marksnNumbers;
     private String additionalTerms;
