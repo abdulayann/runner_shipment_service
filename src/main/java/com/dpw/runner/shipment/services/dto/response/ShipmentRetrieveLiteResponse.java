@@ -170,6 +170,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long notifyPartyDpsAddressId;
     private List<String> implicationList;
     private Long shipmentCount;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
