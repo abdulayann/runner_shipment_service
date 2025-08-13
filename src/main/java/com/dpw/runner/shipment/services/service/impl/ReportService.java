@@ -2881,7 +2881,7 @@ public class ReportService implements IReportService {
         docUploadRequest.setConsolidationType(consolidationType);
         // Apply custom naming if applicable and override
         try {
-            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier, entityGuid);
+            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), entityGuid, identifier);
             if (customFileName != null) {
                 docUploadRequest.setFileName(customFileName); // override default
             }
