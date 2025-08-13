@@ -3815,6 +3815,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of());
         when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
