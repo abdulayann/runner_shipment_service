@@ -2811,7 +2811,6 @@ public class ReportService implements IReportService {
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
                 int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
-                count = count + 1;
                 String suffix = count > 0 ? "_" + count : "";
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
