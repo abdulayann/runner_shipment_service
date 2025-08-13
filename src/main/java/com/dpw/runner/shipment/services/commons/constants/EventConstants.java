@@ -108,6 +108,7 @@ public class EventConstants {
     public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
     public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
     public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
+    public static final String GATE_OUT_WITH_CONTAINER_EMPTY = "gateOutWithContainerEmpty";
     public static final String FLIGHT_ARRIVAL = "flightArrival";
     public static final String FLIGHT_DEPARTURE = "flightDeparture";
     public static final String LITERAL = "literal";
