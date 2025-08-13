@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -1754,7 +1753,7 @@ class HawbReportTest extends CommonMocks {
         additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
         additionalDetailModel.setOnBoard("RFS");
         additionalDetailModel.setOnBoardDate(LocalDateTime.now());
-        additionalDetailModel.setShippedOnboardDate(LocalDateTime.now());
+        additionalDetailModel.setShippedOnboard(LocalDateTime.now());
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
 
