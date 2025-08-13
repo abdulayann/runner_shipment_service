@@ -522,38 +522,44 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
         }
     }
+
+    private ShipmentRetrieveExternalResponse fetchShipmentRetrieveExternalResponse(String source, CommonGetRequest request, double start) throws AuthenticationException, RunnerException {
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
+        }
+        Long id = request.getId();
+        Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
+        if (!shipmentDetails.isPresent()) {
+            log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        double current = System.currentTimeMillis();
+        log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, id, LoggerHelper.getRequestIdFromMDC(), current - start);
+
+        ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
+        containerTeuFuture.join();
+
+        ShipmentRetrieveExternalResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveExternalResponse.class);
+        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+        if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length) {
+            response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+        }
+        setDgPackCountAndTypeExternalResponse(shipmentDetailsEntity, response);
+        setRoutingsExternalResponse(shipmentDetailsEntity, response);
+        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
+        return response;
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdExternal(CommonRequestModel commonRequestModel, String source) {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             double start = System.currentTimeMillis();
-            if (request.getId() == null && request.getGuid() == null) {
-                log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
-            }
-            Long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            double current = System.currentTimeMillis();
-            log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, id, LoggerHelper.getRequestIdFromMDC(), current - start);
-
-            ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
-            ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
-            var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
-            containerTeuFuture.join();
-
-            ShipmentRetrieveExternalResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveExternalResponse.class);
-            log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-            if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length) {
-                response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
-            }
-            setDgPackCountAndTypeExternalResponse(shipmentDetailsEntity, response);
-            setRoutingsExternalResponse(shipmentDetailsEntity, response);
-            response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
-            response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
+            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalResponse(source, request, start);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
@@ -567,26 +573,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             double start = System.currentTimeMillis();
-            if (request.getId() == null && request.getGuid() == null) {
-                log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
-            }
             if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
                 throw new ValidationException("Include Columns field is mandatory");
             }
             Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
             CommonUtils.includeRequiredColumns(includeColumns);
-
-            Long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            double current = System.currentTimeMillis();
-            log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, id, LoggerHelper.getRequestIdFromMDC(), current - start);
-            ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
-            ShipmentRetrieveExternalResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveExternalResponse.class);
+            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalResponse(source, request, start);
             ShipmentRetrieveExternalResponse filteredResponse = (ShipmentRetrieveExternalResponse) commonUtils.setIncludedFieldsToResponse(response, includeColumns, new ShipmentRetrieveExternalResponse());
             return ResponseHelper.buildSuccessResponse(filteredResponse);
         } catch (Exception e) {
