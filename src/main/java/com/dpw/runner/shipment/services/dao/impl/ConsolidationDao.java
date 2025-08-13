@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
@@ -101,6 +102,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
+        if(consolidationDetails.getMigrationStatus() == null && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        } else if (consolidationDetails.getMigrationStatus() == null){
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
+        }
         onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
         return consolidationDetails;
     }
@@ -801,6 +807,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 consolidationDetails.setShipmentsList(oldEntity.get().getShipmentsList());
             }
             oldConsole = oldEntity.get();
+        }
+        if(consolidationDetails.getMigrationStatus() == null) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         }
         onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
