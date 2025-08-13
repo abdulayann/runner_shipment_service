@@ -34,8 +34,4 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3Response findByBookingNumber(String bookingNumber) throws RunnerException;
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
-    Long getTotalContainerPackages(List<Containers> containersList);
-
-    void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap, CustomerBooking oldBooking) throws RunnerException;
-    BigDecimal getTotalCargoWeight(List<Containers> containersList, String weightUnit) throws RunnerException;
 }
