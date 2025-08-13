@@ -86,6 +86,7 @@ class CargoServiceTest {
         container1.setPackagesPerContainer(2L);
         container2.setContainerCode("20GP");
         customerBooking.setContainersList(List.of(container1, container2));
+        when(customerBookingV3Service.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -100,6 +101,7 @@ class CargoServiceTest {
         // Prepare test data
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = mock(CustomerBooking.class);
+        when(customerBookingV3Service.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
 
         // Test
