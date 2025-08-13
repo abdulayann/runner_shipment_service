@@ -27,6 +27,7 @@ public class DocumentManagerEntityFileResponse {
     private String childType;
 
     private String childId;
+    private String docCode;
 
     private String secureDownloadLink;
 
