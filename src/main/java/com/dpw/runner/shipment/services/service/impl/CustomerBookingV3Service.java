@@ -903,6 +903,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     c.setContainerCount(containerResponse.getContainerCount());
                     c.setGrossWeight(containerResponse.getGrossWeight());
                     c.setGrossWeightUnit(containerResponse.getGrossWeightUnit());
+                    c.setPackagesPerContainer(containerResponse.getPackagesPerContainer());
+                    c.setContainerPackageType(containerResponse.getContainerPackageType());
+                    c.setCargoWeightPerContainer(containerResponse.getCargoWeightPerContainer());
+                    c.setContainerWeightUnit(containerResponse.getContainerWeightUnit());
                     return c;
                 }).toList());
             }
@@ -930,6 +934,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     p.setCommodityGroup(packingResponse.getCommodityGroup());
                     p.setChargeable(packingResponse.getChargeable());
                     p.setChargeableUnit(packingResponse.getChargeableUnit());
+                    p.setCargoWeightPerPack(packingResponse.getCargoWeightPerPack());
+                    p.setPackWeightUnit(packingResponse.getPackWeightUnit());
+                    p.setVolumePerPack(packingResponse.getVolumePerPack());
+                    p.setVolumePerPackUnit(packingResponse.getVolumePerPackUnit());
                     return p;
                 }).toList());
             }

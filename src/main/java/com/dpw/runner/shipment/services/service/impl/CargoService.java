@@ -110,6 +110,12 @@ public class CargoService implements ICargoService {
             BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), packsWeightUnit).toString());
             packageWeight = packageWeight.add(weight);
         }
+        if (BigDecimal.ZERO.compareTo(packageWeight) == 0) {
+            packageWeight = null;
+        }
+        if (BigDecimal.ZERO.compareTo(containerWeight) == 0) {
+            containerWeight = null;
+        }
         weightWarningDetails = shipmentsV3Util.generateWarning(
                 packageWeight,
                 packsWeightUnit,
@@ -137,7 +143,7 @@ public class CargoService implements ICargoService {
         }
         String containerPackType = (containerPackageTypes.size() == 1) ? containerPackageTypes.iterator().next() : PackingConstants.PKG;
         String packType = (packageTypes.size() == 1) ? packageTypes.iterator().next() : PackingConstants.PKG;
-        if (totalContainerPackages != null && !totalPackages.equals(totalContainerPackages)) {
+        if (!totalPackages.equals(0L) && !totalContainerPackages.equals(0L) && !totalPackages.equals(totalContainerPackages)) {
              packageWarningDetails = new ShipmentSummaryWarningsResponse.WarningDetail(
                     true,
                     totalContainerPackages + " " + containerPackType,
