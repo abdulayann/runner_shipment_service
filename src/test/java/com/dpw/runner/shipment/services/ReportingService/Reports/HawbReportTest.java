@@ -1751,7 +1751,7 @@ class HawbReportTest extends CommonMocks {
         additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
         additionalDetailModel.setOnBoard("RFS");
         additionalDetailModel.setOnBoardDate(LocalDateTime.now());
-        additionalDetailModel.setShippedOnboard(LocalDateTime.now());
+        additionalDetailModel.setShippedOnboard(LocalDateTime.now().plusDays(1));
         shipmentModel.setCarrierDetails(carrierDetailModel);
         shipmentModel.setAdditionalDetails(additionalDetailModel);
 
