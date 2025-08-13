@@ -1394,4 +1394,32 @@ class PackingV3ServiceTest extends CommonMocks {
         assertThrows(ValidationException.class,
                 () -> packingV3Service.list(null, true, "WEB", "SHIPMENT"));
     }
+    @Test
+    void testUpdateBulk_FCLError() {
+        List<PackingV3Request> requestList = List.of(request);
+        testShipment.setDirection(null);
+        testShipment.setShipmentType("FCL");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false);
+        testShipment.setConsolidationList(Set.of(consolidationDetails));
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(commonUtils.isFCL(anyString())).thenReturn(true);
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT"));
+    }
+    @Test
+    void testUpdateBulk_LCLError() {
+        List<PackingV3Request> requestList = List.of(request);
+        testShipment.setDirection(null);
+        testShipment.setShipmentType("LCL");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false);
+        testShipment.setConsolidationList(Set.of(consolidationDetails));
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(commonUtils.isLCL(anyString())).thenReturn(true);
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT"));
+    }
 }

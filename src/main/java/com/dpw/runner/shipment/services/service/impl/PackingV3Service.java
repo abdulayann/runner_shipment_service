@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -470,7 +469,7 @@ public class PackingV3Service implements IPackingV3Service {
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
-
+        validateOpenAttachmentFlag(module, entity);
         // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
@@ -554,6 +553,19 @@ public class PackingV3Service implements IPackingV3Service {
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private void validateOpenAttachmentFlag(String module, Object entity) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            ShipmentDetails shipmentDetails = (ShipmentDetails) entity;
+            Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+            if (!CollectionUtils.isEmpty(consolidationList) && (commonUtils.isFCL(shipmentDetails.getShipmentType()) || commonUtils.isLCL(shipmentDetails.getShipmentType()))) {
+                Boolean openForAttachment = consolidationList.stream().toList().get(0).getOpenForAttachment();
+                if (openForAttachment != null && !openForAttachment ) {
+                    throw new ValidationException("Allow Shipment Attachment is Off, Please enable to proceed further.");
+                }
+            }
+        }
     }
 
     private List<Packing> saveIfNotEmpty(List<Packing> packings) {
