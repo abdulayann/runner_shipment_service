@@ -1549,7 +1549,7 @@ public class PackingV3Service implements IPackingV3Service {
     private void updateAttachedContainersData(List<Packing> packings, ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null ||
                 !(TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
-                        TRANSPORT_MODE_ROA.equalsIgnoreCase(shipmentDetails.getTransportMode())))
+                        TRANSPORT_MODE_ROA.equalsIgnoreCase(shipmentDetails.getTransportMode()) || TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode())))
             return;
         Set<Long> containerIdsToUpdate = new HashSet<>();
         packings.forEach(e -> {
