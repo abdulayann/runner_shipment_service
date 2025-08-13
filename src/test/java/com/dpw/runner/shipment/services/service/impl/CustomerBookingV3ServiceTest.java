@@ -153,6 +153,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private DependentServiceHelper dependentServiceHelper;
     @Mock
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Mock
+    private CargoService cargoService;
 
     @Mock
     private INotesDao notesDao;

@@ -117,7 +117,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3Response.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_BOOKING_NUMBER)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
-    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.findByBookingNumber(bookingNumber));
     }
 

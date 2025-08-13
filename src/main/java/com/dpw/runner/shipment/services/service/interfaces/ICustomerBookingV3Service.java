@@ -31,7 +31,7 @@ public interface ICustomerBookingV3Service {
     CheckCreditLimitResponse checkCreditLimitFromFusion(CreditLimitRequest creditLimitRequest) throws RunnerException;
     V1ShipmentCreationResponse retryForBilling(CommonGetRequest commonGetRequest) throws RunnerException;
     Map<String, Object> getAllMasterData(Long bookingId);
-    CustomerBookingV3Response findByBookingNumber(String bookingNumber);
+    CustomerBookingV3Response findByBookingNumber(String bookingNumber) throws RunnerException;
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
     Long getTotalContainerPackages(List<Containers> containersList);
