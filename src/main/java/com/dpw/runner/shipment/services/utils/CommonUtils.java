@@ -2921,6 +2921,12 @@ public class CommonUtils {
     public boolean isFCLorFTL(String cargoType) {
         return (CARGO_TYPE_FCL.equals(cargoType) || CARGO_TYPE_FTL.equals(cargoType));
     }
+    public boolean isFCL(String cargoType) {
+        return CARGO_TYPE_FCL.equals(cargoType);
+    }
+    public boolean isLCL(String cargoType) {
+        return CARGO_TYPE_LCL.equals(cargoType);
+    }
 
     public String getPacksUnit(String curUnit, String entityPacksUnit) {
         if(isStringNullOrEmpty(curUnit))
