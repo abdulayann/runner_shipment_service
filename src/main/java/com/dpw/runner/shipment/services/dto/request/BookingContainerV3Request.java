@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;

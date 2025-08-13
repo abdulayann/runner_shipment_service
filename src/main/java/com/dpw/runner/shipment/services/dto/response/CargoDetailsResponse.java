@@ -33,7 +33,7 @@ public class CargoDetailsResponse {
     private BigDecimal teuCount;
     private Integer dgPacks;
     private String dgPacksUnit;
-    private Boolean isVolumeEditable = Boolean.FALSE;;
-    private Boolean isCargoSummaryEditable = Boolean.FALSE;;
+    private Boolean isVolumeEditable = Boolean.FALSE;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
 }
