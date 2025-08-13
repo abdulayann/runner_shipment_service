@@ -249,8 +249,6 @@ public class ReportService implements IReportService {
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
-    private final Map<String, Integer> namingCache = new ConcurrentHashMap<>();
-
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
     @Autowired
@@ -2816,9 +2814,7 @@ public class ReportService implements IReportService {
                 String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
 
                 // Initialize & increment atomically
-                int count = namingCache.compute(key, (k, v) -> (v == null)
-                        ? getExistingDocumentCount(entityGuid, docType, childType)
-                        : v + 1);
+                int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
 
                 String suffix = count > 0 ? "_" + count : "";
 
@@ -2836,10 +2832,12 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
-    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType, String type) {
         try {
             DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
                     .entityKey(entityGuid)
+                    .entityType(type)
+                    .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
                     .build();
             DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
                     .entities(Collections.singletonList(request))
@@ -2850,7 +2848,7 @@ public class ReportService implements IReportService {
 
             if (response != null && response.getData() != null) {
                 return (int) response.getData().stream()
-                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
+                        .filter(file -> file.getFileType() != null && file.getDocCode().trim().equalsIgnoreCase(docType.trim()))
                         .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
                                 file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
             }
