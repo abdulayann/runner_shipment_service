@@ -39,6 +39,7 @@ public class PackingConstants {
             Map.entry(Constants.CONSOLIDATION_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONSOLIDATION_ID).build()),
             Map.entry(Constants.CONTAINER_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONTAINER_ID).build()),
             Map.entry("bookingId", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName("bookingId").build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("updatedAt").build())
     );
 }
