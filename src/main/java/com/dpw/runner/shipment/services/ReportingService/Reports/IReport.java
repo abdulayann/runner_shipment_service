@@ -500,6 +500,8 @@ public abstract class IReport {
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
         populateShippedOnboardFields(shipment, dictionary);
+        populateReeferFields(shipment, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipment.getShipmentType());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
@@ -586,7 +588,28 @@ public abstract class IReport {
         dictionary.put(IS_DG, false);
         if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
             dictionary.put(IS_DG, true);
+            dictionary.put(S_DG_FLAG, YES);
             dictionary.put(DG_EMERGENCY_CONTACT, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
+        }
+    }
+
+    public void populateReeferFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel)) return;
+        dictionary.put(S_REEFER_FLAG, Boolean.FALSE);
+        if (Boolean.TRUE.equals(shipmentModel.getIsReefer())) {
+            dictionary.put(S_REEFER_FLAG, Boolean.TRUE);
+            dictionary.put(SHIPMENT_REEFER_Flag, YES);
+        }
+    }
+
+    public void populateDGFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel)) return;
+        dictionary.put(IS_DG, Boolean.FALSE);
+        if (Boolean.TRUE.equals(shipmentModel.getContainsHazardous())) {
+            dictionary.put(IS_DG, Boolean.TRUE);
+            dictionary.put(S_DG_FLAG, YES);
         }
     }
 
