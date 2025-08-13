@@ -7523,6 +7523,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
         when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class))).thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
