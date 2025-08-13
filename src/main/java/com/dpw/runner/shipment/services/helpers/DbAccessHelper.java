@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -561,5 +562,21 @@ public class DbAccessHelper {
         } catch (ParseException e) {
             return null;
         }
+    }
+    public static Order buildSortOrder(CriteriaBuilder cb,
+                                 Root<ShipmentDetails> root,
+                                 Map<String, Object> payload) {
+        Map<String, Object> sortRequest =
+                (Map<String, Object>) payload.get("sortRequest");
+        if (sortRequest != null) {
+            String fieldName = (String) sortRequest.get("fieldName");
+            String order = (String) sortRequest.get("order");
+            if ("DESC".equalsIgnoreCase(order)) {
+                return cb.desc(root.get(fieldName));
+            } else {
+                return cb.asc(root.get(fieldName));
+            }
+        }
+        return null;
     }
 }

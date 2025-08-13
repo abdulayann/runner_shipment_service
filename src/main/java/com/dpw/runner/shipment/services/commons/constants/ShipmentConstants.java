@@ -1,6 +1,23 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 
 import java.math.BigDecimal;
@@ -154,6 +171,30 @@ public class ShipmentConstants {
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
 
+    );
+    public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
+            Map.entry("shipmentDetails", ShipmentDetails.class),
+            Map.entry("additionalDetails", AdditionalDetails.class),
+            Map.entry("carrierDetails", CarrierDetails.class),
+            Map.entry("packingList", Packing.class),
+            Map.entry("elDetailsList", ELDetails.class),
+            Map.entry("shipmentAddresses", Parties.class),
+            Map.entry("bookingCarriagesList", BookingCarriage.class),
+            Map.entry("eventsList", Events.class),
+            Map.entry("referenceNumbersList", ReferenceNumbers.class),
+            Map.entry("routingsList", Routings.class),
+            Map.entry("servicesList", ServiceDetails.class),
+            Map.entry("truckDriverDetails", TruckDriverDetails.class),
+            Map.entry("triangulationPartnerList", TriangulationPartner.class),
+            Map.entry("notesList", Notes.class),
+            Map.entry("deliveryDetails", PickupDeliveryDetails.class),
+            Map.entry("pickupDetails", PickupDeliveryDetails.class),
+            Map.entry("client", Parties.class),
+            Map.entry("consigner", Parties.class),
+            Map.entry("consignee", Parties.class),
+            Map.entry("jobsList", Jobs.class),
+            Map.entry("shipmentOrders", ShipmentOrder.class),
+            Map.entry("pickupDeliveryDetailsInstructions", PickupDeliveryDetails.class)
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";

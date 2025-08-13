@@ -22,10 +22,12 @@ import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -51,7 +53,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @RestController
@@ -289,5 +294,21 @@ public class ShipmentControllerV3 {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+    @PostMapping("/dynamic/list")
+    public  Map<String, Object> getShipmentList(@RequestBody Map<String, Object> requestedColumns) {
+        return shipmentService.fetchShipments(requestedColumns);
+    }
+    @PostMapping("/dynamic/retrieve")
+    public  Map<String, Object> retrieveShipmentDetails(@RequestBody Map<String, Object> requestedColumns, @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam(required = false) Long id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = false) @RequestParam(required = false) UUID guid) {
+        ShipmentDynamicRequest request = new ShipmentDynamicRequest();
+       if(id!=null) {
+          request.setId(id);
+       } else if(guid !=null) {
+           request.setGuid(guid);
+       } else {
+           throw new ValidationException("Id or Guid is mandatory");
+       }
+        return shipmentService.getShipmentDetails(requestedColumns, request);
     }
 }
