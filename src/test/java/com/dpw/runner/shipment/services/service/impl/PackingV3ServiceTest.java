@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -67,6 +69,7 @@ import java.util.concurrent.Executors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
@@ -84,6 +87,8 @@ class PackingV3ServiceTest extends CommonMocks {
 
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IContainerDao containerDao;
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
@@ -1421,5 +1426,100 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
 
         assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT"));
+    }
+
+    @Test
+    void testAddDGValidation_NoValidationTriggered_DGClassNotAdded() {
+        Packing oldPacking = new Packing();
+        oldPacking.setDGClass("EXISTING");
+
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(100L);
+
+        Containers container = new Containers();
+        container.setDgClass(null);
+
+        when(containerDao.findById(100L)).thenReturn(Optional.of(container));
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
+
+        // Verify that the container was queried
+        verify(containerDao).findById(100L);
+    }
+
+    @Test
+    void testAddDGValidation_ValidationTriggered() {
+        Packing oldPacking = new Packing();
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(200L);
+
+        Containers container = new Containers();
+        container.setDgClass(null);
+        container.setUnNumber(null);
+        container.setProperShippingName(null);
+
+        when(containerDao.findById(200L)).thenReturn(Optional.of(container));
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds)
+        );
+
+        assertEquals(OCEAN_DG_CONTAINER_FIELDS_VALIDATION, ex.getMessage());
+    }
+
+    @Test
+    void testAddDGValidation_DGClassAddedButValidContainerFields() {
+        Packing oldPacking = new Packing();
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(300L);
+
+        Containers container = new Containers();
+        container.setDgClass("DGC");
+        container.setUnNumber("UN1234");
+        container.setProperShippingName("Some Name");
+
+        when(containerDao.findById(300L)).thenReturn(Optional.of(container));
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
+
+        // Verify that the container was queried and no exception was thrown
+        verify(containerDao).findById(300L);
+    }
+
+    @Test
+    void testAddDGValidation_ContainerNotFound() {
+        Packing oldPacking = new Packing();
+        oldPacking.setDGClass(null);
+
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(400L);
+
+        when(containerDao.findById(400L)).thenReturn(Optional.empty());
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+       assertThrows(ValidationException.class, () ->
+                packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds)
+        );
+
+        // Verify that the container lookup was attempted
+        verify(containerDao).findById(400L);
     }
 }
