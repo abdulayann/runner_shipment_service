@@ -215,6 +215,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -4267,52 +4268,51 @@ public class ShipmentService implements IShipmentService {
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+        }
+
         String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
         Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+        request.setPageSize(exportExcelLimit);
+        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(request);
+        long shipmentCount = shipmentDetailsPage.getTotalElements();
 
-        Integer shipmentCount = 10;
-
-        if(shipmentCount < exportExcelLimit){
-            downloadShipmentListExcel(response, commonRequestModel);
+        if(shipmentCount <= exportExcelLimit){
+            downloadShipmentListExcel(response, shipmentDetailsPage);
         }else {
+            request.setPageSize(Integer.MAX_VALUE);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
                 TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
                 txTemplate.execute(status -> {
-                    emailShipmentListExcel(response, commonRequestModel);
+                    emailShipmentListExcel(response, request);
                     return null;
                 });
             }), executorService);
         }
         log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
-        return;
     }
 
-    private void downloadShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) {
-        log.info("Starting download of shipment list Excel. Request model: {}", commonRequestModel);
-
-        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(commonRequestModel);
-        log.info("Fetched {} shipment(s) for Excel download.", shipmentDetailsPage.getTotalElements());
+    private void downloadShipmentListExcel(HttpServletResponse response, Page<ShipmentDetails> shipmentDetailsPage) {
+        log.info("Starting download of shipment list Excel. Request Id {}", LoggerHelper.getRequestIdFromMDC());
 
         exportShipmentListToExcel(shipmentDetailsPage, response, false);
         log.info("Shipment list Excel download completed successfully.");
     }
 
-    private void emailShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) {
-        log.info("Starting email of shipment list Excel. Request model: {}", commonRequestModel);
+    private void emailShipmentListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
+        log.info("Starting email of shipment list Excel. Request model: {}", listCommonRequest);
 
-        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(commonRequestModel);
+        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(listCommonRequest);
         log.info("Fetched {} shipment(s) for Excel email.", shipmentDetailsPage.getTotalElements());
 
         exportShipmentListToExcel(shipmentDetailsPage, response, true);
         log.info("Shipment list Excel email process completed successfully.");
     }
 
-    private Page<ShipmentDetails> fetchShipmentsPage(CommonRequestModel commonRequestModel){
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
-        }
+    private Page<ShipmentDetails> fetchShipmentsPage(ListCommonRequest request){
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         log.info("Fetching data with tables included: {}", request.getIncludeTbls());
         log.info("Tenant in fetchData: {}", TenantContext.getCurrentTenant());
@@ -4339,7 +4339,6 @@ public class ShipmentService implements IShipmentService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
         String timestamp = currentTime.format(formatter);
         String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
-        List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
 
         if (sendEmail) {
             // Send via email if limit exceeded
@@ -4388,7 +4387,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Excel file sent via email successfully with filename: {}", filename);
         } catch (Exception e) {
             log.error("Error sending Excel file via email: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to send Excel file via email", e);
+            throw new GenericException("Failed to send Excel file via email", e);
         } finally {
             closeWorkbook(workbook);
         }
@@ -4406,7 +4405,7 @@ public class ShipmentService implements IShipmentService {
                 log.info("Excel file written to response successfully with filename: {}", filename);
             } catch (IOException e) {
                 log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to write Excel file to response", e);
+                throw new GenericException("Failed to write Excel file to response", e);
             }
         } finally {
             closeWorkbook(workbook);
