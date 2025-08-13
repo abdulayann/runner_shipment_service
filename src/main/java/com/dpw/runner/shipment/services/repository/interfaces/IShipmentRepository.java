@@ -168,6 +168,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "WHERE csm.shipment_id IS NULL and sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
     List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
 
+    @Query(value = "SELECT sd.id FROM shipment_details sd WHERE sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
+    List<Long> findAllShipmentIdsByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
     @Modifying
     @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);

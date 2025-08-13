@@ -451,15 +451,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return resultContainers;
     }
 
-    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) {
+    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) { //NOSONAR
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
+        BigDecimal tareWeight = safeBigDecimal(original.getTareWeight());
+        BigDecimal netWeight = safeBigDecimal(original.getNetWeight());
         BigDecimal totalPacks = StringUtility.isNotEmpty(original.getPacks()) ? BigDecimal.valueOf(Long.parseLong(original.getPacks())): BigDecimal.ZERO;
 
         // Divide weight and volume equally, remainder added to last container
         BigDecimal[] weightParts = totalWeight.divideAndRemainder(BigDecimal.valueOf(count));
         BigDecimal[] volumeParts = totalVolume.divideAndRemainder(BigDecimal.valueOf(count));
         BigDecimal[] packsParts = totalPacks.divideAndRemainder(BigDecimal.valueOf(count));
+        BigDecimal[] tareWeightParts = tareWeight.divideAndRemainder(BigDecimal.valueOf(count));
+        BigDecimal[] netWeightParts = netWeight.divideAndRemainder(BigDecimal.valueOf(count));
 
         BigDecimal baseWeight = weightParts[0];
         BigDecimal weightRemainder = weightParts[1];
@@ -467,6 +471,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         BigDecimal volumeRemainder = volumeParts[1];
         BigDecimal basePacks = packsParts[0];
         BigDecimal packsRemainder = packsParts[1];
+        BigDecimal baseTareWeight = tareWeightParts[0];
+        BigDecimal tareWeightRemainder = tareWeightParts[1];
+        BigDecimal baseNetWeight = netWeightParts[0];
+        BigDecimal netWeightRemainder = netWeightParts[1];
 
         // Step 1: Convert original container into a 1-count container with base values
         original.setContainerCount(1L);
@@ -486,6 +494,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             packsRemainder = packsRemainder.subtract(BigDecimal.valueOf(1));
         }
         original.setPacks(String.valueOf(packsCount));
+
+        original.setTareWeight(baseTareWeight);
+        if(tareWeightRemainder.intValue() >= 1) {
+            original.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
+            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.valueOf(1));
+        }
+
+        original.setNetWeight(baseNetWeight);
+        if(netWeightRemainder.intValue() >= 1) {
+            original.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
+            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.valueOf(1));
+        }
+
         resultContainers.add(original);
 
         // Step 2: Generate new containers for remaining (count - 1)
@@ -493,13 +514,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
             resultContainers.add(
                     createDistributedCopy(
-                            original,
-                            baseWeight,
-                            baseVolume,
-                            weightRemainder,
-                            volumeRemainder,
-                            basePacks,
-                            packsRemainder
+                            original, baseWeight, baseVolume, weightRemainder, volumeRemainder,
+                            basePacks, packsRemainder, baseTareWeight, tareWeightRemainder, baseNetWeight, netWeightRemainder
                     )
             );
             if(weightRemainder.intValue() >= 1) {
@@ -511,13 +527,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             if(packsRemainder.intValue() >= 1) {
                 packsRemainder = packsRemainder.subtract(BigDecimal.valueOf(1));
             }
+            if(tareWeightRemainder.intValue() >= 1) {
+                tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.valueOf(1));
+            }
+            if(netWeightRemainder.intValue() >= 1) {
+                netWeightRemainder = netWeightRemainder.subtract(BigDecimal.valueOf(1));
+            }
         }
 
         log.info("Split container [guid={}] into {} parts", original.getGuid(), count);
     }
 
     private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume,
-            BigDecimal weightRemainder, BigDecimal volumeRemainder, BigDecimal basePacks, BigDecimal packsRemainder) {
+            BigDecimal weightRemainder, BigDecimal volumeRemainder, BigDecimal basePacks, BigDecimal packsRemainder,
+                                             BigDecimal baseTareWeight, BigDecimal tareWeightRemainder,
+                                             BigDecimal baseNetWeight, BigDecimal netWeightRemainder
+                                             ) {
         Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
         newContainer.setId(null); // Ensure new identity
         newContainer.setGuid(UUID.randomUUID());
@@ -536,6 +561,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             packsCount += 1;
         }
         newContainer.setPacks(String.valueOf(packsCount));
+
+        newContainer.setTareWeight(baseTareWeight);
+        if(tareWeightRemainder.intValue() >= 1) {
+            newContainer.setTareWeight(baseVolume.add(BigDecimal.valueOf(1)));
+        }
+        newContainer.setNetWeight(baseNetWeight);
+        if(netWeightRemainder.intValue() >= 1) {
+            newContainer.setNetWeight(baseVolume.add(BigDecimal.valueOf(1)));
+        }
 
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
         newContainer.setUpdatedBy(sourceContainer.getUpdatedBy());

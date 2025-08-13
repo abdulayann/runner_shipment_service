@@ -1,55 +1,51 @@
-package com.dpw.runner.shipment.services.dto.v3.request;
+package com.dpw.runner.shipment.services.dto.v3.response;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Data
-@ApiModel("Shipment Additional Details Request Model")
-@ToString
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AdditionalDetailV3Request extends CommonRequest implements IRunnerRequest {
+@Generated
+public class AdditionalDetailV3LiteResponse implements IRunnerResponse {
     private Long id;
+    private UUID guid;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime customsNoIssueDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime expiryDate;
-    @Size(max=3, message = "max size is 3 for inspection")
     private String inspection;
-    @Size(max=3, message = "max size is 3 for airway bill dims")
     private String airwayBillDims;
     private BigDecimal shipperCOD;
-    @Size(max = 3, message = "max size is 3 for shipper cod pm")
     private String shipperCODPM;
-    @Size(max=3, message = "max size is 3 for phase")
     private String phase;
     private BigDecimal spotRate;
-    @Size(max=3, message = "max size is 3 for spot rate type")
     private String spotRateType;
-    @Size(max=3, message = "max size is 3 for efreight status")
     private String efreightStatus;
     private String sci;
     private Boolean importExportShipmentLock;
-    @Size(max=20, message = "max size is 20 for cha job number")
     private String CHAJobNumber;
-    @Size(max=10, message = "max size is 10 for ad code")
     private String ADCode;
     private String BEType;
     private AirAuthorisingEntity securityStatusReceivedFrom;
@@ -63,6 +59,7 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private String IECode;
     private String branchSINumber;
     private AndesStatus andesStatus;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime andesResponseDate;
     private String andesStatusResponseText;
     private String peruEntryExitPoint;
@@ -73,21 +70,24 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private Long warehouseId;
     private String activityType;
     private Long hsnNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime IGMFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime IGMInwardDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime inwardDateAndTime;
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
-    @Size(max=10, message = "max size is 10 for smtp igm number")
     @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
     private String ownershipName;
-    private PartiesRequest ownershipOrg;
+    private PartiesResponse ownershipOrg;
     private Ownership passedBy;
     private String passedByPerson;
     private LGDStatus lgdStatus;
@@ -96,20 +96,18 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private BigDecimal freeDays;
     private String customHouse;
     private String supplierInvoiceNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime supplierInvoiceDate;
     private BigDecimal invoiceValue;
     private BigDecimal assessValue;
     private BigDecimal CIFValue;
     private BigDecimal totalDuty;
-    @Size(max=256, message = "max size is 256 for external notes")
     private String externalNotes;
     private Long bondedWarehouseId;
-    @Size(max=3, message = "max size is 3 for release type")
     private String releaseType;
-    @Size(max=3, message = "max size is 3 for house bill type")
     private String houseBillType;
-    @Size(max=3, message = "max size is 3 for on board")
     private String onBoard;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime onBoardDate;
     private String deliveryMode;
     private Integer original;
@@ -120,10 +118,16 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime BOEDate;
     private Boolean printedOriginal;
     private Boolean WBLPrinted;
@@ -131,54 +135,60 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private Boolean surrenderPrinted;
     private String importBrokerCountry;
     private String exportBrokerCountry;
-    private PartiesRequest notifyParty;
-    private PartiesRequest importBroker;
-    private PartiesRequest exportBroker;
-    private PartiesRequest sendingForwarder;
-    private PartiesRequest receivingForwarder;
-    private PartiesRequest traderOrSupplier;
-    private PartiesRequest eTailor;
-    private PartiesRequest borrowedFrom;
-    private PartiesRequest sendingAgent;
-    private PartiesRequest receivingAgent;
+    private PartiesResponse notifyParty;
+    private PartiesResponse importBroker;
+    private PartiesResponse exportBroker;
+    private PartiesResponse sendingForwarder;
+    private PartiesResponse receivingForwarder;
+    private PartiesResponse traderOrSupplier;
+    private PartiesResponse eTailor;
+    private PartiesResponse borrowedFrom;
+    private PartiesResponse sendingAgent;
+    private PartiesResponse receivingAgent;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> tenantIdsData;
     private String customDeclType;
     private String agentReference;
-    @Size(max=16, message = "max size is 16 for bl terms and conditions id")
     private String bLTermsandConditionsId;
-    @Size(max=2500, message = "max size is 2500 for bl comments")
     private String blComments;
-    @Size(max=16, message = "max size is 16 for cargo terms")
     private String cargoTerms;
-    @Size(max=2500, message = "max size is 2500 for cargo terms description")
     private String cargoTermsDescription;
-    @Size(max=16, message = "max size is 16 for bl remarks")
     private String bLRemarks;
-    @Size(max=2500, message = "max size is 2500 for bl remarks description")
     private String bLRemarksDescription;
-    @Size(max = 2048, message = "max size is 2048 for summary")
     private String summary;
     private Boolean isSummaryUpdated;
+    private Map<String, String> textData;
     private String exemptionCodes;
     private String aomFreeText;
-    @Size(max=31, message = "max size is 31 for emergency contact number")
     private String emergencyContactNumber;
-    @Size(max=31, message = "max size is 31 for emergency contact number code")
     private String emergencyContactNumberCode;
-    @ExcludeTimeZone
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime pickupDate;
-    @ExcludeTimeZone
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveredDate;
-    @ExcludeTimeZone
-    private LocalDateTime estimatedPickupDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime proofOfDeliveryDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime warehouseCargoArrivalDate;
     private Boolean pickupByConsigneeCompleted;
     private Boolean emptyContainerReturned;
     private Boolean isExportCustomClearanceCompleted;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime blInstructionReceived;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoOutForDelivery;
-    private Integer fcrNumber = 0;
-    private LocalDateTime shippedOnboard;
+    private Integer fcrNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedPickupDate;
+
+    public void addTextData(Map<String, String> dataMap) {
+        if(textData == null) {
+            textData = new HashMap<>();
+        }
+        textData.putAll(dataMap);
+    }
 }

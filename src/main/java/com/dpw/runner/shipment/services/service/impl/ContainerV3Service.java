@@ -78,7 +78,6 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -125,7 +124,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -183,8 +181,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     IShipmentSync shipmentSync;
-    @Autowired
-    IShipmentsContainersMappingRepository iShipmentsContainersMappingRepository;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -256,9 +252,6 @@ public class ContainerV3Service implements IContainerV3Service {
     @Autowired
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
 
-    @Autowired
-    private EntityManager entityManager;
-
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Override
@@ -283,7 +276,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
             }
         }
-
+        containerValidationUtil.validateOpenForAttachment(containerRequest.getConsolidationId(), null);
         // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
         updateAllocationDateInRequest(List.of(containerRequest));
 
@@ -324,11 +317,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
         if (!hasBookingId && !hasConsolidationId && !hasShipmentsId) {
             throw new ValidationException("Either BookingId, ConsolidationId, or ShipmentsId must be provided in the request.");
-        }
-
-        int providedIdsCount = (hasBookingId ? 1 : 0) + (hasConsolidationId ? 1 : 0) + (hasShipmentsId ? 1 : 0);
-        if (providedIdsCount > 1) {
-            throw new ValidationException("Only one of BookingId, ConsolidationId, or ShipmentsId should be provided, not multiple.");
         }
     }
 
@@ -429,7 +417,6 @@ public class ContainerV3Service implements IContainerV3Service {
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         log.info("Starting container UpdateBulk | Request ID: {} | Request Body: {}", requestId, containerRequestList);
-        updateContainerRequestOnDgFlag(containerRequestList);
         validateBulkUpdateRequest(containerRequestList);
 
         ShipmentDetails shipmentDetails = null;
@@ -444,6 +431,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
+        containerValidationUtil.validateOpenForAttachment(containerRequestList.get(0).getConsolidationId(), null);
         // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
         updateAllocationDateInRequest(containerRequestList);
 
@@ -507,6 +495,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void validateBulkUpdateRequest(List<ContainerV3Request> containerRequestList) {
+        updateContainerRequestOnDgFlag(containerRequestList);
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
     }
 
@@ -560,14 +549,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
-        // update console achieved data
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId)
-                .orElseThrow(() -> new ValidationException(
-                "Consolidation not present with Id : " + consolidationId
-                        + ", Container on shipment screen must be attached to consolidation"
-        ));
-        consolidationDetails.setContainersList(containerDao.findByConsolidationId(consolidationId));
-        consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails,
+        consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
 
         if (Objects.equals(BOOKING, module)) {
@@ -959,33 +941,12 @@ public class ContainerV3Service implements IContainerV3Service {
 
     // Method to handle the deletion of containers and their associated entities
     private void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
-        log.info("Starting deletion process for containers. Container IDs: {}", containerIds);
+        log.info("Starting deleteContainerAndAssociations with containerIds: {}", containerIds);
+        for(Containers containers : containersToDelete) containers.setShipmentsList(new HashSet<>());
+        containerDao.saveAll(containersToDelete);
 
-        // container present in only one shipment, same container won't be available in multiple shipments
-        List<ShipmentsContainersMapping> shipmentsContainersMappings =
-                shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
-
-        log.debug("Found {} shipment-container mapping(s) for given container IDs.", shipmentsContainersMappings.size());
-
-        List<Long> ids = shipmentsContainersMappings.stream()
-                .map(ShipmentsContainersMapping::getId)
-                .toList();
-
-        log.debug("Shipment-Container Mapping IDs to delete: {}", ids);
-
-        iShipmentsContainersMappingRepository.deleteByIds(ids);
-        log.info("Deleted {} shipment-container mapping(s) from the database.", ids.size());
-
-        // Delete the containers from the database
-        containerRepository.deleteAll(containersToDelete);
-        log.info("Deleted {} container(s) from the database.", containersToDelete.size());
-
-        // Clearing context, refetch the data
-        entityManager.flush();
-        entityManager.clear();
-        log.debug("EntityManager context flushed and cleared.");
-
-        log.info("Completed deletion process for containers. Container IDs: {}", containerIds);
+        containerDao.deleteByIdIn(containerIds);
+        log.info("Successfully deleted {} containers.", containerIds.size());
     }
 
 
@@ -1249,6 +1210,7 @@ public class ContainerV3Service implements IContainerV3Service {
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
                 if (uniqueContainers.contains(containerBaseResponse.getId())) {
                     containerBaseResponse.setAssignedContainer(Constants.YES);
+                    containerBaseResponse.setIsContainerAssigned(true);
                     assignedContainerCount.getAndIncrement();
                 } else {
                     containerBaseResponse.setAssignedContainer(Constants.NO);

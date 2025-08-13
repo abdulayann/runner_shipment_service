@@ -160,11 +160,8 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             bookingChargesDao.deleteAllById(existingIds);
         }
         if (backupData.getBookingCharges() != null && !backupData.getBookingCharges().isEmpty()) {
-            backupData.getBookingCharges().forEach(charge -> {
-                if (!existingIds.contains(charge.getId())) {
-                    charge.setId(null);
-                }
-            });
+            backupData.getBookingCharges().forEach(charge ->
+                    charge.setId(null));
             bookingChargesDao.saveAll(backupData.getBookingCharges());
         }
     }

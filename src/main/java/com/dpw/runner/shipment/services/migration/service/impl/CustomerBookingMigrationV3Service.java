@@ -441,17 +441,22 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         }
         booking.setContainers(null);
         booking.setTeuCount(null);
-        updateContainerInBooking(containers, codeTeuMap, booking, shipmentSettingsDetails);
-        BigDecimal weightFromContainers = booking.getGrossWeight();
+        if(!containers.isEmpty()) {
+            updateContainerInBooking(containers, codeTeuMap, booking, shipmentSettingsDetails);
+        }
         if(!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking, weightFromContainers, shipmentSettingsDetails);
+            calculateCargoDetails(packings, containers, booking, shipmentSettingsDetails);
             calculateVW(booking, oldBooking);
         }
         customerBookingRepository.save(booking);
     }
 
     private void updateContainerInBooking(List<Containers> containersList, Map<String, BigDecimal> codeTeuMap, CustomerBooking customerBooking, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
-        String weightChargeableUnit = consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails);
+        List<String> weightUnits = containersList.stream()
+                .map(Containers::getGrossWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        String weightUnit = resolveUnit(weightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
         Set<String> distinctContainerPackTypes = new HashSet<>();
         for(Containers containers: containersList) {
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
@@ -461,8 +466,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
         customerBooking.setPackages(getTotalContainerPackages(containersList));
         customerBooking.setPackageType(getPackUnit(distinctContainerPackTypes));
-        customerBooking.setGrossWeight(getTotalCargoWeight(containersList, weightChargeableUnit));
-        customerBooking.setGrossWeightUnit(weightChargeableUnit);
+        customerBooking.setGrossWeight(getTotalCargoWeight(containersList, weightUnit));
+        customerBooking.setGrossWeightUnit(weightUnit);
     }
 
     private Long getTotalContainerCount(List<Containers> containers) {
@@ -502,40 +507,68 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return totalCargoSummaryPackages;
     }
 
-    public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking, BigDecimal weightFromContainers, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
-        String volumeChargeableUnit = consolidationService.determineVolumeChargeableUnit(shipmentSettingsDetails);
-        String weightChargeableUnit = consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails);
+    public void calculateCargoDetails(List<Packing> packings, List<Containers> containers , CustomerBooking customerBooking, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
+        List<String> weightUnits = packings.stream()
+                .map(Packing::getWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        List<String> volumeUnits = packings.stream()
+                .map(Packing::getVolumeUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        String weightUnit = resolveUnit(weightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
+        String volumeUnit = resolveUnit(volumeUnits, VOLUME_UNIT_M3);
+        BigDecimal weightFromContainers = getTotalCargoWeight(containers, weightUnit);
+        boolean packWeightMissing = getIsPackWeightMissing(packings);
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
         Set<String> distinctPackTypes = new HashSet<>();
         boolean stopWeightCalculation = false;
-        customerBooking.setGrossWeightUnit(weightChargeableUnit);
-        customerBooking.setVolumeUnit(volumeChargeableUnit);
+        boolean isAirTransport = TRANSPORT_MODE_AIR.equals(customerBooking.getTransportType());
+        customerBooking.setGrossWeightUnit(weightUnit);
+        customerBooking.setVolumeUnit(volumeUnit);
         for (Packing packing : packings) {
-            totalVolume = addVolume(packing, totalVolume, volumeChargeableUnit);
+            totalVolume = addVolume(packing, totalVolume, volumeUnit);
             if (!isStringNullOrEmpty(packing.getPacks())) {
                 totalPacks += Integer.parseInt(packing.getPacks());
             }
             addDistinctPackType(distinctPackTypes, packing);
             if (!stopWeightCalculation) {
                 boolean hasWeight = hasWeightInfo(packing);
-                if (!hasWeight) {
+                if (isAirTransport && !hasWeight) {
                     stopWeightCalculation = true;
                     continue;
                 }
-                BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), weightChargeableUnit).toString());
+                BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), weightUnit).toString());
                 totalWeight = totalWeight.add(weight);
             }
         }
-        if(!stopWeightCalculation) {
+        if(!packWeightMissing) {
             customerBooking.setGrossWeight(totalWeight);
-        } else {
+        } else if(BigDecimal.ZERO.compareTo(weightFromContainers) != 0) {
             customerBooking.setGrossWeight(weightFromContainers);
         }
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
+    }
+
+    private boolean getIsPackWeightMissing(List<Packing> packings) {
+        for(Packing packing : packings) {
+            if(!hasWeightInfo(packing)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String resolveUnit(List<String> unitsFromData, String branchDefaultUnit) {
+        Set<String> distinctUnits = unitsFromData.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return (distinctUnits.size() == 1) ? distinctUnits.iterator().next() : branchDefaultUnit;
     }
 
     private BigDecimal addVolume(Packing p, BigDecimal totalVolume, String volumeUnit) throws RunnerException {

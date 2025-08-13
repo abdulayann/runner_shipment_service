@@ -2907,15 +2907,15 @@ public class CommonUtils {
     }
 
     public boolean isSeaFCLOrRoadFTL(String transportMode, String cargoType) {
-        return isSeaFCL(transportMode, cargoType) || isRoadFCLorFTL(transportMode, cargoType);
+        return isSeaFCL(transportMode, cargoType) || isRoadFTLOrRailFCL(transportMode, cargoType);
     }
 
-    public boolean isRoadFCLorFTL(String transportMode, String cargoType) {
-        return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isFCLorFTL(cargoType);
+    public boolean isRoadFTLOrRailFCL(String transportMode, String cargoType) {
+        return (Constants.TRANSPORT_MODE_ROA.equals(transportMode) || TRANSPORT_MODE_RAI.equals(transportMode)) && isFCLorFTL(cargoType);
     }
 
     public boolean isSeaFCL(String transportMode, String cargoType) {
-        return Constants.TRANSPORT_MODE_SEA.equals(transportMode) && CARGO_TYPE_FCL.equals(cargoType);
+        return (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || TRANSPORT_MODE_RAI.equals(transportMode)) && CARGO_TYPE_FCL.equals(cargoType);
     }
 
     public boolean isFCLorFTL(String cargoType) {

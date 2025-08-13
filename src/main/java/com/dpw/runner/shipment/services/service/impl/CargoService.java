@@ -1,24 +1,31 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
 @Slf4j
@@ -26,18 +33,21 @@ public class CargoService implements ICargoService {
 
     private final ICustomerBookingDao customerBookingDao;
     private final ConsolidationV3Service consolidationService;
-    private final ICustomerBookingV3Service customerBookingV3Service;
+    private final CustomerBookingV3Service customerBookingV3Service;
     private final CommonUtils commonUtils;
+    private final ShipmentsV3Util shipmentsV3Util;
 
     @Autowired
     public CargoService(ICustomerBookingDao customerBookingDao,
                         ConsolidationV3Service consolidationService,
-                        ICustomerBookingV3Service customerBookingV3Service,
-                        CommonUtils commonUtils) {
+                        CustomerBookingV3Service customerBookingV3Service,
+                        CommonUtils commonUtils,
+                        ShipmentsV3Util shipmentsV3Util) {
         this.customerBookingDao = customerBookingDao;
         this.consolidationService = consolidationService;
         this.customerBookingV3Service = customerBookingV3Service;
         this.commonUtils = commonUtils;
+        this.shipmentsV3Util = shipmentsV3Util;
     }
 
     @Override
@@ -65,40 +75,99 @@ public class CargoService implements ICargoService {
         response.setVolumetricWeightUnit(customerBooking.getWeightVolumeUnit());
         response.setChargable(customerBooking.getChargeable());
         response.setChargeableUnit(customerBooking.getChargeableUnit());
-        response.setIsDifferenceInPackages(calculatePackageDifference(containers, packings) ? Boolean.TRUE : Boolean.FALSE);
-        response.setIsDifferenceInCargoWeight(calculateCargoWeightDifference(containers, packings));
+        updateEditableFlags(response, containers, packings);
+        updateSummaryWarnings(response, containers, packings);
         return response;
     }
 
-    private boolean calculatePackageDifference(List<Containers> containersList, List<Packing> packingList) {
-        if(containersList.isEmpty() || packingList.isEmpty()) {
-            return false;
-        }
-        Long totalContainerPackages = customerBookingV3Service.getTotalContainerPackages(containersList);
-        Long totalPackingSectionPackages = 0L;
-
-        for(Packing pack: packingList) {
-            totalPackingSectionPackages += Long.parseLong(pack.getPacks());
-        }
-        return Math.abs(totalContainerPackages - totalPackingSectionPackages) > 0L;
+    public void updateSummaryWarnings(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) throws RunnerException {
+        //For Packings warnings
+        ShipmentSummaryWarningsResponse.WarningDetail packageWarningDetails = getPackageSummaryWarning(containers, packings);
+        //For Weight warnings
+        ShipmentSummaryWarningsResponse.WarningDetail weightWarningDetails = getWeightSummaryWarning(containers, packings, response.getWeightUnit());
+        response.setShipmentSummaryWarningsResponse(ShipmentSummaryWarningsResponse.builder().packagesWarning(packageWarningDetails).weightWarning(weightWarningDetails).build());
     }
 
-    private boolean calculateCargoWeightDifference(List<Containers> containersList, List<Packing> packingList) throws RunnerException {
-        if(containersList.isEmpty() || packingList.isEmpty()) {
-            return false;
-        }
+    private ShipmentSummaryWarningsResponse.WarningDetail getWeightSummaryWarning(List<Containers> containers, List<Packing> packings, String bookingWeightUnit) throws RunnerException {
+        ShipmentSummaryWarningsResponse.WarningDetail weightWarningDetails = null;
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        String weightUnit = consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails);
-        BigDecimal totalContainerCargoWeight = customerBookingV3Service.getTotalCargoWeight(containersList, weightUnit);
-        BigDecimal totalPackingSectionCargoWeight = BigDecimal.ZERO;
+        List<String> packingWeightUnits = packings.stream()
+                .map(Packing::getWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        for(Packing pack: packingList) {
-            if(pack.getWeight() != null) {
-                totalPackingSectionCargoWeight = totalPackingSectionCargoWeight.add(pack.getWeight());
+        List<String> containerWeightUnits = containers.stream()
+                .map(Containers::getContainerWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String packsWeightUnit = customerBookingV3Service.resolveUnit(packingWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
+        String containersWeightUnit = customerBookingV3Service.resolveUnit(containerWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
+
+        BigDecimal containerWeight = customerBookingV3Service.getTotalCargoWeight(containers, containersWeightUnit);
+        BigDecimal packageWeight = BigDecimal.ZERO;
+        for(Packing packing : packings) {
+            BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), packsWeightUnit).toString());
+            packageWeight = packageWeight.add(weight);
+        }
+        if (BigDecimal.ZERO.compareTo(packageWeight) == 0) {
+            packageWeight = null;
+        }
+        if (BigDecimal.ZERO.compareTo(containerWeight) == 0) {
+            containerWeight = null;
+        }
+        weightWarningDetails = shipmentsV3Util.generateWarning(
+                packageWeight,
+                packsWeightUnit,
+                containerWeight,
+                containersWeightUnit,
+                MASS,
+                bookingWeightUnit
+        );
+        return weightWarningDetails;
+    }
+
+    private ShipmentSummaryWarningsResponse.WarningDetail getPackageSummaryWarning(List<Containers> containers, List<Packing> packings) {
+        ShipmentSummaryWarningsResponse.WarningDetail packageWarningDetails = null;
+        Long totalContainerPackages = customerBookingV3Service.getTotalContainerPackages(containers);
+        Set<String> containerPackageTypes = containers.stream().map(Containers::getContainerPackageType).collect(Collectors.toSet());
+        Set<String> packageTypes = new HashSet<>();
+        Long totalPackages = 0L;
+        for(Packing packing: packings) {
+            if (!isStringNullOrEmpty(packing.getPacks())) {
+                totalPackages += Integer.parseInt(packing.getPacks());
+            }
+            if(!isStringNullOrEmpty(packing.getPacksType())) {
+                packageTypes.add(packing.getPacksType());
             }
         }
+        String containerPackType = (containerPackageTypes.size() == 1) ? containerPackageTypes.iterator().next() : PackingConstants.PKG;
+        String packType = (packageTypes.size() == 1) ? packageTypes.iterator().next() : PackingConstants.PKG;
+        if (!totalPackages.equals(0L) && !totalContainerPackages.equals(0L) && !totalPackages.equals(totalContainerPackages)) {
+             packageWarningDetails = new ShipmentSummaryWarningsResponse.WarningDetail(
+                    true,
+                    totalContainerPackages + " " + containerPackType,
+                    totalPackages + " " + packType,
+                    Math.abs(totalContainerPackages - totalPackages) + " " + packType
+            );
+        }
+        return packageWarningDetails;
+    }
 
-        return totalContainerCargoWeight.subtract(totalPackingSectionCargoWeight).abs().compareTo(BigDecimal.ZERO) > 0;
+    public void updateEditableFlags(CargoDetailsResponse response, List<Containers> containers, List<Packing> packings) {
+        if(packings.isEmpty() && containers.isEmpty()) {
+            response.setIsCargoSummaryEditable(Boolean.TRUE);
+        } else if(packings.isEmpty()) {
+            boolean volumeMissingInContainers = false;
+            for (Containers container: containers) {
+                BigDecimal volume = Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO);
+                if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                    volumeMissingInContainers = true;
+                    break;
+                }
+            }
+            response.setIsVolumeEditable(volumeMissingInContainers);
+        }
     }
 
     @Override

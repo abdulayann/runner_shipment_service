@@ -5374,23 +5374,23 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testIsRoadFCLorFTL_FCL() {
-        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    void testIsRoadFTL_OrRailFCL_FCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(TRANSPORT_MODE_RAI, "FCL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_FTL() {
-        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    void testIsRoadFTL_FTLOrRailFCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "FTL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_InvalidTransportMode() {
-        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    void testIsRoadFTL_OrRailFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_InvalidCargoType() {
-        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    void testIsRoadFTL_OrRailFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "LCL"));
     }
 
     @Test
