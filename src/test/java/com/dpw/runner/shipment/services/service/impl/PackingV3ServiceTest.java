@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -41,6 +38,7 @@ import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,6 +54,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -497,7 +497,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, true, null);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, true, null, Constants.SHIPMENT);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -513,7 +513,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAllWithoutTenantFilter(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, false, Constants.NETWORK_TRANSFER);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, false, Constants.NETWORK_TRANSFER, Constants.SHIPMENT);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -590,7 +590,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
     @Test
     void testList_requestNull_logsError() {
-        assertThrows(ValidationException.class, () -> packingV3Service.list(null, false, null));
+        assertThrows(ValidationException.class, () -> packingV3Service.list(null, false, null, Constants.SHIPMENT));
     }
 
     @Test
@@ -862,7 +862,7 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculatePackSummary6() throws AuthenticationException, RunnerException {
+    void testCalculatePackSummary6() {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
@@ -1342,5 +1342,56 @@ class PackingV3ServiceTest extends CommonMocks {
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetail));
         var resp = packingV3Service.calculateCargoSummary(commonGetRequest);
         assertEquals(TRANSPORT_MODE_SEA, resp.getTransportMode());
+    }
+
+    @Test
+    void list_shouldHandleContainerSearchAndSetFilterCriteria() {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("123"); // String value that will be converted to Long
+        request.setContainsText("CONTAINER123");
+        when(commonUtils.getLongValue("123")).thenReturn(123L);
+        when(packingDao.getContainerIdByContainerNumberAndType("CONTAINER123", 123L, "SHIPMENT"))
+                .thenReturn(Arrays.asList(1L, 2L, 3L));
+        Page<Packing> mockPage = new PageImpl<>(Collections.emptyList());
+        when(packingDao.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+        PackingListResponse response = packingV3Service.list(request, true, "WEB", "SHIPMENT");
+        assertNotNull(response);
+        assertEquals(StringUtils.EMPTY, request.getContainsText());
+        assertNotNull(request.getFilterCriteria());
+        assertEquals(1, request.getFilterCriteria().size());
+        FilterCriteria filter = request.getFilterCriteria().get(0);
+        Criteria containerCriteria = filter.getInnerFilter().get(0).getCriteria();
+        assertEquals("containerId", containerCriteria.getFieldName());
+        assertEquals("IN", containerCriteria.getOperator());
+        assertEquals(Arrays.asList(1L, 2L, 3L), containerCriteria.getValue());
+    }
+
+    @Test
+    void list_shouldSetFilterWhenContainerIdsFound() {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("123");
+        request.setContainsText("CONTAINER123");
+        when(commonUtils.getLongValue("123")).thenReturn(123L);
+        when(packingDao.getContainerIdByContainerNumberAndType("CONTAINER123", 123L, "SHIPMENT"))
+                .thenReturn(Arrays.asList(1L, 2L, 3L));
+        Page<Packing> mockPage = new PageImpl<>(Collections.emptyList());
+        when(packingDao.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+        packingV3Service.list(request, true, "WEB", "SHIPMENT");
+        assertEquals(StringUtils.EMPTY, request.getContainsText()); // Now this should pass
+        assertNotNull(request.getFilterCriteria());
+        assertEquals(1, request.getFilterCriteria().size());
+        FilterCriteria filter = request.getFilterCriteria().get(0);
+        Criteria containerCriteria = filter.getInnerFilter().get(0).getCriteria();
+        assertEquals("containerId", containerCriteria.getFieldName());
+        assertEquals("IN", containerCriteria.getOperator());
+        assertEquals(Arrays.asList(1L, 2L, 3L), containerCriteria.getValue());
+    }
+
+    @Test
+    void list_shouldThrowValidationExceptionForNullRequest() {
+        assertThrows(ValidationException.class,
+                () -> packingV3Service.list(null, true, "WEB", "SHIPMENT"));
     }
 }

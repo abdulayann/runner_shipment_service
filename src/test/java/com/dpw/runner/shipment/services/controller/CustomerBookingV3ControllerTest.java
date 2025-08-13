@@ -181,7 +181,7 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void getBookingPackages() {
-        when(packingV3Service.list(any(), anyBoolean(), any())).thenReturn(new PackingListResponse());
+        when(packingV3Service.list(any(), anyBoolean(), any(), any())).thenReturn(new PackingListResponse());
         var responseEntity = customerBookingV3Controller.listBookingPackages(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

@@ -3098,4 +3098,18 @@ public class CommonUtils {
         }
         return null;
     }
+
+    @Nullable
+    public Long getLongValue(Object value) {
+        if (value != null) {
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else if (value instanceof String) {
+                return Long.parseLong((String) value);
+            } else {
+                throw new IllegalArgumentException("Unsupported Party ID type: " + value.getClass());
+            }
+        }
+        return null;
+    }
 }

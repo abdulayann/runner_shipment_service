@@ -41,7 +41,7 @@ public interface IPackingV3Service {
 
     PackingResponse retrieveById(Long id, String guid, String xSource);
 
-    PackingListResponse list(ListCommonRequest listCommonRequest, boolean getMasterData, String xSource);
+    PackingListResponse list(ListCommonRequest listCommonRequest, boolean getMasterData, String xSource, String type);
 
 
     List<PackingResponse> fetchPacksAttachedToContainers(List<Long> containerIds);

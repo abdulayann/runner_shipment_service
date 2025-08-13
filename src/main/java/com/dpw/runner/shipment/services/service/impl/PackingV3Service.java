@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -55,6 +52,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -782,10 +780,20 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse list(ListCommonRequest request, boolean getMasterData, String source) {
+    public PackingListResponse list(ListCommonRequest request, boolean getMasterData, String source, String type) {
         if (request == null) {
             log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("Request cannot be null for list request.");
+        }
+        Long entityId = commonUtils.getLongValue(request.getEntityId());
+        if (null != entityId && StringUtils.isNotEmpty(request.getContainsText())) {
+            List<Long> containerIds = packingDao.getContainerIdByContainerNumberAndType(request.getContainsText(), entityId, type);
+            if (!CollectionUtils.isEmpty(containerIds)){
+                request.setContainsText(StringUtils.EMPTY);
+                Criteria packsTypeCriteria = Criteria.builder().fieldName("containerId").operator("IN").value(containerIds).build();
+                FilterCriteria filter = FilterCriteria.builder().innerFilter(List.of(FilterCriteria.builder().criteria(packsTypeCriteria).build())).build();
+                request.setFilterCriteria(List.of(filter));
+            }
         }
         // construct specifications for filter request
         Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class, PackingConstants.TABLES_NAMES);
@@ -851,7 +859,7 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setPageNo(request.getPageNo());
         listCommonRequest.setPageSize(request.getPageSize());
         listCommonRequest.setContainsText(request.getContainsText());
-        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
+        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource, SHIPMENT);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
@@ -911,7 +919,7 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setPageNo(request.getPageNo());
         listCommonRequest.setPageSize(request.getPageSize());
         listCommonRequest.setContainsText(request.getContainsText());
-        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
+        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource, CONSOLIDATION);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {

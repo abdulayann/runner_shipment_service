@@ -172,5 +172,16 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     @Transactional
     @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
     void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId);
+
+    @Query(value = "SELECT p.container_id FROM packing p " +
+            "JOIN containers c ON c.id = p.container_id " +
+            "WHERE c.container_number ILIKE %:containerNumber% AND " +
+            "CASE " +
+            "   WHEN :idType = 'SHIPMENT' THEN p.shipment_id = :id " +
+            "   WHEN :idType = 'CONSOLIDATION' THEN p.consolidation_id = :id " +
+            "   WHEN :idType = 'BOOKING' THEN p.booking_id = :id " +
+            "END",
+            nativeQuery = true)
+    List<Long> getContainerIdByContainerNumberAndType(@Param("containerNumber") String containerNumber, @Param("id") Long id, @Param("idType") String idType);
 }
 
