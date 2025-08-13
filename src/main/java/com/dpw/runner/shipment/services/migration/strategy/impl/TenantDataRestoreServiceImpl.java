@@ -55,22 +55,33 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     public void restoreTenantData(Integer tenantId) {
         transactionTemplate.execute(status -> {
             try {
-                // Execute all handlers in parallel
-                List<CompletableFuture<Void>> futures = restoreHandlers.stream()
-                        .map(handler -> CompletableFuture.runAsync(
-                                () -> executeHandler(handler, tenantId),
-                                asyncRestoreHandlerExecutor
-                        ))
-                        .toList();
+                // Run shipment + consolidation in parallel
+                CompletableFuture<Void> shipmentFuture = CompletableFuture.runAsync(
+                        () -> executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId),
+                        asyncRestoreHandlerExecutor
+                );
 
-                // Wait for all handlers to complete
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                CompletableFuture<Void> consolidationFuture = CompletableFuture.runAsync(
+                        () -> executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId),
+                        asyncRestoreHandlerExecutor
+                );
+                CompletableFuture.allOf(shipmentFuture, consolidationFuture).join();
+
+                // If both succeeded, run booking
+                executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
                 return null;
             } catch (Exception e) {
                 log.error("Restore failed for tenant: {}", tenantId, e);
                 throw new IllegalArgumentException(e);
             }
         });
+    }
+
+    private RestoreServiceHandler getHandler(Class<? extends RestoreServiceHandler> clazz) {
+        return restoreHandlers.stream()
+                .filter(clazz::isInstance)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Handler not found: " + clazz.getSimpleName()));
     }
 
     private void executeHandler(RestoreServiceHandler handler, Integer tenantId) {
