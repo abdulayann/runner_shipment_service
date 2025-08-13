@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
@@ -109,6 +110,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.persistence.Entity;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
@@ -118,6 +126,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -125,18 +134,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -3106,4 +3104,301 @@ public class CommonUtils {
         }
         return null;
     }
+    public List<Map<String, Object>> buildFlatList(
+            List<Object[]> results,
+            List<String> columnOrder
+    ) {
+        List<Map<String, Object>> flatList = new ArrayList<>();
+
+        for (Object[] row : results) {
+            Map<String, Object> rowMap = new LinkedHashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowMap.put(columnOrder.get(i), row[i]);
+            }
+            flatList.add(rowMap);
+        }
+
+        return flatList;
+    }
+    public List<String> getAllSimpleFieldNames(Class<?> entityClass) {
+        return Arrays.stream(entityClass.getDeclaredFields())
+                .filter(f -> !Modifier.isStatic(f.getModifiers()))
+                .filter(f -> !Modifier.isTransient(f.getModifiers()))
+                .filter(f -> !"serialVersionUID".equals(f.getName()))
+                .filter(f -> !Collection.class.isAssignableFrom(f.getType()))
+                .filter(f -> !f.getType().isAnnotationPresent(Entity.class))
+                .map(Field::getName)
+                .toList();
+    }
+    public Set<String> detectCollectionRelationships(Map<String, List<String>> requestedColumns, Class<?> entityClass) {
+        Set<String> collections = new HashSet<>();
+
+        for (String key : requestedColumns.keySet()) {
+            try {
+                Field field = entityClass.getDeclaredField(key);
+                if (Collection.class.isAssignableFrom(field.getType())) {
+                    collections.add(key);
+                }
+            } catch (NoSuchFieldException e) {
+                // Not a direct field in ShipmentDetails (could be a joined OneToOne etc.), skip
+            }
+        }
+
+        return collections;
+    }
+    public Map<String, List<String>> extractRequestedColumns(Map<String, Object> payload) {
+        Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
+
+        return payload.entrySet().stream()
+                .filter(e -> validEntityKeys.contains(e.getKey())) // only keep real entity keys
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> (List<String>) e.getValue()
+                ));
+    }
+
+    public void fillEmptyColumnLists(Map<String, List<String>> requestedColumns) {
+        Map<String, Class<?>> entityMappings = ShipmentConstants.ENTITY_MAPPINGS; // from our fixed Map.ofEntries(...)
+        for (Map.Entry<String, Class<?>> e : entityMappings.entrySet()) {
+            String key = e.getKey();
+            if (requestedColumns.containsKey(key) && requestedColumns.get(key).isEmpty()) {
+                requestedColumns.put(key, getAllSimpleFieldNames(e.getValue()));
+            }
+        }
+    }
+    // Helper method to convert flat map -> nested map
+    public List<Map<String, Object>> convertToNestedMapWithCollections(
+            List<Map<String, Object>> flatList,
+            Set<String> collectionRelationships
+    ) {
+        Map<Object, Map<String, Object>> parentMapById = new LinkedHashMap<>();
+
+        for (Map<String, Object> flatRow : flatList) {
+            Object parentId = flatRow.get("shipmentDetails.id");
+
+            Map<String, Object> shipmentMap =
+                    parentMapById.computeIfAbsent(parentId, k -> new LinkedHashMap<>());
+
+            for (Map.Entry<String, Object> entry : flatRow.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                String[] parts = key.split("\\.");
+
+                Map<String, Object> current = shipmentMap;
+
+                for (int i = 1; i < parts.length; i++) { // skip "shipmentDetails"
+                    String part = parts[i];
+                    boolean isLast = (i == parts.length - 1);
+
+                    if (collectionRelationships.contains(part)) {
+                        // Ensure the list exists
+                        List<Map<String, Object>> list =
+                                (List<Map<String, Object>>) current.computeIfAbsent(part, k -> new ArrayList<>());
+
+                        // Identify child ID
+                        Object childId = flatRow.get("shipmentDetails." + part + ".id");
+
+                        Map<String, Object> childMap;
+                        if (childId != null) {
+                            // Find or create child entry
+                            childMap = list.stream()
+                                    .filter(m -> Objects.equals(m.get("id"), childId))
+                                    .findFirst()
+                                    .orElseGet(() -> {
+                                        Map<String, Object> newMap = new LinkedHashMap<>();
+                                        list.add(newMap);
+                                        return newMap;
+                                    });
+                        } else {
+                            // If no ID and no other fields, don't add
+                            childMap = new LinkedHashMap<>();
+                            if (value != null) list.add(childMap);
+                        }
+
+                        if (isLast) {
+                            if (childMap != null && value != null) {
+                                // Set the last field value in child object
+                                childMap.put(part, value);
+                            }
+                        } else {
+                            current = childMap;
+                        }
+
+                    } else {
+                        if (isLast) {
+                            current.put(part, value);
+                        } else {
+                            current = (Map<String, Object>) current.computeIfAbsent(part, k -> new LinkedHashMap<>());
+                        }
+                    }
+                }
+            }
+        }
+
+        // Ensure that all collection relationships are at least empty arrays
+        for (Map<String, Object> shipmentData : parentMapById.values()) {
+            for (String collKey : collectionRelationships) {
+                shipmentData.putIfAbsent(collKey, new ArrayList<>());
+            }
+        }
+
+        // Wrap for response
+        List<Map<String, Object>> finalList = new ArrayList<>();
+        for (Map<String, Object> shipmentData : parentMapById.values()) {
+            finalList.add(Collections.singletonMap("shipmentDetails", shipmentData));
+        }
+
+        return finalList;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void buildJoinsAndSelections(
+            Map<String, List<String>> requestedColumns,
+            Root<ShipmentDetails> root,
+            List<Selection<?>> selections,
+            List<String> columnOrder
+    ) {
+        for (Map.Entry<String, List<String>> entry : requestedColumns.entrySet()) {
+            String entityKey = entry.getKey();
+            List<String> cols = entry.getValue();
+
+            // Skip if no columns were requested (should be auto-filled before this method)
+            if (cols == null || cols.isEmpty()) {
+                continue;
+            }
+
+            if ("shipmentDetails".equals(entityKey)) {
+                // Parent entity: add columns directly from the root
+                for (String col : cols) {
+                    selections.add(root.get(col));
+                    columnOrder.add("shipmentDetails." + col);
+                }
+            } else {
+                // Join according to mapping key
+                Class<?> entityClass = ShipmentConstants.ENTITY_MAPPINGS.get(entityKey);
+                if (entityClass == null) {
+                    throw new IllegalArgumentException("No mapping found for key: " + entityKey);
+                }
+
+                // Join on this relationship
+                Join<Object, Object> join = root.join(entityKey, JoinType.LEFT);
+
+                for (String col : cols) {
+                    selections.add(join.get(col));
+                    columnOrder.add("shipmentDetails." + entityKey + "." + col);
+                }
+                selections.add(root.get("updatedAt"));
+                columnOrder.add("shipmentDetails.updatedAt");
+            }
+        }
+    }
+    public List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
+                                                      Root<ShipmentDetails> root,
+                                                      Map<String, Object> requestPayload) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        List<Map<String, Object>> filterCriteria =
+                (List<Map<String, Object>>) requestPayload.getOrDefault("filterCriteria", Collections.emptyList());
+
+        for (Map<String, Object> group : filterCriteria) {
+            Object innerFilterObj = group.get("innerFilter");
+            if (innerFilterObj instanceof List) {
+                Predicate innerPredicate = null;
+                for (Object inner : (List<?>) innerFilterObj) {
+                    Map<String, Object> critMap = (Map<String, Object>) ((Map<?, ?>) inner).get("criteria");
+                    String fieldName = (String) critMap.get("fieldName");
+                    String operator = (String) critMap.get("operator");
+                    Object value = critMap.get("value");
+
+                    Predicate p = switch (operator.trim().toLowerCase()) {
+                        case "="  -> cb.equal(root.get(fieldName), value);
+                        case "!=" -> cb.notEqual(root.get(fieldName), value);
+                        case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
+                        case ">" -> {
+                            if (value instanceof String string) {
+                                yield cb.greaterThan(root.get(fieldName), string);
+                            } else if (value instanceof Number number) {
+                                yield cb.gt(root.get(fieldName), number);
+                            } else if (value instanceof Date date) {
+                                yield cb.greaterThan(root.get(fieldName),  date);
+                            } else if (value instanceof LocalDateTime localDateTime) {
+                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                            } else {
+                                throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
+                            }
+                        }
+
+                        case "<" -> {
+                            if (value instanceof String string) {
+                                yield cb.greaterThan(root.get(fieldName), string);
+                            } else if (value instanceof Number number) {
+                                yield cb.gt(root.get(fieldName), number);
+                            } else if (value instanceof Date date) {
+                                yield cb.greaterThan(root.get(fieldName),  date);
+                            } else if (value instanceof LocalDateTime localDateTime) {
+                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                            }  else {
+                                throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
+                            }
+                        }
+
+                        case ">=" -> {
+                            if (value instanceof String string) {
+                                yield cb.greaterThan(root.get(fieldName), string);
+                            } else if (value instanceof Number number) {
+                                yield cb.gt(root.get(fieldName), number);
+                            } else if (value instanceof Date date) {
+                                yield cb.greaterThan(root.get(fieldName),  date);
+                            } else if (value instanceof LocalDateTime localDateTime) {
+                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                            } else {
+                                throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
+                            }
+                        }
+
+                        case "<=" -> {
+                            if (value instanceof String string) {
+                                yield cb.greaterThan(root.get(fieldName), string);
+                            } else if (value instanceof Number number) {
+                                yield cb.gt(root.get(fieldName), number);
+                            } else if (value instanceof Date date) {
+                                yield cb.greaterThan(root.get(fieldName),  date);
+                            } else if (value instanceof LocalDateTime localDateTime) {
+                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                            }  else {
+                                throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
+                            }
+                        }
+                        case "contains" -> cb.isMember(value, root.get(fieldName));
+                        case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
+                        case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
+                        case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
+                        case "in" -> root.get(fieldName).in((Collection<?>) value);
+                        case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
+                        case "isnull" -> cb.isNull(root.get(fieldName));
+                        case "isnotnull" -> cb.isNotNull(root.get(fieldName));
+                        default -> null;
+                    };
+
+                    if (innerPredicate == null) {
+                        innerPredicate = p;
+                    } else {
+                        String logic = Optional.ofNullable(((Map<?, ?>) inner).get("logicOperator"))
+                                .map(Object::toString)
+                                .orElse("and");
+                        if ("or".equalsIgnoreCase(logic)) {
+                            innerPredicate = cb.or(innerPredicate, p);
+                        } else {
+                            innerPredicate = cb.and(innerPredicate, p);
+                        }
+                    }
+                }
+                if (innerPredicate != null) {
+                    predicates.add(innerPredicate);
+                }
+            }
+        }
+        return predicates;
+    }
+
 }

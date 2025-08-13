@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotification
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -50,6 +51,8 @@ public interface IShipmentServiceV3 {
 
     ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId);
     ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId);
+
+    Map<String, Object> getShipmentDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request);
 
     ShipmentDetailsV3Response create(CommonRequestModel commonRequestModel);
 
@@ -113,5 +116,7 @@ public interface IShipmentServiceV3 {
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException;
     void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList);
+
+    Map<String, Object> fetchShipments(Map<String, Object> requestPayload);
     ShipmentDetailsResponse getDefaultShipment();
 }

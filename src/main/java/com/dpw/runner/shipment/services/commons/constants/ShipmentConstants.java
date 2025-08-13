@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import org.apache.kafka.common.protocol.types.Field;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -153,6 +155,70 @@ public class ShipmentConstants {
             Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
+
+    );
+    // Entity Mapping Keys (using Constants class where available)
+    public static final String PACKING_LIST = "packingList";
+    public static final String EL_DETAILS_LIST = "elDetailsList";
+    public static final String SHIPMENT_ADDRESSES = "shipmentAddresses";
+    public static final String BOOKING_CARRIAGES_LIST = "bookingCarriagesList";
+    public static final String EVENTS_LIST = "eventsList";
+    public static final String SERVICES_LIST = "servicesList";
+    public static final String TRUCK_DRIVER_DETAILS = "truckDriverDetails";
+    public static final String TRIANGULATION_PARTNER_LIST = "triangulationPartnerList";
+    public static final String NOTES_LIST = "notesList";
+    public static final String JOBS_LIST = "jobsList";
+    public static final String SHIPMENT_ORDERS = "shipmentOrders";
+    public static final String PICKUP_DELIVERY_DETAILS_INSTRUCTIONS = "pickupDeliveryDetailsInstructions";
+    public static final String FILE_REPO_LIST = "fileRepoList";
+    public static final String CONSOLIDATION_ADDRESSES = "consolidationAddresses";
+    public static final String CO_LOAD_WITH = "coLoadWith";
+    public static final String CREDITOR = "creditor";
+    public static final String BORROWED_FROM = "borrowedFrom";
+    public static final String RECEIVING_AGENT = "receivingAgent";
+    public static final String SENDING_AGENT = "sendingAgent";
+    public static final String DEPARTURE_DETAILS = "departureDetails";
+    public static final String ARRIVAL_DETAILS = "arrivalDetails";
+    public static final String ALLOCATIONS = "allocations";
+    public static final String ACHIEVED_QUANTITIES = "achievedQuantities";
+    public static final String SHIPMENT_DETAILS = "shipmentDetails";
+    public static final String CONSOLIDATION_DETAILS = "consolidationDetails";
+    public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
+            Map.entry(SHIPMENT_DETAILS, ShipmentDetails.class),
+            Map.entry(Constants.ADDITIONAL_DETAILS, AdditionalDetails.class),
+            Map.entry(Constants.CARRIER_DETAILS, CarrierDetails.class),
+            Map.entry(PACKING_LIST, Packing.class),
+            Map.entry(EL_DETAILS_LIST, ELDetails.class),
+            Map.entry(SHIPMENT_ADDRESSES, Parties.class),
+            Map.entry(BOOKING_CARRIAGES_LIST, BookingCarriage.class),
+            Map.entry(EVENTS_LIST, Events.class),
+            Map.entry(REFERENCE_NUMBERS_LIST, ReferenceNumbers.class),
+            Map.entry(Constants.ROUTING_LIST, Routings.class),
+            Map.entry(SERVICES_LIST, ServiceDetails.class),
+            Map.entry(TRUCK_DRIVER_DETAILS, TruckDriverDetails.class),
+            Map.entry(TRIANGULATION_PARTNER_LIST, TriangulationPartner.class),
+            Map.entry(NOTES_LIST, Notes.class),
+            Map.entry(Constants.DELIVERY_DETAILS, PickupDeliveryDetails.class),
+            Map.entry(Constants.PICKUP_DETAILS, PickupDeliveryDetails.class),
+            Map.entry(Constants.CLIENT, Parties.class),
+            Map.entry(Constants.CONSIGNER, Parties.class),
+            Map.entry(Constants.CONSIGNEE, Parties.class),
+            Map.entry(JOBS_LIST, Jobs.class),
+            Map.entry(SHIPMENT_ORDERS, ShipmentOrder.class),
+            Map.entry(PICKUP_DELIVERY_DETAILS_INSTRUCTIONS, PickupDeliveryDetails.class),
+            Map.entry(CONSOLIDATION_DETAILS, ConsolidationDetails.class),
+            Map.entry(FILE_REPO_LIST, FileRepo.class),
+            Map.entry(CONSOLIDATION_ADDRESSES, Parties.class),
+            Map.entry(Constants.CONTAINERS_LIST, Containers.class),
+            Map.entry(CO_LOAD_WITH, Parties.class),
+            Map.entry(CREDITOR, Parties.class),
+            Map.entry(BORROWED_FROM, Parties.class),
+            Map.entry(RECEIVING_AGENT, Parties.class),
+            Map.entry(SENDING_AGENT, Parties.class),
+            Map.entry(DEPARTURE_DETAILS, ArrivalDepartureDetails.class),
+            Map.entry(ARRIVAL_DETAILS, ArrivalDepartureDetails.class),
+            Map.entry(ALLOCATIONS, Allocations.class),
+            Map.entry(ACHIEVED_QUANTITIES, AchievedQuantities.class)
 
     );
     public static final String LIST = "/list";

@@ -119,6 +119,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -172,6 +180,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ShipmentDetailsMapper shipmentDetailsMapper;
     @Autowired
     private INotesDao notesDao;
+    @Autowired
+    private EntityManager entityManager;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -757,6 +767,145 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
         }
     }
+
+    @Override
+    public Map<String, Object> fetchShipments(Map<String, Object> requestPayload) {
+        long totalCount = fetchTotalCount(requestPayload);
+        int pageNo = (int) requestPayload.getOrDefault("pageNo", 1);
+        int pageSize = (int) requestPayload.getOrDefault("pageSize", 25);
+        int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+
+        // Step 1: Read requested columns
+        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Step 6: Build CriteriaQuery<Object[]>
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+        // Step 3: Parse filterCriteria into predicates
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, requestPayload);
+
+        // Step 4: Parse sortRequest
+        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, requestPayload);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>();
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder);
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add where
+        if (!predicates.isEmpty()) {
+            cq.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        // Add sorting
+        if (sortOrder != null) {
+            cq.orderBy(sortOrder);
+        }
+
+        // Step 7: Execute paginated query
+        List<Object[]> results = entityManager.createQuery(cq)
+                .setFirstResult((pageNo - 1) * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
+
+        // Step 8: Convert flat to nested map with array support
+        List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships);
+
+        // Step 9: Build final response map with data + pagination info
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("pageNo", pageNo);
+        response.put("pageSize", pageSize);
+        response.put("totalPages", totalPages);
+        response.put("totalCount", totalCount);
+        response.put("data", nestedList);
+
+        return response;
+    }
+
+    private Class<?> determineEntityClass(Map<String, Object> requestPayload) {
+        // Check if there's a specific entity type in the request
+        if (requestPayload.containsKey("entityType")) {
+            String entityType = (String) requestPayload.get("entityType");
+            return ShipmentConstants.ENTITY_MAPPINGS.get(entityType);
+        }
+
+        // Default to ShipmentDetails if not specified
+        return ShipmentDetails.class;
+    }
+    public long fetchTotalCount(Map<String, Object> requestPayload) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<ShipmentDetails> root = countQuery.from(ShipmentDetails.class);
+
+        // Build predicates same way as main query
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, requestPayload);
+
+        countQuery.select(cb.countDistinct(root)); // count distinct root entities
+        if (!predicates.isEmpty()) {
+            countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        return entityManager.createQuery(countQuery).getSingleResult();
+    }
+    @Override
+    public Map<String, Object> getShipmentDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
+        // Step 1: Read requested columns
+        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>(); // to store column names in order
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder);
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add filter by id if provided
+        if (request.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), request.getId());
+            cq.where(idPredicate);
+        } else if(request.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), request.getGuid());
+            cq.where(idPredicate);
+        }
+
+        TypedQuery<Object[]> query = entityManager.createQuery(cq);
+        List<Object[]> results = query.getResultList();
+
+        // Convert result list to List<Map<String, Object>>
+        List<Map<String, Object>> finalResult = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> rowMap = new LinkedHashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowMap.put(columnOrder.get(i), row[i]);
+            }
+            finalResult.add(rowMap);
+        }
+        Map<String, Object> response = new LinkedHashMap<>();
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
+        ;
+        response.put("data", nestedList);
+        return response;
+    }
+
 
     private void setCounterCountAndTeuCount(ShipmentRetrieveLiteResponse response, Set<Containers> containersList) {
         long shipmentCont = containersList.stream()
