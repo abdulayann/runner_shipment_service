@@ -309,6 +309,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
@@ -507,6 +508,8 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IContainerDao containerDao;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -4261,94 +4264,47 @@ public class ShipmentService implements IShipmentService {
         return createRoutes;
     }
 
-//    @Override
-    public void exportExcelAsync(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
-        log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> emailShipmentListExcel(response, commonRequestModel)), executorService);
-        log.info("Export-Excel done");
-        return;
-    }
-
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
 
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+        Integer shipmentCount = 10;
+
+        if(shipmentCount < exportExcelLimit){
+            downloadShipmentListExcel(response, commonRequestModel);
+        }else {
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
+                TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+                txTemplate.execute(status -> {
+                    emailShipmentListExcel(response, commonRequestModel);
+                    return null;
+                });
+            }), executorService);
         }
-        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
-        log.info("Fetching data with tables included: {}", request.getIncludeTbls());
-        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-        if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
-            log.warn("No shipment data found for export. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
-        }
-        else {
-            log.info("Shipment data fetched. Total records: {}", shipmentDetailsPage.getTotalElements());
-        }
-
-        log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
-        Map<String, Integer> headerMap = new HashMap<>();
-        for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
-            headerMap.put(ShipmentConstants.SHIPMENT_HEADERS.get(i), i);
-        }
-
-        try(Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("ShipmentList");
-            makeHeadersInSheet(sheet, workbook);
-            log.info("Excel headers created successfully.");
-
-            //Filling the data
-            List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
-            log.info("Converted entity list to DTOs for export. Total DTO records: {}", shipmentListResponseData.size());
-            for (int i = 0; i < shipmentListResponseData.size(); i++) {
-                processShipmentListResponseData(sheet, i, shipmentListResponseData, headerMap);
-            }
-            log.info("Filled data into Excel sheet. Total rows written (excluding header): {}", shipmentListResponseData.size());
-
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
-            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
-            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
-
-            log.info("Export Excel limit is: {}. Records to export: {}", exportExcelLimit, shipmentListResponseData.size());
-
-            if (shipmentListResponseData.size() > exportExcelLimit) {
-                // Send the file via email
-                log.info("Record count exceeds export limit. Sending Excel via email.");
-                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
-            } else {
-                // Download it
-                response.reset();
-                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-                response.setHeader("Content-Disposition",
-                    "attachment; filename=" + filenameWithTimestamp);
-
-                try (OutputStream outputStream = new BufferedOutputStream(
-                    response.getOutputStream(), 8192 * 10)) {
-                    workbook.write(outputStream);
-                    log.info("Excel file written to response successfully.");
-                } catch (IOException e) {
-                    log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
-                }
-            }
-        }
-
-        log.info("Export Excel process completed. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
+        return;
     }
 
-    private void downloadShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel){
+    private void downloadShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) {
+        log.info("Starting download of shipment list Excel. Request model: {}", commonRequestModel);
+
         Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(commonRequestModel);
+        log.info("Fetched {} shipment(s) for Excel download.", shipmentDetailsPage.getTotalElements());
+
         exportShipmentListToExcel(shipmentDetailsPage, response, false);
+        log.info("Shipment list Excel download completed successfully.");
     }
 
-    private void emailShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel){
+    private void emailShipmentListExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) {
+        log.info("Starting email of shipment list Excel. Request model: {}", commonRequestModel);
+
         Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(commonRequestModel);
+        log.info("Fetched {} shipment(s) for Excel email.", shipmentDetailsPage.getTotalElements());
+
         exportShipmentListToExcel(shipmentDetailsPage, response, true);
+        log.info("Shipment list Excel email process completed successfully.");
     }
 
     private Page<ShipmentDetails> fetchShipmentsPage(CommonRequestModel commonRequestModel){
@@ -4359,6 +4315,8 @@ public class ShipmentService implements IShipmentService {
         }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         log.info("Fetching data with tables included: {}", request.getIncludeTbls());
+        log.info("Tenant in fetchData: {}", TenantContext.getCurrentTenant());
+        log.info("User in fetchData: {}", UserContext.getUser());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
@@ -4381,7 +4339,6 @@ public class ShipmentService implements IShipmentService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
         String timestamp = currentTime.format(formatter);
         String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
-
         List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
 
         if (sendEmail) {
