@@ -4804,6 +4804,33 @@ class ReportServiceTest extends CommonMocks {
 
         assertEquals("HBL_DRAFT_SHIP123.pdf", fileName);
     }
+    @Test
+    void shouldAppendSuffix_WhenOneFileAlreadyExists() {
+        // Mock 1 existing file
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName);
+    }
+
+    @Test
+    void shouldHandleChildType_MAWBFile() {
+        // Mock 2 existing files for MAWB
+        DocumentManagerEntityFileResponse file = createFile(ReportConstants.MAWB, ReportConstants.MAWB, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file, file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
+    }
 
     @Test
     void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
