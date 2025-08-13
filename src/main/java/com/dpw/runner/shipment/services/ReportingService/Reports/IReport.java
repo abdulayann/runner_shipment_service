@@ -599,7 +599,7 @@ public abstract class IReport {
         dictionary.put(S_REEFER_FLAG, Boolean.FALSE);
         if (Boolean.TRUE.equals(shipmentModel.getIsReefer())) {
             dictionary.put(S_REEFER_FLAG, Boolean.TRUE);
-            dictionary.put(SHIPMENT_REEFER_Flag, YES);
+            dictionary.put(SHIPMENT_REEFER_FLAG, YES);
         }
     }
 
