@@ -58,33 +58,6 @@ public class RoutingValidationUtil {
         }
     }
 
-    public void validateRoutingLegs(List<RoutingsRequest> incomingRoutings) {
-
-        for (RoutingsRequest routingsRequest : incomingRoutings) {
-            validateRoutingLeg(routingsRequest.getEtd(), routingsRequest.getEta(),
-                    routingsRequest.getAtd(), routingsRequest.getAta());
-        }
-    }
-
-    private void validateRoutingLeg(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
-
-        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
-            throw new ValidationException("ETD cannot be more than ETA");
-        }
-
-        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
-            throw new ValidationException("ATA cannot be less than ATD");
-        }
-
-        if (Objects.nonNull(atd) && atd.isAfter(LocalDateTime.now().plusHours(24))) {
-            throw new ValidationException("ATD cannot be more than Current Date");
-        }
-
-        if (Objects.nonNull(ata) && ata.isAfter(LocalDateTime.now().plusHours(24))) {
-            throw new ValidationException("ATA cannot be more than Current Date");
-        }
-    }
-
     public void validateMainCarriageRoutingLegs(List<RoutingsRequest> routingsList) {
         RoutingsRequest firstMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, true);
         RoutingsRequest lastMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, false);
