@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
@@ -186,10 +185,8 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Long brokerageAtDestination;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;
@@ -211,11 +208,9 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private LocalDateTime latestArrivalTime;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime estimatedBrokerageAtOriginDate;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime estimatedBrokerageAtDestinationDate;
 
     private Long containerAssignedToShipmentCargo;
