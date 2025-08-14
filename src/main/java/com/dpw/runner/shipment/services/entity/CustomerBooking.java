@@ -266,4 +266,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "shipment_reference_number")
     private String shipmentReferenceNumber;
+
+    @Column(name = "integration_source")
+    private String integrationSource;
 }
