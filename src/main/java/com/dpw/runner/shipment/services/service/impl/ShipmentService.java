@@ -105,33 +105,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ISequenceIncrementorDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -232,36 +206,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.DpsEvent;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.OceanDGRequestLog;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
@@ -444,6 +389,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IPartiesDao partiesDao;
 
@@ -3706,7 +3654,7 @@ public class ShipmentService implements IShipmentService {
 
         processLclOrAirEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
-        processLclEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
+        processTeslaEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
         processEMCREvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
@@ -3739,8 +3687,8 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processLclEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isLcl(shipmentDetails) || isFcl(shipmentDetails)) {
+    private void processTeslaEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (isTeslaShipment(shipmentDetails) && (isLcl(shipmentDetails) || isFcl(shipmentDetails))) {
 
             processPUEDEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
@@ -4068,6 +4016,11 @@ public class ShipmentService implements IShipmentService {
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
         return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+    }
+
+    private boolean isTeslaShipment(ShipmentDetails shipmentDetails) {
+        String integrationSource = customerBookingDao.findCustomerBookingIntegrationSourceByBookingNumber(shipmentDetails.getBookingReference());
+        return Constants.TESLA.equalsIgnoreCase(integrationSource);
     }
 
     private boolean isLcl(ShipmentDetails shipmentDetails) {
