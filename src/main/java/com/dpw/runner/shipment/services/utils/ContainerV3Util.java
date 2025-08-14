@@ -109,6 +109,7 @@ public class ContainerV3Util {
     @Autowired
     private ThreadPoolTaskExecutor hsCodeValidationExecutor;
 
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -144,11 +145,6 @@ public class ContainerV3Util {
         // STEP 1: Fetch container data
         try {
             model = fetchContainerExcelModel(request);
-            if (model.isEmpty()) {
-                log.warn("No containers found for request: {}", request);
-                sendJsonErrorResponse(response, "No containers found for given input.");
-                return;
-            }
         } catch (RunnerException e) {
             log.error("Business error during container download: {}", e.getMessage(), e);
             sendJsonErrorResponse(response, e.getMessage());
