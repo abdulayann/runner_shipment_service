@@ -331,6 +331,46 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
+    public ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
+            if (listCommonRequest == null) {
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+            }
+            if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
+                throw new ValidationException("Include Columns field is mandatory");
+            }
+            Set<String> includeColumns = new HashSet<>(listCommonRequest.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentConstants.TABLES_NAMES);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
+            log.info(ShipmentConstants.SHIPMENT_LIST_V3_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+
+            int totalPage = shipmentDetailsPage.getTotalPages();
+            long totalElements = shipmentDetailsPage.getTotalElements();
+
+            List<IRunnerResponse> shipmentListResponses = new ArrayList<>();
+            for (var shipmentDetail: shipmentDetailsPage.getContent()) {
+                ShipmentListResponse shipmentListResponse = (ShipmentListResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetail, includeColumns, new ShipmentListResponse());
+                handleConditionalFields(shipmentListResponse, shipmentDetail, includeColumns);
+                shipmentListResponses.add(shipmentListResponse);
+            }
+
+            return ResponseHelper.buildListSuccessResponse(
+                    shipmentListResponses,
+                    totalPage,
+                    totalElements);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {

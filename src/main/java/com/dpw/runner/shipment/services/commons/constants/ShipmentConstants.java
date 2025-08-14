@@ -232,6 +232,7 @@ public class ShipmentConstants {
 
     // Shipment V3.0 API Endpoints
     public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
+    public static final String SHIPMENT_EXTERNAL_API_HANDLE = "/api/v3/shipment/external";
     public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
 
 
