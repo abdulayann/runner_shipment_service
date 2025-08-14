@@ -173,6 +173,13 @@ public class CustomerBookingV3Util {
                 containers.setGrossWeight(containerWeight);
             }
             containers.setGrossWeightUnit(containers.getContainerWeightUnit());
+            if(!Objects.isNull(containers.getPackagesPerContainer())) {
+                Long packsPerContainer = containers.getPackagesPerContainer();
+                containers.setPacks(String.valueOf(BigDecimal.valueOf(containerCount != null ? containerCount : 0).multiply(new BigDecimal(packsPerContainer))));
+            }
+            if(!Objects.isNull(containers.getContainerPackageType())) {
+                containers.setPacksType(containers.getContainerPackageType());
+            }
         }
         BigDecimal teuCount = containersList.stream()
                 .map(c -> codeTeuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO)
