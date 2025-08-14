@@ -118,15 +118,8 @@ public class MigrationV3Service implements IMigrationV3Service {
 
 
     private void initCodeTeuMap() {
-        try {
-            if(codeTeuMap.isEmpty()) {
-                DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
-                List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
-                codeTeuMap = containerTypes.stream()
-                        .collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
-            }
-        } catch (RunnerException ex) {
-            throw new MdmException(ex.getMessage());
+        if(codeTeuMap.isEmpty()) {
+            codeTeuMap = migrationUtil.initCodeTeuMap();
         }
     }
 

@@ -81,17 +81,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
     private Map<String, BigDecimal> codeTeuMap = new HashMap<>();
 
-    private Map<String, BigDecimal> initCodeTeuMap() {
-        try {
-            DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
-            List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(
-                    mdmResponse.getData(), MdmContainerTypeResponse.class
-            );
-            return containerTypes.stream()
-                    .collect(Collectors.toUnmodifiableMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
-        } catch (RunnerException ex) {
-            throw new MdmException(ex.getMessage());
-        }
+    private void initCodeTeuMap() {
+        if(codeTeuMap.isEmpty())
+            codeTeuMap = migrationUtil.initCodeTeuMap();
     }
 
     @Override

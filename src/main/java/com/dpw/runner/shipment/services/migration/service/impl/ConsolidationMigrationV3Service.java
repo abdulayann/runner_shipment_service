@@ -2,15 +2,13 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 
-import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -21,7 +19,6 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
@@ -117,22 +114,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
 
-    @Autowired
-    private MDMServiceAdapter mdmServiceAdapter;
-
-
-    private Map<String, BigDecimal> initCodeTeuMap() {
-        try {
-            DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
-            List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(
-                mdmResponse.getData(), MdmContainerTypeResponse.class
-            );
-            return containerTypes.stream()
-                    .collect(Collectors.toUnmodifiableMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
-        } catch (RunnerException ex) {
-            throw new MdmException(ex.getMessage());
-        }
-    }
 
     @Transactional
     @Override
@@ -216,7 +197,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap) {
 
         if(codeTeuMap.isEmpty()){
-            codeTeuMap = initCodeTeuMap();
+            codeTeuMap = migrationUtil.initCodeTeuMap();
         }
 
         UUID consolGuid = consolidationDetails.getGuid();
