@@ -612,6 +612,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void createShipmentInV3Test() throws RunnerException {
+        Containers containers = Containers.builder().containerCount(2L).commodityGroup("FAK").build();
+        containers.setId(1L);
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         PackingV3Request packingV3Request = PackingV3Request.builder().packs("2").packsType("BAG").commodity("FAK").build();
         packingV3Request.setWeight(BigDecimal.valueOf(11.5));
@@ -655,11 +658,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
         when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
-        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(Containers.builder().build()));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        lenient().when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
@@ -671,12 +674,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
-        tenantSettings.setDefaultPackUnit("BAG");
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -728,7 +726,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
         when(notesDao.saveAll(any())).thenReturn(List.of(notes));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
@@ -742,12 +740,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
-        tenantSettings.setDefaultPackUnit("BAG");
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -1546,7 +1539,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1558,11 +1551,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -1596,15 +1587,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentRequest.getClient().setOrgCode("FRC1234");
         commonRequestModel.setData(mockShipmentRequest);
         mockShipment.setId(2L);
-
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(mockAddress);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(getMockListContractResponse());
         when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         assertThrows(ValidationException.class, () -> shipmentServiceImplV3.create(commonRequestModel));
     }
 
@@ -1647,7 +1638,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1660,11 +1651,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -1710,7 +1699,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1723,11 +1712,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -1777,7 +1764,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1792,11 +1779,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -1984,7 +1969,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
@@ -1997,11 +1982,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -2022,6 +2005,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         commonRequestModel.setData(mockShipmentRequest);
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
@@ -2066,11 +2051,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("Shipment");
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.completeUpdate(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -2121,11 +2104,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("Shipment");
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.completeUpdate(commonRequestModel);
 
         assertNotNull(actualResponse);
@@ -2178,11 +2159,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(consolidationV3Service).updateConsolidationCargoSummary(any(), any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-        TenantModel tenant = new TenantModel();
-        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse(tenant));
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
-        when(commonUtils.getEntityTransferAddress(any())).thenReturn(address);
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(address);
 
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.completeUpdate(commonRequestModel);
 
@@ -2200,7 +2179,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setShipmentId("SHIP001");
         mockShipment.setJobType("DRT");
         testShipment.setJobType("STD");
-
+        V1RetrieveResponse mockResponse = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        when(v1Service.retrieveTenant()).thenReturn(mockResponse);
+        when(mockResponse.getEntity()).thenReturn(tenantEntity);
+        TenantModel tenantModel = new TenantModel();
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        EntityTransferAddress mockAddress = new EntityTransferAddress();
+        mockAddress.setCity("TestCity");
+        when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(mockAddress);
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -4791,22 +4778,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void assignFirstBookingContainerToShipmentCargo_shouldAssignFirstAndResetRest() throws RunnerException {
-        Containers firstContainer = mock(Containers.class);
-        Containers secondContainer = mock(Containers.class);
-        List<Containers> containersList = List.of(firstContainer, secondContainer);
-        CustomerBookingV3Request bookingRequest = mock(CustomerBookingV3Request.class);
-
-        when(firstContainer.getId()).thenReturn(100L);
-
-        Long result = shipmentServiceImplV3.assignFirstBookingContainerToShipmentCargo(containersList, bookingRequest);
-
-        assertEquals(100L, result);
-        verify(containerV3Service).addShipmentCargoToContainerInCreateFromBooking(firstContainer, bookingRequest);
-        verify(containerV3Util).setContainerNetWeight(firstContainer);
-    }
-
-    @Test
     void findByIdIn_shouldReturnShipmentDetails() {
         List<Long> shipmentIds = List.of(1L, 2L);
         ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
@@ -5842,7 +5813,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         doNothing().when(auditLogService).addAuditLog(any());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -5874,7 +5845,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         doNothing().when(auditLogService).addAuditLog(any());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -5903,7 +5874,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setId(2L);
         mockShipmentSettings();
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         doThrow(RunnerException.class).when(shipmentsV3Util).afterSaveforEt(any(), any(), eq(true), any(), any(), eq(true));
@@ -5934,7 +5905,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
         doThrow(IllegalAccessException.class).when(auditLogService).addAuditLog(any());
@@ -7318,6 +7289,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         verify(shipmentDao).update(existingShipment, false);
         verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(any());
+    }
+
+    @Test
+    void testSetPlaceOfIssueInAdditionalDetailsIfExist_FirstIfBlockCovered() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(null);
+        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        entityTransferAddress.setCity("New York");
+        shipmentServiceImplV3.setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
+        assertNotNull(shipmentDetails.getAdditionalDetails(), "AdditionalDetails should have been created");
+        assertEquals("New York", shipmentDetails.getAdditionalDetails().getPlaceOfIssue());
     }
 
     @Test

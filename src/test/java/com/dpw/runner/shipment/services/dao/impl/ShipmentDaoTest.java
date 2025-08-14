@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -150,25 +151,30 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTestCatch() {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
+        mockShipmentSettings();
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
         assertThrows(ValidationException.class, () -> {
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, false);
         });
     }
 
     @Test
     void saveTestOldEntityNotPresent() {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
@@ -176,7 +182,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
         assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.save(shipmentDetails, false, false);
         });
     }
 
@@ -194,23 +200,27 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void saveTest2() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
     void saveTest3() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -219,7 +229,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -234,7 +244,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -248,6 +258,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -267,7 +278,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -278,7 +289,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -294,7 +305,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -313,7 +324,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -330,7 +341,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -350,7 +361,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .additionalDetails(additionalDetails)
                 .build();
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -370,7 +381,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .additionalDetails(additionalDetails)
                 .build();
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
     }
 
@@ -385,6 +396,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -409,7 +421,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -424,6 +436,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -455,7 +468,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -470,6 +483,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -501,7 +515,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -516,6 +530,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -546,7 +561,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1459,6 +1474,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1480,7 +1496,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1495,6 +1511,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1520,7 +1537,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1535,6 +1552,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1568,15 +1586,17 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
     void saveAll() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(containers)));
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -1603,7 +1623,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1616,7 +1636,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1632,7 +1652,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false, false));
     }
 
     @Test
@@ -1698,6 +1718,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1731,7 +1752,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1746,6 +1767,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1779,7 +1801,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1794,6 +1816,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1827,7 +1850,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1842,6 +1865,7 @@ class ShipmentDaoTest extends CommonMocks {
         routings.setLeg(1L);
 
         Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
         Parties parties = Parties.builder().type("type").build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
@@ -1875,7 +1899,7 @@ class ShipmentDaoTest extends CommonMocks {
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
@@ -1916,7 +1940,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
     }
 
@@ -1936,7 +1960,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
@@ -1958,7 +1982,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
@@ -1977,7 +2001,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
 
         mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true, false);
         assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
@@ -2310,5 +2334,58 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDao.updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
         verify(shipmentRepository, times(1))
                 .updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
+    }
+
+    @Test
+    void testRevertSoftDeleteShipmentIdAndTenantId() {
+        List<Long> shipmentIds = List.of(10L, 20L);
+        Integer tenantId = 2;
+        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+        verify(shipmentRepository, times(1)).revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Test
+    void testDeleteAdditionalShipmentsByTenantId() {
+        Set<Long> shipmentIds = Set.of(10L, 20L);
+        Integer tenantId = 2;
+        shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(shipmentIds, tenantId);
+        verify(shipmentRepository, times(1)).deleteAdditionalShipmentsByShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+
+    @Test
+    void testFindAllShipmentIdsByTenantId() {
+        Integer tenantId = 3;
+        shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+        verify(shipmentRepository, times(1)).findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Test
+    void testDeleteShipmentDetailsByIds() {
+        Set<Long> shipmentIds = Set.of(100L, 200L);
+        shipmentDao.deleteShipmentDetailsByIds(shipmentIds);
+        verify(shipmentRepository, times(1)).deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Test
+    void testDeleteTriangularPartnerShipmentByShipmentId() {
+        Long shipmentId = 300L;
+        shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+        verify(shipmentRepository, times(1)).deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    @Test
+    void testUpdateTriggerMigrationWarning() {
+        Long shipmentId = 400L;
+        shipmentDao.updateTriggerMigrationWarning(shipmentId);
+        verify(shipmentRepository, times(1)).updateTriggerMigrationWarning(shipmentId);
+    }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        shipmentDao.findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+                MigrationStatus.MIGRATED_FROM_V3.name()), 400);
+        verify(shipmentRepository, times(1)).findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
+                MigrationStatus.MIGRATED_FROM_V3.name()), 400);
     }
 }

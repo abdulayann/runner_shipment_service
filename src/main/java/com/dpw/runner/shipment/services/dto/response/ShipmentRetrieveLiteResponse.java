@@ -7,12 +7,15 @@ import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -92,6 +95,8 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String bookingType;
     private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
@@ -114,7 +119,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
-    private AdditionalDetailResponse additionalDetails;
+    private AdditionalDetailV3LiteResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
     private PickupDeliveryDetailsResponse deliveryDetails;
     private List<ReferenceNumbersResponse> referenceNumbersList;
@@ -165,6 +170,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long notifyPartyDpsAddressId;
     private List<String> implicationList;
     private Long shipmentCount;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
@@ -222,9 +228,17 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -260,4 +274,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

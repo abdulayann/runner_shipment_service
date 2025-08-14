@@ -283,4 +283,6 @@ public class ShipmentConstants {
 
     public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
 
+    public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
+
 }

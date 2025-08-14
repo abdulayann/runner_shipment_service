@@ -229,6 +229,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
@@ -259,6 +260,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -273,6 +275,8 @@ public class HblReport extends IReport {
     private ShipmentService shipmentService;
     @Autowired
     private HblService hblService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -601,8 +605,9 @@ public class HblReport extends IReport {
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
-        dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getName()) : "");
-        dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getCountry()) : "");
+        dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()));
+        EntityTransferAddress address = commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode());
+        dictionary.put(ISSUE_PLACE_COUNTRY, address != null ? StringUtility.toUpperCase(address.getCountry()) : StringUtils.EMPTY);
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
         dictionary.put(BL_COMMENTS, hblModel.blObject.getHblData().getBlComments());
         dictionary.put(MARKS_AND_NUMBER, hblModel.blObject.getHblData().getMarksAndNumbers());

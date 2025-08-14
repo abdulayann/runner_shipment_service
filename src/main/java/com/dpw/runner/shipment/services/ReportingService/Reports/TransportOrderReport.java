@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 
 @Component
@@ -77,6 +78,9 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
 
         populateShippedOnboardFields(shipmentModel, dictionary);
+        populateDGFields(shipmentModel, dictionary);
+        populateReeferFields(shipmentModel, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipmentModel.getShipmentType());
 
         if(shipmentModel.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));

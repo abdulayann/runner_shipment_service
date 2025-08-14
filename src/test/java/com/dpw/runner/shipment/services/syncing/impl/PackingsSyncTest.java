@@ -54,8 +54,9 @@ class PackingsSyncTest {
         var inputPacking = new Packing();
         inputPacking.setGuid(UUID.randomUUID());
         inputPacking.setContainerId(11L);
-
-        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Containers())));
+        var container = new Containers();
+        container.setGuid(UUID.randomUUID());
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(container)));
         when(syncEntityConversionService.packingsV2ToV1(any(), any(), any(), any())).thenReturn(List.of(new PackingRequestV2()));
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
 

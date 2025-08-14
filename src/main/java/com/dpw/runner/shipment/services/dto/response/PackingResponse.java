@@ -110,6 +110,7 @@ public class PackingResponse implements IRunnerResponse {
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
+    private String shipmentType;
 
     public boolean getAssigned() {return containerId != null;}
 }

@@ -216,4 +216,12 @@ class PackingV3ControllerTest {
         var response = packingV3Controller.unAssignContainers(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+
+    @Test
+    void calculateCargoSummary() throws RunnerException {
+        var response = packingV3Controller.calculateCargoSummary(12L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
 }

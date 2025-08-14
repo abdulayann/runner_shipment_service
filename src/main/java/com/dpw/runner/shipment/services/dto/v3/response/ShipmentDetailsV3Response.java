@@ -85,6 +85,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String bookingType;
     private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
@@ -268,4 +270,6 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isBorrowed;
     private Long originBranch;
     private Integer slac;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

@@ -644,6 +644,8 @@ public class Constants {
     public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String CR_ID = "CR-ID";
+    public static final String ORIGINATED_FROM = "OriginatedFrom";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
     public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
@@ -654,6 +656,7 @@ public class Constants {
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+    public static final String MIGRATION_API = "MIGRATION_API";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
 
@@ -705,6 +708,15 @@ public class Constants {
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
     public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
+    public static final String PACKING_LC = "packing";
+    public static final String COMMODITY_GROUP = "commodityGroup";
+    public static final String COMMODITY = "commodity";
+    public static final String HS_CODE = "HSCode";
+    public static final String GOODS_DESCRIPTION = "goodsDescription";
+    public static final String MARKS_N_NUMBERS = "marksnNums";
+    public static final String PROPER_SHIPPING_NAME = "properShippingName";
+    public static final String UN_NUMBER = "unNumber";
+    public static final String PACKING_GROUP = "packingGroup";
     private Constants() {
     }
 

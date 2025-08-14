@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -34,7 +35,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
 
@@ -53,6 +53,7 @@ public class CustomerBookingV3Controller {
     private final IPartiesV3Service partiesV3Service;
     private final ICustomerBookingV3Service customerBookingV3Service;
     private final ICRPServiceAdapter crpService;
+    private final JsonHelper jsonHelper;
 
     @Autowired
     public CustomerBookingV3Controller(IPackingV3Service packingV3Service,
@@ -60,13 +61,15 @@ public class CustomerBookingV3Controller {
                                        IReferenceNumbersV3Service referenceNumbersV3Service,
                                        IPartiesV3Service partiesV3Service,
                                        ICustomerBookingV3Service customerBookingV3Service,
-                                       ICRPServiceAdapter crpService) {
+                                       ICRPServiceAdapter crpService,
+                                       JsonHelper jsonHelper) {
         this.containerV3Service = containerV3Service;
         this.packingV3Service = packingV3Service;
         this.referenceNumbersV3Service = referenceNumbersV3Service;
         this.partiesV3Service = partiesV3Service;
         this.customerBookingV3Service = customerBookingV3Service;
         this.crpService = crpService;
+        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {
@@ -114,7 +117,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3Response.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_BOOKING_NUMBER)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
-    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.findByBookingNumber(bookingNumber));
     }
 
@@ -181,15 +184,15 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ContainerResponse.class)})
     @PostMapping(ApiConstants.BOOKING_API_CREATE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> createBookingContainers(@RequestBody @Valid ContainerV3Request containerV3Request) throws RunnerException {
-        ContainerResponse containerResponse = containerV3Service.create(containerV3Request, BOOKING);
+    public ResponseEntity<IRunnerResponse> createBookingContainers(@RequestBody @Valid BookingContainerV3Request bookingContainerV3Request) throws RunnerException {
+        ContainerResponse containerResponse = containerV3Service.create(jsonHelper.convertValue(bookingContainerV3Request, ContainerV3Request.class), BOOKING);
         return ResponseHelper.buildSuccessResponse(containerResponse);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(ApiConstants.BOOKING_API_UPDATE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> updateBookingContainers(@RequestBody @Valid List<ContainerV3Request> containerV3Requests) throws RunnerException {
-        BulkContainerResponse containerResponse = containerV3Service.updateBulk(containerV3Requests, BOOKING);
+    public ResponseEntity<IRunnerResponse> updateBookingContainers(@RequestBody @Valid List<BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
+        BulkContainerResponse containerResponse = containerV3Service.updateBulk(jsonHelper.convertValueToList(bookingContainerV3Requests, ContainerV3Request.class), BOOKING);
         return ResponseHelper.buildSuccessResponse(containerResponse);
     }
 
@@ -202,8 +205,8 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(ApiConstants.BOOKING_API_DELETE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<ContainerV3Request> containerV3Requests) throws RunnerException {
-        BulkContainerResponse bulkContainerResponse = containerV3Service.deleteBulk(containerV3Requests, BOOKING);
+    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
+        BulkContainerResponse bulkContainerResponse = containerV3Service.deleteBulk(jsonHelper.convertValueToList(bookingContainerV3Requests, ContainerV3Request.class), BOOKING);
         return ResponseHelper.buildSuccessResponse(bulkContainerResponse);
     }
 
@@ -224,7 +227,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
     @PostMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
     public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody ListCommonRequest listCommonRequest) {
-        PackingListResponse packingListResponse = packingV3Service.list(listCommonRequest, true, null);
+        PackingListResponse packingListResponse = packingV3Service.list(listCommonRequest, true, null, BOOKING);
         return ResponseHelper.buildSuccessResponse(packingListResponse);
     }
 

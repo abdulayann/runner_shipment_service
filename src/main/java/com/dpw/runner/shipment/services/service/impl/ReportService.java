@@ -54,8 +54,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerEntityFileRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
@@ -147,17 +151,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -254,6 +248,8 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
+
+    private final Map<String, Integer> namingCache = new ConcurrentHashMap<>();
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
@@ -2790,7 +2786,7 @@ public class ReportService implements IReportService {
         return null;
     }
 
-    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
+    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String entityGuid, String identifier) {
         String customFileName = null;
 
         try {
@@ -2816,13 +2812,21 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
-                    customFileName = baseDocName
-                            + DocumentConstants.DASH
-                            + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier
-                            + DocumentConstants.DOT_PDF;
+
+                String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
+
+                // Initialize & increment atomically
+                int count = namingCache.compute(key, (k, v) -> (v == null)
+                        ? getExistingDocumentCount(entityGuid, docType, childType)
+                        : v + 1);
+
+                String suffix = count > 0 ? "_" + count : "";
+
+                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
+                        && childType != null && !childType.isBlank()) {
+                    customFileName = baseDocName + "_" + StringUtility.convertToString(childType).toUpperCase() + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else {
-                    customFileName = baseDocName + DocumentConstants.DASH + identifier + DocumentConstants.DOT_PDF;
+                    customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
                 log.info("Custom file name generated: {}", customFileName);
@@ -2831,6 +2835,29 @@ public class ReportService implements IReportService {
             log.error("Error generating custom document filename: {}", e.getMessage(), e);
         }
         return customFileName;
+    }
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+        try {
+            DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
+                    .entityKey(entityGuid)
+                    .build();
+            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
+                    .entities(Collections.singletonList(request))
+                    .build();
+
+            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
+                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
+
+            if (response != null && response.getData() != null) {
+                return (int) response.getData().stream()
+                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
+                        .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
+                                file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
+            }
+        } catch (Exception e) {
+            log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
+        }
+        return 0;
     }
 
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
@@ -2875,7 +2902,7 @@ public class ReportService implements IReportService {
         docUploadRequest.setConsolidationType(consolidationType);
         // Apply custom naming if applicable and override
         try {
-            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
+            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), entityGuid, identifier);
             if (customFileName != null) {
                 docUploadRequest.setFileName(customFileName); // override default
             }
@@ -2888,7 +2915,6 @@ public class ReportService implements IReportService {
         result.put("fileName", docUploadRequest.getFileName());
         return result;
     }
-
     // Main orchestrator method that populates the data dump dictionary with all required details
     public void populateConsolidationReportData(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
         if (consolidationDetails == null) {

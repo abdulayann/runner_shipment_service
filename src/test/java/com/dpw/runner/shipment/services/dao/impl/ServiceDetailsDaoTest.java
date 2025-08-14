@@ -2016,4 +2016,22 @@ class ServiceDetailsDaoTest {
         Exception e = assertThrows(RunnerException.class, () -> serviceDetailsDao.updateEntityFromShipment(inputServices, completeShipment.getId(), completeShipment.getServicesList()));
         assertNotNull(RunnerException.class.getSimpleName(), e.getClass().getSimpleName());
     }
+
+    @Test
+    void testDeleteAdditionalServiceDetailsByShipmentId() {
+        List<Long> serviceDetailsIds = List.of(1L, 2L);
+        Long shipmentId = 100L;
+        serviceDetailsDao.deleteAdditionalServiceDetailsByShipmentId(serviceDetailsIds, shipmentId);
+        verify(iServiceDetailsRepository, times(1))
+                .deleteAdditionalServiceDetailsByShipmentId(serviceDetailsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByServiceDetailsIdsAndShipmentId() {
+        List<Long> serviceDetailsIds = List.of(3L, 4L);
+        Long shipmentId = 200L;
+        serviceDetailsDao.revertSoftDeleteByServiceDetailsIdsAndShipmentId(serviceDetailsIds, shipmentId);
+        verify(iServiceDetailsRepository, times(1))
+                .revertSoftDeleteByServiceDetailsIdsAndShipmentId(serviceDetailsIds, shipmentId);
+    }
 }

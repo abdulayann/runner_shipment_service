@@ -973,17 +973,17 @@ class ContainerV3UtilTest extends CommonMocks {
         List<ContainerV3Request> requests = Arrays.asList(req1, req2);
         ContainerV3Util.setShipmentOrConsoleId(request, "SHIPMENT", requests);
         for (ContainerV3Request r : requests) {
-            assertEquals(101L, r.getShipmentsId());
+            assertEquals(101L, r.getShipmentId());
             assertNull(r.getConsolidationId());
         }
         requests.forEach(r -> {
-            r.setShipmentsId(null);
+            r.setShipmentId(null);
             r.setConsolidationId(null);
         });
         ContainerV3Util.setShipmentOrConsoleId(request, "CONSOLIDATION", requests);
         for (ContainerV3Request r : requests) {
             assertEquals(202L, r.getConsolidationId());
-            assertNull(r.getShipmentsId());
+            assertNull(r.getShipmentId());
         }
     }
 

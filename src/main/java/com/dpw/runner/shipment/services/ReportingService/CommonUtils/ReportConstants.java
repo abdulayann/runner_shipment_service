@@ -70,6 +70,7 @@ public class ReportConstants {
     public static final String TI_DRIVER_MOBILE_NUMBER = "TI_MobileNumber";
     public static final String TI_DRIVER_ID = "TI_DriverID";
     public static final String TI_CONTAINER_NUM = "TI_ContainerNumber";
+    public static final String YES = "YES";
 
 
     private ReportConstants(){}
@@ -173,6 +174,8 @@ public class ReportConstants {
     public static final String COMMODITY_DESC = "CommodityDesc";
     public static final String COMMODITY_DESC_NAME = "CommodityDescName";
     public static final String IS_DG = "IsDG";
+    public static final String S_DG_FLAG = "S_DG_Flag";
+    public static final String SHIPMENT_CARGO_TYPE = "S_CargoType";
     public static final String AIR_UN_NUMBER = "AirUNNumber";
     public static final String AIR_DG_CLASS = "AirDGClass";
     public static final String AIR_DG_CLASS_DESCRIPTION = "AirDGClassDescription";
@@ -245,7 +248,7 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
-    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -1491,6 +1494,7 @@ public class ReportConstants {
     public static final String S_EAR_DROP_OFF = "S_EarDropoff";
     public static final String S_REEFER = "S_Reefer";
     public static final String S_LAT = "S_LAT";
+    public static final String S_DG = "S_DG";
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
@@ -1499,6 +1503,7 @@ public class ReportConstants {
     public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
     public static final String S_BORROWED_FROM = "S_BorrowedFrom";
     public static final String S_REEFER_FLAG = "S_ReeferFlag";
+    public static final String SHIPMENT_REEFER_FLAG = "S_Reefer_Flag";
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";

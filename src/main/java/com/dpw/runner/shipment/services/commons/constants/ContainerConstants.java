@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
 import java.util.Map;
+import java.util.Set;
 
 public class ContainerConstants {
 
@@ -25,6 +27,7 @@ public class ContainerConstants {
     public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
     public static final String UN_ASSIGN_PACKAGES = "/unAssignPackages";
     public static final String UN_ASSIGN_PACKAGES_SHIPMENT = "/shipment-unAssign-packages";
+    public static final String CALCULATE_CARGO_SUMMARY = "calculate-cargo-summary";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
     public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
@@ -56,6 +59,10 @@ public class ContainerConstants {
     public static final String KEY_COMMODITY_GROUP = "commodityGroup";
     public static final String KEY_HS_CODE = "hsCode";
     public static final String KEY_CARRIER_SEAL_NUMBER = "carrierSealNumber";
+    public static final String KEY_SHIPPER_SEAL_NUMBER = "shipperSealNumber";
+    public static final String KEY_CUSTOMS_SEAL_NUMBER = "customsSealNumber";
+    public static final String KEY_VETERINART_SEAL_NUMBER = "veterinarySealNumber";
+    public static final String KEY_DESCRIPTION_OF_GOODS = "descriptionOfGoods";
     public static final String KEY_MARKS_NUMS = "marksNums";
     public static final String KEY_DG_CLASS = "dgClass";
     public static final String KEY_UN_NUMBER = "unNumber";
@@ -85,6 +92,14 @@ public class ContainerConstants {
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CARRIER_SEAL_NUMBER).isContainsText(true).build()),
             Map.entry(KEY_MARKS_NUMS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_MARKS_NUMS).isContainsText(true).build()),
+            Map.entry(KEY_SHIPPER_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_SHIPPER_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_CUSTOMS_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CUSTOMS_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_VETERINART_SEAL_NUMBER,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_VETERINART_SEAL_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_DESCRIPTION_OF_GOODS,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_DESCRIPTION_OF_GOODS).isContainsText(true).build()),
             Map.entry(KEY_DG_CLASS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_DG_CLASS).isContainsText(true).build()),
             Map.entry(KEY_UN_NUMBER,
@@ -98,7 +113,7 @@ public class ContainerConstants {
             Map.entry(KEY_CONTAINER_CODE,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build()),
             Map.entry(TABLE_SHIPMENTS_LIST,
-                    RunnerEntityMapping.builder().tableName(TABLE_SHIPMENTS_LIST).dataType(Long.class).fieldName(TABLE_SHIPMENTS_LIST).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Set.class).fieldName(TABLE_SHIPMENTS_LIST).build())
 
     );
 

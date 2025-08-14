@@ -556,4 +556,58 @@ class ReferenceNumbersDaoTest {
         assertNotNull(referenceNumbersList1);
         assertEquals(referenceNumbersList, referenceNumbersList1);
     }
+
+    @Test
+    void testDeleteAdditionalDataByReferenceNumberIdsConsolidationId() {
+        List<Long> referenceNumberIds = List.of(1L, 2L);
+        Long consolidationId = 100L;
+        referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByReferenceNumberIdsAndConsolidationId() {
+        List<Long> referenceNumberIds = List.of(3L, 4L);
+        Long consolidationId = 200L;
+        referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByReferenceNumberIdsBookingId() {
+        List<Long> referenceNumberIds = List.of(5L, 6L);
+        Long bookingId = 300L;
+        referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByReferenceNumberIdsAndBookingId() {
+        List<Long> referenceNumberIds = List.of(7L, 8L);
+        Long bookingId = 400L;
+        referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+    }
+
+    @Test
+    void testDeleteAdditionalreferenceNumbersByShipmentId() {
+        List<Long> referenceNumbersIds = List.of(9L, 10L);
+        Long shipmentId = 500L;
+        referenceNumbersDao.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByreferenceNumbersIdsAndShipmentId() {
+        List<Long> referenceNumbersIds = List.of(11L, 12L);
+        Long shipmentId = 600L;
+        referenceNumbersDao.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
+    }
 }

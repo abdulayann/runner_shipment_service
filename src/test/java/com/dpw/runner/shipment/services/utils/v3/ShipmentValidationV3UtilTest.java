@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -216,7 +217,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cd.setTransportMode(TRANSPORT_MODE_SEA);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -228,7 +229,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+        ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
 
         assertTrue(ex.getMessage().contains("LCL Cargo Type"));
@@ -255,10 +256,9 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+     ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
-
-        assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
+     assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
     }
 
     @Test
@@ -289,7 +289,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cd.setTransportMode(TRANSPORT_MODE_SEA);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-002");
 
@@ -425,7 +425,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setControlled(true);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -453,16 +453,16 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_CargoDeliveryDate_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCargoDeliveryDate(LocalDateTime.now());
-
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_SEA, shipment.getTransportMode());
     }
 
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_Origin_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("USPOR")
                 .destinationLocCode("ERTEW")
@@ -474,7 +474,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_Destination_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .destinationLocCode("USPOR")
@@ -486,7 +486,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForFmcTlcField_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .destinationLocCode("CAPOR")
@@ -497,7 +497,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyDestination_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .build());
@@ -526,7 +526,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForCutOffFields() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setLatestArrivalTime(LocalDateTime.now());
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }

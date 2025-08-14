@@ -223,4 +223,34 @@ class PartiesDaoTest {
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT", partiesList));
     }
 
+    @Test
+    void testDeleteAdditionalDataByPartiesIdsEntityIdAndEntityType() {
+        List<Long> addressIds = List.of(1L, 2L);
+        Long entityId = 100L;
+        String entityType = "ENTITY_TYPE";
+        partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(addressIds, entityId, entityType);
+        verify(partiesRepository, times(1))
+                .deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(addressIds, entityId, entityType);
+    }
+
+    @Test
+    void testRevertSoftDeleteByPartiesIds() {
+        List<Long> addressIds = List.of(3L, 4L);
+        partiesDao.revertSoftDeleteByPartiesIds(addressIds);
+        verify(partiesRepository, times(1))
+                .revertSoftDeleteByPartiesIds(addressIds);
+    }
+
+    @Test
+    void testDeleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType() {
+        List<Long> partiesIds = List.of(5L, 6L);
+        List<Long> pickupDeliveryDetailsIds = List.of(7L, 8L);
+        String pickupDelivery = "PICKUP";
+        partiesDao.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(
+                partiesIds, pickupDeliveryDetailsIds, pickupDelivery);
+        verify(partiesRepository, times(1))
+                .deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(
+                        partiesIds, pickupDeliveryDetailsIds, pickupDelivery);
+    }
+
 }

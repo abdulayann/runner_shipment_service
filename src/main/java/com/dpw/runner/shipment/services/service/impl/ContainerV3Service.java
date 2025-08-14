@@ -1,5 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER_INTERNAL_CALL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -12,19 +31,40 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
+import com.dpw.runner.shipment.services.dto.response.AttachedShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerBeforeSaveRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -38,7 +78,12 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
@@ -48,10 +93,39 @@ import com.dpw.runner.shipment.services.service_bus.model.ContainerUpdateRequest
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
@@ -66,25 +140,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -117,6 +172,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private ContainerValidationUtil containerValidationUtil;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
     private IPackingDao packingDao;
@@ -194,9 +252,6 @@ public class ContainerV3Service implements IContainerV3Service {
     @Autowired
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
 
-    @Autowired
-    private EntityManager entityManager;
-
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Override
@@ -214,9 +269,16 @@ public class ContainerV3Service implements IContainerV3Service {
         String consoleType = null;
 
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            shipmentDetails = processShipmentModule(containerRequest);
+            shipmentDetails = processShipmentModule(List.of(containerRequest));
             consoleType = shipmentDetails.getJobType();
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
+            }
         }
+        containerValidationUtil.validateOpenForAttachment(containerRequest.getConsolidationId(), null);
+        // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
+        updateAllocationDateInRequest(List.of(containerRequest));
 
         // Validate container uniqueness
         List<Containers> containersList = getSiblingContainers(containerRequest, module, consoleType);
@@ -251,27 +313,26 @@ public class ContainerV3Service implements IContainerV3Service {
     private void validateContainerRequest(ContainerV3Request containerRequest) {
         boolean hasBookingId = containerRequest.getBookingId() != null;
         boolean hasConsolidationId = containerRequest.getConsolidationId() != null;
-        boolean hasShipmentsId = containerRequest.getShipmentsId() != null;
+        boolean hasShipmentsId = containerRequest.getShipmentId() != null;
 
         if (!hasBookingId && !hasConsolidationId && !hasShipmentsId) {
             throw new ValidationException("Either BookingId, ConsolidationId, or ShipmentsId must be provided in the request.");
         }
-
-        int providedIdsCount = (hasBookingId ? 1 : 0) + (hasConsolidationId ? 1 : 0) + (hasShipmentsId ? 1 : 0);
-        if (providedIdsCount > 1) {
-            throw new ValidationException("Only one of BookingId, ConsolidationId, or ShipmentsId should be provided, not multiple.");
-        }
     }
 
-    private ShipmentDetails processShipmentModule(ContainerV3Request containerRequest) {
-        ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentsId())
-                .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentsId()));
+    private ShipmentDetails processShipmentModule(List<ContainerV3Request> containerV3RequestList) {
+        ShipmentDetails shipmentDetails = shipmentDao.findById(containerV3RequestList.get(0).getShipmentId())
+                .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerV3RequestList.get(0).getShipmentId()));
 
         containerValidationUtil.validateShipmentForContainer(shipmentDetails);
         containerValidationUtil.validateShipmentCargoType(shipmentDetails);
 
-        if(!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList())) {
-            containerRequest.setConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+        if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+            Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
+            for(ContainerV3Request containerV3Request : containerV3RequestList) containerV3Request.setConsolidationId(consolidationId);
+        }else{
+            throw new ValidationException("Shipment : " + shipmentDetails.getShipmentId() + ", must be attached to consolidation to Create container");
         }
 
         return shipmentDetails;
@@ -288,17 +349,17 @@ public class ContainerV3Service implements IContainerV3Service {
         Optional.ofNullable(module)
                 .filter(SHIPMENT::equals)
                 .filter(m -> savedContainer.getId() != null)
-                .filter(m -> containerRequest.getShipmentsId() != null)
+                .filter(m -> containerRequest.getShipmentId() != null)
                 .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
                         savedContainer.getId(),
-                        Set.of(containerRequest.getShipmentsId()),
+                        Set.of(containerRequest.getShipmentId()),
                         false
                 ));
 
 
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
@@ -356,20 +417,27 @@ public class ContainerV3Service implements IContainerV3Service {
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         log.info("Starting container UpdateBulk | Request ID: {} | Request Body: {}", requestId, containerRequestList);
-        updateContainerRequestOnDgFlag(containerRequestList);
         validateBulkUpdateRequest(containerRequestList);
-
-        // Convert the request DTOs to entity models for persistence
-        List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
-        log.debug("Converted updated container request to entity | Entity: {}", originalContainers);
 
         ShipmentDetails shipmentDetails = null;
         String consoleType = null;
 
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            shipmentDetails = processShipmentModule(containerRequestList.get(0));
+            shipmentDetails = processShipmentModule(containerRequestList);
             consoleType = shipmentDetails.getJobType();
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentDetails.getId());
+            }
         }
+
+        containerValidationUtil.validateOpenForAttachment(containerRequestList.get(0).getConsolidationId(), null);
+        // Adjust allocation dates based on container number changes — sets current date if added/updated, clears if removed
+        updateAllocationDateInRequest(containerRequestList);
+
+        // Convert the request DTOs to entity models for persistence
+        List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
+        log.debug("Converted updated container request to entity | Entity: {}", originalContainers);
 
         List<Containers> containersList = getSiblingContainers(containerRequestList.get(0), module, consoleType);
 
@@ -403,7 +471,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
@@ -427,6 +495,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void validateBulkUpdateRequest(List<ContainerV3Request> containerRequestList) {
+        updateContainerRequestOnDgFlag(containerRequestList);
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
     }
 
@@ -474,12 +543,13 @@ public class ContainerV3Service implements IContainerV3Service {
             List<Containers> shipmentContainers = containerDao.findByShipmentId(shipmentId);
 
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+            if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                shipmentDetails.setTriggerMigrationWarning(false);
+                shipmentDao.updateTriggerMigrationWarning(shipmentId);
+            }
         }
 
-        // update console achieved data
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId)
-                .orElseThrow(() -> new ValidationException("Consolidation not present with Id :" + consolidationId));
-        consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails,
+        consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
 
         if (Objects.equals(BOOKING, module)) {
@@ -500,11 +570,76 @@ public class ContainerV3Service implements IContainerV3Service {
         processContainerDG(containerRequestList, module, shipmentDetails, isCreate);
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
     }
+
+    private void updateAllocationDateInRequest(List<ContainerV3Request> containerRequestList) {
+        try {
+            if (containerRequestList == null || containerRequestList.isEmpty()) {
+                // No containers provided, nothing to update
+                return;
+            }
+
+            // Separate requests into "new" containers (no ID) and "existing" containers (with ID)
+            List<ContainerV3Request> existingContainerRequests = containerRequestList.stream()
+                    .filter(request -> request.getId() != null)
+                    .toList();
+
+            List<ContainerV3Request> newContainerRequests = containerRequestList.stream()
+                    .filter(request -> request.getId() == null)
+                    .toList();
+
+            // Fetch all existing containers from DB for comparison
+            List<Long> existingContainerIds = existingContainerRequests.stream()
+                    .map(ContainerV3Request::getId).filter(Objects::nonNull).toList();
+
+            List<Containers> existingContainersFromDb = existingContainerIds.isEmpty()
+                    ? Collections.emptyList()
+                    : containerDao.findByIdIn(existingContainerIds);
+
+            // Map of containerId → Containers (from DB)
+            Map<Long, Containers> containerIdToEntityMap = existingContainersFromDb.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(Containers::getId, Function.identity()));
+
+            // CASE 1: New containers → Assign allocation date if container number present
+            for (ContainerV3Request newRequest : newContainerRequests) {
+                if (newRequest.getContainerNumber() != null) {
+                    newRequest.setAllocationDate(LocalDateTime.now());
+                }
+            }
+
+            // CASE 2: Existing containers → Compare old and new container numbers
+            for (ContainerV3Request request : existingContainerRequests) {
+                Containers existingEntity = containerIdToEntityMap.get(request.getId());
+
+                // If container not found in DB, skip
+                if (existingEntity == null) {
+                    continue;
+                }
+
+                String oldContainerNumber = existingEntity.getContainerNumber();
+                String newContainerNumber = request.getContainerNumber();
+
+                if (oldContainerNumber != null && newContainerNumber == null) {
+                    // Container number deleted → remove allocation date
+                    request.setAllocationDate(null);
+                } else if (!Objects.equals(oldContainerNumber, newContainerNumber)) {
+                    // Container number added or updated → set allocation date to now
+                    request.setAllocationDate(LocalDateTime.now());
+                } else {
+                    // No change → retain the existing allocation date from DB
+                    request.setAllocationDate(existingEntity.getAllocationDate());
+                }
+            }
+        } catch (Exception ex) {
+            throw new ValidationException("Error occurred while updating allocation dates for containers", ex);
+        }
+    }
+
     protected void processContainerDG(List<ContainerV3Request> containerRequestList, String module, ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         if(!containsHazardousContainer(containerRequestList)) return;
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentId());
             validateAndSaveDGShipment(oldShipmentContainers, shipmentDetails, containerRequestList, isCreate);
         } else {
                 Long consolidationId = containerRequestList.get(0).getConsolidationId();
@@ -522,6 +657,25 @@ public class ContainerV3Service implements IContainerV3Service {
             }
             consolidationDetailsDao.update(consolidationDetails, false, false);
             processDGShipmentDetailsFromContainer(containerRequestList);
+        }
+    }
+
+    public void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
+        if (containerV3Request.getId() != null) {
+            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
+                    containerV3Request.getId());
+            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                Long shipmentId = shipmentsContainersMapping.getId();
+                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
+                        shipmentId);
+                if (optionalShipmentDetails.isPresent()) {
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                    shipmentDetails.setContainsHazardous(true);
+                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                    shipmentDao.save(shipmentDetails, false, false);
+                }
+            }
         }
     }
 
@@ -786,19 +940,15 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     // Method to handle the deletion of containers and their associated entities
-    private void deleteContainerAndAssociations(List<Long> containerIds,  List<Containers> containersToDelete) {
-        // Remove containers from packing associations
-        packingService.removeContainersFromPacking(containerIds);
+    private void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
+        log.info("Starting deleteContainerAndAssociations with containerIds: {}", containerIds);
+        for(Containers containers : containersToDelete) containers.setShipmentsList(new HashSet<>());
+        containerDao.saveAll(containersToDelete);
 
-        // container present in only one shipment , same container won't be avl in multiple shipments
-        List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
-        shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappings);
-
-        // Delete the containers from the database
-        containerRepository.deleteAll(containersToDelete);
-        //Clearing context , refetch the data
-        entityManager.clear();
+        containerDao.deleteByIdIn(containerIds);
+        log.info("Successfully deleted {} containers.", containerIds.size());
     }
+
 
     private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
         Map<Long, Containers> oldContainerMap = Optional.ofNullable(oldContainers).orElse(List.of()).stream()
@@ -889,7 +1039,7 @@ public class ContainerV3Service implements IContainerV3Service {
     protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest, String module, String consoleType) {
         if (SHIPMENT.equalsIgnoreCase(module)) {
             if (SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
-                return containerDao.findByShipmentId(containerRequest.getShipmentsId());
+                return containerDao.findByShipmentId(containerRequest.getShipmentId());
             }
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
         }
@@ -1019,6 +1169,12 @@ public class ContainerV3Service implements IContainerV3Service {
         containerListResponse.setTotalPages(containerListResponse.getTotalPages());
         containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 
+        Optional<ShipmentDetails> shipmentDetailsEntity = shipmentService.findById(Long.valueOf(request.getEntityId()));
+        if (shipmentDetailsEntity.isPresent()) {
+            ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
+            containerListResponse.setTriggerMigrationWarning(shipmentDetails.getTriggerMigrationWarning());
+        }
+
         return containerListResponse;
 
     }
@@ -1054,6 +1210,7 @@ public class ContainerV3Service implements IContainerV3Service {
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
                 if (uniqueContainers.contains(containerBaseResponse.getId())) {
                     containerBaseResponse.setAssignedContainer(Constants.YES);
+                    containerBaseResponse.setIsContainerAssigned(true);
                     assignedContainerCount.getAndIncrement();
                 } else {
                     containerBaseResponse.setAssignedContainer(Constants.NO);
@@ -1376,7 +1533,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+    public Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
@@ -1428,10 +1585,10 @@ public class ContainerV3Service implements IContainerV3Service {
       Optional.ofNullable(module)
           .filter(SHIPMENT::equals)
           .filter(m -> container.getId() != null)
-          .filter(m -> request.getShipmentsId() != null)
+          .filter(m -> request.getShipmentId() != null)
           .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
               container.getId(),
-              Set.of(request.getShipmentsId()),
+              Set.of(request.getShipmentId()),
               false
           ));
     }
@@ -1520,18 +1677,32 @@ public class ContainerV3Service implements IContainerV3Service {
     public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) {
         boolean isDG = false;
         boolean isDGClass1Added = false;
+        boolean isDGContainer = false;
+        boolean isDGPackage = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
+            log.debug("Container {} is marked hazardous", container.getId());
             isDGClass1Added = commonUtils.checkIfDGClass1(container.getDgClass());
             isDG = true;
+            isDGContainer = true;
         }
 
-        if(!isDGClass1Added && !isDG && container.getPacksList() != null) {
-            for (Packing packing : container.getPacksList()) {
+        List<Packing> containerPackings = packingDao.findByContainerIdIn(List.of(container.getId()));
+
+        if(containerPackings != null) {
+            for (Packing packing : containerPackings) {
                 if (Boolean.TRUE.equals(packing.getHazardous())) {
+                    log.debug("Packing {} is hazardous", packing.getId());
                     isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
                     isDG = true;
+                    isDGPackage = true;
                 }
             }
+        }
+
+        log.info("DG packages is present {}, DG container is present {}, Container {} is not marked hazardous", isDGPackage, isDGContainer, container.getId());
+        if(!isDGContainer && isDGPackage ){
+            log.error("DG packages found but container {} is not marked hazardous", container.getId());
+            throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
         }
 
         if(isDG) {
@@ -1723,6 +1894,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 if(shipmentIdsForAttachment.contains(shipmentDetails.getId()))
                     containersList.add(container);
                 shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails, containersList);
+                if(Objects.equals(shipmentDetails.getMigrationStatus(), MigrationStatus.MIGRATED_FROM_V2)) {
+                    shipmentDetails.setTriggerMigrationWarning(false);
+                    shipmentDao.updateTriggerMigrationWarning(shipmentId);
+                }
             }
             consolidationV3Service.updateConsolidationCargoSummary(assignContainerParams.getConsolidationDetails(), assignContainerParams.getOldShipmentWtVolResponse());
         }

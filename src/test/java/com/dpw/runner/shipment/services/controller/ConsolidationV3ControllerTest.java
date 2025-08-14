@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotific
 import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -241,5 +243,40 @@ class ConsolidationV3ControllerTest {
 
     assertNotNull(response);
   }
+
+  @Test
+  void retrieveByIdExternal_ShouldReturnSuccessResp() throws Exception{
+    Long id = 1L;
+    String guid = "guid-1";
+    String xSource = "test-source";
+      ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+    when(consolidationV3Service.retrieveByIdExternal(any())).thenReturn(mockResponse);
+    when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+    ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternal(id, guid, xSource);
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).retrieveByIdExternal(any());
+  }
+
+    @Test
+    void retrieveByIdExternalPartial_ShouldReturnSuccessResp() throws Exception{
+        Long id = 1L;
+        String guid = "guid-123";
+        String xSource = "test-source";
+        CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
+        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+        when(consolidationV3Service.retrieveByIdExternalPartial(any())).thenReturn(mockResponse);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternalPartial(request, xSource);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consolidationV3Service).retrieveByIdExternalPartial(any());
+    }
 }
 

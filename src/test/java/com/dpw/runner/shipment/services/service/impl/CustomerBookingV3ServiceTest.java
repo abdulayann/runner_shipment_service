@@ -32,7 +32,6 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -40,11 +39,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -52,6 +49,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,7 +141,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
     @Mock
-    private IConsolidationV3Service consolidationService;
+    private ConsolidationV3Service consolidationService;
     @Mock
     private NpmContractV3Util npmContractV3Util;
     @Mock
@@ -156,6 +154,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private DependentServiceHelper dependentServiceHelper;
     @Mock
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Mock
+    private CargoService cargoService;
+    @Mock
+    private CustomerBookingV3Util customerBookingV3Util;
 
     @Mock
     private INotesDao notesDao;
@@ -717,7 +719,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertEquals("SINGLE_USAGE", request.getContractStatus());
@@ -817,7 +819,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertEquals("SINGLE_USAGE", request.getContractStatus());
@@ -880,7 +882,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertTrue(response.getCharges().isEmpty());
@@ -984,7 +986,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse platformResponse = customerBookingService.platformCreateBooking(request);
 
         // Assertions
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(platformResponse.getBookingNumber());
     }
 
@@ -1018,8 +1020,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setWeightUnit("KG");
         // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
-        when(containerDao.findByBookingIdIn(anyList())).thenReturn(Collections.emptyList());
-        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(bookingCharge);
@@ -1033,7 +1033,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -2419,7 +2418,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse platformResponse = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(platformResponse.getBookingNumber());
     }
 
@@ -3734,16 +3733,15 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setVolumeUnit("M3");
         packing.setWeight(BigDecimal.TEN);
         packing.setWeightUnit("KG");
+        packing.setPacksType("BAG");
         Packing packing1 = new Packing();
         packing1.setBookingId(2L);
         packing1.setVolume(BigDecimal.ONE);
         packing1.setVolumeUnit("M3");
         packing1.setWeightUnit("KG");
+        packing1.setPacksType("BAG");
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
-        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
-        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         customerBookingService.updatePackingInfoInBooking(1L);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
@@ -3765,6 +3763,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         containers.setId(3L);
         containers.setPackagesPerContainer(1L);
         containers.setCargoWeightPerContainer(BigDecimal.TEN);
+        containers.setContainerPackageType("BAG");
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();

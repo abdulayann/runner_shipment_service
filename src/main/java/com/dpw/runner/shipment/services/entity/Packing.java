@@ -266,6 +266,5 @@ public class Packing extends MultiTenancy {
     @Column(name = "pack_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String packWeightUnit;
-
 }
 
