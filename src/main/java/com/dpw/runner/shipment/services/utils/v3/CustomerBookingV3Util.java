@@ -178,7 +178,7 @@ public class CustomerBookingV3Util {
                 .map(c -> codeTeuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO)
                         .multiply(BigDecimal.valueOf(Optional.ofNullable(c.getContainerCount()).orElse(0L))))
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(1, RoundingMode.UNNECESSARY);
+                .setScale(1, RoundingMode.HALF_UP);
         booking.setTeuCount(teuCount);
         booking.setContainers(getTotalContainerCount(containersList));
         booking.setContainersList(containersList);

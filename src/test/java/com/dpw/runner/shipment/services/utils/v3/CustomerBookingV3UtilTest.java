@@ -43,7 +43,7 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CustomerBookingV3UtilTest {
+class CustomerBookingV3UtilTest {
 
     @Mock
     private IContainerDao containerDao;
