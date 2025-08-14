@@ -66,6 +66,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -114,7 +116,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -4780,42 +4781,69 @@ class ReportServiceTest extends CommonMocks {
         assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
 
-    private void setNamingCache(ReportService reportService, String docType, String entityGuid, String childType, int count) throws Exception {
-        Field field = ReportService.class.getDeclaredField("namingCache");
-        field.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Map<String, Integer> cache = (Map<String, Integer>) field.get(reportService);
-        cache.put(docType + "|" + entityGuid + "|" + childType, count);
+    private static final String ENTITY_GUID = "123456543";
+    private static final String IDENTIFIER = "SHIP123";
+
+    private DocumentManagerEntityFileResponse createFile(String fileType, String docCode, String childType) {
+        DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
+        file.setFileType(fileType);
+        file.setDocCode(docCode);
+        file.setChildType(childType);
+        return file;
+    }
+
+    @Test
+    void shouldReturnFileNameWithoutSuffix_WhenNoFilesExist() {
+        // Mock no existing files
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123.pdf", fileName);
+    }
+    @Test
+    void shouldAppendSuffix_WhenOneFileAlreadyExists() {
+        // Mock 1 existing file
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName);
+    }
+
+    @Test
+    void shouldHandleChildType_MAWBFile() {
+        // Mock 2 existing files for MAWB
+        DocumentManagerEntityFileResponse file = createFile(ReportConstants.MAWB, ReportConstants.MAWB, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file, file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
     }
 
     @Test
     void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
-        DocUploadRequest request = new DocUploadRequest();
-        request.setDocType(DocumentConstants.HBL);
-        request.setChildType(ReportConstants.DRAFT);
-        String entityGuid = "123456543";
-        String identifier = "SHIP123";
-        // Simulate 3 files already generated for this docType/entityGuid/childType
-        reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        // Now the next call should get suffix _3
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        System.out.println("Generated filename: " + fileName);
-        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName, "Expected suffix _3 because 3 files already exist");
-    }
+        // Mock 3 existing files
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file, file, file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
 
-    @Test
-    void shouldNotAppendSuffix_WhenNoFileExists() throws Exception {
         DocUploadRequest request = new DocUploadRequest();
-        request.setDocType(DocumentConstants.HBL);
-        request.setChildType(ReportConstants.DRAFT);
-        String entityGuid = "1234565431";
-        String identifier = "SHIP123";
-        setNamingCache(reportService, DocumentConstants.HBL, entityGuid, ReportConstants.DRAFT, 0);
-        String fileName = reportService.applyCustomNaming(
-                request, DocumentConstants.HBL, ReportConstants.DRAFT, entityGuid, identifier);
-        assertEquals("HBL_DRAFT_SHIP123.pdf", fileName); // no suffix for first file
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
     }
 
 }

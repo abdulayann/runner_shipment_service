@@ -249,8 +249,6 @@ public class ReportService implements IReportService {
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
-    private final Map<String, Integer> namingCache = new ConcurrentHashMap<>();
-
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
     @Autowired
@@ -2732,6 +2730,7 @@ public class ReportService implements IReportService {
 
     public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
+        double start = System.currentTimeMillis();
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
@@ -2775,7 +2774,9 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                return response;
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
                 throw new ValidationException("Failed to generate the document. Kindly retry.");
@@ -2812,16 +2813,8 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-
-                String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
-
-                // Initialize & increment atomically
-                int count = namingCache.compute(key, (k, v) -> (v == null)
-                        ? getExistingDocumentCount(entityGuid, docType, childType)
-                        : v + 1);
-
+                int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
                 String suffix = count > 0 ? "_" + count : "";
-
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + "_" + StringUtility.convertToString(childType).toUpperCase() + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
@@ -2836,10 +2829,12 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
-    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType, String type) {
         try {
             DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
                     .entityKey(entityGuid)
+                    .entityType(type)
+                    .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
                     .build();
             DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
                     .entities(Collections.singletonList(request))
@@ -2850,7 +2845,7 @@ public class ReportService implements IReportService {
 
             if (response != null && response.getData() != null) {
                 return (int) response.getData().stream()
-                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
+                        .filter(file -> file.getFileType() != null && file.getDocCode().trim().equalsIgnoreCase(docType.trim()))
                         .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
                                 file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
             }
