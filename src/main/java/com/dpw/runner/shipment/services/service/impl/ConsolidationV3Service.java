@@ -223,6 +223,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -3514,6 +3515,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return response;
     }
 
+    @Override
+    public ConsolidationListV3Response listExternal(ListCommonRequest request) {
+        if (request == null) {
+            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
+        }
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+
+        List<IRunnerResponse> consoleResponse;
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            // sending overall consolidation response
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), null);
+        }
+        else {
+            // sending specified column response
+            Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), includeColumns);
+        }
+
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response response = new ConsolidationListV3Response();
+        response.setTotalPages(consolidationDetailsPage.getTotalPages());
+        response.setNumberOfRecords(consolidationDetailsPage.getTotalElements());
+
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
+        response.setConsolidationListResponses(consolidationListResponses);
+
+        return response;
+    }
+
     private void appendCriteriaIfNotificationFlagEnabled(ListCommonRequest request) {
         if(Boolean.TRUE.equals(request.getNotificationFlag())) {
             Page<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
@@ -3549,6 +3584,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 checkForBookingIdFilter(filterCriteria.getInnerFilter());
             }
         }
+    }
+
+    private List<IRunnerResponse> convertEntityToDtoList(List<ConsolidationDetails> lst, @Nullable Set<String> includeColumns){
+        if (CollectionUtils.isEmpty(lst)) {
+            return new ArrayList<>();
+        }
+
+        boolean hasFilters = includeColumns != null && !includeColumns.isEmpty();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+
+        for (ConsolidationDetails details : lst) {
+            final ConsolidationListResponse dto;
+
+            if (hasFilters) {
+                // send included columns only
+                dto = (ConsolidationListResponse) commonUtils.setIncludedFieldsToResponse(
+                        details, includeColumns, new ConsolidationListResponse());
+            }
+            else{
+                // send whole consolidation data
+                dto = ConsolidationMapper.INSTANCE
+                        .toConsolidationListResponse(details);
+            }
+
+            responseList.add(dto);
+        }
+
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst, boolean getMasterData) {
