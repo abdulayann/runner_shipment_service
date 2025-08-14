@@ -1605,6 +1605,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private void updateCargoSummaryInBookingResponse(CustomerBookingV3Response customerBookingResponse, CustomerBooking customerBooking) throws RunnerException {
         CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setVolumeUnit(customerBooking.getVolumeUnit());
+        cargoDetailsResponse.setWeightUnit(customerBooking.getGrossWeightUnit());
+        cargoDetailsResponse.setPacksUnit(customerBooking.getPackageType());
         List<Containers> containersList = customerBooking.getContainersList();
         List<Packing> packingList = customerBooking.getPackingList();
         cargoService.updateEditableFlags(cargoDetailsResponse, containersList, packingList);
