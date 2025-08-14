@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -95,7 +96,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
+    @ExcludeTimeZone
     private LocalDateTime cargoReadinessDate;
+    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean controlled;
     private String controlledReferenceNumber;
@@ -109,9 +112,13 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
+    @ExcludeTimeZone
     private LocalDateTime pickupAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime deliveryAtDestinationDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedPickupAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
