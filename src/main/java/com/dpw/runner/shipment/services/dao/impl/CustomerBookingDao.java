@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBoo
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidationsV3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -108,20 +110,12 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     public Optional<CustomerBooking> findById(Long id) {
-        try {
-            return findWithCache(id, CacheConstants.CUSTOMER_BOOKING_ID);
-        } catch (Exception e) {
-            return customerBookingRepository.findById(id);
-        }
+        return customerBookingRepository.findById(id);
     }
 
     @Override
     public Optional<CustomerBooking> findByGuid(UUID guid) {
-        try {
-            return findWithCache(guid, CacheConstants.CUSTOMER_BOOKING_GUID);
-        } catch (Exception e) {
-            return customerBookingRepository.findByGuid(guid);
-        }
+        return customerBookingRepository.findByGuid(guid);
     }
 
     private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) throws JsonProcessingException {
@@ -239,4 +233,25 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber) {
         return customerBookingRepository.findByShipmentReferenceNumber(shipmentReferenceNumber);
     }
+
+    @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return customerBookingRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
+    public List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids) {
+        return customerBookingRepository.findCustomerBookingByIds(ids);
+    }
+
+    @Override
+    public void deleteCustomerBookingIds(Set<Long> ids) {
+         customerBookingRepository.deleteCustomerBookingIds(ids);
+    }
+
+    @Override
+    public Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId);
+    }
+
 }

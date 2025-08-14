@@ -109,6 +109,7 @@ public class ContainerV3Util {
     @Autowired
     private ThreadPoolTaskExecutor hsCodeValidationExecutor;
 
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -144,11 +145,6 @@ public class ContainerV3Util {
         // STEP 1: Fetch container data
         try {
             model = fetchContainerExcelModel(request);
-            if (model.isEmpty()) {
-                log.warn("No containers found for request: {}", request);
-                sendJsonErrorResponse(response, "No containers found for given input.");
-                return;
-            }
         } catch (RunnerException e) {
             log.error("Business error during container download: {}", e.getMessage(), e);
             sendJsonErrorResponse(response, e.getMessage());
@@ -283,7 +279,7 @@ public class ContainerV3Util {
         Row headerRow = sheet.createRow(0);
         Field[] fields = ContainersExcelModel.class.getDeclaredFields();
 
-        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
+        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f -> f.isAnnotationPresent(ExcelCell.class)).filter(p->p.getAnnotation(ExcelCell.class).requiredInV3()).collect(Collectors.toMap(Field::getName, c -> c));
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
@@ -569,6 +565,7 @@ public class ContainerV3Util {
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
+        containersList.forEach(p->p.setContainerCount(1L));
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);
@@ -636,7 +633,7 @@ public class ContainerV3Util {
     public static void setShipmentOrConsoleId(BulkUploadRequest request, String module, List<ContainerV3Request> requests) {
         requests.forEach(p -> {
             if (module.equalsIgnoreCase(SHIPMENT)) {
-                p.setShipmentsId(request.getShipmentId());
+                p.setShipmentId(request.getShipmentId());
             }
             if (module.equalsIgnoreCase(CONSOLIDATION)) {
                 p.setConsolidationId(request.getConsolidationId());

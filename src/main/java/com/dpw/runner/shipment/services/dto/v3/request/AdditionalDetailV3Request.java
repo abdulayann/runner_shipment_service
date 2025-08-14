@@ -180,4 +180,5 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
     private Integer fcrNumber = 0;
+    private LocalDateTime shippedOnboard;
 }

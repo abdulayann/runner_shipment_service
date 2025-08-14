@@ -140,4 +140,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> retrieveByIdV3(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listV3(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<String> updateShipmentParties(ShipmentPartyRequestV2 shipmentPartyRequestV2) throws RunnerException;
 }

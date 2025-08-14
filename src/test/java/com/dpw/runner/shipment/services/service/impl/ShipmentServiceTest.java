@@ -1,32 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -100,30 +73,7 @@ import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -201,17 +151,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
-import com.dpw.runner.shipment.services.entity.enums.JobState;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -229,6 +169,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IQuartzJobInfoRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
@@ -258,6 +199,45 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -280,38 +260,35 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.poi.ss.formula.functions.T;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
-import org.openapitools.jackson.nullable.JsonNullable;
-import org.springframework.context.ApplicationContext;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.*;
+
+import java.lang.reflect.Field;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -322,6 +299,8 @@ ShipmentServiceTest extends CommonMocks {
     private ShipmentService shipmentService;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private IPartiesRepository iPartiesRepository;
     @Mock
     private IApplicationConfigService applicationConfigService;
     @Mock
@@ -516,6 +495,11 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         updateConsoleShipmentRequest = new UpdateConsoleShipmentRequest();
+    }
+
+    static class TestObject {
+        private String privateField = "initial";
+        public int publicField = 10;
     }
 
     @Test
@@ -1082,7 +1066,7 @@ ShipmentServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
@@ -1128,7 +1112,7 @@ ShipmentServiceTest extends CommonMocks {
 
         // Mock required dependencies
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockResponse);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
@@ -1177,7 +1161,7 @@ ShipmentServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
@@ -1232,7 +1216,7 @@ ShipmentServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
@@ -1287,7 +1271,7 @@ ShipmentServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
@@ -1532,7 +1516,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails mockShipment = shipmentDetails;
 
         Mockito.when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
-        Mockito.when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment.setIsLocked(true).setLockedBy("user"));
+        Mockito.when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment.setIsLocked(true).setLockedBy("user"));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.toggleLock(commonRequestModel);
 
@@ -1551,7 +1535,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setLockedBy("user");
 
         Mockito.when(shipmentDao.findById(1L)).thenReturn(Optional.of(mockShipment));
-        Mockito.when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment.setIsLocked(false));
+        Mockito.when(shipmentDao.save(any(), eq(false), eq(false))).thenReturn(mockShipment.setIsLocked(false));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.toggleLock(commonRequestModel);
 
@@ -1709,6 +1693,7 @@ ShipmentServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
 
         when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         LocalDateTime mockDateTime = LocalDateTime.now();
 
@@ -1765,6 +1750,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         // Execute the method under test
         mockShipmentSettings();
@@ -1812,6 +1798,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         // Execute the method under test
         mockShipmentSettings();
@@ -2005,11 +1992,11 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setStatus(5);
         // Mock
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        when(shipmentDao.save(mockShipment, false)).thenReturn(mockShipment);
+        when(shipmentDao.save(mockShipment, false, false )).thenReturn(mockShipment);
         // Test
         shipmentService.updateDateAndStatus(1L, mockDateTime, mockStatus);
         // Assert
-        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+        verify(shipmentDao, times(1)).save(any(), anyBoolean(), anyBoolean() );
         verify(shipmentSync, times(1)).sync(any(), eq(null), eq(null), any(), eq(false));
 
     }
@@ -3502,12 +3489,14 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().shipmentId(JsonNullable.of("AIR-CAN-00001")).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .build();
 
         doNothing().when(shipmentDetailsMapper).update(any(), any());
@@ -3631,12 +3620,14 @@ ShipmentServiceTest extends CommonMocks {
 
 
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(TruckDriverDetails.builder().build());
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .truckDriverDetails(truckDriverDetailsList)
                 .build();
 
@@ -3831,12 +3822,14 @@ ShipmentServiceTest extends CommonMocks {
 
         ServiceDetails serviceDetails = new ServiceDetails();
         serviceDetails.setShipmentId(1L);
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .servicesList(Arrays.asList(serviceDetails))
                 .build();
 
@@ -3925,7 +3918,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
@@ -4664,7 +4657,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createTestShipmentSuccess() throws RunnerException {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         List<ShipmentDetails> shipmentDetailsList = shipmentService.createTestShipment(1);
         assertNotNull(shipmentDetailsList);
     }
@@ -5115,6 +5108,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void partialUpdateTestSea() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setId(2L);
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
@@ -5123,7 +5119,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .jobType(Constants.SHIPMENT_TYPE_DRT)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
@@ -5395,7 +5391,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
@@ -5462,7 +5458,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(shipmentDao.save(any(), eq(false))).thenThrow(RunnerException.class);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenThrow(RunnerException.class);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentService.create(commonRequestModel);
@@ -5539,8 +5535,10 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void update() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -5560,7 +5558,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithGuid(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -5575,7 +5575,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithContainerListNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -5695,7 +5697,7 @@ ShipmentServiceTest extends CommonMocks {
     void getShipment() throws RunnerException {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(ShipmentSettingsDetails.builder().customisedSequence(true).build()));
         when(productEngine.identifyProduct(eq(shipmentDetails), anyList())).thenReturn(null);
 
@@ -5711,7 +5713,7 @@ ShipmentServiceTest extends CommonMocks {
     void getShipmentIdentifierNotNull() throws RunnerException {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(ShipmentSettingsDetails.builder().customisedSequence(true).build()));
 
         when(productEngine.identifyProduct(eq(shipmentDetails), anyList())).thenReturn(new TenantProducts());
@@ -6098,7 +6100,7 @@ ShipmentServiceTest extends CommonMocks {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         shipmentDetailsList.add(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(shipmentRequest, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
@@ -6546,8 +6548,11 @@ ShipmentServiceTest extends CommonMocks {
                 .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
                 .shipmentsList(new HashSet<>(Arrays.asList(ShipmentDetails.builder().shipmentType(Constants.CARGO_TYPE_FCL).build())))
                 .build()));
+        Containers container = Containers.builder().build();
+        container.setId(1L);
+        container.setGuid(UUID.randomUUID());
         Set<Containers> containers = new HashSet<>();
-        containers.add(new Containers());
+        containers.add(container);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
         shipmentDetails1.setGuid(UUID.randomUUID());
         shipmentDetails1.setContainersList(containers);
@@ -6767,7 +6772,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
@@ -6806,7 +6811,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
@@ -6869,7 +6874,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
@@ -6907,7 +6912,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
@@ -6939,7 +6944,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(hblDao.findByShipmentId(any())).thenReturn(Arrays.asList(Hbl.builder().build()));
@@ -7349,6 +7354,7 @@ ShipmentServiceTest extends CommonMocks {
         Containers containers = new Containers();
         containers.setContainerCode("20GP");
         containers.setContainerCount(1L);
+        containers.setGuid(UUID.randomUUID());
         shipmentDetails.setContainersList(new HashSet<>(Arrays.asList(containers)));
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
@@ -8285,7 +8291,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
@@ -8375,6 +8381,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         Events puedEvent  = Events.builder().build().setEventCode(EventConstants.PUED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         Events tredEvent  = Events.builder().build().setEventCode(EventConstants.TRED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -8384,7 +8392,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false,false))
                 .carrierDetails(carrierDetailsOld)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8401,7 +8409,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(additionalDetailsNew)
                 .carrierDetails(carrierDetailsNew)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8711,9 +8719,11 @@ ShipmentServiceTest extends CommonMocks {
             .hazardous(true)
             .build();
         containers1.setId(1l);
+        containers1.setGuid(UUID.randomUUID());
 
         Containers containers2 = Containers.builder().build();
         containers2.setId(2l);
+        containers2.setGuid(UUID.randomUUID());
 
         Packing packing1 = new Packing();
         packing1.setHazardous(true);
@@ -8884,7 +8894,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testMakeShipmentsDG() throws RunnerException {
         shipmentService.makeShipmentsDG(new HashMap<>(), ShipmentDetails.builder().containsHazardous(true).build());
-        verify(shipmentDao, times(0)).save(any(), anyBoolean());
+        verify(shipmentDao, times(0)).save(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -8894,11 +8904,11 @@ ShipmentServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         doNothing().when(shipmentDao).entityDetach(any());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build()));
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean() )).thenReturn(shipmentDetails1);
         shipmentService.makeShipmentsDG(new HashMap<>() {{
             put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
         }}, shipmentDetails1);
-        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+        verify(shipmentDao, times(1)).save(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -8911,7 +8921,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.makeShipmentsDG(new HashMap<>() {{
             put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
         }}, shipmentDetails1);
-        verify(shipmentDao, times(0)).save(any(), anyBoolean());
+        verify(shipmentDao, times(0)).save(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -8921,11 +8931,11 @@ ShipmentServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(false);
         doNothing().when(shipmentDao).entityDetach(any());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build()));
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(shipmentDetails1);
         shipmentService.makeShipmentsDG(new HashMap<>() {{
             put(1L, Containers.builder().hazardous(true).build());
         }}, shipmentDetails1);
-        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+        verify(shipmentDao, times(1)).save(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -8935,11 +8945,11 @@ ShipmentServiceTest extends CommonMocks {
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         doNothing().when(shipmentDao).entityDetach(any());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
-        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        when(shipmentDao.save(any(), anyBoolean(), anyBoolean() )).thenReturn(shipmentDetails1);
         shipmentService.makeShipmentsDG(new HashMap<>() {{
             put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
         }}, shipmentDetails1);
-        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+        verify(shipmentDao, times(1)).save(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -9090,7 +9100,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(Collections.singletonList(new ShipmentOrder()));
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(new ShipmentOrder()));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
         when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
@@ -9125,7 +9135,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
         when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
@@ -9156,7 +9166,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
@@ -9196,7 +9206,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
         when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
@@ -9227,7 +9237,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(shipmentDetails);
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
@@ -9962,7 +9972,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
             // Get the argument passed to the withMdc method
@@ -10071,7 +10081,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false) )).thenReturn(mockShipment);
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
             // Get the argument passed to the withMdc method
@@ -10844,7 +10854,7 @@ ShipmentServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
@@ -11171,5 +11181,143 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(1002L, response.getOriginBranch());
     }
 
+    @Test
+    void updateShipmentParties_success() throws Exception {
+        Long shipmentId = 100L;
+        Integer tenantId = 1;
 
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(shipmentId);
+        shipmentDetails.setTenantId(tenantId);
+        Field consigneeField = ShipmentDetails.class.getDeclaredField("consigneeId");
+        consigneeField.setAccessible(true);
+        consigneeField.set(shipmentDetails, 200L);
+
+        PartiesData partiesData = new PartiesData();
+        partiesData.setType(PartyType.CONSIGNEE);
+        partiesData.setAddressId(10L);
+        partiesData.setOrgId(20L);
+
+        ShipmentPartyRequestV2 request = new ShipmentPartyRequestV2();
+        request.setShipmentId(shipmentId);
+        request.setTenantId(tenantId);
+        request.setParties(List.of(partiesData));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        AddressDataV1 addressData = new AddressDataV1();
+        addressData.setAddressShortCode("ADDR_CODE");
+
+        OrgDataV1 orgData = new OrgDataV1();
+        orgData.setOrganizationCode("ORG_CODE");
+
+        when(commonUtils.fetchAddressData(anyList())).thenReturn(Map.of(10L, addressData));
+        when(commonUtils.fetchOrgAddressData(anyList())).thenReturn(Map.of(20L, orgData));
+
+        Parties partyEntity = new Parties();
+        lenient().when(partiesDao.findById(200L)).thenReturn(Optional.of(partyEntity));
+        when(jsonHelper.convertValue(any(), eq(Map.class))).thenReturn(Map.of());
+        when(iPartiesRepository.findById(200L)).thenReturn(Optional.of(partyEntity));
+
+        ResponseEntity<String> response = shipmentService.updateShipmentParties(request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Parties updated successfully", response.getBody());
+        verify(partiesDao).save(any(Parties.class));
+    }
+
+    @Test
+    void updateShipmentParties_shipmentNotFound() {
+        ShipmentPartyRequestV2 request = new ShipmentPartyRequestV2();
+        request.setShipmentId(999L);
+        request.setTenantId(1);
+        when(shipmentDao.findById(999L)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class,
+                () -> shipmentService.updateShipmentParties(request));
+    }
+
+    @Test
+    void updateShipmentParties_tenantIdMismatch() {
+        Long shipmentId = 100L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(shipmentId);
+        shipmentDetails.setTenantId(2);
+        ShipmentPartyRequestV2 request = new ShipmentPartyRequestV2();
+        request.setShipmentId(shipmentId);
+        request.setTenantId(1);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        assertThrows(ValidationException.class,
+                () -> shipmentService.updateShipmentParties(request));
+    }
+
+    @Test
+    void updateShipmentParties_emptyAddressOrOrgData() {
+        Long shipmentId = 100L;
+        Integer tenantId = 1;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(shipmentId);
+        shipmentDetails.setTenantId(tenantId);
+        shipmentDetails.setConsigneeId(200L);
+        PartiesData partiesData = new PartiesData();
+        partiesData.setType(PartyType.CONSIGNEE);
+        partiesData.setAddressId(10L);
+        partiesData.setOrgId(20L);
+        ShipmentPartyRequestV2 request = new ShipmentPartyRequestV2();
+        request.setShipmentId(shipmentId);
+        request.setTenantId(tenantId);
+        request.setParties(List.of(partiesData));
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.fetchAddressData(anyList())).thenReturn(Collections.emptyMap());
+        when(commonUtils.fetchOrgAddressData(anyList())).thenReturn(Map.of());
+        assertThrows(ValidationException.class,
+                () -> shipmentService.updateShipmentParties(request));
+    }
+
+    @Test
+    void updateShipmentParties_partyIdNull() {
+        Long shipmentId = 100L;
+        Integer tenantId = 1;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(shipmentId);
+        shipmentDetails.setTenantId(tenantId);
+        shipmentDetails.setConsigneeId(null);
+        PartiesData partiesData = new PartiesData();
+        partiesData.setType(PartyType.CONSIGNEE);
+        partiesData.setAddressId(10L);
+        partiesData.setOrgId(20L);
+        ShipmentPartyRequestV2 request = new ShipmentPartyRequestV2();
+        request.setShipmentId(shipmentId);
+        request.setTenantId(tenantId);
+        request.setParties(List.of(partiesData));
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        AddressDataV1 addressData = new AddressDataV1();
+        OrgDataV1 orgData = new OrgDataV1();
+        when(commonUtils.fetchAddressData(anyList())).thenReturn(Map.of(10L, addressData));
+        when(commonUtils.fetchOrgAddressData(anyList())).thenReturn(Map.of(20L, orgData));
+        assertThrows(ValidationException.class,
+                () -> shipmentService.updateShipmentParties(request));
+    }
+
+    @Test
+    void setFieldValue_shouldSetPrivateField() {
+        TestObject obj = new TestObject();
+        shipmentService.setFieldValue(obj, "privateField", "newValue");
+        assertEquals("newValue", obj.privateField);
+    }
+
+    @Test
+    void setFieldValue_shouldSetPublicField() {
+        TestObject obj = new TestObject();
+        shipmentService.setFieldValue(obj, "publicField", 42);
+        assertEquals(42, obj.publicField);
+    }
+
+    @Test
+    void setFieldValue_shouldThrowIllegalArgumentException_whenFieldNotFound() {
+        TestObject obj = new TestObject();
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            shipmentService.setFieldValue(obj, "nonExistentField", "value");
+        });
+        assertTrue(ex.getMessage().contains("Field 'nonExistentField' not found"));
+    }
 }

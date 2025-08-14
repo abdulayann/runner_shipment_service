@@ -589,11 +589,11 @@ class AwbServiceTest extends CommonMocks {
 
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setRoutingsList(null);
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
         addShipmentDataForAwbGeneration(testShipment);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-
         when(awbDao.save(any())).thenReturn(testDmawb);
 
         // UnLocation response mocking
@@ -606,7 +606,6 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
         when(jsonHelper.convertValue("", TenantModel.class)).thenReturn(new TenantModel());
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
@@ -621,20 +620,22 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
         CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
         List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(new EntityTransferMasterLists()));
+        when(jsonHelper.convertValueToList(any(List.class), eq(String.class))).thenReturn(List.of("EDD", "ETD", "XRY"));
 
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentDetails shipmentDetails = testShipment;
         shipmentDetails.setMasterBill("098-2343234");
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR)
-                        .consolidationType(Constants.SHIPMENT_TYPE_DRT).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .consolidationType(Constants.SHIPMENT_TYPE_DRT)
+                .build();
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails)));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+
+        shipmentDetails.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -1031,8 +1032,8 @@ class AwbServiceTest extends CommonMocks {
         addressDataList.add(consigneeAddressData);
         addressDataList.add(notifyAddressData);
 
-        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
+//        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+//        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
 
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
@@ -1122,8 +1123,8 @@ class AwbServiceTest extends CommonMocks {
         addressDataList.add(consignerAddressData);
         addressDataList.add(notifyAddressData);
 
-        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
+//        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+//        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
 
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
@@ -1208,8 +1209,8 @@ class AwbServiceTest extends CommonMocks {
 
         addressDataList.add(notifyAddressData);
 
-        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
+//        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+//        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
 
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
@@ -1298,8 +1299,8 @@ class AwbServiceTest extends CommonMocks {
         addressDataList.add(consignerAddressData);
         addressDataList.add(notifyAddressData);
 
-        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
+//        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+//        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
 
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
@@ -2100,9 +2101,6 @@ class AwbServiceTest extends CommonMocks {
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(List.of(
-              AddressDataV1.builder().address1("address1").address2("address2").build()
-        ));
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
@@ -2120,11 +2118,9 @@ class AwbServiceTest extends CommonMocks {
 
         when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
 
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(masterDataUtils.getCountriesMasterListData(any())).thenReturn(Map.of("IN", "INDIA"));
         V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
         List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
@@ -2151,7 +2147,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2170,7 +2166,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -2189,7 +2185,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2209,7 +2205,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2229,7 +2225,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2265,7 +2261,7 @@ class AwbServiceTest extends CommonMocks {
         List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
 
         when(awbDao.save(any())).thenReturn(testMawb);
@@ -2283,9 +2279,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(new ArrayList<>());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
@@ -2311,7 +2304,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findByShipmentIdList(List.of(shipmentId))).thenReturn(List.of(testHawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -2339,7 +2332,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testMawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2350,14 +2343,10 @@ class AwbServiceTest extends CommonMocks {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(3L).consolidationId(1L).awbType("MAWB")
                 .resetType(AwbReset.AWB_NOTIFY_PARTY_INFO).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(Set.of(testShipment));
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
@@ -2397,7 +2386,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(testHawb));
         when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2420,7 +2409,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testMawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2441,7 +2430,7 @@ class AwbServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(awbDao.save(any())).thenReturn(testMawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
 
@@ -2544,9 +2533,9 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 mockAwbResponse
@@ -2586,7 +2575,7 @@ class AwbServiceTest extends CommonMocks {
         // Mocking
         when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
@@ -2596,9 +2585,9 @@ class AwbServiceTest extends CommonMocks {
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(List.of(
-                AddressDataV1.builder().address1("address1").address2("address2").build()
-        ));
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(List.of(
+//                AddressDataV1.builder().address1("address1").address2("address2").build()
+//        ));
         mockShipmentSettings();
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
@@ -2635,14 +2624,14 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         mockShipmentSettings();
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -2675,14 +2664,14 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         mockShipmentSettings();
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -2712,8 +2701,6 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
@@ -2722,9 +2709,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
-        ));
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(List.of(
-                AddressDataV1.builder().address1("address1").address2("address2").build()
         ));
 
         mockShipmentSettings();
@@ -2756,15 +2740,11 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         mockShipmentSettings();
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -2935,8 +2915,8 @@ class AwbServiceTest extends CommonMocks {
         ));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         mockShipmentSettings();
 
@@ -2974,9 +2954,9 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         mockShipmentSettings();
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -3022,13 +3002,13 @@ class AwbServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), httpResponse);
@@ -3068,13 +3048,13 @@ class AwbServiceTest extends CommonMocks {
 
         when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 
@@ -4033,6 +4013,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setContainsHazardous(hazardous);
         testShipment.getPackingList().get(0).setHazardous(hazardous);
         testShipment.getPackingList().get(0).setPacks(String.valueOf(packs));  // Set packs value
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
         testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
         addShipmentDataForAwbGeneration(testShipment);
 
@@ -4056,10 +4037,9 @@ class AwbServiceTest extends CommonMocks {
         List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-
+        when(jsonHelper.convertValueToList(any(List.class), eq(String.class)))
+                .thenReturn(List.of("EDD", "ETD", "XRY"));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(new EntityTransferMasterLists()));
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
@@ -4076,7 +4056,6 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setSecurityStatus("SPX");
         OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
         mockShipmentSettings();
         mockTenantSettings();
@@ -4096,6 +4075,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.getPackingList().get(0).setHazardous(Boolean.TRUE);
         testShipment.getPackingList().get(0).setPacks(String.valueOf(1));  // Set packs value
         testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
@@ -4110,6 +4090,9 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        when(jsonHelper.convertValueToList(any(List.class), eq(String.class)))
+                .thenReturn(List.of("EDD", "ETD", "XRY"));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(new EntityTransferMasterLists()));
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -4117,9 +4100,9 @@ class AwbServiceTest extends CommonMocks {
         List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+//        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
@@ -4137,7 +4120,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setSecurityStatus("SPX");
         OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
         mockShipmentSettings();
         mockTenantSettings();
@@ -4156,7 +4139,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setContainsHazardous(Boolean.TRUE);
         testShipment.getPackingList().get(0).setHazardous(Boolean.TRUE);
         testShipment.getConsignee().setAddressId(null);
-        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));  // Set packs value
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
         testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
         testShipment.getAdditionalDetails().getNotifyParty().setAddressId(null);
         addShipmentDataForAwbGeneration(testShipment);
@@ -4180,9 +4163,9 @@ class AwbServiceTest extends CommonMocks {
         List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(List.class), eq(String.class)))
+                .thenReturn(List.of("EDD", "ETD", "XRY"));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(new EntityTransferMasterLists()));
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
@@ -4198,12 +4181,10 @@ class AwbServiceTest extends CommonMocks {
         // mocking for populateCsdInfo
         testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
         testShipment.setSecurityStatus("SPX");
-        OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
-
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
         mockShipmentSettings();
         mockTenantSettings();
+
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4402,78 +4383,80 @@ class AwbServiceTest extends CommonMocks {
 
     @Test
     void createAwb_successWithTaxRegistrationNumber() throws RunnerException {
+        // Setup test organizations with tax registration numbers
         EntityTransferOrganizations entityTransferOrganization1 = new EntityTransferOrganizations();
         entityTransferOrganization1.setOrganizationCode("LL_QR_25300");
         entityTransferOrganization1.setId(1L);
         entityTransferOrganization1.setTaxRegistrationNumber("TRP12343");
+
         EntityTransferOrganizations entityTransferOrganization2 = new EntityTransferOrganizations();
         entityTransferOrganization2.setOrganizationCode("22481_1");
         entityTransferOrganization2.setId(2L);
         entityTransferOrganization2.setTaxRegistrationNumber("TRP130839");
-        EntityTransferOrganizations entityTransferOrganization3 = new EntityTransferOrganizations();
-        entityTransferOrganization3.setOrganizationCode("223532_4");
-        entityTransferOrganization3.setId(3L);
-        entityTransferOrganization3.setTaxRegistrationNumber("TRP130840");
-        EntityTransferOrganizations entityTransferOrganization4 = new EntityTransferOrganizations();
-        entityTransferOrganization4.setOrganizationCode("1");
-        entityTransferOrganization4.setId(4L);
-        entityTransferOrganization4.setTaxRegistrationNumber("TRP123678");
-        EntityTransferOrganizations entityTransferOrganization5 = new EntityTransferOrganizations();
-        entityTransferOrganization5.setOrganizationCode("223532_5");
-        entityTransferOrganization5.setId(5L);
-        EntityTransferOrganizations entityTransferOrganization6 = new EntityTransferOrganizations();
-        entityTransferOrganization6.setOrganizationCode("223532_6");
-        entityTransferOrganization6.setId(6L);
-        entityTransferOrganization6.setTaxRegistrationNumber("TRP130840");
-        List<EntityTransferOrganizations> mockEntityTransferOrganizationList = List.of(entityTransferOrganization1, entityTransferOrganization2, entityTransferOrganization3,entityTransferOrganization4, entityTransferOrganization5, entityTransferOrganization6);
 
-        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder()
+                .ShipmentId(1L)
+                .AwbType("DMAWB")
+                .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
 
+        // Setup test shipment
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setSecurityStatus(Constants.SHR);
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
         addShipmentDataForAwbGeneration(testShipment);
 
+        // Mock DAO calls
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-
         when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // Setup all jsonHelper stubs in one place
+        when(jsonHelper.convertValueToList(any(List.class), eq(String.class)))
+                .thenReturn(List.of("EDD", "ETD", "XRY"));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class)))
+                .thenReturn(List.of(new EntityTransferMasterLists()));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class)))
+                .thenReturn(List.of(
+                        EntityTransferUnLocations.builder()
+                                .LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA")
+                                .Name("Chennai (ex Madras)").build(),
+                        EntityTransferUnLocations.builder()
+                                .LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0")
+                                .Name("John F. Kennedy Apt/New York, NY").build()
+                ));
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class)))
+                .thenReturn(objectMapper.convertValue(
+                        DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS)
+                                .format(LocalDateTime.now()),
+                        LocalDateTime.class));
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class)))
+                .thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class)))
+                .thenReturn(new TenantModel());
+
+        // Mock V1 service calls
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        when(v1Service.fetchUnlocation(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+//        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(v1Service.fetchMasterData(any())).thenReturn(mockV1DataResponse);
 
-        // UnLocation response mocking
-        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
-        ));
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-
-        // TenantModel Response mocking
+        // Mock Tenant service
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
-        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
-        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder()
+                .entity(mockTenantModel).build());
 
-        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockEntityTransferOrganizationList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-
-        // OtherInfo Master data mocking
-        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
-                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
-        );
-        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
-                objectMapper.convertValue(testDmawb, AwbResponse.class)
-        );
-
+        // Mock Org Address service
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
+        // Mock settings
         mockShipmentSettings();
         mockTenantSettings();
+
+        // Execute and verify
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }

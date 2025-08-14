@@ -563,7 +563,7 @@ public class HblService implements IHblService {
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
-            shipmentDao.save(shipmentDetail, false);
+            shipmentDao.save(shipmentDetail, false, false);
             syncShipment = true;
         }
         return syncShipment;
@@ -1160,8 +1160,9 @@ public class HblService implements IHblService {
                     hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
                 break;
             case "PlaceOfDelivery":
-                if (!Objects.isNull(carrierDetails))
-                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                if (Objects.nonNull(carrierDetails)) {
+                    setPlaceOfDeliveryInHbl(v1Data, hblDataDto, carrierDetails);
+                }
                 break;
             case "PlaceOfReceipt":
                 if (!Objects.isNull(additionalDetails))
@@ -1171,7 +1172,7 @@ public class HblService implements IHblService {
                 if (!Objects.isNull(carrierDetails)) {
                     hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
                     hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
-                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                    setPlaceOfDeliveryInHbl(v1Data, hblDataDto, carrierDetails);
                 }
                 if (!Objects.isNull(additionalDetails)) {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
@@ -1179,7 +1180,15 @@ public class HblService implements IHblService {
                 break;
             default:
         }
+    }
 
+    private void setPlaceOfDeliveryInHbl(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, CarrierDetails carrierDetails) {
+        if (null != carrierDetails.getDestinationPortLocCode() &&
+                carrierDetails.getDestinationPortLocCode().equals(carrierDetails.getDestinationLocCode())) {
+            hblDataDto.setPlaceOfDelivery("");
+        } else {
+            hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+        }
     }
 
     private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {

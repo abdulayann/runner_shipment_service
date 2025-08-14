@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.exception.handler;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.NotificationExcepti
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
@@ -149,5 +151,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({SectionFieldsException.class})
     private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({BackupFailureException.class, RestoreFailureException.class})
+    public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

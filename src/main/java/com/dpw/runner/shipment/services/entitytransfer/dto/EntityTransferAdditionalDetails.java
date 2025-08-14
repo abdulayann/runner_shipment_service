@@ -146,4 +146,7 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
 }

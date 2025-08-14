@@ -72,11 +72,17 @@ public class ContainerValidationUtil {
 
         for (int index = 0; index < requests.size(); index++) {
             ContainerV3Request container = requests.get(index);
-            if (container.getBookingId() == null && container.getConsolidationId() == null && container.getShipmentsId() == null) {
-                throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+            int nonNullCount = 0;
+            if (container.getBookingId() != null) nonNullCount++;
+            if (container.getConsolidationId() != null) nonNullCount++;
+            if (container.getShipmentId() != null) nonNullCount++;
+
+            if (nonNullCount == 0) {
+                throw new ValidationException("Either BookingId or ConsolidationId or ShipmentId must be provided in the request.");
             }
-            if(container.getBookingId() !=null && container.getConsolidationId() != null && container.getShipmentsId() != null){
-                throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not both.");
+
+            if (nonNullCount > 1) {
+                throw new ValidationException("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.");
             }
         }
     }
@@ -150,7 +156,7 @@ public class ContainerValidationUtil {
         }
         if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), assignContainerParams.getShipmentDetailsMap(), module))
             throw new ValidationException("Use Shipment screen to assign value to FCL container.");
-        allowAssignUnAssignOnlyWhenAttachmentAllowed(assignContainerParams.getConsolidationId(), assignContainerParams.getConsolidationDetails());
+        validateOpenForAttachment(assignContainerParams.getConsolidationId(), assignContainerParams.getConsolidationDetails());
     }
 
     public boolean checkIfShipmentIsFclOrFtl(ShipmentDetails shipmentDetails) {
@@ -160,7 +166,7 @@ public class ContainerValidationUtil {
     public void validateBeforeUnAssignContainer(UnAssignContainerParams unAssignContainerParams, UnAssignContainerRequest request, String module) {
         if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module))
             throw new ValidationException("Use Shipment screen to unassign value to FCL container.");
-        allowAssignUnAssignOnlyWhenAttachmentAllowed(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
+        validateOpenForAttachment(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
     }
 
     private boolean fclRequestNotAllowedAtConsole(Set<Long> shipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, String module) {
@@ -175,7 +181,7 @@ public class ContainerValidationUtil {
         return false;
     }
 
-    public void allowAssignUnAssignOnlyWhenAttachmentAllowed(Long consolidationId, ConsolidationDetails consolidationDetails) {
+    public void validateOpenForAttachment(Long consolidationId, ConsolidationDetails consolidationDetails) {
         if(Objects.isNull(consolidationId)) {
             return;
         }
@@ -247,9 +253,9 @@ public class ContainerValidationUtil {
         String shipmentType = shipmentDetails.getShipmentType();
 
         boolean isSeaFCL = commonUtils.isSeaFCL(transportMode, shipmentType);
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(transportMode, shipmentType);
+        boolean roadFTLOrRailFCL = commonUtils.isRoadFTLOrRailFCL(transportMode, shipmentType);
 
-        if (!isSeaFCL && !isRoadFCLorFTL) {
+        if (!isSeaFCL && !roadFTLOrRailFCL) {
             String expectedType = getExpectedCargoTypeForTransportMode(transportMode);
             throw new ValidationException(String.format(
                     "Invalid cargoType: %s for transportMode: %s. Expected: %s.",
@@ -264,5 +270,4 @@ public class ContainerValidationUtil {
             default -> "Transport mode must be SEA/ROAD";
         };
     }
-
 }

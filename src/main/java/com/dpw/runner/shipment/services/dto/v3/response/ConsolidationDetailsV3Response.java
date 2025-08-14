@@ -5,20 +5,26 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @NoArgsConstructor
@@ -49,19 +55,40 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String printOtherDocs;
     private String awbDims;
     private String releaseType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime masterBillIssueDate;
     private String dgClass;
     private String dgSubstance;
     private Boolean override;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime estimatedTerminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime terminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime verifiedGrossMassCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime reeferCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime bookingCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime shipInstructionCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime hazardousBookingCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime latestFullEquDeliveredToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime earliestDropOffFullEquToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
@@ -74,20 +101,27 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String description;
     private String marksnNums;
     private String additionalTerms;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime docsClosingTime;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoClosingTime;
     private String mrnNumber;
     private String msnNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime igmFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime igmInwardDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime inwardDateAndTime;
     private String igmFileNo;
     private String smtpigmNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime smtpigmDate;
     private Boolean isInland;
     private Integer original;
     private Integer copy;
     private String doPlaceOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
@@ -178,4 +212,6 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private TransportInfoStatus transportInfoStatus;
     private String transportInfoStatusMessage;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

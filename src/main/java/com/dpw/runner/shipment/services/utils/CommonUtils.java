@@ -50,14 +50,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListReques
 import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -68,6 +61,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -2913,19 +2907,25 @@ public class CommonUtils {
     }
 
     public boolean isSeaFCLOrRoadFTL(String transportMode, String cargoType) {
-        return isSeaFCL(transportMode, cargoType) || isRoadFCLorFTL(transportMode, cargoType);
+        return isSeaFCL(transportMode, cargoType) || isRoadFTLOrRailFCL(transportMode, cargoType);
     }
 
-    public boolean isRoadFCLorFTL(String transportMode, String cargoType) {
-        return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isFCLorFTL(cargoType);
+    public boolean isRoadFTLOrRailFCL(String transportMode, String cargoType) {
+        return (Constants.TRANSPORT_MODE_ROA.equals(transportMode) || TRANSPORT_MODE_RAI.equals(transportMode)) && isFCLorFTL(cargoType);
     }
 
     public boolean isSeaFCL(String transportMode, String cargoType) {
-        return Constants.TRANSPORT_MODE_SEA.equals(transportMode) && CARGO_TYPE_FCL.equals(cargoType);
+        return (Constants.TRANSPORT_MODE_SEA.equals(transportMode) || TRANSPORT_MODE_RAI.equals(transportMode)) && CARGO_TYPE_FCL.equals(cargoType);
     }
 
     public boolean isFCLorFTL(String cargoType) {
         return (CARGO_TYPE_FCL.equals(cargoType) || CARGO_TYPE_FTL.equals(cargoType));
+    }
+    public boolean isFCL(String cargoType) {
+        return CARGO_TYPE_FCL.equals(cargoType);
+    }
+    public boolean isLCL(String cargoType) {
+        return CARGO_TYPE_LCL.equals(cargoType);
     }
 
     public String getPacksUnit(String curUnit, String entityPacksUnit) {
@@ -3047,5 +3047,75 @@ public class CommonUtils {
         if (address.toString().endsWith(ReportConstants.COMM))
             address = new StringBuilder(address.substring(0, address.length() - COMM.length()));
         return address.toString();
+    }
+
+    public static String getSourceService() {
+        try {
+            return Objects.nonNull(MDC.get(Constants.ORIGINATED_FROM)) ? MDC.get(Constants.ORIGINATED_FROM) : Constants.SHIPMENT;
+        } catch (Exception e) {
+            log.error("{}, getSourceService: Message: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+            return Constants.SHIPMENT;
+        }
+    }
+
+    /**
+     * Fetches address data for the given address IDs.
+     */
+    public Map<Long, AddressDataV1> fetchAddressData(List<String> addressIdList) {
+        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+            return addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+        }
+        return new HashMap<>();
+    }
+
+    public CommonV1ListRequest createCriteriaToFetchAddressList(List<String> addressIdList) {
+        List<Object> addressIdField = new ArrayList<>(List.of(Constants.ID));
+        List<Object> addressCriteria = new ArrayList<>(List.of(addressIdField, Constants.IN, List.of(addressIdList)));
+        return CommonV1ListRequest.builder().criteriaRequests(addressCriteria).build();
+    }
+
+    public Map<Long, OrgDataV1> fetchOrgAddressData(List<String> orgAddressIdList) {
+        if(!CommonUtils.listIsNullOrEmpty(orgAddressIdList)) {
+            CommonV1ListRequest orgAddressRequest = createCriteriaToFetchAddressList(orgAddressIdList);
+            V1DataResponse addressResponse = v1Service.fetchOrganization(orgAddressRequest);
+            List<OrgDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, OrgDataV1.class);
+
+            return addressDataList.stream()
+                    .collect(Collectors.toMap(OrgDataV1::getId, entity -> entity));
+        }
+        return new HashMap<>();
+    }
+
+    public EntityTransferAddress getEntityTransferAddress(String transportMode) {
+        try {
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            EntityTransferAddress entityTransferAddress = getEntityTransferAddress(tenantModel);
+            if ((Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                    || Constants.TRANSPORT_MODE_RAI.equals(transportMode)) && null != entityTransferAddress) {
+                return entityTransferAddress;
+            }
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+        }
+        return null;
+    }
+
+    @Nullable
+    public Long getLongValue(Object value) {
+        if (value != null) {
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else if (value instanceof String) {
+                return Long.parseLong((String) value);
+            } else {
+                throw new IllegalArgumentException("Unsupported Party ID type: " + value.getClass());
+            }
+        }
+        return null;
     }
 }

@@ -44,6 +44,8 @@ public class ApiConstants {
     public static final String API_RETRIEVE = "/retrieve";
 
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
+    public static final String API_RETRIEVE_BY_ID_EXT = "/retrieve/external/id";
+    public  static final String API_RETRIEVE_BY_ID_EXT_PARTIAL = "/retrieve/external/partial/id";
     public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
@@ -188,6 +190,7 @@ public class ApiConstants {
     public static final String API_CREATE_V3 = "/createV3";
     public static final String API_UPDATE_V3 = "/updateV3";
     public static final String API_LIST_V3 = "/listV3";
+    public static final String API_LIST_EXT = "/list/external";
     public static final String API_RETRIEVE_BY_ID_V3 = "/retrieveV3/id";
 
     public static final String API_RETRIEVE_PENDING_NOTIFICATION_DATA = "/pending/notification/data";
@@ -207,4 +210,5 @@ public class ApiConstants {
     public static final String AIB_NOTIFICATIONS = "/aib/notification";
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
+    public static final String API_UPDATE_PARTIES = "/update/parties";
 }

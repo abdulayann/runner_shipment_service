@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -120,19 +121,19 @@ public class PackingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromConsolidation(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.BOOKING));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.BOOKING, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
@@ -221,6 +222,13 @@ public class PackingV3Controller {
     public ResponseEntity<IRunnerResponse> unAssignContainersAtShipmentLevel(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
         packingV3Service.unAssignPackageContainers(request, SHIPMENT_PACKING);
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @GetMapping(CALCULATE_CARGO_SUMMARY)
+    public ResponseEntity<IRunnerResponse> calculateCargoSummary (@ApiParam(value = Constants.SHIPMENT_ID, required = true) Long shipmentId) throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipmentId).build();
+        return ResponseHelper.buildSuccessResponse(packingV3Service.calculateCargoSummary(commonGetRequest));
     }
 
 }

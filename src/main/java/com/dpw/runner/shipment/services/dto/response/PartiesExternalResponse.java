@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Parties Response Model")
+@ApiModel("Parties External Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

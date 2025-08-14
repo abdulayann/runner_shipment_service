@@ -174,6 +174,9 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
     private Integer fcrNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

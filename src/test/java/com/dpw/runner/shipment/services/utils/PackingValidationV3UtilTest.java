@@ -151,6 +151,8 @@ class PackingValidationV3UtilTest {
     @Test
     void testValidateModule_validShipmentId() {
         request.setShipmentId(100L);
+        request.setCommodity("Commodity");
+        request.setCommodityGroup("CommodityGroup");
         when(shipmentService.findById(100L)).thenReturn(Optional.of(new ShipmentDetails()));
 
         assertDoesNotThrow(() -> packingValidationV3Util.validateModule(request, Constants.SHIPMENT));

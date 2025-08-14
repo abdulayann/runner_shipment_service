@@ -284,4 +284,6 @@ public class ShipmentConstants {
     public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
     public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
 
+    public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
+
 }

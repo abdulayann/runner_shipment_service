@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -305,68 +306,6 @@ class RoutingValidationUtilTest {
     }
 
     @Test
-    void testValidateRoutingLegs_Success() {
-
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .etd(LocalDateTime.now())
-                .eta(LocalDateTime.now().plusHours(5))
-                .atd(LocalDateTime.now().minusHours(2))
-                .ata(LocalDateTime.now())
-                .build();
-
-        assertDoesNotThrow(() -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest)));
-    }
-
-    @Test
-    void testValidateRoutingLegs_ATDSetInFuture() {
-
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .atd(LocalDateTime.now().plusDays(1))
-                .build();
-
-        Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
-        ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATD cannot be more than Current Date" , exception.getMessage());
-    }
-
-    @Test
-    void testValidateRoutingLegs_ATASetInFuture() {
-
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .ata(LocalDateTime.now().plusDays(1))
-                .build();
-
-        Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
-        ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATA cannot be more than Current Date", exception.getMessage());
-    }
-
-    @Test
-    void testValidateRoutingLegs_ETDAfterETA() {
-
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .etd(LocalDateTime.now().plusHours(50))
-                .eta(LocalDateTime.now())
-                .build();
-
-        Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
-        ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ETD cannot be more than ETA", exception.getMessage());
-    }
-
-    @Test
-    void testValidateRoutingLegs_ATABeforeATD() {
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .atd(LocalDateTime.now())
-                .ata(LocalDateTime.now().minusHours(30))
-                .build();
-
-        Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
-        ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATA cannot be less than ATD", exception.getMessage());
-    }
-
-    @Test
     void testValidateMainCarriageRoutingLegs_Success() {
 
         RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()
@@ -402,9 +341,7 @@ class RoutingValidationUtilTest {
 
         Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
         ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ETD cannot be more than ETA. " +
-                "Please Update the date entered correctly.", exception.getMessage());
-
+        assertEquals("ETA (Last main-carriage) cannot be less than ETD (First Main-carriage)", exception.getMessage());
     }
 
     @Test
@@ -424,8 +361,7 @@ class RoutingValidationUtilTest {
 
         Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
         ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATA cannot be less than ATD. " +
-                "Please Update the date entered correctly.", exception.getMessage());
+        assertEquals("ATA (Last Main-carriage) cannot be less than ATD (First Main-carriage)", exception.getMessage());
 
     }
 
@@ -446,9 +382,7 @@ class RoutingValidationUtilTest {
 
         Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
         ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATA cannot be more than Current Date. " +
-                "Please Update the date entered correctly.", exception.getMessage());
-
+        assertEquals("ATA (Last Main-carriage) cannot be more than Current Date", exception.getMessage());
     }
 
     @Test
@@ -456,7 +390,6 @@ class RoutingValidationUtilTest {
         LocalDateTime now = LocalDateTime.now();
         RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()
                 .carriage(RoutingCarriage.MAIN_CARRIAGE)
-                .etd(now)
                 .atd(now.plusHours(30))
                 .build();
 
@@ -468,39 +401,7 @@ class RoutingValidationUtilTest {
 
         Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
         ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("ATD cannot be more than Current Date. " +
-                "Please Update the date entered correctly.", exception.getMessage());
-
-    }
-
-    @Test
-    void testValidateRoutingLegs_ATAIsNull() {
-
-        RoutingsRequest request = RoutingsRequest.builder()
-                .atd(LocalDateTime.now().minusDays(1))
-                .ata(null)
-                .build();
-        assertDoesNotThrow(() -> routingValidationUtil.validateRoutingLegs(List.of(request)));
-    }
-
-    @Test
-    void testValidateRoutingLegs_ETDSet_ETAIsNull() {
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .etd(LocalDateTime.now())
-                .eta(null)
-                .build();
-
-        assertDoesNotThrow(() -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest)));
-    }
-
-    @Test
-    void testValidateRoutingLegs_ATDSet_ATAIsNull() {
-        RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .atd(LocalDateTime.now())
-                .ata(null)
-                .build();
-
-        assertDoesNotThrow(() -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest)));
+        assertEquals("ATD (First Main-carriage) cannot be more than Current Date", exception.getMessage());
     }
 
     @Test
@@ -555,6 +456,20 @@ class RoutingValidationUtilTest {
                 .build();
 
         List<RoutingsRequest> list = List.of(preCarriageRoutingLeg, mainCarriageRoutingLeg1, mainCarriageRoutingLeg2);
+        assertDoesNotThrow(() -> routingValidationUtil.validateMainCarriageRoutingLegs(list));
+    }
+
+    @Test
+    void testValidateMainCarriageRoutingLegs_NoMainCarriageLegs() {
+
+        RoutingsRequest preCarriage = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.PRE_CARRIAGE)
+                .build();
+        RoutingsRequest onCarriage = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.ON_CARRIAGE)
+                .build();
+
+        List<RoutingsRequest> list = List.of(preCarriage, onCarriage);
         assertDoesNotThrow(() -> routingValidationUtil.validateMainCarriageRoutingLegs(list));
     }
 

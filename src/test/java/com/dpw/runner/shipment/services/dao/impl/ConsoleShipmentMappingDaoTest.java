@@ -216,4 +216,23 @@ class ConsoleShipmentMappingDaoTest {
     }
 
 
+    @Test
+    void testFindByConsolidationIdsByQuery() {
+        Set<Long> consolidationIds = Set.of(1L, 2L);
+        ConsoleShipmentMapping mapping1 = new ConsoleShipmentMapping();
+        mapping1.setId(1L);
+        mapping1.setCreatedBy("ABC");
+        ConsoleShipmentMapping mapping2 = new ConsoleShipmentMapping();
+        mapping2.setId(2L);
+        mapping2.setCreatedBy("XYZ");
+        List<ConsoleShipmentMapping> expectedMappings = List.of(mapping1, mapping2);
+        when(consoleShipmentsMappingRepository.findByConsolidationIdsByQuery(consolidationIds))
+                .thenReturn(expectedMappings);
+        List<ConsoleShipmentMapping> result =
+                consoleShipmentMappingDao.findByConsolidationIdsByQuery(consolidationIds);
+        assertEquals(expectedMappings, result);
+        verify(consoleShipmentsMappingRepository, times(1))
+                .findByConsolidationIdsByQuery(consolidationIds);
+    }
+
 }

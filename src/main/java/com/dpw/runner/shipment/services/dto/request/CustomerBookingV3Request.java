@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -80,6 +81,8 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String currentPartyForQuote;
     private BookingSource source;
     private UUID sourceGuid;
@@ -93,7 +96,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
+    @ExcludeTimeZone
     private LocalDateTime cargoReadinessDate;
+    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean controlled;
     private String controlledReferenceNumber;
@@ -107,17 +112,25 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
+    @ExcludeTimeZone
     private LocalDateTime pickupAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime deliveryAtDestinationDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedPickupAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedBrokerageAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime estimatedBrokerageAtDestinationDate;
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
@@ -129,9 +142,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     private LocalDateTime latestArrivalTime;
     private BigDecimal teuCount;
-    private long containers;
+    private Long containers;
     private String packageType;
-    private long packages;
+    private Long packages;
     private String description;
     private String marksnNumbers;
     private String additionalTerms;

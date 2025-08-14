@@ -54,7 +54,7 @@ public class EntityTransferV3Controller {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
     })
-    public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) throws RunnerException {
         log.info("Received Send Shipment Request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         List<Integer> successTenantIds = entityTransferService.sendShipment(CommonRequestModel.buildRequest(request));
         List<String> tenantName = entityTransferService.getTenantName(successTenantIds);
@@ -68,7 +68,7 @@ public class EntityTransferV3Controller {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
     })
-    public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
+    public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) throws RunnerException {
         log.info("Received Send Consolidation Request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         List<Integer> successTenantIds = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(request));
         List<String> tenantName = entityTransferService.getTenantName(successTenantIds);

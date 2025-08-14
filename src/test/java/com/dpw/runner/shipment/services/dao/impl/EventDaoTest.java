@@ -511,5 +511,41 @@ class EventDaoTest {
         assertEquals(1L, events.getConsolidationId());
     }
 
+    @Test
+    void testDeleteAdditionalDataByEventsIdsConsolidationId() {
+        List<Long> eventsIds = List.of(1L, 2L, 3L);
+        Long consolidationId = 100L;
+        eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
+        verify(eventRepository, times(1))
+                .deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByEventsIds() {
+        List<Long> eventsIds = List.of(4L, 5L);
+        eventDao.revertSoftDeleteByEventsIds(eventsIds);
+        verify(eventRepository, times(1))
+                .revertSoftDeleteByEventsIds(eventsIds);
+    }
+
+    @Test
+    void testDeleteAdditionalEventDetailsByEntityIdAndEntityType() {
+        List<Long> eventsIds = List.of(6L, 7L);
+        Long entityId = 200L;
+        String entityType = "SHIPMENT";
+        eventDao.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+        verify(eventRepository, times(1))
+                .deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
+
+    @Test
+    void testRevertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType() {
+        List<Long> eventsIds = List.of(8L, 9L);
+        Long entityId = 300L;
+        String entityType = "BOOKING";
+        eventDao.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
+        verify(eventRepository, times(1))
+                .revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
 
 }

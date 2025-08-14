@@ -55,13 +55,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -132,12 +126,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -259,6 +248,7 @@ class CommonUtilsTest {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @InjectMocks
+    @Spy
     private CommonUtils commonUtils;
 
     @Mock
@@ -314,6 +304,12 @@ class CommonUtilsTest {
     @Mock
     private IV1Service v1Service;
 
+    @Mock
+    private TenantModel tenantModel;
+
+    @Mock
+    private EntityTransferAddress entityTransferAddress;
+
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -344,7 +340,7 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-
+        MockitoAnnotations.openMocks(this);
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
@@ -5378,23 +5374,23 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testIsRoadFCLorFTL_FCL() {
-        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    void testIsRoadFTL_OrRailFCL_FCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(TRANSPORT_MODE_RAI, "FCL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_FTL() {
-        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    void testIsRoadFTL_FTLOrRailFCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "FTL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_InvalidTransportMode() {
-        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    void testIsRoadFTL_OrRailFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
     }
 
     @Test
-    void testIsRoadFCLorFTL_InvalidCargoType() {
-        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    void testIsRoadFTL_OrRailFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "LCL"));
     }
 
     @Test
@@ -5594,5 +5590,160 @@ class CommonUtilsTest {
         }
     }
 
+    @Test
+    void fetchAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> addressIds = List.of("1", "2");
+        CommonV1ListRequest expectedRequest = commonUtils.createCriteriaToFetchAddressList(addressIds);
 
+        // Mock response from v1Service.addressList
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities"); // Could be any object, your jsonHelper mock will handle conversion
+
+        // Mock list of AddressDataV1
+        AddressDataV1 addr1 = new AddressDataV1();
+        addr1.setId(1L);
+        AddressDataV1 addr2 = new AddressDataV1();
+        addr2.setId(2L);
+        List<AddressDataV1> addressDataList = List.of(addr1, addr2);
+
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), AddressDataV1.class))
+                .thenReturn(addressDataList);
+
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(addressIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(1L));
+        assertTrue(result.containsKey(2L));
+        verify(v1Service).addressList(any());
+        verify(jsonHelper).convertValueToList(any(), eq(AddressDataV1.class));
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> orgIds = List.of("10", "20");
+
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities");
+
+        OrgDataV1 org1 = new OrgDataV1();
+        org1.setId(10L);
+        OrgDataV1 org2 = new OrgDataV1();
+        org2.setId(20L);
+        List<OrgDataV1> orgDataList = List.of(org1, org2);
+
+        when(v1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), OrgDataV1.class))
+                .thenReturn(orgDataList);
+
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(orgIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(10L));
+        assertTrue(result.containsKey(20L));
+        verify(v1Service).fetchOrganization(any());
+        verify(jsonHelper).convertValueToList(any(), eq(OrgDataV1.class));
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void getEntityTransferAddress_shouldReturnNullForAirTransport() {
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_AIR);
+        assertNull(result);
+    }
+
+    @Test
+    void getEntityTransferAddress_shouldReturnNullWhenExceptionOccurs() {
+        when(v1Service.retrieveTenant()).thenThrow(new RuntimeException("Test exception"));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNull(result);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_SeaMode_ReturnsAddress() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNotNull(result);
+        assertEquals(entityTransferAddress, result);
+    }
+
+
+    @Test
+    void testGetEntityTransferAddress_InvalidMode_ReturnsNull() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress("AIR");
+        assertNull(result);
+    }
+
+    @Test
+    void getLongValue_shouldReturnNullForNullInput() {
+        assertNull(commonUtils.getLongValue(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("validNumberProviders")
+    void getLongValue_shouldReturnLongForNumberTypes(Number number, long expected) {
+        assertEquals(expected, commonUtils.getLongValue(number));
+    }
+
+    @Test
+    void getLongValue_shouldReturnLongForStringNumber() {
+        assertEquals(123L, commonUtils.getLongValue("123"));
+    }
+
+    @Test
+    void getLongValue_shouldThrowForUnsupportedType() {
+        Object invalidValue = new Object();
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> commonUtils.getLongValue(invalidValue));
+        assertTrue(exception.getMessage().contains("Unsupported Party ID type"));
+    }
+
+    private static Stream<Arguments> validNumberProviders() {
+        return Stream.of(
+                Arguments.of(123, 123L),
+                Arguments.of(123.45f, 123L),
+                Arguments.of(123.67d, 123L),
+                Arguments.of(123L, 123L),
+                Arguments.of((short)123, 123L),
+                Arguments.of((byte)123, 123L)
+        );
+    }
 }

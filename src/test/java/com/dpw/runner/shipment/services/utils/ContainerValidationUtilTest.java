@@ -457,7 +457,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility method to return true for Sea FCL
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
 
         // Act & Assert - Should not throw exception
         assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
@@ -472,7 +472,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility method to return true for Road FCL/FTL
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
 
         // Act & Assert - Should not throw exception
         assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
@@ -487,7 +487,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -507,7 +507,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -527,7 +527,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false
         when(commonUtils.isSeaFCL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -550,7 +550,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false to trigger the exception path
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -569,7 +569,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false to trigger the exception path
         when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -588,7 +588,7 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Mock the utility methods to return false to trigger the exception path
         when(commonUtils.isSeaFCL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
-        when(commonUtils.isRoadFCLorFTL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFTLOrRailFCL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
 
         // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
@@ -693,6 +693,32 @@ class ContainerValidationUtilTest extends CommonMocks {
         boolean result = containerValidationUtil.checkIfShipmentIsFclOrFtl(shipmentDetails);
         assertFalse(result);
         Mockito.verify(commonUtils).isSeaFCLOrRoadFTL("AIR", "LCL");
+    }
+
+    @Test
+    void testValidateCreateBulkRequest_NoIdProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request(); // all null
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Either BookingId or ConsolidationId or ShipmentId must be provided in the request.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateCreateBulkRequest_MultipleIdsProvided_ShouldThrow() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setBookingId(1L);
+        request.setShipmentId(2L); // multiple IDs set
+
+        List<ContainerV3Request> requests = List.of(request);
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateCreateBulkRequest(requests));
+
+        assertEquals("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.", exception.getMessage());
     }
 
 }

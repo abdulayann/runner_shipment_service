@@ -85,7 +85,6 @@ public interface IShipmentServiceV3 {
 
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
     void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);
-    Long assignFirstBookingContainerToShipmentCargo(List<Containers> expandedContainers, CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
 
     ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentEtV3Request shipmentRequest, boolean includeGuid);
 
@@ -113,4 +112,5 @@ public interface IShipmentServiceV3 {
     CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException;
+    void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList);
 }

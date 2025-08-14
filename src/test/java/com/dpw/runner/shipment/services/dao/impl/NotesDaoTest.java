@@ -252,6 +252,24 @@ class NotesDaoTest {
 
     }
 
+    @Test
+    void testDeleteAdditionalNotesByEntityIdAndEntityType() {
+        List<Long> notesIds = List.of(1L, 2L);
+        Long entityId = 100L;
+        String entityType = "ORDER";
+        notesDao.deleteAdditionalNotesByEntityIdAndEntityType(notesIds, entityId, entityType);
+        verify(notesRepository, times(1))
+                .deleteAdditionalNotesByEntityIdAndEntityType(notesIds, entityId, entityType);
+    }
 
+    @Test
+    void testRevertSoftDeleteByNotesIdsAndEntityIdAndEntityType() {
+        List<Long> notesIds = List.of(3L, 4L);
+        Long entityId = 200L;
+        String entityType = "INVOICE";
+        notesDao.revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(notesIds, entityId, entityType);
+        verify(notesRepository, times(1))
+                .revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(notesIds, entityId, entityType);
+    }
 
 }

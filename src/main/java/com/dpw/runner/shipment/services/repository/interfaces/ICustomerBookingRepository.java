@@ -8,10 +8,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository @Generated
@@ -45,4 +48,31 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
+
+    @Query(value = "SELECT cb.id FROM customer_booking cb " +
+            "WHERE cb.migration_status IN (:statuses) " +
+            "AND cb.tenant_id = :tenantId " +
+            "AND cb.is_deleted = false",
+            nativeQuery = true)
+    List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
+    @Query(value = "SELECT * FROM customer_booking WHERE id IN ?1", nativeQuery = true)
+    List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
+
+    @Modifying
+    @Query(value = "Update customer_booking set is_deleted = true WHERE id IN ?1", nativeQuery = true)
+    void deleteCustomerBookingIds(Set<Long> ids);
+
+    @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1", nativeQuery = true)
+    Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE customer_booking SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalBookingsByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE customer_booking SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
 }

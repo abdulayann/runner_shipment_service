@@ -1,5 +1,4 @@
 package com.dpw.runner.shipment.services.service.impl;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +66,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -3718,23 +3719,24 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123");
+        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "123434567", "SHIP123");
         assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
     }
 
     @Test
     void applyCustomNaming_MawbWithChildType_DraftChildType() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456");
+        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "1234567",  "MAWB456");
         assertEquals("MAWB_DRAFT_MAWB456.pdf", result);
     }
 
     @Test
     void applyCustomNaming_StillFormsValidFilename() {
         DocUploadRequest request = new DocUploadRequest();
-        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123");
+        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "1234567555", "SHIP123");
         assertEquals("PICKUPORDER_SHIP123.pdf", result);
     }
+
 
     @Test
     void triggerAutomaticTransferWithHblReport_InvalidCase_EmptyConsole() {
@@ -4779,5 +4781,69 @@ class ReportServiceTest extends CommonMocks {
         assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
 
+    private static final String ENTITY_GUID = "123456543";
+    private static final String IDENTIFIER = "SHIP123";
+
+    private DocumentManagerEntityFileResponse createFile(String fileType, String docCode, String childType) {
+        DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
+        file.setFileType(fileType);
+        file.setDocCode(docCode);
+        file.setChildType(childType);
+        return file;
+    }
+
+    @Test
+    void shouldReturnFileNameWithoutSuffix_WhenNoFilesExist() {
+        // Mock no existing files
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123.pdf", fileName);
+    }
+    @Test
+    void shouldAppendSuffix_WhenOneFileAlreadyExists() {
+        // Mock 1 existing file
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName);
+    }
+
+    @Test
+    void shouldHandleChildType_MAWBFile() {
+        // Mock 2 existing files for MAWB
+        DocumentManagerEntityFileResponse file = createFile(ReportConstants.MAWB, ReportConstants.MAWB, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file, file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
+    }
+
+    @Test
+    void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
+        // Mock 3 existing files
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file, file, file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
+    }
 
 }

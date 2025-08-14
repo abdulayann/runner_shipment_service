@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
@@ -101,6 +102,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
+        if(consolidationDetails.getMigrationStatus() == null && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        } else if (consolidationDetails.getMigrationStatus() == null){
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
+        }
         onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
         return consolidationDetails;
     }
@@ -687,6 +693,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
     public ConsolidationDetails findConsolidationsById(Long id) {
         return consolidationRepository.getConsolidationFromId(id);
     }
@@ -797,6 +808,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
+        if(consolidationDetails.getMigrationStatus() == null) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        }
         onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
     }
@@ -841,6 +855,26 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+    }
+
+    @Override
+    public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        return consolidationRepository.save(consolidationDetails);
+    }
+
+    @Override
+    public void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId) {
+        consolidationRepository.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
     }
 
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
@@ -935,9 +969,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             errors.add("Origin and POD fields cannot be same.");
         }
     }
+
     private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
-        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
-            errors.add("POL and POD fields cannot be same.");
+        if (request.getCarrierDetails() != null && !isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) && !isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())
+                && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+                errors.add("POL and POD fields cannot be the same.");
         }
         if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
             errors.add("POL and Destination fields cannot be same.");

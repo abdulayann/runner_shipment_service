@@ -1,5 +1,13 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -25,12 +33,7 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -169,13 +172,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 
 @Slf4j
 @SuppressWarnings({"unchecked", "java:S2259"})
@@ -504,6 +500,8 @@ public abstract class IReport {
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
         populateShippedOnboardFields(shipment, dictionary);
+        populateReeferFields(shipment, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipment.getShipmentType());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
@@ -553,11 +551,11 @@ public abstract class IReport {
 
         if (Objects.isNull(shipmentModel) || Objects.isNull(shipmentModel.getAdditionalDetails())) return;
 
-        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
+        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboard();
         if (Objects.nonNull(shippedOnboardDate)) {
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
-                    shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
+                    shippedOnboardDate, "ddMMMyyyy", false));
         }
     }
 
@@ -590,7 +588,28 @@ public abstract class IReport {
         dictionary.put(IS_DG, false);
         if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
             dictionary.put(IS_DG, true);
+            dictionary.put(S_DG_FLAG, YES);
             dictionary.put(DG_EMERGENCY_CONTACT, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
+        }
+    }
+
+    public void populateReeferFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel)) return;
+        dictionary.put(S_REEFER_FLAG, Boolean.FALSE);
+        if (Boolean.TRUE.equals(shipmentModel.getIsReefer())) {
+            dictionary.put(S_REEFER_FLAG, Boolean.TRUE);
+            dictionary.put(SHIPMENT_REEFER_FLAG, YES);
+        }
+    }
+
+    public void populateDGFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel)) return;
+        dictionary.put(IS_DG, Boolean.FALSE);
+        if (Boolean.TRUE.equals(shipmentModel.getContainsHazardous())) {
+            dictionary.put(IS_DG, Boolean.TRUE);
+            dictionary.put(S_DG_FLAG, YES);
         }
     }
 
@@ -1101,12 +1120,12 @@ public abstract class IReport {
 
         dictionary.put(ReportConstants.PRINT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         if(destination != null) {
-            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
+            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
             dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
             dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
-            dictionary.put(ReportConstants.FPOD_IN_CAPS, destination.getName().toUpperCase());
-            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
+            dictionary.put(ReportConstants.FPOD_IN_CAPS, StringUtility.toUpperCase(destination.getName()));
+            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, StringUtility.toUpperCase(destinationCountry));
             dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
         }
     }
@@ -2825,7 +2844,7 @@ public abstract class IReport {
             else
                 strDate = formatedDate.format(getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
-        return strDate;
+        return strDate.toUpperCase();
     }
 
     public String convertToWeightNumberFormat(BigDecimal weight) {
@@ -5185,7 +5204,7 @@ public abstract class IReport {
     private void addPartnerFields(Map<String, Object> dictionary, ShipmentDetails details,
                                   Map<String, String> orderDpwMap, Map<String, String> orgMap) {
         dictionary.put(S_PARTNER_DROP_DOWN,
-                orderDpwMap != null ? orderDpwMap.get(details.getPartner()) : null);
+                orderDpwMap != null ? orderDpwMap.keySet().iterator().next() : null);
 
         String bookingAgentName = getOrgValue(orgMap, details.getBookingAgent());
         dictionary.put(S_CO_LOADER_NAME, bookingAgentName);
@@ -5224,7 +5243,8 @@ public abstract class IReport {
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
         dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff()));
-        dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime()));
+        dictionary.put(S_DG, convertToDPWDateFormat(details.getDgCutoff(), "ddMMMyyyy HH:mm", true));
+        dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime(), "ddMMMyyyy HH:mm", true));
     }
 
     private void addAdditionalFields(Map<String, Object> dictionary, ShipmentDetails details) {

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +52,8 @@ class CustomerBookingV3ControllerTest {
     private ICustomerBookingV3Service customerBookingV3Service;
     @Mock
     private ICRPServiceAdapter crpService;
+    @Mock
+    private JsonHelper jsonHelper;
 
     @InjectMocks
     private CustomerBookingV3Controller customerBookingV3Controller;
@@ -140,14 +143,14 @@ class CustomerBookingV3ControllerTest {
     @Test
     void createBookingContainers() throws RunnerException {
         when(containerV3Service.create(any(), any())).thenReturn(new ContainerResponse());
-        var responseEntity = customerBookingV3Controller.createBookingContainers(new ContainerV3Request());
+        var responseEntity = customerBookingV3Controller.createBookingContainers(new BookingContainerV3Request());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void updateBookingContainers() throws RunnerException {
         when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        var responseEntity = customerBookingV3Controller.updateBookingContainers(List.of(new ContainerV3Request()));
+        var responseEntity = customerBookingV3Controller.updateBookingContainers(List.of(new BookingContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -161,7 +164,7 @@ class CustomerBookingV3ControllerTest {
     @Test
     void deleteBookingContainers() throws RunnerException {
         when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        var responseEntity = customerBookingV3Controller.deleteBookingContainers(List.of(new ContainerV3Request()));
+        var responseEntity = customerBookingV3Controller.deleteBookingContainers(List.of(new BookingContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -174,14 +177,14 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void updateBookingPackages() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), any(), anyBoolean())).thenReturn(new BulkPackingResponse());
         var responseEntity = customerBookingV3Controller.updateBookingPackages(List.of(new PackingV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void getBookingPackages() {
-        when(packingV3Service.list(any(), anyBoolean(), any())).thenReturn(new PackingListResponse());
+        when(packingV3Service.list(any(), anyBoolean(), any(), any())).thenReturn(new PackingListResponse());
         var responseEntity = customerBookingV3Controller.listBookingPackages(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

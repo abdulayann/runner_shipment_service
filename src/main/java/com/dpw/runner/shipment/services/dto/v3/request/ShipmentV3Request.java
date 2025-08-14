@@ -72,6 +72,8 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isDomestic;
     private Boolean isLocked;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private Boolean isShipmentReadOnly;
     private String jobType;
     private String lockedBy;
@@ -186,6 +188,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
     private LocalDateTime cargoReadyDate;
+    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
@@ -249,5 +252,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Integer slac;
     private Integer dgPacksCount;
     private String dgPacksUnit;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 
 }

@@ -238,7 +238,7 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void downloadContainers_noContainersFound_shouldReturnJsonError() throws Exception {
+    void downloadContainers_noContainersFound_shouldReturnJsonError() {
         MockHttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
         request.setShipmentId("6");
@@ -247,14 +247,11 @@ class ContainerV3UtilTest extends CommonMocks {
         when(shipmentsContainersMappingDao.findByShipmentId(any()))
                 .thenReturn(List.of(new ShipmentsContainersMapping(1L, 2L))); // container ID
         when(containerDao.findAll(any(), any())).thenReturn(Page.empty());
-        when(mockObjectMapper.writeValueAsString(any()))
-                .thenReturn("{\"success\":false,\"message\":\"No containers found for given input.\"}");
 
         containerV3Util.downloadContainers(response, request);
 
-        assertEquals(500, response.getStatus());
-        assertTrue(response.getContentType().startsWith("application/json"));
-        assertTrue(response.getContentAsString().contains("No containers found"));
+        assertEquals(200, response.getStatus());
+        assertFalse(response.getContentType().startsWith("application/json"));
     }
 
     @Test
@@ -332,7 +329,6 @@ class ContainerV3UtilTest extends CommonMocks {
                 testContainer.getNetWeightUnit()
         );
         assertNotNull(validResult);
-//        assertNotNull(containerV3Util.getAddedWeight(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test
@@ -364,7 +360,6 @@ class ContainerV3UtilTest extends CommonMocks {
                 testContainer.getNetWeightUnit()
         );
         assertNotNull(validResult);
-//        assertNotNull(containerV3Util.getAddedVolume(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test
@@ -973,17 +968,17 @@ class ContainerV3UtilTest extends CommonMocks {
         List<ContainerV3Request> requests = Arrays.asList(req1, req2);
         ContainerV3Util.setShipmentOrConsoleId(request, "SHIPMENT", requests);
         for (ContainerV3Request r : requests) {
-            assertEquals(101L, r.getShipmentsId());
+            assertEquals(101L, r.getShipmentId());
             assertNull(r.getConsolidationId());
         }
         requests.forEach(r -> {
-            r.setShipmentsId(null);
+            r.setShipmentId(null);
             r.setConsolidationId(null);
         });
         ContainerV3Util.setShipmentOrConsoleId(request, "CONSOLIDATION", requests);
         for (ContainerV3Request r : requests) {
             assertEquals(202L, r.getConsolidationId());
-            assertNull(r.getShipmentsId());
+            assertNull(r.getShipmentId());
         }
     }
 
