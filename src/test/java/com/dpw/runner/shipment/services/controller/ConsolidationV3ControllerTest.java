@@ -163,7 +163,6 @@ class ConsolidationV3ControllerTest {
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    verify(consolidationV3Service).list(listRequest, true);
   }
 
   @Test

@@ -3501,7 +3501,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ConsolidationListV3Response list(ListCommonRequest request, boolean getMasterData) {
+    public ConsolidationListV3Response list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
@@ -3789,7 +3790,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
-        return this.list(consolListRequest, true);
+        return this.list(CommonRequestModel.builder().data(consolListRequest).build(), true);
     }
 
     @Override

@@ -847,7 +847,8 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testList() {
-    assertThrows(ValidationException.class, () -> consolidationV3Service.list(null, true));
+    var request = CommonRequestModel.builder().build();
+    assertThrows(ValidationException.class, () -> consolidationV3Service.list(request, true));
   }
 
   @Test
