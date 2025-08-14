@@ -193,6 +193,8 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     private IPartiesRepository iPartiesRepository;
     @Mock
+    private ICustomerBookingDao customerBookingDao;
+    @Mock
     private IApplicationConfigService applicationConfigService;
     @Mock
     private IHblDao hblDao;

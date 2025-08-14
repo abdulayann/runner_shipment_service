@@ -68,6 +68,9 @@ public class DocumentManagerRestClient {
     @Value("${document-manager.baseUrl}${document-manager.bulk-save}")
     private String documentBulkSave;
 
+    @Value("${document-manager.baseUrl}${document-manager.store-document}")
+    private String documentStore;
+
     @Value("${document-manager.baseUrl}${document-manager.temporary-upload}")
     private String documentTemporaryUpload;
 
@@ -106,6 +109,15 @@ public class DocumentManagerRestClient {
         headers.set("Authorization", token);
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
+        return headers;
+    }
+
+    @NotNull HttpHeaders getHttpHeadersForBooking(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", token);
+        headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
+        headers.add(Constants.SOURCE_SERVICE_TYPE, LoggingConstants.CUSTOMER_BOOKING);
         return headers;
     }
 
@@ -336,6 +348,29 @@ public class DocumentManagerRestClient {
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("bulkSaveFiles", object, ex);
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> storeDocument(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeadersForBooking(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentStore,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            this.logError("storeDocument", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
