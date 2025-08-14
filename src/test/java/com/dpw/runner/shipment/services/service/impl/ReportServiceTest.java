@@ -4784,11 +4784,12 @@ class ReportServiceTest extends CommonMocks {
     private static final String ENTITY_GUID = "123456543";
     private static final String IDENTIFIER = "SHIP123";
 
-    private DocumentManagerEntityFileResponse createFile(String fileType, String docCode, String childType) {
+    private DocumentManagerEntityFileResponse createFile(String fileType, String docCode, String childType, int count) {
         DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
         file.setFileType(fileType);
         file.setDocCode(docCode);
         file.setChildType(childType);
+        file.setCount(count);
         return file;
     }
 
@@ -4817,7 +4818,6 @@ class ReportServiceTest extends CommonMocks {
     void shouldUseMappingAndUppercaseName_WhenMappingExists() {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(List.of());
-        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
 
         DocUploadRequest request = new DocUploadRequest();
         String fileName = reportService.applyCustomNaming(request, ReportConstants.AWB_LABEL, null, ENTITY_GUID, IDENTIFIER);
@@ -4829,7 +4829,6 @@ class ReportServiceTest extends CommonMocks {
     void shouldFallbackToDocType_WhenMappingNotFound() {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(List.of());
-        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
 
         DocUploadRequest request = new DocUploadRequest();
         String fileName = reportService.applyCustomNaming(request, "UNKNOWN_DOC", null, ENTITY_GUID, IDENTIFIER);
