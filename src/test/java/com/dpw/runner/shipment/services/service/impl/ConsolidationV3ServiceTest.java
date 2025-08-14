@@ -847,7 +847,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testList() {
-    assertThrows(ValidationException.class, () -> consolidationV3Service.list(null, true));
+    assertThrows(ValidationException.class, () -> consolidationV3Service.list(CommonRequestModel.builder().build(), true));
   }
 
   @Test
