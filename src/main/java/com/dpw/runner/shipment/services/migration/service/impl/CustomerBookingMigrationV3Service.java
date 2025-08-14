@@ -311,11 +311,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Containers> containersList = customerBooking.getContainersList();
         for(Containers containers: containersList) {
-            if(!Objects.isNull(containers.getCargoWeightPerContainer())) {
-                containers.setGrossWeight(containers.getCargoWeightPerContainer());
+            if(!Objects.isNull(containers.getGrossWeight())) {
+                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), RoundingMode.HALF_UP));
+                containers.setCargoWeightPerContainer(containers.getGrossWeight());
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
-                containers.setGrossWeightUnit(containers.getContainerWeightUnit());
+                containers.setContainerWeightUnit(containers.getGrossWeightUnit());
             }
         }
         containerDao.saveAll(containersList);
@@ -410,11 +411,19 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Packing> packingList = customerBooking.getPackingList();
         for(Packing packing: packingList) {
-            if(!Objects.isNull(packing.getCargoWeightPerPack())) {
-                packing.setWeight(packing.getCargoWeightPerPack());
+            if(!Objects.isNull(packing.getWeight())) {
+                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+                packing.setCargoWeightPerPack(packing.getWeight());
             }
-            if(!Objects.isNull(packing.getVolumePerPack())) {
-                packing.setVolume(packing.getVolumePerPack());
+            if(!Objects.isNull(packing.getVolume())) {
+                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+                packing.setVolumePerPack(packing.getVolume());
+            }
+            if(!Objects.isNull(packing.getWeightUnit())) {
+                packing.setPackWeightUnit(packing.getWeightUnit());
+            }
+            if(!Objects.isNull(packing.getVolumeUnit())) {
+                packing.setVolumePerPackUnit(packing.getVolumeUnit());
             }
         }
         packingDao.saveAll(packingList);
