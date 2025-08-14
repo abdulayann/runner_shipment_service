@@ -419,6 +419,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     {
         if(uom == null || uom.isEmpty())
             return uom;
+
         uom = uom.toLowerCase();
         switch(uom)
         {
