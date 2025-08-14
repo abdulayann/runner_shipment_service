@@ -78,7 +78,6 @@ public class RoutingValidationUtil {
             throw new ValidationException("ATA cannot be less than ATD");
         }
 
-        LocalDateTime rightNow = LocalDateTime.now();
         if (Objects.nonNull(atd) && atd.isAfter(LocalDateTime.now().plusHours(24))) {
             throw new ValidationException("ATD cannot be more than Current Date");
         }
