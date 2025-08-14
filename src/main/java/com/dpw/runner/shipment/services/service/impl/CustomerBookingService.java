@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
@@ -158,6 +159,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private INotesDao notesDao;
 
+    @Autowired
+    private IDocumentManagerService documentManagerService;
+
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -234,6 +238,14 @@ public class CustomerBookingService implements ICustomerBookingService {
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
 
+        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()) && request.getExternalDocuments() != null) {
+            List<ExternalDocumentRequest> externalDocumentRequests = request.getExternalDocuments();
+            for(ExternalDocumentRequest documentRequest: externalDocumentRequests) {
+                DocumentStoreDto documentStoreDto = DocumentStoreDto.builder().fileName(documentRequest.getFileName()).entityId(customerBooking.getGuid()).entityType("[Bookings]").source("Third Party System").documentMasterId(documentRequest.getDocumentMasterId()).encodedFile(addContentTypePrefix(documentRequest.getFileType()).concat(",").concat(documentRequest.getDocContent())).build();
+                documentManagerService.storeDocument(CommonRequestModel.buildDependentDataRequest(documentStoreDto));
+            }
+        }
+
         saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
 
@@ -266,6 +278,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private String addContentTypePrefix(String fileType) {
+        if(fileType.equalsIgnoreCase("pdf")) {
+            return "data:application/pdf;base64";
+        }
+        return "data:text/csv;base64";
     }
 
     private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException {
