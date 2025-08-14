@@ -1,18 +1,23 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
@@ -28,11 +33,14 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.Generated;
@@ -102,6 +110,26 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private MDMServiceAdapter mdmServiceAdapter;
+
+
+    private Map<String, BigDecimal> codeTeuMap = new HashMap<>();
+
+
+    private void initCodeTeuMap() {
+        try {
+            if(codeTeuMap.isEmpty()) {
+                DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
+                List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
+                codeTeuMap = containerTypes.stream()
+                        .collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
+            }
+        } catch (RunnerException ex) {
+            throw new MdmException(ex.getMessage());
+        }
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId) {
@@ -162,11 +190,11 @@ public class MigrationV3Service implements IMigrationV3Service {
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-
+                    initCodeTeuMap();
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id);
+                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id, codeTeuMap);
                             log.info("Successfully migrated Consolidation [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
