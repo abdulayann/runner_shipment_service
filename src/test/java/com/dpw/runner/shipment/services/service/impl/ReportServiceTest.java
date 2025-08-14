@@ -4792,58 +4792,96 @@ class ReportServiceTest extends CommonMocks {
         return file;
     }
 
+    private DocumentManagerEntityFileResponse createFile(String docCode, String childType) {
+        DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
+        file.setFileType("PDF"); // Required for filter to pass
+        file.setDocCode(docCode);
+        file.setChildType(childType);
+        return file;
+    }
+
     @Test
     void shouldReturnFileNameWithoutSuffix_WhenNoFilesExist() {
-        // Mock no existing files
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
         response.setData(List.of());
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
 
         DocUploadRequest request = new DocUploadRequest();
         String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
 
         assertEquals("HBL_DRAFT_SHIP123.pdf", fileName);
     }
+
     @Test
-    void shouldAppendSuffix_WhenOneFileAlreadyExists() {
-        // Mock 1 existing file
-        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
+    void shouldUseMappingAndUppercaseName_WhenMappingExists() {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
-        response.setData(List.of(file));
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+        response.setData(List.of());
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
 
         DocUploadRequest request = new DocUploadRequest();
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.AWB_LABEL, null, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("AIRLABEL_SHIP123.pdf", fileName);
+    }
+
+    @Test
+    void shouldFallbackToDocType_WhenMappingNotFound() {
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, "UNKNOWN_DOC", null, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("UNKNOWN_DOC_SHIP123.pdf", fileName);
+    }
+
+    @Test
+    void shouldReturnNull_WhenDocTypeInExcludeList() {
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.FCR_DOCUMENT, null, ENTITY_GUID, IDENTIFIER);
+
+        assertNull(fileName);
+    }
+
+    @Test
+    void shouldCountOnlyMatchingChildType() {
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(
+                createFile(DocumentConstants.HBL, "DRAFT"),
+                createFile(DocumentConstants.HBL, "FINAL") // should not count
+        ));
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, "DRAFT", ENTITY_GUID, IDENTIFIER);
 
         assertEquals("HBL_DRAFT_SHIP123_1.pdf", fileName);
     }
 
     @Test
-    void shouldHandleChildType_MAWBFile() {
-        // Mock 2 existing files for MAWB
-        DocumentManagerEntityFileResponse file = createFile(ReportConstants.MAWB, ReportConstants.MAWB, ReportConstants.DRAFT);
+    void shouldCountAllMatchingDocType_WhenChildTypeBlank() {
         DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
-        response.setData(List.of(file, file));
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+        response.setData(List.of(
+                createFile(DocumentConstants.HBL, "DRAFT"),
+                createFile(DocumentConstants.HBL, "FINAL")
+        ));
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseEntity.ok(response));
 
         DocUploadRequest request = new DocUploadRequest();
-        String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, "", ENTITY_GUID, IDENTIFIER);
 
-        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
+        assertEquals("HBL_SHIP123_2.pdf", fileName);
     }
 
     @Test
-    void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
-        // Mock 3 existing files
-        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT);
-        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
-        response.setData(List.of(file, file, file));
-        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+    void shouldReturnNoSuffix_WhenGetFileHistoryThrows() {
+        when(documentManagerService.getFileHistory(any())).thenThrow(new RuntimeException("Test error"));
 
         DocUploadRequest request = new DocUploadRequest();
-        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, null, ENTITY_GUID, IDENTIFIER);
 
-        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
+        assertEquals("HBL_SHIP123.pdf", fileName);
     }
 
 }

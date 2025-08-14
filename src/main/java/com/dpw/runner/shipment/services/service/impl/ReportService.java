@@ -2811,12 +2811,12 @@ public class ReportService implements IReportService {
                         Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
                         Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
                 );
-
+                // Base document name from mapping or fallback
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-                int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
-                String suffix = count > 0 ? "_" + count : "";
-                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
-                        && childType != null && !childType.isBlank()) {
+                // Get existing count from history API
+                int count = getExistingDocumentCount(entityGuid, docType, childType);
+                String suffix = (count > 0) ? "_" + count : "";
+                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + "_" + StringUtility.convertToString(childType).toUpperCase() + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else {
                     customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
@@ -2829,25 +2829,22 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
-    private int getExistingDocumentCount(String entityGuid, String docType, String childType, String type) {
+
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
         try {
-            DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
-                    .entityKey(entityGuid)
-                    .entityType(type)
-                    .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
-                    .build();
-            DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
-                    .entities(Collections.singletonList(request))
-                    .build();
-
-            DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
-                    documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
-
-            if (response != null && response.getData() != null) {
-                return (int) response.getData().stream()
-                        .filter(file -> file.getFileType() != null && file.getDocCode().trim().equalsIgnoreCase(docType.trim()))
-                        .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
-                                file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
+            CommonRequestModel request = CommonRequestModel.builder().guid(entityGuid).build();
+            ResponseEntity<IRunnerResponse> responseEntity = documentManagerService.getFileHistory(request);
+            if (responseEntity != null && responseEntity.getBody() instanceof DocumentManagerListResponse) {
+                DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
+                        (DocumentManagerListResponse<DocumentManagerEntityFileResponse>) responseEntity.getBody();
+                if (response.getData() != null) {
+                    return (int) response.getData().stream()
+                            .filter(file -> file.getFileType() != null &&
+                                    file.getDocCode().trim().equalsIgnoreCase(docType.trim()))
+                            .filter(file -> childType == null || childType.isBlank() ||
+                                    (file.getChildType() != null && file.getChildType().trim().equalsIgnoreCase(childType.trim())))
+                            .count();
+                }
             }
         } catch (Exception e) {
             log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
