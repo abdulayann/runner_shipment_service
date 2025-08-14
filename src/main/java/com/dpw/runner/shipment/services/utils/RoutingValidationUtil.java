@@ -18,7 +18,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -77,11 +76,11 @@ public class RoutingValidationUtil {
             throw new ValidationException("ATA cannot be less than ATD");
         }
 
-        if (Objects.nonNull(atd) && atd.toLocalDate().isAfter(LocalDate.now())) {
+        if (Objects.nonNull(atd) && atd.isAfter(LocalDateTime.now().plusHours(24))) {
             throw new ValidationException("ATD cannot be more than Current Date");
         }
 
-        if (Objects.nonNull(ata) && ata.toLocalDate().isAfter(LocalDate.now())) {
+        if (Objects.nonNull(ata) && ata.isAfter(LocalDateTime.now().plusHours(24))) {
             throw new ValidationException("ATA cannot be more than Current Date");
         }
     }
