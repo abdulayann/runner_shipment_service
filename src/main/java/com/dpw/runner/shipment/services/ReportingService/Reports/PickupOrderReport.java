@@ -12,6 +12,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_NAME_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
@@ -104,11 +105,14 @@ public class PickupOrderReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         populateShippedOnboardFields(pickUpOrderReportModel.hblModel.shipment, dictionary);
+        populateDGFields(pickUpOrderReportModel.hblModel.shipment, dictionary);
+        populateReeferFields(pickUpOrderReportModel.hblModel.shipment, dictionary);
         ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
         if (pickUpOrderReportModel.hblModel.getShipment() != null) {
             this.populateShipmentReportData(dictionary, null, pickUpOrderReportModel.hblModel.getShipment() .getId());
             this.getContainerDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
             this.getPackingDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
+            dictionary.put(SHIPMENT_CARGO_TYPE, pickUpOrderReportModel.hblModel.shipment.getShipmentType());
         }
 
         if (pickUpOrderReportModel.hblModel.getConsolidation() != null) {

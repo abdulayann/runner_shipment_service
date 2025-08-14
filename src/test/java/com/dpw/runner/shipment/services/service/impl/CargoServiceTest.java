@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,6 +68,9 @@ class CargoServiceTest {
     @Mock
     private CommonUtils commonUtils;
 
+    @Mock
+    private CustomerBookingV3Util customerBookingV3Util;
+
     @InjectMocks
     private CargoService cargoService;
 
@@ -86,7 +90,8 @@ class CargoServiceTest {
         container1.setPackagesPerContainer(2L);
         container2.setContainerCode("20GP");
         customerBooking.setContainersList(List.of(container1, container2));
-        when(customerBookingV3Service.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -101,7 +106,8 @@ class CargoServiceTest {
         // Prepare test data
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = mock(CustomerBooking.class);
-        when(customerBookingV3Service.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
 
         // Test
@@ -134,8 +140,9 @@ class CargoServiceTest {
         booking.setPackingList(List.of(packing));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
-        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -171,8 +178,9 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
-        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -208,8 +216,9 @@ class CargoServiceTest {
         DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
-        when(customerBookingV3Service.getTotalContainerPackages(List.of(container))).thenReturn(10L);
-        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -250,8 +259,9 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
-        when(customerBookingV3Service.getTotalContainerPackages(anyList())).thenReturn(10L);
-        when(customerBookingV3Service.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalContainerPackages(anyList())).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 

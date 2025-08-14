@@ -283,7 +283,7 @@ public class ContainerV3Util {
         Row headerRow = sheet.createRow(0);
         Field[] fields = ContainersExcelModel.class.getDeclaredFields();
 
-        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
+        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f -> f.isAnnotationPresent(ExcelCell.class)).filter(p->p.getAnnotation(ExcelCell.class).requiredInV3()).collect(Collectors.toMap(Field::getName, c -> c));
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
@@ -569,6 +569,7 @@ public class ContainerV3Util {
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
+        containersList.forEach(p->p.setContainerCount(1L));
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);

@@ -6,10 +6,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -99,6 +99,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IContainerDao containerDao;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -292,14 +295,28 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
+    void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
 
         for (Long packingId : requestIds) {
             Packing updatedPacking = updatedPackingMap.get(packingId);
             Packing oldPacking = oldPackingMap.get(packingId);
 
-            if(oldPacking != null && updatedPacking.getContainerId() != null && isStringNullOrEmpty(oldPacking.getDGClass()) && !isStringNullOrEmpty(updatedPacking.getDGClass())){
+            if(oldPacking != null && updatedPacking.getContainerId() != null) {
+
+                Containers container = containerDao.findById(updatedPacking.getContainerId())
+                        .orElseThrow(() -> new ValidationException("Container not present with id : " + updatedPacking.getContainerId()));
+
+                boolean dgClassAdded = isStringNullOrEmpty(oldPacking.getDGClass())
+                        && !isStringNullOrEmpty(updatedPacking.getDGClass());
+
+                boolean missingContainerDGFields = isStringNullOrEmpty(container.getDgClass())
+                        || isStringNullOrEmpty(container.getUnNumber())
+                        || isStringNullOrEmpty(container.getProperShippingName());
+
+                if (dgClassAdded && missingContainerDGFields) {
                     throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
+                }
+
             }
         }
     }
@@ -470,7 +487,7 @@ public class PackingV3Service implements IPackingV3Service {
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
-
+        validateOpenAttachmentFlag(module, entity);
         // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
@@ -554,6 +571,19 @@ public class PackingV3Service implements IPackingV3Service {
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private void validateOpenAttachmentFlag(String module, Object entity) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            ShipmentDetails shipmentDetails = (ShipmentDetails) entity;
+            Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+            if (!CollectionUtils.isEmpty(consolidationList) && (commonUtils.isFCL(shipmentDetails.getShipmentType()) || commonUtils.isLCL(shipmentDetails.getShipmentType()))) {
+                Boolean openForAttachment = consolidationList.stream().toList().get(0).getOpenForAttachment();
+                if (openForAttachment != null && !openForAttachment ) {
+                    throw new ValidationException("Allow Shipment Attachment is Off, Please enable to proceed further.");
+                }
+            }
+        }
     }
 
     private List<Packing> saveIfNotEmpty(List<Packing> packings) {
@@ -1537,7 +1567,7 @@ public class PackingV3Service implements IPackingV3Service {
     private void updateAttachedContainersData(List<Packing> packings, ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null ||
                 !(TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
-                        TRANSPORT_MODE_ROA.equalsIgnoreCase(shipmentDetails.getTransportMode())))
+                        TRANSPORT_MODE_ROA.equalsIgnoreCase(shipmentDetails.getTransportMode()) || TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode())))
             return;
         Set<Long> containerIdsToUpdate = new HashSet<>();
         packings.forEach(e -> {

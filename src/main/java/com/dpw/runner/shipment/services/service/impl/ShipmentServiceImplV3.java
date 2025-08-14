@@ -2636,7 +2636,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 paymentTerms(customerBookingRequest.getPaymentTerms()).
                 isReefer(customerBookingRequest.getIsReefer()).
                 incotermsLocation(customerBookingRequest.getIncotermsLocation()).
-                cargoReadinessDate(customerBookingRequest.getCargoReadinessDate()).
                 cargoReadyDate(customerBookingRequest.getCargoReadinessDate()).
                 controlled(customerBookingRequest.getControlled()).
                 controlledReferenceNumber(customerBookingRequest.getControlledReferenceNumber()).
@@ -2667,6 +2666,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 estimatedBrokerageAtDestinationDate(customerBookingRequest.getEstimatedBrokerageAtDestinationDate()).
                 estimatedBrokerageAtOriginDate(customerBookingRequest.getEstimatedBrokerageAtOriginDate()).
                 cargoDeliveryDate(customerBookingRequest.getEstimatedDeliveryAtDestinationDate()).
+                isConsigneeClientEqual(customerBookingRequest.getIsConsigneeClientEqual()).
+                isShipperClientEqual(customerBookingRequest.getIsShipperClientEqual()).
+                isNotifyConsigneeEqual(customerBookingRequest.getIsNotifyConsigneeEqual()).
                 build();
     }
 

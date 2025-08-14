@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -112,6 +113,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Req
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -4000,7 +4002,7 @@ if (unitConversionUtilityMockedStatic != null) {
     RunnerException exception = assertThrows(RunnerException.class,
         () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
 
-    assertEquals("Id and GUID can't be null. Please provide any one !", exception.getMessage());
+    assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
     verify(consolidationDetailsDao, never()).findById(any());
     verify(consolidationDetailsDao, never()).findByGuid(any());
   }
@@ -5695,4 +5697,273 @@ if (unitConversionUtilityMockedStatic != null) {
     );
     assertTrue(response.getIsNonFtlOrFclAttached());
   }
+
+    @Test
+    void retrieveByIdExternal_Success_WithId() throws RunnerException, AuthenticationException {
+        // Arrange
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+
+        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+        when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3ExternalResponse.class))
+                .thenReturn(mockResponse);
+
+        // Act
+        ConsolidationDetailsV3ExternalResponse result =
+                consolidationV3Service.retrieveByIdExternal(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+        verify(consolidationDetailsDao).findById(id);
+        verify(consolidationDetailsDao, never()).findByGuid(any(UUID.class));
+    }
+
+    @Test
+    void retrieveByIdExternal_Success_WithGuid() throws RunnerException, AuthenticationException {
+        // Arrange
+        String guidString = "550e8400-e29b-41d4-a716-446655440000";
+        UUID guid = UUID.fromString(guidString);
+        CommonGetRequest request = CommonGetRequest.builder().guid(guidString).build();
+
+        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockConsolidationDetails));
+        when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3ExternalResponse.class))
+                .thenReturn(mockResponse);
+
+        // Act
+        ConsolidationDetailsV3ExternalResponse result =
+                consolidationV3Service.retrieveByIdExternal(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+        verify(consolidationDetailsDao).findByGuid(guid);
+        verify(consolidationDetailsDao, never()).findById(anyLong());
+    }
+
+    @Test
+    void retrieveByIdExternal_ThrowsRunnerException_WhenBothIdAndGuidAreNull() {
+        // Arrange
+        CommonGetRequest request = CommonGetRequest.builder().build();
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class,
+                () -> consolidationV3Service.retrieveByIdExternal(request));
+
+        assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
+        verify(consolidationDetailsDao, never()).findById(any());
+        verify(consolidationDetailsDao, never()).findByGuid(any());
+    }
+
+    @Test
+    void retrieveByIdExternal_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithId() {
+        // Arrange
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+
+        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
+                () -> consolidationV3Service.retrieveByIdExternal(request));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
+        verify(consolidationDetailsDao).findById(id);
+    }
+
+    @Test
+    void retrieveByIdExternal_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithGuid() {
+        // Arrange
+        String guidString = "550e8400-e29b-41d4-a716-446655440000";
+        UUID guid = UUID.fromString(guidString);
+        CommonGetRequest request = CommonGetRequest.builder().guid(guidString).build();
+
+        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
+                () -> consolidationV3Service.retrieveByIdExternal(request));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
+        verify(consolidationDetailsDao).findByGuid(guid);
+    }
+
+    @Test
+    void retrieveByIdExternal_ThrowsIllegalArgumentException_WhenGuidIsInvalidFormat() {
+        // Arrange
+        String invalidGuid = "invalid-guid";
+        CommonGetRequest request = CommonGetRequest.builder().guid(invalidGuid).build();
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+                () -> consolidationV3Service.retrieveByIdExternal(request));
+
+        verify(consolidationDetailsDao, never()).findByGuid(any());
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_Success_WithId() throws RunnerException, AuthenticationException {
+        // Arrange
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder()
+                .id(id)
+                .includeColumns(List.of("id", "bookingStatus"))
+                .build();
+
+        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+        when(commonUtils.setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class)))
+                .thenReturn(mockResponse);
+
+        // Act
+        ConsolidationDetailsV3ExternalResponse result =
+                consolidationV3Service.retrieveByIdExternalPartial(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+        verify(consolidationDetailsDao).findById(id);
+        verify(consolidationDetailsDao, never()).findByGuid(any(UUID.class));
+        verify(commonUtils).setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class));
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_Success_WithGuid() throws RunnerException, AuthenticationException {
+        // Arrange
+        String guidString = "550e8400-e29b-41d4-a716-446655440000";
+        UUID guid = UUID.fromString(guidString);
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(guidString)
+                .includeColumns(List.of("id"))
+                .build();
+
+        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
+
+        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockConsolidationDetails));
+        when(commonUtils.setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class)))
+                .thenReturn(mockResponse);
+
+        // Act
+        ConsolidationDetailsV3ExternalResponse result =
+                consolidationV3Service.retrieveByIdExternalPartial(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+        verify(consolidationDetailsDao).findByGuid(guid);
+        verify(consolidationDetailsDao, never()).findById(anyLong());
+        verify(commonUtils).setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class));
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenBothIdAndGuidAreNull() {
+        // Arrange
+        CommonGetRequest request = CommonGetRequest.builder()
+                .includeColumns(List.of("id"))
+                .build();
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
+        verify(consolidationDetailsDao, never()).findById(any());
+        verify(consolidationDetailsDao, never()).findByGuid(any());
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenIncludeColumnsNull() {
+        // Arrange
+        CommonGetRequest request = CommonGetRequest.builder()
+                .id(1L)
+                .build(); // includeColumns = null
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        assertEquals("IncludeColumns can't be null or empty", exception.getMessage());
+        verifyNoInteractions(consolidationDetailsDao);
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenIncludeColumnsEmpty() {
+        // Arrange
+        CommonGetRequest request = CommonGetRequest.builder()
+                .id(1L)
+                .includeColumns(Collections.emptyList())
+                .build();
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        assertEquals("IncludeColumns can't be null or empty", exception.getMessage());
+        verifyNoInteractions(consolidationDetailsDao);
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithId() {
+        // Arrange
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder()
+                .id(id)
+                .includeColumns(List.of("id"))
+                .build();
+
+        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
+        verify(consolidationDetailsDao).findById(id);
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithGuid() {
+        // Arrange
+        String guidString = "550e8400-e29b-41d4-a716-446655440001";
+        UUID guid = UUID.fromString(guidString);
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(guidString)
+                .includeColumns(List.of("id"))
+                .build();
+
+        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
+        verify(consolidationDetailsDao).findByGuid(guid);
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_ThrowsIllegalArgumentException_WhenGuidIsInvalidFormat() {
+        // Arrange
+        String invalidGuid = "invalid-guid";
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(invalidGuid)
+                .includeColumns(List.of("id"))
+                .build();
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
+
+        verify(consolidationDetailsDao, never()).findByGuid(any());
+    }
+
 }

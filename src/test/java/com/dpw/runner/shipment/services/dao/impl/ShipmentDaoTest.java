@@ -159,6 +159,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
+        mockShipmentSettings();
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
