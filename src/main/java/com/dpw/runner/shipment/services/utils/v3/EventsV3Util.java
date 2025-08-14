@@ -310,9 +310,9 @@ public class EventsV3Util {
 
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
                         Objects.nonNull(shipmentDetails.getBrokerageAtOriginDate()) ?
-                                commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()) : null,
+                                shipmentDetails.getBrokerageAtOriginDate() : null,
                         Objects.nonNull(shipmentDetails.getEstimatedBrokerageAtOriginDate()) ?
-                                commonUtils.getUserZoneTime(shipmentDetails.getEstimatedBrokerageAtOriginDate()) : null));
+                                shipmentDetails.getEstimatedBrokerageAtOriginDate() : null));
             }
         }
     }
@@ -323,10 +323,10 @@ public class EventsV3Util {
                                                 boolean isEstimatedChanged) {
         for (Events event : events) {
             if (isActualChanged) {
-                event.setActual(commonUtils.getUserZoneTime(actualTime));
+                event.setActual(actualTime);
             }
             if (isEstimatedChanged) {
-                event.setEstimated(commonUtils.getUserZoneTime(estimatedTime));
+                event.setEstimated(estimatedTime);
             }
             eventDao.updateUserFieldsInEvent(event, true);
         }
