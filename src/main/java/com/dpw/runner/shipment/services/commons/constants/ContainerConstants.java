@@ -66,6 +66,8 @@ public class ContainerConstants {
     public static final String KEY_MARKS_NUMS = "marksNums";
     public static final String KEY_DG_CLASS = "dgClass";
     public static final String KEY_UN_NUMBER = "unNumber";
+    public static final String KEY_HANDLING_INFO = "handlingInfo";
+    public static final String KEY_PROPER_SHIPPING_NAME = "properShippingName";
     public static final String KEY_SHIPMENT_TYPE = "shipmentType";
     public static final String KEY_CONSOLIDATION_ID = "consolidationId";
     public static final String KEY_UPDATED_AT = "updatedAt";
@@ -113,7 +115,11 @@ public class ContainerConstants {
             Map.entry(KEY_CONTAINER_CODE,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build()),
             Map.entry(TABLE_SHIPMENTS_LIST,
-                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Set.class).fieldName(TABLE_SHIPMENTS_LIST).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Set.class).fieldName(TABLE_SHIPMENTS_LIST).build()),
+            Map.entry(KEY_HANDLING_INFO,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_HANDLING_INFO).isContainsText(true).build()),
+            Map.entry(KEY_PROPER_SHIPPING_NAME,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_PROPER_SHIPPING_NAME).isContainsText(true).build())
 
     );
 
