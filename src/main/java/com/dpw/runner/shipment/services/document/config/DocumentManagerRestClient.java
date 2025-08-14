@@ -357,11 +357,11 @@ public class DocumentManagerRestClient {
 
     }
 
-    public DocumentManagerResponse<T> storeDocument(Object object) {
+    public DocumentManagerResponse<T> storeDocument(Object obj) {
         try {
             HttpHeaders headers = getHttpHeadersForBooking(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, jsonHelper.convertToJson(object));
+            HttpEntity<Object> httpEntity = new HttpEntity<>(obj, headers);
+            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, jsonHelper.convertToJson(obj));
             var response  = restTemplate.exchange(
                     this.documentStore,
                     HttpMethod.POST,
@@ -369,13 +369,13 @@ public class DocumentManagerRestClient {
                     new ParameterizedTypeReference<>() {}
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("storeDocument", object, ex);
-            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+        } catch (HttpClientErrorException | HttpServerErrorException exception) {
+            this.logError("storeDocument", obj, exception);
+            if (exception.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
-            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
-        } catch (Exception var7) {
-            throw new DocumentClientException(var7.getMessage());
+            throw new DocumentClientException(jsonHelper.readFromJson(exception.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception e) {
+            throw new DocumentClientException(e.getMessage());
         }
 
     }
