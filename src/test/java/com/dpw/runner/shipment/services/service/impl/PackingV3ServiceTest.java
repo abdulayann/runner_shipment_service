@@ -148,6 +148,7 @@ class PackingV3ServiceTest extends CommonMocks {
         request.setConsolidationId(300L);
         request.setIsTemperatureControlled(Boolean.FALSE);
         request.setHazardous(Boolean.FALSE);
+        request.setCommodity("Community");
 
         packing = new Packing();
         packing.setId(1L);
@@ -302,7 +303,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT", true);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(1, result.getPackingResponseList().size());
@@ -319,7 +320,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response, response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "CONSOLIDATION");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "CONSOLIDATION", false);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(2, result.getPackingResponseList().size());
@@ -340,7 +341,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT", true);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(1, result.getPackingResponseList().size());
@@ -1411,7 +1412,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(commonUtils.isFCL(anyString())).thenReturn(true);
         when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
 
-        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT"));
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT", false));
     }
     @Test
     void testUpdateBulk_LCLError() {
@@ -1425,7 +1426,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(commonUtils.isLCL(anyString())).thenReturn(true);
         when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
 
-        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT"));
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT", false));
     }
 
     @Test

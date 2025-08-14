@@ -1017,7 +1017,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             packingV3Service.deleteBulk(jsonHelper.convertValueToList(shipmentPackingList, PackingV3Request.class), SHIPMENT);
         }
         if (!quotePackingRequests.isEmpty()) {
-            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
+            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT, true);
         }
     }
 

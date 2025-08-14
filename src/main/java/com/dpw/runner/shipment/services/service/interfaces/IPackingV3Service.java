@@ -33,7 +33,7 @@ public interface IPackingV3Service {
 
     String delete(Long id, String module) throws RunnerException;
 
-    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module) throws RunnerException;
+    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module, boolean fromQuote) throws RunnerException;
 
     BulkPackingResponse deleteBulk(List<PackingV3Request> request, String module) throws RunnerException;
 
