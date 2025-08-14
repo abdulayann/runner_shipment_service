@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,18 +37,21 @@ public class CargoService implements ICargoService {
     private final CustomerBookingV3Service customerBookingV3Service;
     private final CommonUtils commonUtils;
     private final ShipmentsV3Util shipmentsV3Util;
+    private final CustomerBookingV3Util customerBookingV3Util;
 
     @Autowired
     public CargoService(ICustomerBookingDao customerBookingDao,
                         ConsolidationV3Service consolidationService,
                         CustomerBookingV3Service customerBookingV3Service,
                         CommonUtils commonUtils,
-                        ShipmentsV3Util shipmentsV3Util) {
+                        ShipmentsV3Util shipmentsV3Util,
+                        CustomerBookingV3Util customerBookingV3Util) {
         this.customerBookingDao = customerBookingDao;
         this.consolidationService = consolidationService;
         this.customerBookingV3Service = customerBookingV3Service;
         this.commonUtils = commonUtils;
         this.shipmentsV3Util = shipmentsV3Util;
+        this.customerBookingV3Util = customerBookingV3Util;
     }
 
     @Override
@@ -101,15 +105,11 @@ public class CargoService implements ICargoService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        String packsWeightUnit = customerBookingV3Service.resolveUnit(packingWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
-        String containersWeightUnit = customerBookingV3Service.resolveUnit(containerWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
+        String packsWeightUnit = customerBookingV3Util.resolveUnit(packingWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
+        String containersWeightUnit = customerBookingV3Util.resolveUnit(containerWeightUnits, consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails));
 
-        BigDecimal containerWeight = customerBookingV3Service.getTotalCargoWeight(containers, containersWeightUnit);
-        BigDecimal packageWeight = BigDecimal.ZERO;
-        for(Packing packing : packings) {
-            BigDecimal weight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), packsWeightUnit).toString());
-            packageWeight = packageWeight.add(weight);
-        }
+        BigDecimal containerWeight = customerBookingV3Util.getTotalCargoWeight(containers, containersWeightUnit);
+        BigDecimal packageWeight = customerBookingV3Util.getTotalCargoWeightFromPackages(packings, packsWeightUnit);
         if (BigDecimal.ZERO.compareTo(packageWeight) == 0) {
             packageWeight = null;
         }
@@ -129,7 +129,7 @@ public class CargoService implements ICargoService {
 
     private ShipmentSummaryWarningsResponse.WarningDetail getPackageSummaryWarning(List<Containers> containers, List<Packing> packings) {
         ShipmentSummaryWarningsResponse.WarningDetail packageWarningDetails = null;
-        Long totalContainerPackages = customerBookingV3Service.getTotalContainerPackages(containers);
+        Long totalContainerPackages = customerBookingV3Util.getTotalContainerPackages(containers);
         Set<String> containerPackageTypes = containers.stream().map(Containers::getContainerPackageType).collect(Collectors.toSet());
         Set<String> packageTypes = new HashSet<>();
         Long totalPackages = 0L;
