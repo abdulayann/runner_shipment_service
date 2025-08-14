@@ -175,11 +175,12 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     @Query(value = "SELECT p.container_id FROM packing p " +
             "JOIN containers c ON c.id = p.container_id " +
-            "WHERE c.container_number ILIKE %:containerNumber% AND " +
+            "WHERE p.is_deleted = false AND c.is_deleted = false AND " +
+            "c.container_number ILIKE CONCAT('%', :containerNumber, '%') AND " +
             "CASE " +
-            "   WHEN :idType = 'SHIPMENT' THEN p.shipment_id = :id " +
-            "   WHEN :idType = 'CONSOLIDATION' THEN p.consolidation_id = :id " +
-            "   WHEN :idType = 'BOOKING' THEN p.booking_id = :id " +
+            "   WHEN :idType = 'SHIPMENT' THEN p.container_id in (select container_id from shipments_containers_mapping where shipment_id = :id)" +
+            "   WHEN :idType = 'CONSOLIDATION' THEN c.consolidation_id = :id " +
+            "   WHEN :idType = 'BOOKING' THEN c.booking_id = :id " +
             "END",
             nativeQuery = true)
     List<Long> getContainerIdByContainerNumberAndType(@Param("containerNumber") String containerNumber, @Param("id") Long id, @Param("idType") String idType);
