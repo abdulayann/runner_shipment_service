@@ -48,8 +48,7 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -501,7 +500,7 @@ class CSVParsingUtilTest {
         var spyService = Mockito.spy(csvParsingUtilContainer);
 
         MDC.setContextMap(Map.of("a" , "b"));
-        doReturn(Map.of("ContainerTypes", Set.of(""))).when(spyService).getAllMasterDataContainer(any(), any(), any(), any());
+        lenient().doReturn(Map.of("ContainerTypes", Set.of(""))).when(spyService).getAllMasterDataContainer(any(), any(), any(), any());
 
         ShipmentDetails sd1 = jsonTestUtility.getTestShipment();
         sd1.setShipmentId("SHP000109322");
@@ -554,7 +553,7 @@ class CSVParsingUtilTest {
         var spyService = Mockito.spy(csvParsingUtilContainer);
 
         MDC.setContextMap(Map.of("a" , "b"));
-        doReturn(Map.of("HBLDeliveryMode", Set.of(""))).when(spyService).getAllMasterDataContainer(any(), any(), any(), any());
+        lenient().doReturn(Map.of("HBLDeliveryMode", Set.of(""))).when(spyService).getAllMasterDataContainer(any(), any(), any(), any());
 
         assertThrows(ValidationException.class, () -> spyService.parseExcelFile(mockContainerFile, request, mapOfEntity, masterDataMap, Containers.class, ContainersExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap));
     }

@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
@@ -362,13 +364,20 @@ public class CSVParsingUtil<T> {
             Row headerRow = sheet.getRow(0);
             String[] header = new String[headerRow.getLastCellNum()];
             Field[] fields = modelClass.getDeclaredFields();
-            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x->x.isAnnotationPresent(ExcelCell.class))
-                    .collect(Collectors.toMap(x->x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
+            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x -> x.isAnnotationPresent(ExcelCell.class))
+                    .collect(Collectors.toMap(x -> {
+                        if (x.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()) {
+                            return x.getAnnotation(ExcelCell.class).displayName();
+                        } else {
+                            return x.getAnnotation(ExcelCell.class).displayNameOverride();
+                        }
+                    }, Field::getName));
+
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 validateExcelColumn(headerRow, i);
 
-                if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
+                if (renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
                     header[i] = renameFieldMap.get(headerRow.getCell(i).getStringCellValue());
                 else
                     header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
@@ -586,7 +595,9 @@ public class CSVParsingUtil<T> {
 
     private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,
                                                  String cellValue, int i) throws ValidationException {
-        if (masterListsMap.containsKey(Constants.CONTAINER_TYPES) && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
+        if (!(cellValue.isEmpty() && ShipmentVersionContext.isV3())
+                && masterListsMap.containsKey(Constants.CONTAINER_TYPES)
+                && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
             throw new ValidationException("Container Type is not valid at row: " + i);
         }
     }
@@ -625,19 +636,33 @@ public class CSVParsingUtil<T> {
     }
 
     private void checkPacksValidations(String column, String cellValue, int rowNum, String transportMode) {
-        if (column.equalsIgnoreCase(Constants.PACKS)) {
-            try {
-                if (transportMode != null &&
-                        transportMode.equals(Constants.TRANSPORT_MODE_AIR) &&
-                        (cellValue == null || Integer.parseInt(cellValue) < 1)) {
-                    throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
-                }
-                int t = Integer.parseInt(cellValue);
-                if (t < 1)
-                    throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
-            } catch (Exception e) {
-                throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum + ". Please provide integer value and within the range of integer.");
+        if (!column.equalsIgnoreCase(Constants.PACKS)) {
+            return; // not relevant column
+        }
+
+        // Skip validation if empty and V3
+        if ((cellValue == null || cellValue.isEmpty()) && ShipmentVersionContext.isV3()) {
+            return;
+        }
+
+        try {
+            // Check for Air transport mode with invalid packs
+            if (Constants.TRANSPORT_MODE_AIR.equals(transportMode) &&
+                    (cellValue == null || Integer.parseInt(cellValue) < 1)) {
+                throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
             }
+
+            // General numeric validation
+            int t = Integer.parseInt(cellValue);
+            if (t < 1) {
+                throw new ValidationException(PackingConstants.PACKS_NOT_VALID + rowNum);
+            }
+
+        } catch (NumberFormatException e) {
+            throw new ValidationException(
+                    PackingConstants.PACKS_NOT_VALID + rowNum +
+                            ". Please provide integer value and within the range of integer."
+            );
         }
     }
 
@@ -687,7 +712,8 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Container Mode is invalid at row: " + rowNum);
         }
 
-        if (column.toLowerCase().contains("containercode") && cellValue.isEmpty() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+
+        if (column.toLowerCase().contains("containercode") && cellValue.isEmpty() && !ShipmentVersionContext.isV3() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
             throw new ValidationException("Container Type Code cannot be null at row " + rowNum);
         }
 
@@ -824,8 +850,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void validateExcel(Sheet sheet)
-    {
+    private void validateExcel(Sheet sheet) {
 
         if (sheet == null || sheet.getLastRowNum() <= 0) {
             throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);

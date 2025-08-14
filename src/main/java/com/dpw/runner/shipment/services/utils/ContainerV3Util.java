@@ -296,9 +296,13 @@ public class ContainerV3Util {
         else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
         int i = 0;
-        for (var field : fieldsList){
+        for (var field : fieldsList) {
             Cell cell = headerRow.createCell(i++);
-            cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
+            if (!field.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()) {
+                cell.setCellValue(field.getAnnotation(ExcelCell.class).displayNameOverride());
+            } else {
+                cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
+            }
         }
 
         // Populate data
@@ -569,7 +573,12 @@ public class ContainerV3Util {
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
-        containersList.forEach(p->p.setContainerCount(1L));
+        containersList.forEach(p -> p.setContainerCount(1L));
+        containersList.forEach(p -> {
+            if (p.getNetWeight() == null || p.getNetWeightUnit() == null) {
+                throw new ValidationException("Cargo Weight/Unit is mandatory ");
+            }
+        });
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);
@@ -672,7 +681,7 @@ public class ContainerV3Util {
             Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList));
             for (int i = 0; i < containersList.size(); i++) {
                 String hsCode = containersList.get(i).getHsCode();
-                if (StringUtils.isNotBlank(hsCode) && !validHsCode.contains(hsCode)) {
+                if (StringUtils.isNotBlank(hsCode) && !hsCode.contains(",") && !validHsCode.contains(hsCode)) {
                     throw new ValidationException(String.format(ContainerConstants.HS_CODE_OR_COMMODITY_IS_INVALID, i + 1));
                 }
             }
@@ -685,17 +694,20 @@ public class ContainerV3Util {
             String hsCode = container.getHsCode();
             String commodityCode = container.getCommodityCode();
             if (StringUtils.isBlank(commodityCode) && StringUtils.isNotBlank(hsCode)) {
-                container.setCommodityCode(hsCode);
+                container.setCommodityCode(Arrays.stream(hsCode.split(",")).findFirst().orElseThrow(() -> new ValidationException("Invalid HsCode")));
             } else if (StringUtils.isBlank(hsCode) && StringUtils.isNotBlank(commodityCode)) {
                 container.setHsCode(commodityCode);
             }
             if (StringUtils.isNotBlank(container.getHsCode())) {
-                hsCodeList.add(container.getHsCode());
+                if (!container.getHsCode().contains(",")) {
+                    hsCodeList.add(container.getHsCode());
+                }
             }
         }
         return hsCodeList;
     }
-    public Integer getHsCodeBatchProcessLimit(){
+
+    public Integer getHsCodeBatchProcessLimit() {
         String configuredLimitValue = applicationConfigService.getValue(HS_CODE_BATCH_PROCESS_LIMIT);
         return StringUtility.isEmpty(configuredLimitValue) ? BATCH_HS_CODE_PROCESS_LIMIT : Integer.parseInt(configuredLimitValue);
     }
