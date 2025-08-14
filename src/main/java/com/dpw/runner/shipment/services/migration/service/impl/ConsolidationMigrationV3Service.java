@@ -459,8 +459,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setTeuInContainers(Map<String, BigDecimal> codeTeuMap, Containers tempContainer) {
-        if(!codeTeuMap.isEmpty())
+        if (!codeTeuMap.isEmpty() && codeTeuMap.containsKey(tempContainer.getContainerCode())) {
             tempContainer.setTeu(codeTeuMap.get(tempContainer.getContainerCode()));
+        }
     }
 
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) { //NOSONAR
