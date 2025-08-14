@@ -38,4 +38,5 @@ public class DocumentManagerEntityFileResponse {
     private Boolean isTransferEnabled;
 
     private String entityDetails;
+    private Integer count;
 }
