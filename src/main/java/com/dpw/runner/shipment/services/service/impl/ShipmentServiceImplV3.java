@@ -4552,7 +4552,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         String dgPacksType = null;
 
         for (Containers c : containersSet) {
-            int packsCount = c.getPacks() != null ? Integer.valueOf(c.getPacks()) : 0;
+            int packsCount = !isStringNullOrEmpty(c.getPacks()) ? Integer.valueOf(c.getPacks()) : 0;
             packs += packsCount;
             containerCount += Math.toIntExact(c.getContainerCount());
             if (Boolean.TRUE.equals(c.getHazardous())) {
