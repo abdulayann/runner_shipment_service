@@ -177,7 +177,7 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void updateBookingPackages() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), any(), anyBoolean())).thenReturn(new BulkPackingResponse());
         var responseEntity = customerBookingV3Controller.updateBookingPackages(List.of(new PackingV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

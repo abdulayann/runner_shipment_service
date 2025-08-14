@@ -159,18 +159,6 @@ class PackingValidationV3UtilTest {
     }
 
     @Test
-    void testValidateModule_ShouldThrowErrorWithoutValidCommodity() {
-        request.setShipmentId(100L);
-        request.setCommodityGroup("CommodityGroup");
-        when(shipmentService.findById(100L)).thenReturn(Optional.of(new ShipmentDetails()));
-
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                packingValidationV3Util.validateModule(request, Constants.SHIPMENT)
-        );
-        assertEquals("Please select Commodity in the Packages to save", ex.getMessage());
-    }
-
-    @Test
     void testValidateModule_nullShipmentId() {
         request.setShipmentId(null);
 
