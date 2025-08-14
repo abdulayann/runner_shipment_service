@@ -4855,7 +4855,7 @@ class ReportServiceTest extends CommonMocks {
         DocUploadRequest request = new DocUploadRequest();
         String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
 
-        assertEquals("MAWB_DRAFT_SHIP123(2).pdf", fileName);
+        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
     }
 
     @Test
@@ -4869,7 +4869,7 @@ class ReportServiceTest extends CommonMocks {
         DocUploadRequest request = new DocUploadRequest();
         String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
 
-        assertEquals("HBL_DRAFT_SHIP123(3).pdf", fileName);
+        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
     }
 
 }

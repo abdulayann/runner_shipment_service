@@ -2814,7 +2814,7 @@ public class ReportService implements IReportService {
                 // Base document name from mapping or fallback
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
                 int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
-                String suffix = count > 0 ? "(" + (count)  + ")" : "";
+                String suffix = count > 0 ? "_" + (count)  : "";
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
