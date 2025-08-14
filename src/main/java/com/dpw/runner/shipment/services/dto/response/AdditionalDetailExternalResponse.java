@@ -31,50 +31,35 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime customsNoIssueDate;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime expiryDate;
     private String inspection;
     private String airwayBillDims;
-    private BigDecimal shipperCOD;
     private String shipperCODPM;
-    private String phase;
     private BigDecimal spotRate;
-    private String spotRateType;
     private String efreightStatus;
     private String sci;
     private Boolean importExportShipmentLock;
-    private String CHAJobNumber;
-    private String ADCode;
-    private String BEType;
     private AirAuthorisingEntity securityStatusReceivedFrom;
     private String additionalSecurityInformation;
-    private String regulatedEntityCategory;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;
     private Boolean isExportClearance;
-    private String IGMFileNo;
     private String IECode;
     private String branchSINumber;
     private AndesStatus andesStatus;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime andesResponseDate;
     private String andesStatusResponseText;
-    private String peruEntryExitPoint;
+    private String tipoDocumentConsignor;
     private String tipoDocumentNotifyParty;
     private String tipoDocumentConsignee;
-    private String tipoDocumentConsignor;
     private String andesTicket;
-    private Long warehouseId;
-    private String activityType;
     private Long hsnNumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime IGMFileDate;
+    private LocalDateTime inwardDateAndTime;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime IGMInwardDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime inwardDateAndTime;
+    private LocalDateTime IGMFileDate;
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
@@ -83,20 +68,16 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
-    private Boolean isInland;
+    private PartiesExternalResponse ownershipOrg;
     private Ownership ownership;
     private String ownershipName;
-    private PartiesExternalResponse ownershipOrg;
     private Ownership passedBy;
     private String passedByPerson;
-    private LGDStatus lgdStatus;
     private Boolean isCmsHBLSent;
     private Boolean isCreditOverrideApproved;
     private BigDecimal freeDays;
     private String customHouse;
     private String supplierInvoiceNumber;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime supplierInvoiceDate;
     private BigDecimal invoiceValue;
     private BigDecimal assessValue;
     private BigDecimal CIFValue;
@@ -106,8 +87,6 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     private String releaseType;
     private String houseBillType;
     private String onBoard;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime onBoardDate;
     private String deliveryMode;
     private Integer original;
     private Integer copy;
@@ -117,13 +96,6 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime dateOfIssue;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime dateOfReceipt;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
-    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -134,46 +106,81 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     private Boolean surrenderPrinted;
     private String importBrokerCountry;
     private String exportBrokerCountry;
-    private PartiesExternalResponse notifyParty;
-    private PartiesExternalResponse importBroker;
-    private PartiesExternalResponse exportBroker;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime customsNoIssueDate;
+    private BigDecimal shipperCOD;
+    private String phase;
+    private String ADCode;
+    private String BEType;
+    private String spotRateType;
+    private String CHAJobNumber;
+    private String regulatedEntityCategory;
+    private String IGMFileNo;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime andesResponseDate;
+    private String peruEntryExitPoint;
+    private Long warehouseId;
+    private String activityType;
+    private Boolean isInland;
+    private LGDStatus lgdStatus;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime supplierInvoiceDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime onBoardDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dateOfReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dateOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
+
     private PartiesExternalResponse sendingForwarder;
     private PartiesExternalResponse receivingForwarder;
     private PartiesExternalResponse traderOrSupplier;
     private PartiesExternalResponse eTailor;
+    private PartiesExternalResponse receivingAgent;
+    private PartiesExternalResponse notifyParty;
+    private PartiesExternalResponse importBroker;
+    private PartiesExternalResponse exportBroker;
     private PartiesExternalResponse borrowedFrom;
     private PartiesExternalResponse sendingAgent;
-    private PartiesExternalResponse receivingAgent;
-    private Map<String, String> masterData;
-    private Map<String, String> unlocationData;
     private Map<String, String> tenantIdsData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
     private String customDeclType;
     private String agentReference;
+    private String cargoTerms;
     private String bLTermsandConditionsId;
     private String blComments;
-    private String cargoTerms;
     private String cargoTermsDescription;
-    private String bLRemarks;
     private String bLRemarksDescription;
-    private String summary;
+    private String bLRemarks;
     private Boolean isSummaryUpdated;
+    private String summary;
     private Map<String, String> textData;
     private String exemptionCodes;
     private String aomFreeText;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
-    private LocalDateTime pickupDate;
-    private LocalDateTime cargoDeliveredDate;
-    private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
-    private LocalDateTime proofOfDeliveryDate;
-    private LocalDateTime warehouseCargoArrivalDate;
     private Boolean pickupByConsigneeCompleted;
     private Boolean emptyContainerReturned;
     private Boolean isExportCustomClearanceCompleted;
-    private LocalDateTime blInstructionReceived;
-    private LocalDateTime cargoOutForDelivery;
     private Integer fcrNumber;
+
+    private LocalDateTime pickupDate;
+    private LocalDateTime customReleaseDate;
+    private LocalDateTime cargoDeliveredDate;
+    private LocalDateTime warehouseCargoArrivalDate;
+    private LocalDateTime cargoOutForDelivery;
+    private LocalDateTime proofOfDeliveryDate;
+    private LocalDateTime blInstructionReceived;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

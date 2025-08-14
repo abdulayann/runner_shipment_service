@@ -30,17 +30,11 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private Integer tenantId;
     private UUID guid;
     private String houseBill;
-    private String transportMode;
     private String direction;
-    private String shipmentType;
     private Integer status;
     private String shipmentStatus;
-    private String source;
-    private String jobType;
     private String serviceType;
     private String masterBill;
-    private Long bookingId;
-    private String bookingReference;
     private String consolRef;
     private Long salesAgent;
     private String paymentTerms;
@@ -49,49 +43,51 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
+
     @JsonSerialize(using = CustomWeightValueSerializer.class)
-    private BigDecimal weight;
-    private String weightUnit;
+    private BigDecimal volumetricWeight;
+    private String volumetricWeightUnit;
     @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
-    private BigDecimal volumetricWeight;
-    private String volumetricWeightUnit;
+    private BigDecimal weight;
+    private String weightUnit;
+
     @JsonSerialize(using = DecimalPlaceValueSerializer.class)
     private BigDecimal chargable;
     private String chargeableUnit;
     private Integer noOfPacks;
     private String packsUnit;
+    private BigDecimal freightOverseas;
+    private String freightOverseasCurrency;
+    private BigDecimal freightLocal;
+    private String freightLocalCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadyDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveryDate;
-    private BigDecimal freightLocal;
-    private String freightLocalCurrency;
-    private BigDecimal freightOverseas;
-    private String freightOverseasCurrency;
     private String marksNum;
-    private Boolean isLocked;
     private String lockedBy;
+    private Boolean isLocked;
     private Boolean isNotifyConsigneeEqual;
-    private String bookingType;
     private String bookingNumber;
+    private String bookingType;
     private Long sourceTenantId;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long receivingBranch;
     private String shipmentCompletedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCompletedOn;
-    private PartiesExternalResponse client;
-    private PartiesExternalResponse consigner;
     private PartiesExternalResponse consignee;
+    private PartiesExternalResponse consigner;
+    private PartiesExternalResponse client;
     private AdditionalDetailExternalResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
-    private List<ReferenceNumbersResponse> referenceNumbersList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
     private String jobStatus;
     private BigDecimal goodsValue;
+    private List<ReferenceNumbersResponse> referenceNumbersList;
     private String goodsValueCurrency;
     private BigDecimal insuranceValue;
     private String InsuranceValueCurrency;
@@ -101,46 +97,46 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private Boolean containsHazardous;
     private String fmcTlcId;
     private String createdBy;
-    private Map<String, String> textData;
+    private BigDecimal teuCount;
     private Map<String, Long> containerData;
     private Long containerCount;
-    private BigDecimal teuCount;
     private Integer packCount;
     private String department;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime createdAt;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime updatedAt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt;
     private String contractId;
+    private Map<String, String> textData;
     private String parentContractId;
     private String contractType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
     private String notifyPartyCountry;
-    private String salesBranch;
-    private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
+    private String primarySalesAgentEmail;
+    private String salesBranch;
     private UUID sourceGuid;
+    private Long consignorDpsAddressId;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
-    private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
-    private List<String> implicationList;
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
+    private List<String> implicationList;
 
     private String currentPartyForQuote;
     private Boolean entityTransfer;
-    private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
-    private String destinationSecondarySalesAgentEmail;
+    private String destinationSalesBranch;
     private String destinationCurrentPartyForQuote;
+    private String destinationSecondarySalesAgentEmail;
     private String destinationContractId;
-    private String destinationContractType;
     private String updatedBy;
+    private String destinationContractType;
     private Integer pendingActionCount;
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
@@ -151,6 +147,12 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
 
     private String coLoadCarrierName;
     private String coLoadBlNumber;
+    private String transportMode;
+    private String shipmentType;
+    private String source;
+    private String jobType;
+    private Long bookingId;
+    private String bookingReference;
 
     private UUID customerBookingGuid;
     private Boolean isFrob;
@@ -159,57 +161,57 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private Boolean isPacksAvailable = Boolean.FALSE;
     private Long originBranch;
     private String incotermsLocation;
-    private Boolean controlled;
     private String controlledReferenceNumber;
+    private Boolean controlled;
     private String partner;
     private Long bookingAgent;
     private String coLoadBkgNumber;
-    private String pickupAtOriginType;
-    private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime brokerageAtOriginDate;
+    private String pickupAtOriginType;
+    private String deliveryAtDestinationType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime brokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime terminalCutoff;
+    private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime verifiedGrossMassCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shippingInstructionCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime dgCutoff;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime reeferCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquipmentPickUp;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
-    private Boolean isBorrowed;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime terminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dgCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     private Long containerAssignedToShipmentCargo;
     private Long consolidationId;
-    private String consolBookingNumber;
     private Boolean isMainCarriageAvailable = Boolean.FALSE;
     private Integer dgPacksCount;
-    private String dgPacksUnit;
     private Boolean isEmptyWeightPackAvailable = Boolean.FALSE;
     private Boolean isInterBranchConsoleAttached;
     private TransportInfoStatus transportInfoStatus;
     private String transportInfoStatusMessage;
-    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private Integer slac;
     private Boolean isVolumeEditable = Boolean.FALSE;
-    private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private List<RoutingsLiteResponse> routingsLiteResponses;
+    private Boolean isBorrowed;
+    private String consolBookingNumber;
+    private String dgPacksUnit;
+    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;
 
     private List<RoutingsResponse> routingsList;
     private List<PackingResponse> packingList;
