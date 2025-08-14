@@ -164,6 +164,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
+        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -383,6 +384,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
@@ -474,7 +476,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     @Transactional
-    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
@@ -483,7 +485,7 @@ public class PackingV3Service implements IPackingV3Service {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-
+        validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
@@ -581,6 +583,16 @@ public class PackingV3Service implements IPackingV3Service {
                 Boolean openForAttachment = consolidationList.stream().toList().get(0).getOpenForAttachment();
                 if (openForAttachment != null && !openForAttachment ) {
                     throw new ValidationException("Allow Shipment Attachment is Off, Please enable to proceed further.");
+                }
+            }
+        }
+    }
+
+    private void validateCommodityInPackingRequest(List<PackingV3Request> packingV3RequestList, boolean isFromQuote, String module) {
+        if(Constants.SHIPMENT.equalsIgnoreCase(module) && !isFromQuote) {
+            for (PackingV3Request packingV3Request : packingV3RequestList) {
+                if (Objects.isNull(packingV3Request.getCommodity())) {
+                    throw new ValidationException("Please select Commodity in the Packages to save");
                 }
             }
         }

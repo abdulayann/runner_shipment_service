@@ -855,7 +855,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
+            List<Packing> packingList = commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate);
+            for(Packing packing : packingList) {
+                packing.setId(null);
+                packing.setGuid(null);
+                packing.setBookingId(null);
+            }
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(packingList, id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         return containerAssignedToShipmentCargo;
