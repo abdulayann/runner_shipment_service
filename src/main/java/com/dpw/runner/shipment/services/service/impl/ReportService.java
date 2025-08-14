@@ -2730,6 +2730,7 @@ public class ReportService implements IReportService {
 
     public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
+        double start = System.currentTimeMillis();
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
@@ -2773,7 +2774,9 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                return response;
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
                 throw new ValidationException("Failed to generate the document. Kindly retry.");
