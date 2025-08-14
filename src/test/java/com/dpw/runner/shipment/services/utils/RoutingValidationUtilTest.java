@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -321,7 +322,7 @@ class RoutingValidationUtilTest {
     void testValidateRoutingLegs_ATDSetInFuture() {
 
         RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .atd(LocalDateTime.now().plusDays(1))
+                .atd(LocalDateTime.now().plusHours(36))
                 .build();
 
         Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
@@ -333,7 +334,7 @@ class RoutingValidationUtilTest {
     void testValidateRoutingLegs_ATASetInFuture() {
 
         RoutingsRequest routingsRequest = RoutingsRequest.builder()
-                .ata(LocalDateTime.now().plusDays(1))
+                .ata(LocalDateTime.now().plusDays(2))
                 .build();
 
         Executable executable = () -> routingValidationUtil.validateRoutingLegs(List.of(routingsRequest));
