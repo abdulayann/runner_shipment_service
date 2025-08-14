@@ -448,8 +448,8 @@ public class CSVParsingUtil<T> {
                 String guidVal = getCellValueAsString(row.getCell(guidPos));
                 validateSheetLastRowNum(mapOfEntity, guidVal, i);
             }
-            T entity = guidPos != -1 &&  mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-            if (mapOfEntity != null && guidPos != -1 && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null&& mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
+            T entity = guidPos != -1 && mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null && !getCellValueAsString(row.getCell(guidPos)).trim().isEmpty() ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
+            if (mapOfEntity != null && guidPos != -1 && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null && !getCellValueAsString(row.getCell(guidPos)).trim().isEmpty() && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
                 isUpdate = true;
             }
             processHeaderForExcel(request, header, row, masterListsMap, i, guidPos, isUpdate, existingContainerNumbers, entity);
