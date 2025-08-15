@@ -7017,7 +7017,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         lenient().when(shipmentsV3Util.buildShipmentResponse(
                 eq(3), eq(3), eq("BOX"), eq("DG_BOX"),
                 eq(vw), any(ContainerResult.class), any(), eq("KG"),
-                eq(BigDecimal.valueOf(20)), eq("M3")
+                eq(BigDecimal.valueOf(20)), eq("M3"), eq(BigDecimal.valueOf(20))
         )).thenReturn(expected);
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
