@@ -4664,7 +4664,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
 
-        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vwOb, result, totalWeight, weightUnit, totalVolume, volumeUnit);
+        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vwOb, result, totalWeight, weightUnit, totalVolume, volumeUnit, null);
     }
 
     public CargoDetailsResponse calculateCargoSummaryFromContainers(String transportMode, Set<Containers> containersSet, ShipmentSettingsDetails settingsDetails) throws RunnerException {
@@ -4724,6 +4724,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         VolumeWeightChargeable vw = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
 
         return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vw, result, totalWeight, weightUnit,
-                (!volumeMissingInContainers ? totalVolume : null), volumeUnit);
+                (!volumeMissingInContainers ? totalVolume : null), volumeUnit, totalVolume);
     }
 }

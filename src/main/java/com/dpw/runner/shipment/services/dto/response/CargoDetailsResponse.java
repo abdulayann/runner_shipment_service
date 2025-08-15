@@ -36,4 +36,5 @@ public class CargoDetailsResponse {
     private Boolean isVolumeEditable = Boolean.FALSE;
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
+    private BigDecimal containerVolume;
 }
