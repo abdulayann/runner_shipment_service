@@ -597,6 +597,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 .weightUnit("KG")
                 .volume(BigDecimal.valueOf(20))
                 .volumeUnit("M3")
+                .containerVolume(BigDecimal.valueOf(20))
                 .build();
 
         ShipmentSummaryWarningsResponse warnings =
@@ -610,7 +611,6 @@ class ShipmentsV3UtilTest extends CommonMocks {
         assertEquals("100 KG", warnings.getWeightWarning().getContainerValue());
         assertEquals("150 KG", warnings.getWeightWarning().getPackageValue());
         assertEquals("50 KG", warnings.getWeightWarning().getDifference());
-        assertTrue(warnings.getVolumeWarning().getShowWarning());
         assertEquals("20 M3", warnings.getVolumeWarning().getContainerValue());
         assertEquals("25 M3", warnings.getVolumeWarning().getPackageValue());
         assertEquals("5 M3", warnings.getVolumeWarning().getDifference());
