@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -135,5 +137,23 @@ class CustomerBookingV3UtilTest {
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         customerBookingV3Util.updateCargoInformation(customerBooking, teuMap, null, false);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testGetTotalCargoWeightFromPackages() throws RunnerException {
+        Packing packing = new Packing();
+        packing.setBookingId(1L);
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("KG");
+        packing.setPacks("2");
+        packing.setPacksType("BAG");
+        packing.setCargoWeightPerPack(BigDecimal.TEN);
+        packing.setPackWeightUnit("KG");
+
+        BigDecimal result = customerBookingV3Util.getTotalCargoWeightFromPackages(List.of(packing), "KG");
+        Assertions.assertEquals(BigDecimal.TEN, result);
+
     }
 }

@@ -144,7 +144,7 @@ public class CustomerBookingV3Util {
         if (!packingList.isEmpty()) {
             boolean ifAnyPackMissedWeight = false;
             for (Packing pack : packingList) {
-                if (pack.getCargoWeightPerPack() == null) {
+                if (pack.getWeight() == null) {
                     ifAnyPackMissedWeight = true;
                     break;
                 }
@@ -198,7 +198,7 @@ public class CustomerBookingV3Util {
             BigDecimal weightPerPack = packing.getCargoWeightPerPack() != null ? packing.getCargoWeightPerPack() : BigDecimal.ZERO;
             BigDecimal totalLineCargoWeight = new BigDecimal(convertUnit(MASS, packingCount.multiply(weightPerPack), packing.getPackWeightUnit(), weightUnit).toString());
 
-            totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
+            totalCargoWeight = totalCargoWeight.add(packing.getWeight() != null ? packing.getWeight() : totalLineCargoWeight);
         }
         return totalCargoWeight;
     }
