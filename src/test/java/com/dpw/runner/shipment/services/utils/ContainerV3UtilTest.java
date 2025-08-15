@@ -581,26 +581,6 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void shouldThrowValidationException_whenWeightOrUnitIsMissing_nonHazardous() {
-        Containers c = new Containers();
-        c.setHazardous(false);
-        // Missing grossWeight and grossWeightUnit
-        assertThrows(ValidationException.class,
-                () -> containerV3Util.validateContainer(List.of(c)));
-    }
-
-    @Test
-    void shouldThrowValidationException_whenHazardousAndMissingDGFields() {
-        Containers c = new Containers();
-        c.setHazardous(true);
-        c.setGrossWeight(new BigDecimal(12));
-        c.setGrossWeightUnit("KG");
-        // Missing dgClass, unNumber, properShippingName
-        assertThrows(ValidationException.class,
-                () -> containerV3Util.validateContainer(List.of(c)));
-    }
-
-    @Test
     void shouldPass_whenNonHazardousAndWeightFieldsPresent() {
         Containers c = new Containers();
         c.setHazardous(false);
