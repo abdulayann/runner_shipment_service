@@ -880,7 +880,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setContainerCount(1L);
                     newContainer.setGrossWeight(newContainer.getCargoWeightPerContainer());
                     newContainer.setGrossWeightUnit(newContainer.getContainerWeightUnit());
-                    newContainer.setPacks(String.valueOf(newContainer.getPackagesPerContainer()));
+                    if(!Objects.isNull(newContainer.getPackagesPerContainer())) {
+                        newContainer.setPacks(String.valueOf(newContainer.getPackagesPerContainer()));
+                    }
                     newContainer.setPacksType(newContainer.getContainerPackageType());
                     expandedContainers.add(newContainer);
                 }
