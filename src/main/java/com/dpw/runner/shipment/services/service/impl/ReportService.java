@@ -1082,7 +1082,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
+    public ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
                 || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) || !List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo))
