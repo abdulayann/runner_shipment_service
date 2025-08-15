@@ -609,18 +609,23 @@ public class ContainerV3Util {
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
-        containersList.forEach(p -> {
-            if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
-                throw new ValidationException("Cargo Weight/Unit is mandatory ");
-            }
-            if (p.getHazardous() && (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
-                throw new ValidationException("DG Class/Un Number/Proper Shipping name can not be null is case of DG");
-            }
-        });
+        validateContainer(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);
     }
+
+    public void validateContainer(List<Containers> containersList) {
+        containersList.forEach(p -> {
+            if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
+                throw new ValidationException("Cargo Weight/Unit is mandatory ");
+            }
+            if ((p.getHazardous() != null && p.getHazardous()) && (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
+                throw new ValidationException("DG Class/Un Number/Proper Shipping name can not be null is case of DG");
+            }
+        });
+    }
+
     public List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
         if (request == null) {
             throw new ValidationException("Please add the container and then try again.");
