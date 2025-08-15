@@ -610,8 +610,6 @@ class ShipmentsV3UtilTest extends CommonMocks {
         assertEquals("100 KG", warnings.getWeightWarning().getContainerValue());
         assertEquals("150 KG", warnings.getWeightWarning().getPackageValue());
         assertEquals("50 KG", warnings.getWeightWarning().getDifference());
-
-        assertNotNull(warnings.getVolumeWarning());
         assertTrue(warnings.getVolumeWarning().getShowWarning());
         assertEquals("20 M3", warnings.getVolumeWarning().getContainerValue());
         assertEquals("25 M3", warnings.getVolumeWarning().getPackageValue());
