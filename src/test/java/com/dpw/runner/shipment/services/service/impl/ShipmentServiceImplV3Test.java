@@ -7052,7 +7052,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.buildShipmentResponse(
                 eq(2), eq(0), eq("BOX"), isNull(),
                 eq(vw), eq(containerResult), any(), eq("KG"),
-                isNull(), eq("CBM"), isNull()
+                isNull(), eq("CBM"), any()
         )).thenReturn(expected);
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
