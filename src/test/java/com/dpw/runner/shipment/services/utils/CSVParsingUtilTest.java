@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
@@ -91,6 +92,7 @@ class CSVParsingUtilTest {
     private static MultipartFile mockContainerFile , mockContainerFile_EmptyContainerCode , mockPackingFile_withFlashpoint , mockPackingFile_withCols;
     private static MultipartFile nullExcelFile , emptyExcelFile , emptyExcelFile2;
     private static MultipartFile mockExcelFileEvents_missingEventCode;
+    private static MultipartFile  testContainerV3;
     private static CSVParsingUtil<Containers> csvParsingUtilContainer;
     private static CSVParsingUtil<Events> csvParsingUtilContainerEvents;
     private static MultipartFile mockExcelFileEvents , mockPackingMissingShipmentNumber_InShipmentDict , mockPackingMissingShipmentNumber;
@@ -123,6 +125,7 @@ class CSVParsingUtilTest {
         mockExcelFileEvents = getFileFromResources("TestContainerEvents.xlsx");
         mockPackingFile_withFlashpoint = getFileFromResources("TestCargoDetails copy.xlsx");
         mockContainerFile = getFileFromResources("TestContainers.xlsx");
+        testContainerV3 = getFileFromResources("TestContainerV3.xlsx");
         mockContainerFile_EmptyContainerCode = getFileFromResources("TestContainerEmptyContainerCode.xlsx");
         mockPackingFile = getFileFromResources("TestCargoDetails.xlsx");
         mockPackingFile_withCols = getFileFromResources("TestCargoDetailsWithCols.xlsx");
@@ -1134,6 +1137,12 @@ class CSVParsingUtilTest {
         sd1.setId(12L);
         List<Containers> result = csvParsingUtilContainer.parseExcelFile(mockContainerFile, request, mapOfEntity, masterDataMap, Containers.class, ContainersExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap);
 
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        ShipmentVersionContext.markV3();
+        result = csvParsingUtilContainer.parseExcelFile(testContainerV3, request, mapOfEntity, masterDataMap, Containers.class, ContainersExcelModel.class, undg, flashpoint, locCodeToLocationReferenceGuidMap);
+        ShipmentVersionContext.remove();
         assertNotNull(result);
         assertEquals(1, result.size());
     }

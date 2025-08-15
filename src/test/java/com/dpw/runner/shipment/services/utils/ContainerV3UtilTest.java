@@ -829,8 +829,8 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<String, Object> details = result.get(guid1);
         assertEquals(new BigDecimal("10.5"), details.get("grossVolume"));
         assertEquals("CBM", details.get("grossVolumeUnit"));
-        assertEquals(new BigDecimal("100.2"), details.get("grossWeight"));
-        assertEquals("KG", details.get("grossWeightUnit"));
+        assertEquals(new BigDecimal("100.2"), details.get("cargoWeight"));
+        assertEquals("KG", details.get("cargoWeightUnit"));
         assertEquals("5", details.get("packs"));
         assertEquals("BOX", details.get("packsType"));
     }
