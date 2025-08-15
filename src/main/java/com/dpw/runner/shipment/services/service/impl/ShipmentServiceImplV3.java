@@ -112,6 +112,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -134,6 +135,9 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
@@ -340,7 +344,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
             if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
-                throw new ValidationException("Include Columns field is mandatory");
+                throw new ValidationException(SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
             }
             Set<String> includeColumns = new HashSet<>(listCommonRequest.getIncludeColumns());
             CommonUtils.includeRequiredColumns(includeColumns);
@@ -382,7 +386,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
             if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
-                throw new ValidationException("Include Columns field is mandatory");
+                throw new ValidationException(SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
             }
             Set<String> includeColumns = new HashSet<>(listCommonRequest.getIncludeColumns());
             CommonUtils.includeRequiredColumns(includeColumns);
@@ -480,7 +484,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails = shipmentDao.findShipmentByGuidWithQuery(guid);
         }
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_MESSAGE, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -494,6 +498,87 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
         }
         return shipmentDetails;
+    }
+
+    private Optional<ShipmentDetails> fetchShipmentDetails(String source, CommonGetRequest request) throws AuthenticationException, RunnerException {
+        Long requestId = request.getId();
+        if (Objects.equals(source, NETWORK_TRANSFER)) {
+            log.debug("Source is NETWORK_TRANSFER for the input with Request Id {}", requestId);
+            return retrieveForNte(request);
+        } else {
+            log.debug("Source is {} for the input with Request Id {}", source, requestId);
+            if (requestId != null) {
+                return shipmentDao.findById(requestId);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                return shipmentDao.findByGuid(guid);
+            }
+        }
+    }
+
+    private ShipmentRetrieveExternalResponse fetchShipmentRetrieveExternalResponse(String source, CommonGetRequest request, double start) throws AuthenticationException, RunnerException {
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
+        }
+        Long id = request.getId();
+        Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
+        if (!shipmentDetails.isPresent()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_MESSAGE, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        double current = System.currentTimeMillis();
+        log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, id, LoggerHelper.getRequestIdFromMDC(), current - start);
+
+        ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
+        containerTeuFuture.join();
+
+        ShipmentRetrieveExternalResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveExternalResponse.class);
+        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+        if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length) {
+            response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+        }
+        setDgPackCountAndTypeExternalResponse(shipmentDetailsEntity, response);
+        setRoutingsExternalResponse(shipmentDetailsEntity, response);
+        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
+        return response;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdExternal(CommonRequestModel commonRequestModel, String source) {
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            double start = System.currentTimeMillis();
+            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalResponse(source, request, start);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel commonRequestModel, String source) {
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            double start = System.currentTimeMillis();
+            if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+                throw new ValidationException(SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
+            }
+            Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalResponse(source, request, start);
+            ShipmentRetrieveExternalResponse filteredResponse = (ShipmentRetrieveExternalResponse) commonUtils.setIncludedFieldsToResponse(response, includeColumns, new ShipmentRetrieveExternalResponse());
+            return ResponseHelper.buildSuccessResponse(filteredResponse);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     public ShipmentRetrieveLiteResponse retireveShipmentData(CommonRequestModel commonRequestModel, String source) throws RunnerException, AuthenticationException {
@@ -516,7 +601,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
         }
         if (!shipmentDetails.isPresent()) {
-            log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(SHIPMENT_DETAILS_IS_NULL_MESSAGE, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         double current = System.currentTimeMillis();
@@ -552,6 +637,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void setRoutingsLiteRespnse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsEntity.getRoutingsList())) {
+            List<RoutingsLiteResponse> routingsLiteResponses = jsonHelper.convertValueToList(shipmentDetailsEntity.getRoutingsList(), RoutingsLiteResponse.class);
+            response.setRoutingsLiteResponses(routingsLiteResponses);
+        }
+    }
+
+    private void setRoutingsExternalResponse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveExternalResponse response) {
         if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsEntity.getRoutingsList())) {
             List<RoutingsLiteResponse> routingsLiteResponses = jsonHelper.convertValueToList(shipmentDetailsEntity.getRoutingsList(), RoutingsLiteResponse.class);
             response.setRoutingsLiteResponses(routingsLiteResponses);
@@ -613,6 +705,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private static void setDgPackCountAndType(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        List<Packing> packingList = shipmentDetailsEntity.getPackingList();
+        if (!CollectionUtils.isEmpty(packingList)) {
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+                boolean isEmptyWeightPackAvailable = packingList.stream()
+                        .anyMatch(packing -> packing.getWeight() == null);
+                response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
+            }
+            response.setIsPacksAvailable(Boolean.TRUE);
+        }
+    }
+
+    private static void setDgPackCountAndTypeExternalResponse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveExternalResponse response) {
         List<Packing> packingList = shipmentDetailsEntity.getPackingList();
         if (!CollectionUtils.isEmpty(packingList)) {
             if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
@@ -1205,7 +1309,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     public void createLogHistoryForShipment(String entityPayload, Long id, UUID guid) {
         try {
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(id)
-                    .entityType(Constants.SHIPMENT).entityGuid(guid).entityPayload(entityPayload).build());
+                    .entityType(SHIPMENT).entityGuid(guid).entityPayload(entityPayload).build());
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
@@ -1392,7 +1496,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
                 commonUtils.updateEventWithMasterData(eventsList);
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
                 eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
             }
@@ -2564,7 +2668,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, null, eventsList, true);
         if (eventsList != null) {
             commonUtils.updateEventWithMasterData(eventsList);
-            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
+            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), SHIPMENT);
             shipmentDetails.setEventsList(updatedEvents);
             eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
@@ -2857,7 +2961,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         events.setEstimated(estimatedDateTime);
         events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         events.setIsPublicTrackingEvent(true);
-        events.setEntityType(Constants.SHIPMENT);
+        events.setEntityType(SHIPMENT);
         events.setEntityId(shipmentDetails.getId());
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
