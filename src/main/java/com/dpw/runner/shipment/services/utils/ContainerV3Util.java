@@ -617,14 +617,20 @@ public class ContainerV3Util {
 
     public void validateContainer(List<Containers> containersList) {
         containersList.forEach(p -> {
+            String errorMessage = null;
             if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
-                throw new ValidationException("Cargo Weight/Unit is mandatory ");
+                errorMessage = "Cargo Weight/Unit is mandatory";
+            } else if (Boolean.TRUE.equals(p.getHazardous()) &&
+                    (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
+                errorMessage = "DG Class/Un Number/Proper Shipping name can not be null in case of DG";
             }
-            if ((p.getHazardous() != null && p.getHazardous()) && (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
-                throw new ValidationException("DG Class/Un Number/Proper Shipping name can not be null is case of DG");
+
+            if (errorMessage != null) {
+                throw new ValidationException(errorMessage);
             }
         });
     }
+
 
     public List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
         if (request == null) {
