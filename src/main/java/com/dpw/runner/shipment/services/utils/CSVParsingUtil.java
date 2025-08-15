@@ -392,11 +392,6 @@ public class CSVParsingUtil<T> {
                 if (header[i].equalsIgnoreCase("commodityCode")) {
                     commodityCodePos = i;
                 }
-
-                String rawValue = headerRow.getCell(i) != null ? headerRow.getCell(i).getStringCellValue() : "NULL";
-                System.out.println("Column " + i + " raw: '" + rawValue + "' processed: '" + header[i] + "'");
-
-
             }
 
 
