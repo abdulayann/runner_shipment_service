@@ -327,7 +327,7 @@ public class ContainerV3Util {
 
             String displayName;
             if (ShipmentVersionContext.isV3()) {
-                displayName = annotation.displayNameOverride();
+                displayName = !annotation.displayNameOverride().isEmpty() ? annotation.displayNameOverride() : annotation.displayName();
             } else if (!annotation.displayName().isEmpty()) {
                 displayName = annotation.displayName();
             } else {
