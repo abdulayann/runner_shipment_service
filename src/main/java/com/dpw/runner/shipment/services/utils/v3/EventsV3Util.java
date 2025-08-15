@@ -166,9 +166,9 @@ public class EventsV3Util {
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
                         Objects.nonNull(shipmentDetails.getBrokerageAtDestinationDate()) ?
-                                commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtDestinationDate()) : null,
+                                shipmentDetails.getBrokerageAtDestinationDate() : null,
                         Objects.nonNull(shipmentDetails.getEstimatedBrokerageAtDestinationDate()) ?
-                                commonUtils.getUserZoneTime(shipmentDetails.getEstimatedBrokerageAtDestinationDate()) : null));
+                                shipmentDetails.getEstimatedBrokerageAtDestinationDate() : null));
             }
         }
     }
