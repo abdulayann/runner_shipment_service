@@ -621,8 +621,11 @@ public class ContainerV3Util {
     }
     public static void validateBeforeAndAfterValues(UUID containerId, Map<String, Object> containersTo, Map<String, Object> containersFrom) {
         for (String key : containersTo.keySet()) {
-            if (containersTo.get(key) instanceof BigDecimal) {
-                if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
+            if ((containersTo.get(key) == null && containersFrom.get(key) != null) || (containersTo.get(key) != null && containersFrom.get(key) == null)) {
+                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+            }
+            if (containersTo.get(key) instanceof BigDecimal || containersFrom.get(key) instanceof BigDecimal) {
+                if ((containersTo.get(key) == null && containersFrom.get(key) != null) || (containersTo.get(key) != null && containersFrom.get(key) == null) || ((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
                     throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
                 }
             } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
@@ -636,8 +639,8 @@ public class ContainerV3Util {
             map.putIfAbsent(containers.getGuid(), new HashMap<>());
             map.get(containers.getGuid()).put(Constants.GROSS_VOLUME, containers.getGrossVolume());
             map.get(containers.getGuid()).put(Constants.GROSS_VOLUME_UNIT, containers.getGrossVolumeUnit());
-            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT, containers.getGrossWeight());
-            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT_UNIT, containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put(Constants.CARGO_WEIGHT, containers.getGrossWeight());
+            map.get(containers.getGuid()).put(CARGO_WEIGHT_UNIT, containers.getGrossWeightUnit());
             map.get(containers.getGuid()).put(Constants.PACKS, containers.getPacks());
             map.get(containers.getGuid()).put(Constants.PACKS_TYPE, containers.getPacksType());
         }
