@@ -33,7 +33,7 @@ public class DocumentManagerEntityFileResponse {
 
     private String createdAt;
 
-    private String postingStatus;
+    private Object postingStatus;
 
     private Boolean isTransferEnabled;
 
