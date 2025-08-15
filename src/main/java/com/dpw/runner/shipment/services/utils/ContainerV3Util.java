@@ -610,7 +610,7 @@ public class ContainerV3Util {
         validateHsCode(containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
         containersList.forEach(p -> {
-            if (p.getNetWeight() == null || p.getNetWeightUnit() == null) {
+            if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
                 throw new ValidationException("Cargo Weight/Unit is mandatory ");
             }
         });
