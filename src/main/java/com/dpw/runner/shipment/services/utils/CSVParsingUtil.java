@@ -366,11 +366,12 @@ public class CSVParsingUtil<T> {
             Field[] fields = modelClass.getDeclaredFields();
             Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x -> x.isAnnotationPresent(ExcelCell.class))
                     .collect(Collectors.toMap(x -> {
-                        if (x.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()) {
-                            return x.getAnnotation(ExcelCell.class).displayName();
-                        } else {
+                        if (ShipmentVersionContext.isV3() && !x.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()) {
                             return x.getAnnotation(ExcelCell.class).displayNameOverride();
+                        } else {
+                            return x.getAnnotation(ExcelCell.class).displayName();
                         }
+
                     }, Field::getName));
 
             Set<String> headerSet = new HashSet<>();
@@ -391,7 +392,13 @@ public class CSVParsingUtil<T> {
                 if (header[i].equalsIgnoreCase("commodityCode")) {
                     commodityCodePos = i;
                 }
+
+                String rawValue = headerRow.getCell(i) != null ? headerRow.getCell(i).getStringCellValue() : "NULL";
+                System.out.println("Column " + i + " raw: '" + rawValue + "' processed: '" + header[i] + "'");
+
+
             }
+
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
