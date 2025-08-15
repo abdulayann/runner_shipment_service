@@ -2,13 +2,12 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -61,7 +60,6 @@ public class ReportRequest implements IRunnerRequest {
     Integer totalHawbPieces;
     List<HawbInfo> hawbInfo;
     String entityName;
-    Boolean forValidation;
     boolean isSelfCall = false;
 
     @Getter

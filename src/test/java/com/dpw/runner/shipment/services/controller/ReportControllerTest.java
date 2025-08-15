@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
@@ -162,6 +163,16 @@ class ReportControllerTest {
         when(reportService.getPreAlertEmailTemplateData(any(), any())).thenThrow(new RunnerException());
         var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void validateHouseBill_success() throws Exception {
+        // No exception from service means success
+        doNothing().when(reportService).validateHouseBill(any());
+
+        var response = reportController.validateHouseBill(new ReportRequest());
+
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 

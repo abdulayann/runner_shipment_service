@@ -1,5 +1,63 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CNEES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_KEY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONT_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH_ADD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DRAFT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DSTN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_DOCUMENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL_RELEASE_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MASTER_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH_ADD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OBJECT_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL_RELEASE_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA_WAYBILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SURRENDER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SURRENDER_RELEASE_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER_V3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
+
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -75,6 +133,7 @@ import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -131,6 +190,29 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -146,24 +228,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 @Service
 @Slf4j
@@ -954,6 +1018,7 @@ public class ReportService implements IReportService {
             String discrepancyNote) {
 
         List<Packing> packingList = shipment.getPackingList();
+        Set<Containers> containersList = shipment.getContainersList();
 
         if (ObjectUtils.isEmpty(packingList)) {
             return; // No packings → Nothing to validate
@@ -962,12 +1027,15 @@ public class ReportService implements IReportService {
         boolean hasUnassignedPackage = packingList.stream()
                 .anyMatch(p -> p.getContainerId() == null);
 
-        if (hasUnassignedPackage) {
+        boolean hasUnassignedContainers = containersList.stream()
+                .anyMatch(c -> ObjectUtils.isEmpty(c.getPacksList()));
+
+        if (hasUnassignedPackage || hasUnassignedContainers) {
             Boolean allowUnassigned = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
             if (Boolean.TRUE.equals(allowUnassigned)) {
-                throw new ReportExceptionWarning("Unassigned packages found — review " + discrepancyNote);
+                throw new ReportExceptionWarning("Unassigned packages/containers found — review " + discrepancyNote);
             } else {
-                throw new ReportException("Unassigned packages found — Cannot Generate " + documentName + ".");
+                throw new ReportException("Unassigned packages/containers found — Cannot Generate " + documentName + ".");
             }
         }
     }
@@ -992,15 +1060,6 @@ public class ReportService implements IReportService {
         if (!SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
-
-        if (Boolean.TRUE.equals(reportRequest.getForValidation())) {
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "Seaway Bill",
-                    "Seaway for possible cargo discrepancies."
-            );
-        }
     }
 
     private void handleHouseBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
@@ -1018,25 +1077,12 @@ public class ReportService implements IReportService {
                 (isOriginalBill && !validPrintTypes.contains(upperPrintType)) ||
                         (!isOriginalBill && validPrintTypes.contains(upperPrintType));
 
-        if (Boolean.TRUE.equals(reportRequest.getForValidation()) &&
-                (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
-                        || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                        || ReportConstants.COPY.equalsIgnoreCase(printType))) {
-
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "BL",
-                    "BL for possible cargo discrepancies."
-            );
-        }
-
         if (isSurrenderMismatch || isOriginalMismatch) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
     }
 
-    private ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
+    public ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
                 || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) || !List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo))
@@ -2628,6 +2674,33 @@ public class ReportService implements IReportService {
                         .tagValue(shipmentDetails.getGuid().toString())
                         .build()));
         return response;
+    }
+
+    @Override
+    public void validateHouseBill(ReportRequest reportRequest) {
+        IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+
+        ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        if (report instanceof HblReport) {
+            validateUnassignedPackagesInternal(
+                    shipment,
+                    shipmentSettingsDetails,
+                    "BL",
+                    "BL for possible cargo discrepancies."
+            );
+
+        } else if (report instanceof SeawayBillReport) {
+            validateUnassignedPackagesInternal(
+                    shipment,
+                    shipmentSettingsDetails,
+                    "Seaway Bill",
+                    "Seaway for possible cargo discrepancies."
+            );
+        } else {
+            throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
+        }
     }
 
     public void getEmailTemplate(Long emailTemplateId, List<EmailTemplatesRequest> emailTemplatesRequests) {

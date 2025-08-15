@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -36,6 +38,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderRe
 import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
@@ -83,6 +86,7 @@ import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -148,6 +152,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -159,6 +164,7 @@ import org.springframework.http.ResponseEntity;
 class ReportServiceTest extends CommonMocks {
 
     @InjectMocks
+    @Spy
     private ReportService reportService;
 
     private static JsonTestUtility jsonTestUtility;
@@ -332,6 +338,49 @@ class ReportServiceTest extends CommonMocks {
     void tearDown() {
         reportService.executorService.shutdown();
         reportService.executorServiceReport.shutdown();
+    }
+
+    @Test
+    void shouldValidateHblReport_CallInternalValidator() {
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        reportService.validateHouseBill(reportRequest);
+
+        verify(reportService).validateUnassignedPackagesInternal(
+                any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
+        );
+    }
+
+    @Test
+    void shouldThrowValidationException_WhenInvalidReportType() {
+        // some dummy report implementation or plain mock
+        when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
+
+        assertThrows(ValidationException.class, () ->
+                reportService.validateHouseBill(reportRequest));
+    }
+
+    @Test
+    void shouldValidateSeawayBill_CallInternalValidator() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        Mockito.when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act
+        reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        verify(reportService).validateUnassignedPackagesInternal(
+                any(), any(), eq("Seaway Bill"), eq("Seaway for possible cargo discrepancies.")
+        );
     }
 
 
@@ -690,6 +739,50 @@ class ReportServiceTest extends CommonMocks {
 
         assertTrue(thrown.getMessage().contains("Cannot Generate"));
         assertTrue(thrown.getMessage().contains("DocumentName"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedContainer_notAllowed_throwsException() {
+        // Packing list has assigned container, so packing branch will not trigger
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        Containers container = mock(Containers.class);
+        when(container.getPacksList()).thenReturn(Collections.emptyList()); // unassigned container
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+        when(shipment.getContainersList()).thenReturn(Collections.singleton(container));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedContainer_allowed_throwsWarning() {
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        Containers container = mock(Containers.class);
+        when(container.getPacksList()).thenReturn(Collections.emptyList());
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+        when(shipment.getContainersList()).thenReturn(Collections.singleton(container));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Discrepancy"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("Discrepancy"));
     }
 
 

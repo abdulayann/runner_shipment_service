@@ -940,6 +940,7 @@ public class ReportConstants {
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
+    public static final String VALIDATE_HOUSE_BILL = "/validate-house-bill";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
     public static final String UN = "UN";
