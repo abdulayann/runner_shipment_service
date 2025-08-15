@@ -1008,7 +1008,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             } else {
                 ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().stream().iterator().next();
-                containerV3Service.deleteBulk(jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerV3Request.class), SHIPMENT);
+                if (!CollectionUtils.isEmpty(consolidationDetails.getContainersList())) {
+                    containerV3Service.deleteBulk(jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerV3Request.class), SHIPMENT);
+                }
                 setContainersInV3Console(containersList, consolidationDetails.getId(), consolidationDetails);
                 consolidationDetailsDao.save(consolidationDetails, false);
             }
