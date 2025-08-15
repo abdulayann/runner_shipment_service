@@ -672,7 +672,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 10, 2, "PKG", "DG-PKG",
                 vw, containerResult,
                 BigDecimal.valueOf(1000), "KG",
-                BigDecimal.valueOf(20), "M3"
+                BigDecimal.valueOf(20), "M3", BigDecimal.valueOf(20)
         );
 
         assertNotNull(response);
@@ -698,7 +698,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 0, null, "PKG", "DG-PKG",
                 vw, containerResult,
                 BigDecimal.ZERO, "KG",
-                BigDecimal.ZERO, "M3"
+                BigDecimal.ZERO, "M3", BigDecimal.ZERO
         );
 
         assertNull(response.getNoOfPacks());

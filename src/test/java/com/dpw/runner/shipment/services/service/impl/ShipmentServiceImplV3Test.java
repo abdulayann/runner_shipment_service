@@ -6913,7 +6913,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.getContainerResult(any())).thenReturn(new ContainerResult());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any()))
                 .thenReturn(new VolumeWeightChargeable());
-        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new CargoDetailsResponse());
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromPacks("ROA", packingList, containersSet, new ShipmentSettingsDetails(), false);
@@ -6941,7 +6941,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.getPacksType(anyList())).thenReturn(List.of("GEN", "DGG"));
         when(shipmentsV3Util.calculateWeightFromContainersFallBack(anySet(), any())).thenReturn(new ContainerResult());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
-        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new CargoDetailsResponse());
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromPacks("SEA", List.of(p), Set.of(containers), new ShipmentSettingsDetails(), false);
@@ -6982,7 +6982,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         lenient().when(shipmentsV3Util.buildShipmentResponse(
                 eq(5), eq(0), eq("PACK_TYPE"), isNull(),
                 eq(vw), any(ContainerResult.class), any(), eq("KG"),
-                eq(BigDecimal.valueOf(10)), eq("CBM")
+                eq(BigDecimal.valueOf(10)), eq("CBM"), eq(BigDecimal.valueOf(10))
         )).thenReturn(expectedResponse);
 
         CargoDetailsResponse response = shipmentServiceImplV3.calculateCargoSummaryFromContainers("AIR", containersSet, settings);
@@ -7052,7 +7052,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.buildShipmentResponse(
                 eq(2), eq(0), eq("BOX"), isNull(),
                 eq(vw), eq(containerResult), any(), eq("KG"),
-                isNull(), eq("CBM")
+                isNull(), eq("CBM"), isNull()
         )).thenReturn(expected);
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
