@@ -30,17 +30,17 @@ public class ContainersExcelModel {
     private String sealNumber;
     @ExcelCell(displayName = "DescriptionOfGoods")
     private String descriptionOfGoods;
-    @ExcelCell(displayName = "NetWeight")
+    @ExcelCell(displayName = "NetWeight", displayNameOverride = "GrossWeight")
     private BigDecimal netWeight;
-    @ExcelCell(displayName = "NetWeightUnit")
+    @ExcelCell(displayName = "NetWeightUnit", displayNameOverride = "GrossWeightUnit")
     private String netWeightUnit;
-    @ExcelCell(displayName = "GrossWeight")
+    @ExcelCell(displayName = "GrossWeight", displayNameOverride = "CargoWeight")
     private BigDecimal grossWeight;
-    @ExcelCell(displayName = "GrossWeightUnit")
+    @ExcelCell(displayName = "GrossWeightUnit", displayNameOverride = "CargoWeightUnit")
     private String grossWeightUnit;
-    @ExcelCell(displayName = "Measurement")
+    @ExcelCell(displayName = "Measurement", requiredInV3 = false)
     private BigDecimal measurement;
-    @ExcelCell(displayName = "MeasurementUnit")
+    @ExcelCell(displayName = "MeasurementUnit", requiredInV3 = false)
     private String measurementUnit;
     @ExcelCell(displayName = "Commodity")
     private String commodityCode;
@@ -62,9 +62,9 @@ public class ContainersExcelModel {
     private String veterinarySealNumber;
     @ExcelCell(displayName = "CustomsSealNumber")
     private String customsSealNumber;
-    @ExcelCell(displayName = "CustomsReleaseCode")
+    @ExcelCell(displayName = "CustomsReleaseCode", requiredInV3 = false)
     private String customsReleaseCode;
-    @ExcelCell(displayName = "ContainerStuffingLocation")
+    @ExcelCell(displayName = "ContainerStuffingLocation", requiredInV3 = false)
     private String containerStuffingLocation;
     @ExcelCell(displayName = "Comments")
     private String containerComments;
@@ -80,7 +80,7 @@ public class ContainersExcelModel {
     private String minTempUnit;
     @ExcelCell(displayName = "MaxTemp")
     private BigDecimal maxTemp;
-    @ExcelCell(displayName = "MaxTempUnit")
+    @ExcelCell(displayName = "MaxTempUnit", requiredInV3 = false)
     private String maxTempUnit;
     @ExcelCell(displayName = "HblDeliveryMode")
     private String hblDeliveryMode;
@@ -96,17 +96,17 @@ public class ContainersExcelModel {
     private BigDecimal tareWeight;
     @ExcelCell(displayName = "TareWeightUnit")
     private String tareWeightUnit;
-    @ExcelCell(displayName = "SerialNumber")
+    @ExcelCell(displayName = "SerialNumber", requiredInV3 = false)
     private String serialNumber;
-    @ExcelCell(displayName = "InnerPackageNumber")
+    @ExcelCell(displayName = "InnerPackageNumber", requiredInV3 = false)
     private String innerPackageNumber;
-    @ExcelCell(displayName = "InnerPackageType")
+    @ExcelCell(displayName = "InnerPackageType", requiredInV3 = false)
     private String innerPackageType;
-    @ExcelCell(displayName = "PackageLength")
+    @ExcelCell(displayName = "PackageLength", requiredInV3 = false)
     private BigDecimal packageLength;
-    @ExcelCell(displayName = "PackageBreadth")
+    @ExcelCell(displayName = "PackageBreadth", requiredInV3 = false)
     private BigDecimal packageBreadth;
-    @ExcelCell(displayName = "PackageHeight")
+    @ExcelCell(displayName = "PackageHeight", requiredInV3 = false)
     private BigDecimal packageHeight;
     @ExcelCell(displayName = "IsTemperatureMaintained")
     private Boolean isTemperatureMaintained;
@@ -116,9 +116,9 @@ public class ContainersExcelModel {
     private String packsType;
     @ExcelCell(displayName = "MarksNums")
     private String marksNums;
-    @ExcelCell(displayName = "InnerPackageMeasurementUnit")
+    @ExcelCell(displayName = "InnerPackageMeasurementUnit", requiredInV3 = false)
     private String innerPackageMeasurementUnit;
-    @ExcelCell(displayName = "PACRNumber")
+    @ExcelCell(displayName = "PACRNumber", requiredInV3 = false)
     private String pacrNumber;
     @ExcelCell(displayName = "Chargeable")
     private BigDecimal chargeable;
@@ -126,37 +126,37 @@ public class ContainersExcelModel {
     private String chargeableUnit;
     @ExcelCell(displayName = "IsOwnContainer")
     private Boolean isOwnContainer;
-    @ExcelCell(displayName = "TransportMode")
+    @ExcelCell(displayName = "TransportMode", requiredInV3 = false)
     private String transportMode;
     @ExcelCell(displayName = "Status")
     private ContainerStatus status;
-    @ExcelCell(displayName = "ExtraParams")
+    @ExcelCell(displayName = "ExtraParams", requiredInV3 = false)
     private String extraParams;
     @ExcelCell(displayName = "Remarks")
     private String remarks;
-    @ExcelCell(displayName = "AllocatedWeight")
+    @ExcelCell(displayName = "AllocatedWeight", requiredInV3 = false)
     private BigDecimal allocatedWeight;
-    @ExcelCell(displayName = "AllocatedWeightUnit")
+    @ExcelCell(displayName = "AllocatedWeightUnit", requiredInV3 = false)
     private String allocatedWeightUnit;
-    @ExcelCell(displayName = "AllocatedVolume")
+    @ExcelCell(displayName = "AllocatedVolume",requiredInV3 = false)
     private BigDecimal allocatedVolume;
-    @ExcelCell(displayName = "AllocatedVolumeUnit")
+    @ExcelCell(displayName = "AllocatedVolumeUnit",requiredInV3 = false)
     private String allocatedVolumeUnit;
-    @ExcelCell(displayName = "AchievedWeight")
+    @ExcelCell(displayName = "AchievedWeight", requiredInV3 = false)
     private BigDecimal achievedWeight;
-    @ExcelCell(displayName = "AchievedWeightUnit")
+    @ExcelCell(displayName = "AchievedWeightUnit", requiredInV3 = false)
     private String achievedWeightUnit;
-    @ExcelCell(displayName = "AchievedVolume")
+    @ExcelCell(displayName = "AchievedVolume", requiredInV3 = false)
     private BigDecimal achievedVolume;
-    @ExcelCell(displayName = "AchievedVolumeUnit")
+    @ExcelCell(displayName = "AchievedVolumeUnit", requiredInV3 = false)
     private String achievedVolumeUnit;
-    @ExcelCell(displayName = "WeightUtilization")
+    @ExcelCell(displayName = "WeightUtilization", requiredInV3 = false)
     private String weightUtilization;
-    @ExcelCell(displayName = "VolumeUtilization")
+    @ExcelCell(displayName = "VolumeUtilization", requiredInV3 = false)
     private String volumeUtilization;
     @ExcelCell(displayName = "CommodityGroup")
     private String commodityGroup;
-    @ExcelCell(displayName = "IsContractEnforced")
+    @ExcelCell(displayName = "IsContractEnforced", requiredInV3 = false)
     private Boolean isContractEnforced;
     @ExcelCell(displayName = "ContractEnforcedQuantityLimit")
     private Long contractEnforcedQuantityLimit;

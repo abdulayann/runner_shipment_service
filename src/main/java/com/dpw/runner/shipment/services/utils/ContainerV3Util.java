@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
@@ -274,30 +275,71 @@ public class ContainerV3Util {
     }
 
     private void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
-
-        // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
+
+        Map<String, Field> fieldNameMap = getRequiredFieldsMap();
+        handleUnlocationsIfNeeded(modelList, request, fieldNameMap);
+
+        List<Field> fieldsList = getReorderedFieldsList(request, fieldNameMap);
+
+        createHeaderRowCells(headerRow, fieldsList);
+        populateDataRows(modelList, sheet, fieldsList);
+    }
+
+    private Map<String, Field> getRequiredFieldsMap() {
         Field[] fields = ContainersExcelModel.class.getDeclaredFields();
+        return Arrays.stream(fields)
+                .filter(f -> f.isAnnotationPresent(ExcelCell.class))
+                .filter(f -> f.getAnnotation(ExcelCell.class).requiredInV3())
+                .collect(Collectors.toMap(Field::getName, f -> f));
+    }
 
-        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f -> f.isAnnotationPresent(ExcelCell.class)).filter(p->p.getAnnotation(ExcelCell.class).requiredInV3()).collect(Collectors.toMap(Field::getName, c -> c));
-
-        if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
+    private void handleUnlocationsIfNeeded(List<ContainersExcelModel> modelList, BulkDownloadRequest request, Map<String, Field> fieldNameMap) {
+        if (!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
+                && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
             processUnlocationsRefGuid(modelList, unlocationsRefGuids);
         }
-        List<Field> fieldsList = new ArrayList<>();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
-                || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
-            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownload);
-        else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
-        int i = 0;
-        for (var field : fieldsList){
-            Cell cell = headerRow.createCell(i++);
-            cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
-        }
+    }
 
-        // Populate data
+    private List<Field> getReorderedFieldsList(BulkDownloadRequest request, Map<String, Field> fieldNameMap) {
+        if (isSeaOrRoadMode(request)) {
+            return reorderFields(fieldNameMap, columnsSequenceForExcelDownload);
+        } else if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+            return reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
+        }
+        return Collections.emptyList();
+    }
+
+    private boolean isSeaOrRoadMode(BulkDownloadRequest request) {
+        String mode = request.getTransportMode();
+        return Objects.equals(mode, Constants.TRANSPORT_MODE_SEA)
+                || Objects.equals(mode, Constants.TRANSPORT_MODE_ROA)
+                || Objects.equals(mode, Constants.TRANSPORT_MODE_RF)
+                || Objects.equals(mode, Constants.TRANSPORT_MODE_RAI);
+    }
+
+    private void createHeaderRowCells(Row headerRow, List<Field> fieldsList) {
+        int i = 0;
+        for (Field field : fieldsList) {
+            Cell cell = headerRow.createCell(i++);
+            ExcelCell annotation = field.getAnnotation(ExcelCell.class);
+
+            String displayName;
+            if (ShipmentVersionContext.isV3()) {
+                displayName = annotation.displayNameOverride();
+            } else if (!annotation.displayName().isEmpty()) {
+                displayName = annotation.displayName();
+            } else {
+                displayName = field.getName();
+            }
+
+            cell.setCellValue(displayName);
+        }
+    }
+
+
+    private void populateDataRows(List<ContainersExcelModel> modelList, XSSFSheet sheet, List<Field> fieldsList) throws IllegalAccessException {
         int rowIndex = 1;
         for (ContainersExcelModel model : modelList) {
             Row row = sheet.createRow(rowIndex++);
@@ -310,6 +352,7 @@ public class ContainerV3Util {
             }
         }
     }
+
 
     private void processUnlocationsRefGuid(List<ContainersExcelModel> modelList, Set<String> unlocationsRefGuids) {
         for (ContainersExcelModel model : modelList){
@@ -546,7 +589,7 @@ public class ContainerV3Util {
     public String getContainerNumberOrType(Long containerId) {
         return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
     }
-    
+
     public String getContainerNumberOrType(Containers container) {
         return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }
@@ -565,7 +608,12 @@ public class ContainerV3Util {
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
-        containersList.forEach(p->p.setContainerCount(1L));
+        containersList.forEach(p -> p.setContainerCount(1L));
+        containersList.forEach(p -> {
+            if (p.getNetWeight() == null || p.getNetWeightUnit() == null) {
+                throw new ValidationException("Cargo Weight/Unit is mandatory ");
+            }
+        });
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);
@@ -606,25 +654,49 @@ public class ContainerV3Util {
             }
         }
     }
-    public static void validateBeforeAndAfterValues(UUID containerId, Map<String, Object> containersTo, Map<String, Object> containersFrom) {
+    public static void validateBeforeAndAfterValues(UUID containerId,
+                                                    Map<String, Object> containersTo,
+                                                    Map<String, Object> containersFrom) {
+        String log = "%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s";
+
         for (String key : containersTo.keySet()) {
-            if (containersTo.get(key) instanceof BigDecimal) {
-                if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
-                    throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
-                }
-            } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
-                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+            Object toValue = containersTo.get(key);
+            Object fromValue = containersFrom.get(key);
+
+            if (isNullMismatch(toValue, fromValue)) {
+                throw new ValidationException(String.format(log, key, containerId));
+            }
+            if (isBigDecimalChangeInvalid(toValue, fromValue)) {
+                throw new ValidationException(String.format(log, key, containerId));
+            }
+            if (!Objects.equals(toValue, fromValue)) {
+                throw new ValidationException(String.format(log, key, containerId));
             }
         }
     }
+
+    private static boolean isNullMismatch(Object toValue, Object fromValue) {
+        return (toValue == null && fromValue != null) || (toValue != null && fromValue == null);
+    }
+
+    private static boolean isBigDecimalChangeInvalid(Object toValue, Object fromValue) {
+        if (toValue instanceof BigDecimal || fromValue instanceof BigDecimal) {
+            if (isNullMismatch(toValue, fromValue)) {
+                return true;
+            }
+            return ((BigDecimal) toValue).compareTo((BigDecimal) fromValue) > 0;
+        }
+        return false;
+    }
+
     public Map<UUID, Map<String, Object>> validationContainerUploadInShipment(List<Containers> consolContainers) {
         Map<UUID, Map<String, Object>> map = new HashMap<>();
         for (Containers containers : consolContainers) {
             map.putIfAbsent(containers.getGuid(), new HashMap<>());
             map.get(containers.getGuid()).put(Constants.GROSS_VOLUME, containers.getGrossVolume());
             map.get(containers.getGuid()).put(Constants.GROSS_VOLUME_UNIT, containers.getGrossVolumeUnit());
-            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT, containers.getGrossWeight());
-            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT_UNIT, containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put(Constants.CARGO_WEIGHT, containers.getGrossWeight());
+            map.get(containers.getGuid()).put(CARGO_WEIGHT_UNIT, containers.getGrossWeightUnit());
             map.get(containers.getGuid()).put(Constants.PACKS, containers.getPacks());
             map.get(containers.getGuid()).put(Constants.PACKS_TYPE, containers.getPacksType());
         }
@@ -668,7 +740,7 @@ public class ContainerV3Util {
             Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList));
             for (int i = 0; i < containersList.size(); i++) {
                 String hsCode = containersList.get(i).getHsCode();
-                if (StringUtils.isNotBlank(hsCode) && !validHsCode.contains(hsCode)) {
+                if (StringUtils.isNotBlank(hsCode) && !hsCode.contains(",") && !validHsCode.contains(hsCode)) {
                     throw new ValidationException(String.format(ContainerConstants.HS_CODE_OR_COMMODITY_IS_INVALID, i + 1));
                 }
             }
@@ -680,18 +752,26 @@ public class ContainerV3Util {
         for (Containers container : containersList) {
             String hsCode = container.getHsCode();
             String commodityCode = container.getCommodityCode();
+
             if (StringUtils.isBlank(commodityCode) && StringUtils.isNotBlank(hsCode)) {
-                container.setCommodityCode(hsCode);
+                container.setCommodityCode(
+                        Arrays.stream(hsCode.split(","))
+                                .findFirst()
+                                .orElseThrow(() -> new ValidationException("Invalid HsCode"))
+                );
             } else if (StringUtils.isBlank(hsCode) && StringUtils.isNotBlank(commodityCode)) {
                 container.setHsCode(commodityCode);
             }
-            if (StringUtils.isNotBlank(container.getHsCode())) {
+
+            if (StringUtils.isNotBlank(container.getHsCode()) && !container.getHsCode().contains(",")) {
                 hsCodeList.add(container.getHsCode());
             }
         }
         return hsCodeList;
     }
-    public Integer getHsCodeBatchProcessLimit(){
+
+
+    public Integer getHsCodeBatchProcessLimit() {
         String configuredLimitValue = applicationConfigService.getValue(HS_CODE_BATCH_PROCESS_LIMIT);
         return StringUtility.isEmpty(configuredLimitValue) ? BATCH_HS_CODE_PROCESS_LIMIT : Integer.parseInt(configuredLimitValue);
     }

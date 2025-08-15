@@ -7,9 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -118,7 +116,6 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private String achievedVolumeUnit;
   private String weightUtilization;
   private String volumeUtilization;
-  @NonNull
   private String commodityGroup;
   private Boolean isContractEnforced;
   private Long contractEnforcedQuantityLimit;

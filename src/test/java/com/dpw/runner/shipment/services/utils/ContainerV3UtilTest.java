@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -182,6 +183,9 @@ class ContainerV3UtilTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
         assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+        ShipmentVersionContext.isV3();
+        assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+        ShipmentVersionContext.remove();
     }
 
     @Test
@@ -824,8 +828,8 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<String, Object> details = result.get(guid1);
         assertEquals(new BigDecimal("10.5"), details.get("grossVolume"));
         assertEquals("CBM", details.get("grossVolumeUnit"));
-        assertEquals(new BigDecimal("100.2"), details.get("grossWeight"));
-        assertEquals("KG", details.get("grossWeightUnit"));
+        assertEquals(new BigDecimal("100.2"), details.get("cargoWeight"));
+        assertEquals("KG", details.get("cargoWeightUnit"));
         assertEquals("5", details.get("packs"));
         assertEquals("BOX", details.get("packsType"));
     }
