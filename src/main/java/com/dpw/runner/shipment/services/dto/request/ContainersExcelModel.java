@@ -170,4 +170,16 @@ public class ContainersExcelModel {
     private Boolean isAttached;
     @ExcelCell(displayName = "ShipmentNumber")
     private String shipmentNumbers;
+    @ExcelCell(displayName = "ProperShippingName")
+    private String properShippingName;
+    @ExcelCell(displayName = "MarinePollutant")
+    private Boolean marinePollutant;
+    @ExcelCell(displayName = "PackingGroup")
+    private String packingGroup;
+    @ExcelCell(displayName = "MinimumFlashPoint")
+    private BigDecimal minimumFlashPoint;
+    @ExcelCell(displayName = "MinimumFlashPointUnit")
+    private String minimumFlashPointUnit;
+    @ExcelCell(displayName = "UNNumber")
+    private String unNumber;
 }

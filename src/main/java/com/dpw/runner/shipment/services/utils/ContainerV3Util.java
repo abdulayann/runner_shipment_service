@@ -613,6 +613,9 @@ public class ContainerV3Util {
             if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
                 throw new ValidationException("Cargo Weight/Unit is mandatory ");
             }
+            if (p.getHazardous() && (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
+                throw new ValidationException("DG Class/Un Number/Proper Shipping name can not be null is case of DG");
+            }
         });
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
@@ -669,7 +672,7 @@ public class ContainerV3Util {
             if (isBigDecimalChangeInvalid(toValue, fromValue)) {
                 throw new ValidationException(String.format(log, key, containerId));
             }
-            if (!Objects.equals(toValue, fromValue)) {
+            if (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal) && !Objects.equals(toValue, fromValue)) {
                 throw new ValidationException(String.format(log, key, containerId));
             }
         }
