@@ -341,70 +341,51 @@ public class CSVParsingUtil<T> {
         return dictionary;
     }
 
-    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType, Class<?> modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
+    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+                                  Map<String, Set<String>> masterDataMap, Class<T> entityType, Class<?> modelClass,
+                                  Map<Long, Long> undg, Map<Long, String> flashpoint,
+                                  Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
         if (entityType.equals(Packing.class)) {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap);
         }
         if (entityType.equals(Events.class)) {
             return parseExcelFileEvents(file, request, masterDataMap, entityType);
         }
+
+        return parseExcelGeneric(file, request, mapOfEntity, masterDataMap, entityType, modelClass, locCodeToLocationReferenceGuidMap);
+    }
+
+    private List<T> parseExcelGeneric(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+                                      Map<String, Set<String>> masterDataMap, Class<T> entityType, Class<?> modelClass,
+                                      Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
-
         int containerStuffingLocationPos = -1;
         int commodityCodePos = -1;
-        //Add
         int guidPos = -1;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
+            Sheet sheet = workbook.getSheetAt(0);
             validateExcel(sheet);
-            Row headerRow = sheet.getRow(0);
-            String[] header = new String[headerRow.getLastCellNum()];
-            Field[] fields = modelClass.getDeclaredFields();
-            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x -> x.isAnnotationPresent(ExcelCell.class))
-                    .collect(Collectors.toMap(x -> {
-                        if (ShipmentVersionContext.isV3() && !x.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()) {
-                            return x.getAnnotation(ExcelCell.class).displayNameOverride();
-                        } else {
-                            return x.getAnnotation(ExcelCell.class).displayName();
-                        }
 
-                    }, Field::getName));
+            String[] header = extractHeader(sheet.getRow(0), modelClass);
+            Set<String> headerSet = new HashSet<>(Arrays.asList(header));
 
-            Set<String> headerSet = new HashSet<>();
-            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                validateExcelColumn(headerRow, i);
+            guidPos = findColumnIndex(header, "guid");
+            containerStuffingLocationPos = findColumnIndex(header, "containerStuffingLocation");
+            commodityCodePos = findColumnIndex(header, "commodityCode");
 
-                if (renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
-                    header[i] = renameFieldMap.get(headerRow.getCell(i).getStringCellValue());
-                else
-                    header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
-                headerSet.add(header[i]);
-                if (header[i].equalsIgnoreCase("guid")) {
-                    guidPos = i;
-                }
-                if (header[i].equalsIgnoreCase("containerStuffingLocation")) {
-                    containerStuffingLocationPos = i;
-                }
-                if (header[i].equalsIgnoreCase("commodityCode")) {
-                    commodityCodePos = i;
-                }
-            }
+            validateHeaderUniqueness(headerSet, sheet.getRow(0).getLastCellNum());
 
-
-            if (headerSet.size() < headerRow.getLastCellNum()) {
-                throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
-            }
             addGuidInList(sheet, commodityCodePos, commodityCodesList, containerStuffingLocationPos, unlocationsList, guidPos);
 
-            //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap, locCodeToLocationReferenceGuidMap);
+            Map<String, Set<String>> masterListsMap =
+                    getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap, locCodeToLocationReferenceGuidMap);
 
             Map<String, String> existingContainerNumbers = new HashMap<>();
             processSheetLastRowNum(request, mapOfEntity, entityType, sheet, guidPos, header, masterListsMap, existingContainerNumbers, entityList);
+
         } catch (ValidationException e1) {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
@@ -415,6 +396,41 @@ public class CSVParsingUtil<T> {
         }
         return entityList;
     }
+
+    private String[] extractHeader(Row headerRow, Class<?> modelClass) {
+        Field[] fields = modelClass.getDeclaredFields();
+        Map<String, String> renameFieldMap = Arrays.stream(fields)
+                .filter(x -> x.isAnnotationPresent(ExcelCell.class))
+                .collect(Collectors.toMap(
+                        x -> ShipmentVersionContext.isV3() && !x.getAnnotation(ExcelCell.class).displayNameOverride().isEmpty()
+                                ? x.getAnnotation(ExcelCell.class).displayNameOverride()
+                                : x.getAnnotation(ExcelCell.class).displayName(),
+                        Field::getName));
+
+        String[] header = new String[headerRow.getLastCellNum()];
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            validateExcelColumn(headerRow, i);
+            String cellValue = headerRow.getCell(i).getStringCellValue();
+            header[i] = renameFieldMap.getOrDefault(cellValue, getCamelCase(cellValue));
+        }
+        return header;
+    }
+
+    private int findColumnIndex(String[] header, String columnName) {
+        for (int i = 0; i < header.length; i++) {
+            if (header[i].equalsIgnoreCase(columnName)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void validateHeaderUniqueness(Set<String> headerSet, int totalColumns) {
+        if (headerSet.size() < totalColumns) {
+            throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
+        }
+    }
+
 
     private void validateExcelColumn(Row headerRow, int i) {
         if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
