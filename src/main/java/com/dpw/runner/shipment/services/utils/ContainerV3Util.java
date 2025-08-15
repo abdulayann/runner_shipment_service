@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
@@ -327,12 +328,20 @@ public class ContainerV3Util {
         for (Field field : fieldsList) {
             Cell cell = headerRow.createCell(i++);
             ExcelCell annotation = field.getAnnotation(ExcelCell.class);
-            String displayName = !annotation.displayNameOverride().isEmpty()
-                    ? annotation.displayNameOverride()
-                    : (!annotation.displayName().isEmpty() ? annotation.displayName() : field.getName());
+
+            String displayName;
+            if (ShipmentVersionContext.isV3()) {
+                displayName = annotation.displayNameOverride();
+            } else if (!annotation.displayName().isEmpty()) {
+                displayName = annotation.displayName();
+            } else {
+                displayName = field.getName();
+            }
+
             cell.setCellValue(displayName);
         }
     }
+
 
     private void populateDataRows(List<ContainersExcelModel> modelList, XSSFSheet sheet, List<Field> fieldsList) throws IllegalAccessException {
         int rowIndex = 1;
@@ -584,7 +593,7 @@ public class ContainerV3Util {
     public String getContainerNumberOrType(Long containerId) {
         return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
     }
-    
+
     public String getContainerNumberOrType(Containers container) {
         return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }

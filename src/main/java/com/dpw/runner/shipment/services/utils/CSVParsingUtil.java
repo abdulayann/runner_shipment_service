@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
