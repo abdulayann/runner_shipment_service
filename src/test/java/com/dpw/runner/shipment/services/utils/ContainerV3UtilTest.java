@@ -849,6 +849,8 @@ class ContainerV3UtilTest extends CommonMocks {
         container1.setGrossVolumeUnit("CBM");
         container1.setGrossWeight(new BigDecimal("100.2"));
         container1.setGrossWeightUnit("KG");
+        container1.setNetWeight(new BigDecimal(1));
+        container1.setNetWeightUnit("KG");
         container1.setPacks("5");
         container1.setPacksType("BOX");
         List<Containers> containersList = List.of(container1);
@@ -898,6 +900,18 @@ class ContainerV3UtilTest extends CommonMocks {
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", new BigDecimal("10.0"));
+        to.put("packs", "ABC");
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual2() {
+        UUID containerId = UUID.randomUUID();
+        Map<String, Object> from = new HashMap<>();
+        from.put("grossWeight", null);
+        from.put("packs", "ABC");
+        Map<String, Object> to = new HashMap<>();
+        to.put("grossWeight", null);
         to.put("packs", "ABC");
         assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
     }

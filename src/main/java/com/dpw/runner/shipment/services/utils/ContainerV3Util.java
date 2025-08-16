@@ -677,6 +677,9 @@ public class ContainerV3Util {
             Object toValue = containersTo.get(key);
             Object fromValue = containersFrom.get(key);
 
+            if (toValue == null && fromValue == null) {
+                continue;
+            }
             if (isNullMismatch(toValue, fromValue)) {
                 throw new ValidationException(String.format(log, key, containerId));
             }
@@ -711,6 +714,8 @@ public class ContainerV3Util {
             map.get(containers.getGuid()).put(Constants.GROSS_VOLUME_UNIT, containers.getGrossVolumeUnit());
             map.get(containers.getGuid()).put(Constants.CARGO_WEIGHT, containers.getGrossWeight());
             map.get(containers.getGuid()).put(CARGO_WEIGHT_UNIT, containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put(GROSS_WEIGHT, containers.getNetWeight());
+            map.get(containers.getGuid()).put(GROSS_WEIGHT_UNIT, containers.getNetWeightUnit());
             map.get(containers.getGuid()).put(Constants.PACKS, containers.getPacks());
             map.get(containers.getGuid()).put(Constants.PACKS_TYPE, containers.getPacksType());
         }
