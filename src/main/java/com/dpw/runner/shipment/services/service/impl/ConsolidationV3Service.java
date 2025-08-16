@@ -878,6 +878,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
+                    newContainer.setNetWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setNetWeightUnit(newContainer.getContainerWeightUnit());
                     newContainer.setGrossWeight(newContainer.getCargoWeightPerContainer());
                     newContainer.setGrossWeightUnit(newContainer.getContainerWeightUnit());
                     if(!Objects.isNull(newContainer.getPackagesPerContainer())) {

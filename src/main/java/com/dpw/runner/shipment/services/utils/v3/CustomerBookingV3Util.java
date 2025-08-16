@@ -194,11 +194,8 @@ public class CustomerBookingV3Util {
     public BigDecimal getTotalCargoWeightFromPackages(List<Packing> packingList, String weightUnit) throws RunnerException {
         BigDecimal totalCargoWeight = BigDecimal.ZERO;
         for (Packing packing : packingList) {
-            BigDecimal packingCount = packing.getPacks() != null ? new BigDecimal(packing.getPacks()) : BigDecimal.ZERO;
-            BigDecimal weightPerPack = packing.getCargoWeightPerPack() != null ? packing.getCargoWeightPerPack() : BigDecimal.ZERO;
-            BigDecimal totalLineCargoWeight = new BigDecimal(convertUnit(MASS, packingCount.multiply(weightPerPack), packing.getPackWeightUnit(), weightUnit).toString());
-
-            totalCargoWeight = totalCargoWeight.add(packing.getWeight() != null ? packing.getWeight() : totalLineCargoWeight);
+            BigDecimal totalLineCargoWeight = new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), weightUnit).toString());
+            totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
         }
         return totalCargoWeight;
     }
