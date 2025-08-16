@@ -122,7 +122,7 @@ public class CargoService implements ICargoService {
                 containerWeight,
                 containersWeightUnit,
                 MASS,
-                bookingWeightUnit
+                consolidationService.determineWeightChargeableUnit(shipmentSettingsDetails)
         );
         return weightWarningDetails;
     }
