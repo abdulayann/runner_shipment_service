@@ -153,7 +153,7 @@ class CustomerBookingV3UtilTest {
         packing.setPackWeightUnit("KG");
 
         BigDecimal result = customerBookingV3Util.getTotalCargoWeightFromPackages(List.of(packing), "KG");
-        Assertions.assertEquals(BigDecimal.TEN, result);
+        assertEquals(0, result.compareTo(BigDecimal.TEN));
 
     }
 }
