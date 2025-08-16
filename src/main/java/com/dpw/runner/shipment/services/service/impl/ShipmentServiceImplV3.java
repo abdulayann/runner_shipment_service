@@ -2462,7 +2462,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .atd(customerBookingRequest.getCarrierDetails().getAtd())
                             .build()).
                     consolidationType("STD").
-                    achievedQuantities(AchievedQuantitiesRequest.builder().teuCount(customerBookingRequest.getTeuCount()).containerCount(Math.toIntExact(customerBookingRequest.getContainers())).build()).
+                    achievedQuantities(AchievedQuantitiesRequest.builder().teuCount(customerBookingRequest.getTeuCount())
+                            .containerCount(Optional.ofNullable(customerBookingRequest.getContainers())
+                                    .map(Math::toIntExact)
+                                    .orElse(null)
+                    ).build()).
                     incoterms(customerBookingRequest.getIncoTerms()).
                     transportMode(customerBookingRequest.getTransportType()).
                     containerCategory(customerBookingRequest.getCargoType()).
