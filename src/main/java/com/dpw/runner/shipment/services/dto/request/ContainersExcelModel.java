@@ -84,7 +84,7 @@ public class ContainersExcelModel {
     private String maxTempUnit;
     @ExcelCell(displayName = "HblDeliveryMode")
     private String hblDeliveryMode;
-    @ExcelCell(displayName = "AllocationDate")
+    @ExcelCell(displayName = "AllocationDate",requiredInV3 = false)
     private LocalDateTime allocationDate;
     @ExcelCell(displayName = "DgClass")
     private String dgClass;
