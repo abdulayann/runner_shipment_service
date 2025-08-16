@@ -581,6 +581,36 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
+    void shouldPass_whenNonHazardousAndWeightFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(false);
+        c.setGrossWeight(new BigDecimal(10));
+        c.setGrossWeightUnit("KG");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
+    }
+
+    @Test
+    void shouldPass_whenHazardousAndAllDGFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(true);
+        c.setGrossWeight(new BigDecimal(10));
+        c.setGrossWeightUnit("KG");
+        c.setDgClass("3");
+        c.setUnNumber("UN1203");
+        c.setProperShippingName("Gasoline");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
+    }
+
+    @Test
+    void shouldPass_whenHazardousIsNullAndWeightFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(null);
+        c.setGrossWeight(new BigDecimal(5));
+        c.setGrossWeightUnit("KG");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
+    }
+
+    @Test
     void uploadContainers_shouldThrowValidationException_whenConsolidationIdIsNull() {
         requestData.setConsolidationId(null);
         assertThrows(ValidationException.class,

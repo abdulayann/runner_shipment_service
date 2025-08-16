@@ -487,11 +487,12 @@ public class ShipmentsV3Util {
             );
 
             // Volume
-            if (packsSummary.getVolume() != null && containerSummary.getVolume() != null) {
+            if (packsSummary.getVolume() != null && containerSummary.getContainerVolume() != null &&
+                    containerSummary.getContainerVolume().compareTo(BigDecimal.ZERO) != 0) {
                 volumeWarning = generateWarning(
                         packsSummary.getVolume(),
                         packsSummary.getVolumeUnit(),
-                        containerSummary.getVolume(),
+                        containerSummary.getContainerVolume(),
                         containerSummary.getVolumeUnit(),
                         VOLUME,
                         shipmentDetails.getVolumeUnit()
@@ -515,7 +516,8 @@ public class ShipmentsV3Util {
     }
 
     public CargoDetailsResponse buildShipmentResponse(Integer packs, Integer dgPacks, String packsType, String dgPacksType, VolumeWeightChargeable vwOb,
-                                                      ContainerResult result, BigDecimal weight, String weightUnit, BigDecimal volume, String volumeUnit) {
+                                                      ContainerResult result, BigDecimal weight, String weightUnit, BigDecimal volume, String volumeUnit,
+                                                      BigDecimal containerVolume) {
         return CargoDetailsResponse.builder()
                 .weight(weight)
                 .weightUnit(weightUnit)
@@ -531,6 +533,7 @@ public class ShipmentsV3Util {
                 .chargeableUnit(vwOb.getChargeableUnit())
                 .volumetricWeight(vwOb.getVolumeWeight())
                 .volumetricWeightUnit(vwOb.getVolumeWeightUnit())
+                .containerVolume(containerVolume)
                 .build();
     }
 

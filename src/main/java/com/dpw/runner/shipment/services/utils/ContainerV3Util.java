@@ -609,15 +609,29 @@ public class ContainerV3Util {
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
-        containersList.forEach(p -> {
-            if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
-                throw new ValidationException("Cargo Weight/Unit is mandatory ");
-            }
-        });
+        validateContainer(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         createOrUpdateContainers(requests, module);
     }
+
+    public void validateContainer(List<Containers> containersList) {
+        containersList.forEach(p -> {
+            String errorMessage = null;
+            if (p.getGrossWeight() == null || p.getGrossWeightUnit() == null) {
+                errorMessage = "Cargo Weight/Unit is mandatory";
+            } else if (Boolean.TRUE.equals(p.getHazardous()) &&
+                    (p.getDgClass() == null || p.getUnNumber() == null || p.getProperShippingName() == null)) {
+                errorMessage = "DG Class/Un Number/Proper Shipping name can not be null in case of DG";
+            }
+
+            if (errorMessage != null) {
+                throw new ValidationException(errorMessage);
+            }
+        });
+    }
+
+
     public List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
         if (request == null) {
             throw new ValidationException("Please add the container and then try again.");
@@ -669,7 +683,7 @@ public class ContainerV3Util {
             if (isBigDecimalChangeInvalid(toValue, fromValue)) {
                 throw new ValidationException(String.format(log, key, containerId));
             }
-            if (!Objects.equals(toValue, fromValue)) {
+            if (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal) && !Objects.equals(toValue, fromValue)) {
                 throw new ValidationException(String.format(log, key, containerId));
             }
         }
