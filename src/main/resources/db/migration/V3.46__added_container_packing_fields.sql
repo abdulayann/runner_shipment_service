@@ -12,3 +12,4 @@ ADD COLUMN IF NOT EXISTS packages_per_container BIGINT,
 ADD COLUMN IF NOT EXISTS container_package_type VARCHAR,
 ADD COLUMN IF NOT EXISTS cargo_weight_per_container NUMERIC(19,2),
 ADD COLUMN IF NOT EXISTS container_weight_unit VARCHAR;
+
