@@ -158,15 +158,20 @@ public class CargoService implements ICargoService {
         if(packings.isEmpty() && containers.isEmpty()) {
             response.setIsCargoSummaryEditable(Boolean.TRUE);
         } else if(packings.isEmpty()) {
-            boolean volumeMissingInContainers = false;
-            for (Containers container: containers) {
-                BigDecimal volume = Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO);
-                if (volume.compareTo(BigDecimal.ZERO) == 0) {
-                    volumeMissingInContainers = true;
-                    break;
+            response.setIsVolumeEditable(Boolean.TRUE);
+        } else if(containers.isEmpty()) {
+            boolean isWeightMissing = Boolean.FALSE;
+            boolean isVolumeMissing = Boolean.FALSE;
+            for(Packing packing : packings) {
+                if(Objects.isNull(packing.getWeight())) {
+                    isWeightMissing = Boolean.TRUE;
+                }
+                if(Objects.isNull(packing.getVolume())) {
+                    isVolumeMissing = Boolean.TRUE;
                 }
             }
-            response.setIsVolumeEditable(volumeMissingInContainers);
+            response.setIsVolumeEditable(isVolumeMissing);
+            response.setIsWeightEditable(isWeightMissing);
         }
     }
 
