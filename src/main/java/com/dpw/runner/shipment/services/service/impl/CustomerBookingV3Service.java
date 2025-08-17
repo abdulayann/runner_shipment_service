@@ -1613,6 +1613,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         cargoService.updateEditableFlags(cargoDetailsResponse, containersList, packingList);
         cargoService.updateSummaryWarnings(cargoDetailsResponse, containersList, packingList);
         customerBookingResponse.setIsVolumeEditable(cargoDetailsResponse.getIsVolumeEditable());
+        customerBookingResponse.setIsWeightEditable(cargoDetailsResponse.getIsWeightEditable());
         customerBookingResponse.setIsCargoSummaryEditable(cargoDetailsResponse.getIsCargoSummaryEditable());
         customerBookingResponse.setShipmentSummaryWarningsResponse(cargoDetailsResponse.getShipmentSummaryWarningsResponse());
     }
