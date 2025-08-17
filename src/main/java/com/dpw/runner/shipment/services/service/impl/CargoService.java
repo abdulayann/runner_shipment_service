@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
 @Slf4j
@@ -165,13 +164,24 @@ public class CargoService implements ICargoService {
             for(Packing packing : packings) {
                 if(Objects.isNull(packing.getWeight())) {
                     isWeightMissing = Boolean.TRUE;
+                    break;
                 }
                 if(Objects.isNull(packing.getVolume())) {
                     isVolumeMissing = Boolean.TRUE;
+                    break;
                 }
             }
             response.setIsVolumeEditable(isVolumeMissing);
             response.setIsWeightEditable(isWeightMissing);
+        } else {
+            boolean isVolumeMissing = Boolean.FALSE;
+            for(Packing packing : packings) {
+                if(Objects.isNull(packing.getVolume())) {
+                    isVolumeMissing = Boolean.TRUE;
+                    break;
+                }
+            }
+            response.setIsVolumeEditable(isVolumeMissing);
         }
     }
 
