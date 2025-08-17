@@ -85,12 +85,14 @@ public class CustomerBookingV3Util {
                 .toList();
         String volumeUnit = resolveUnit(volumeUnits, VOLUME_UNIT_M3);
         booking.setVolumeUnit(volumeUnit);
-        if(!packingList.isEmpty()) {
-            for (Packing packing : packingList) {
-                totalVolume = addVolume(packing, totalVolume, volumeUnit);
-            }
-            booking.setVolume(totalVolume);
+        boolean ifAnyPackMissedVolume = packingList.stream().anyMatch(p -> p.getVolume() == null);
+        if(ifAnyPackMissedVolume) {
+            return;
         }
+        for (Packing packing : packingList) {
+            totalVolume = addVolume(packing, totalVolume, volumeUnit);
+        }
+        booking.setVolume(totalVolume);
     }
 
     public void updatePackagesInBookingCargoSummary(List<Containers> containersList, List<Packing> packingList, CustomerBooking booking) {
