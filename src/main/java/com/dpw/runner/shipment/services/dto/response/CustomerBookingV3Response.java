@@ -182,5 +182,6 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String additionalTerms;
     private Boolean isVolumeEditable = Boolean.FALSE;
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
+    private Boolean isWeightEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
 }
