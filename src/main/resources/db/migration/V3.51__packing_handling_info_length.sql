@@ -1,0 +1,2 @@
+ALTER TABLE packing
+ALTER COLUMN handling_info TYPE VARCHAR(25000);
