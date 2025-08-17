@@ -546,8 +546,8 @@ public class ShipmentsV3Util {
 
         boolean mismatch = (convertedPackVal != null && convertedContVal != null && convertedPackVal.compareTo(convertedContVal) != 0);
 
-        String containerDisplay = convertedContVal != null ? convertedContVal.stripTrailingZeros().toPlainString() + " " + shipmentUnit : "";
-        String packageDisplay = convertedPackVal != null ? convertedPackVal.stripTrailingZeros().toPlainString() + " " + shipmentUnit : "";
+        String containerDisplay = contVal != null ? contVal.stripTrailingZeros().toPlainString() + " " + contUnit : "";
+        String packageDisplay = packVal != null ? packVal.stripTrailingZeros().toPlainString() + " " + packUnit : "";
         String difference = (mismatch)
                 ? convertedPackVal.subtract(convertedContVal).abs().stripTrailingZeros().toPlainString() + " " + shipmentUnit
                 : null;
