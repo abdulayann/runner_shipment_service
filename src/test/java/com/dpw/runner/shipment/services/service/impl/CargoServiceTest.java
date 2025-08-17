@@ -269,6 +269,49 @@ class CargoServiceTest {
     }
 
     @Test
+    void testCargoSummaryEditableFieldsWithWeightMissing() {
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.valueOf(3));
+        packing.setVolumeUnit("M3");
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(null);
+        packing1.setPacks("2");
+        packing1.setPacksType("PKG");
+        packing1.setWeightUnit("KG");
+        packing1.setVolume(BigDecimal.valueOf(3));
+        packing1.setVolumeUnit("M3");
+        packing1.setPacks("5");
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoService.updateEditableFlags(cargoDetailsResponse, new ArrayList<>(), List.of(packing1, packing));
+        assertFalse(cargoDetailsResponse.getIsVolumeEditable());
+        assertTrue(cargoDetailsResponse.getIsWeightEditable());
+    }
+
+    @Test
+    void testCargoSummaryEditableFieldsVolumeMissing() {
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
+        packing.setWeightUnit("KG");
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(null);
+        packing1.setPacks("2");
+        packing1.setPacksType("PKG");
+        packing1.setPacks("5");
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoService.updateEditableFlags(cargoDetailsResponse, new ArrayList<>(), List.of(packing1, packing));
+        assertTrue(cargoDetailsResponse.getIsVolumeEditable());
+        assertTrue(cargoDetailsResponse.getIsWeightEditable());
+    }
+
+    @Test
     void testCalculateChargeable_ForAirTransport_ShouldRoundOff() throws RunnerException {
         CargoChargeableRequest request = new CargoChargeableRequest();
         request.setTransportMode("AIR");

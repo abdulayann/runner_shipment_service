@@ -166,7 +166,6 @@ public class CargoService implements ICargoService {
         }
     }
 
-
     private boolean hasMissingWeight(List<Packing> packings) {
         return packings.stream().anyMatch(p -> Objects.isNull(p.getWeight()));
     }
