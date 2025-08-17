@@ -1543,6 +1543,6 @@ public class ReportConstants {
     public static final String PACKS_GOODS_DESCRIPTION2 = "PacksGoodsDescription2";
     public static final String PACKAGES = "Packages";
 
-
+    public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
 
 }
