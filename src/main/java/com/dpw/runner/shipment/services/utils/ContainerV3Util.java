@@ -671,8 +671,9 @@ public class ContainerV3Util {
     public static void validateBeforeAndAfterValues(UUID containerId,
                                                     Map<String, Object> containersTo,
                                                     Map<String, Object> containersFrom) {
-        String log = "%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s";
+        String log = "%s, cannot be edited for assigned containers. GUID: %s";
 
+        List<String> invalidKeys = new ArrayList<>();
         for (String key : containersTo.keySet()) {
             Object toValue = containersTo.get(key);
             Object fromValue = containersFrom.get(key);
@@ -680,15 +681,15 @@ public class ContainerV3Util {
             if (toValue == null && fromValue == null) {
                 continue;
             }
-            if (isNullMismatch(toValue, fromValue)) {
-                throw new ValidationException(String.format(log, key, containerId));
+            if (isNullMismatch(toValue, fromValue)
+                    || isBigDecimalChangeInvalid(toValue, fromValue)
+                    || (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal)
+                    && !Objects.equals(toValue, fromValue))) {
+                invalidKeys.add(key);
             }
-            if (isBigDecimalChangeInvalid(toValue, fromValue)) {
-                throw new ValidationException(String.format(log, key, containerId));
-            }
-            if (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal) && !Objects.equals(toValue, fromValue)) {
-                throw new ValidationException(String.format(log, key, containerId));
-            }
+        }
+        if (!invalidKeys.isEmpty()) {
+            throw new ValidationException(String.format(log, String.join(", ", invalidKeys), containerId));
         }
     }
 

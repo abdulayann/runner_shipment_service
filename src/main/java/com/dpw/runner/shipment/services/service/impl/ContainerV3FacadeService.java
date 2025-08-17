@@ -64,7 +64,9 @@ public class ContainerV3FacadeService {
             containerRequestList.forEach(containerV3Request -> {
                 if(StringUtility.isNotEmpty(containerV3Request.getContainerNumber())) {
                     ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(containerV3Request.getContainerNumber().trim());
-                    if (containerNumberCheckResponse !=null && !containerNumberCheckResponse.isSuccess()) {
+                    if (containerNumberCheckResponse != null && !containerNumberCheckResponse.isSuccess()
+                            && (containerNumberCheckResponse.getIsLastDigitCorrect() == null || containerNumberCheckResponse.getIsLastDigitCorrect())
+                    ) {
                         throw new ValidationException("Invalid container number format");
                     }
                     if(containerNumberCheckResponse != null && containerNumberCheckResponse.getLastDigit() != null) {
