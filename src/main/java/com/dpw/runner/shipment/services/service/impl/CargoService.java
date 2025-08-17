@@ -164,11 +164,9 @@ public class CargoService implements ICargoService {
             for(Packing packing : packings) {
                 if(Objects.isNull(packing.getWeight())) {
                     isWeightMissing = Boolean.TRUE;
-                    break;
                 }
                 if(Objects.isNull(packing.getVolume())) {
                     isVolumeMissing = Boolean.TRUE;
-                    break;
                 }
             }
             response.setIsVolumeEditable(isVolumeMissing);
