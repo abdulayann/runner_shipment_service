@@ -2460,6 +2460,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .etd(customerBookingRequest.getCarrierDetails().getEtd())
                             .ata(customerBookingRequest.getCarrierDetails().getAta())
                             .atd(customerBookingRequest.getCarrierDetails().getAtd())
+                            .destinationCountry(customerBookingRequest.getCarrierDetails().getDestinationCountry())
+                            .originCountry(customerBookingRequest.getCarrierDetails().getOriginCountry())
+                            .originPortCountry(customerBookingRequest.getCarrierDetails().getOriginPortCountry())
+                            .destinationPortCountry(customerBookingRequest.getCarrierDetails().getDestinationPortCountry())
                             .build()).
                     consolidationType("STD").
                     achievedQuantities(AchievedQuantitiesRequest.builder().teuCount(customerBookingRequest.getTeuCount())
@@ -2724,6 +2728,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .minTransitHours(customerBookingRequest.getCarrierDetails().getMinTransitHours())
                         .maxTransitHours(customerBookingRequest.getCarrierDetails().getMaxTransitHours())
                         .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
+                        .destinationCountry(customerBookingRequest.getCarrierDetails().getDestinationCountry())
+                        .originCountry(customerBookingRequest.getCarrierDetails().getOriginCountry())
+                        .originPortCountry(customerBookingRequest.getCarrierDetails().getOriginPortCountry())
+                        .destinationPortCountry(customerBookingRequest.getCarrierDetails().getDestinationPortCountry())
                         .build()
                 ).
                 contractId(customerBookingRequest.getContractId()).
