@@ -704,10 +704,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private static void setDgPackCountAndType(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+    public void setDgPackCountAndType(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
         List<Packing> packingList = shipmentDetailsEntity.getPackingList();
         if (!CollectionUtils.isEmpty(packingList)) {
-            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode()) || ( (TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_RAI.equals(response.getTransportMode()) && CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_ROA.equals(response.getTransportMode()) && CARGO_TYPE_LTL.equals(response.getShipmentType())))) {
                 boolean isEmptyWeightPackAvailable = packingList.stream()
                         .anyMatch(packing -> packing.getWeight() == null);
                 response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
@@ -716,10 +716,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private static void setDgPackCountAndTypeExternalResponse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveExternalResponse response) {
+    public void setDgPackCountAndTypeExternalResponse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveExternalResponse response) {
         List<Packing> packingList = shipmentDetailsEntity.getPackingList();
         if (!CollectionUtils.isEmpty(packingList)) {
-            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode()) ||((TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_RAI.equals(response.getTransportMode()) && CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_ROA.equals(response.getTransportMode()) && CARGO_TYPE_LTL.equals(response.getShipmentType())))) {
                 boolean isEmptyWeightPackAvailable = packingList.stream()
                         .anyMatch(packing -> packing.getWeight() == null);
                 response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
@@ -4513,7 +4513,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             String weightUnit = shipmentDetails.getWeightUnit();
             shipmentDetails.setWeight(oldShipment.getWeight());
             shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
-            if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && isEmptyWeightPackAvailable) {
+            if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) || ((TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType())) || (TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode()) && CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType())) || (TRANSPORT_MODE_ROA.equals(shipmentDetails.getTransportMode()) && CARGO_TYPE_LTL.equals(shipmentDetails.getShipmentType()))) && isEmptyWeightPackAvailable) {
                 shipmentDetails.setWeight(weight);
                 shipmentDetails.setWeightUnit(weightUnit);
             }

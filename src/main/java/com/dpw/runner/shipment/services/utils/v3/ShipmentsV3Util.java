@@ -468,11 +468,15 @@ public class ShipmentsV3Util {
             Integer packCountCont = containerSummary.getNoOfPacks();
 
             if (packCountPkg != null && packCountCont != null && !packCountPkg.equals(packCountCont)) {
+                String differenceUnit = packsSummary.getPacksUnit();
+                if (!containerSummary.getPacksUnit().equalsIgnoreCase(packsSummary.getPacksUnit())) {
+                    differenceUnit = PackingConstants.PKG;
+                }
                 packagesWarning = new ShipmentSummaryWarningsResponse.WarningDetail(
                         true,
                         packCountCont + " " + containerSummary.getPacksUnit(),
                         packCountPkg + " " + packsSummary.getPacksUnit(),
-                        Math.abs(packCountCont - packCountPkg) + " " + packsSummary.getPacksUnit()
+                        Math.abs(packCountCont - packCountPkg) + " " + differenceUnit
                 );
             }
 

@@ -1523,4 +1523,83 @@ class PackingV3ServiceTest extends CommonMocks {
         // Verify that the container lookup was attempted
         verify(containerDao).findById(400L);
     }
+    @Test
+    void testAirModeWithNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cargoDetailsResponse.setShipmentType("ANY");
+
+        Packing packing1 = new Packing();
+        Packing packing2 = new Packing();
+        packing1.setWeight(BigDecimal.TEN);
+
+        List<Packing> packings = Arrays.asList(packing1, packing2);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when AIR and any packing has null weight");
+    }
+
+    @Test
+    void testSeaModeWithLCLAndNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when SEA + LCL and null weight exists");
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeightsPresent_shouldNotSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(BigDecimal.TEN);
+        Packing packing2 = new Packing();
+        packing2.setWeight(BigDecimal.ONE);
+
+        List<Packing> packings = Arrays.asList(packing1, packing2);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertFalse(result, "Should not skip when SEA + LCL but all weights present");
+    }
+
+    @Test
+    void testRoadModeWithLTLAndNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LTL);
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when ROAD + LTL and null weight exists");
+    }
+
+    @Test
+    void testOtherModes_shouldRespectInitialFlag() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode("OTHER_MODE");
+        cargoDetailsResponse.setShipmentType("OTHER");
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, true);
+
+        assertTrue(result, "Should keep initial flag when mode/type not in condition");
+    }
 }

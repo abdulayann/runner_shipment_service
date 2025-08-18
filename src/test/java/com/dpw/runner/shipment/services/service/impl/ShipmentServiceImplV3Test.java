@@ -7511,4 +7511,207 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         verify(shipmentDao).findById(123L);
     }
+    @Test
+    void testAirModeWithNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing(); // default constructor
+        p1.setWeight(null);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeights_shouldNotSetEmptyWeight() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(BigDecimal.TEN);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.ONE);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testOtherMode_shouldNotCheckEmptyWeight() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode("OTHER");
+        response.setShipmentType("OTHER");
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Flag should not be set for unrelated mode");
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testEmptyPackingList_shouldNotSetFlags() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setPackingList(Collections.emptyList());
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertFalse(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testExternalResponse_airModeWithNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+    @Test
+    void testSeaModeWithLCLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeightsPresent_shouldNotSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(BigDecimal.ONE);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testRaiModeWithLCLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testRoadModeWithLTLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        response.setShipmentType(Constants.CARGO_TYPE_LTL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testOtherMode_shouldNotSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode("OTHER_MODE");
+        response.setShipmentType("OTHER_TYPE");
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Flag should not be set for unrelated mode");
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testEmptyPackingList_shouldNotSetAnyFlags() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setPackingList(Collections.emptyList());
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Should not set empty weight flag when no packings");
+        assertFalse(response.getIsPacksAvailable(), "Should not set packs available when list is empty");
+    }
 }
