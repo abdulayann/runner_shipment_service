@@ -26,9 +26,13 @@ import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,6 +71,10 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     @Autowired
     private MigrationUtil migrationUtil;
 
+    @Autowired
+    @Qualifier("asyncConsoleBackupHandlerExecutor")
+    private final ThreadPoolTaskExecutor asyncConsoleBackupHandlerExecutor;
+
     @Override
     public void restore(Integer tenantId) {
 
@@ -88,15 +96,30 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
 
-        for (Long consolidationId : consolidationIds) {
-            try {
-                processAndRestoreConsolidation(consolidationId, tenantId);
-            } catch (Exception e) {
-                log.error("Failed to restore consolidation id: {}", consolidationId, e);
-                migrationUtil.saveErrorResponse(consolidationId, Constants.CONSOLIDATION, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
+        List<CompletableFuture<Void>> futures = consolidationIds.stream()
+                .map(consolidationId -> CompletableFuture.runAsync(
+                        wrapWithContext(() -> {
+                            try {
+                                processAndRestoreConsolidation(consolidationId, tenantId);
+                            } catch (Exception e) {
+                                log.error("Failed to restore consolidation id: {}", consolidationId, e);
+                                migrationUtil.saveErrorResponse(consolidationId, Constants.CONSOLIDATION,
+                                        IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                throw new CompletionException(e);
+                            }
+                        }, tenantId),
+                        asyncConsoleBackupHandlerExecutor
+                ))
+                .toList();
+
+        // Wait for all tasks to complete with individual exception handling
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Handle any exceptions from individual futures
+        allFutures.exceptionally(ex -> {
+            log.error("Error during parallel consolidation processing", ex);
+            throw new IllegalArgumentException(ex);
+        }).join();
         log.info("Completed consolidation backup for tenant: {}", tenantId);
     }
 
@@ -284,5 +307,18 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndRestoreTriangularPartnerDetails(Long consolidationId) {
         consolidationDao.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
+
+    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+        return () -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+                task.run();
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        };
     }
 }

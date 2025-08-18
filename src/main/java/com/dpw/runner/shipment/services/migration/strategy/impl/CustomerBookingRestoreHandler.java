@@ -33,14 +33,18 @@ import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
@@ -63,7 +67,9 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     private final V1ServiceImpl v1Service;
     private final CustomKeyGenerator keyGenerator;
     private final CacheManager cacheManager;
-
+    @Autowired
+    @Qualifier("asyncBookingBackupHandlerExecutor")
+    private final ThreadPoolTaskExecutor asyncBookingBackupHandlerExecutor;
     @Autowired
     private MigrationUtil migrationUtil;
 
@@ -84,15 +90,31 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
-        for (Long bookingId : allBackupBookingIds) {
-            try {
-                restoreCustomerBookingData(bookingId, tenantId);
-            } catch (Exception e) {
-                log.error("Failed to restore Booking id: {}", bookingId, e);
-                migrationUtil.saveErrorResponse(bookingId, Constants.CUSTOMER_BOOKING, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
+        List<CompletableFuture<Void>> futures = allBackupBookingIds.stream()
+                .map(bookingId -> CompletableFuture.runAsync(
+                        wrapWithContext(() -> {
+                            try {
+                                restoreCustomerBookingData(bookingId, tenantId);
+                            } catch (Exception e) {
+                                log.error("Failed to restore booking id: {}", bookingId, e);
+                                migrationUtil.saveErrorResponse(bookingId, Constants.CUSTOMER_BOOKING,
+                                        IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                throw new CompletionException(e);
+                            }
+                        }, tenantId),
+                        asyncBookingBackupHandlerExecutor
+                ))
+                .toList();
+
+        // Wait for all tasks to complete with individual exception handling
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Handle any exceptions from individual futures
+        allFutures.exceptionally(ex -> {
+            log.error("Error during parallel booking processing", ex);
+            throw new IllegalArgumentException(ex);
+        }).join();
+        log.info("Completed booking backup for tenant: {}", tenantId);
     }
 
     public void restoreCustomerBookingData(Long bookingId, Integer tenantId) {
@@ -203,6 +225,19 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {
         return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
+    }
+
+    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+        return () -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+                task.run();
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        };
     }
 }
 
