@@ -68,6 +68,14 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.create(request));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response =  ConsolidationV3Controller.MyResponseClass.class)})
+    @GetMapping(ApiConstants.API_CLONE)
+    public ResponseEntity<IRunnerResponse> cloneById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) throws RunnerException {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        log.info("Received Consolidation clone request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.cloneConsolidation(request));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = ConsolidationV3Controller.MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsV3Request request) throws RunnerException {

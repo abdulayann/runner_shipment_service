@@ -54,6 +54,7 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -104,6 +105,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -143,6 +145,7 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
@@ -992,6 +995,103 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true));
 
   }
+
+  @Test
+  void cloneConsolidation_NullRequest_ThrowsRunnerException() {
+    assertThrows(RunnerException.class, () -> consolidationV3Service.cloneConsolidation(null));
+  }
+
+  @Test
+  void cloneConsolidation_NullId_ThrowsRunnerException() {
+    CommonGetRequest request = CommonGetRequest.builder().id(null).build();
+    assertThrows(RunnerException.class, () -> consolidationV3Service.cloneConsolidation(request));
+  }
+
+  @Test
+  void cloneConsolidation_EntityNotFound_ThrowsDataRetrievalFailureException() {
+    CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+    assertThrows(GenericException.class, () -> consolidationV3Service.cloneConsolidation(request));
+  }
+
+  @Test
+  void cloneConsolidation_Success() throws RunnerException {
+    CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+    ConsolidationDetailsV3Request mockRequest = new ConsolidationDetailsV3Request();
+    mockRequest.setCarrierDetails(new CarrierDetailRequest());
+    when(jsonHelper.convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class)))
+            .thenReturn(mockRequest);
+
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    when(jsonHelper.convertValue(any(ConsolidationDetailsV3Request.class), eq(ConsolidationDetailsV3Response.class)))
+            .thenReturn(mockResponse);
+    ConsolidationDetailsV3Response result = consolidationV3Service.cloneConsolidation(request);
+
+    assertNotNull(result);
+    verify(consolidationDetailsDao).findById(1L);
+    verify(jsonHelper).convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class));
+    verify(jsonHelper).convertValue(any(ConsolidationDetailsV3Request.class), eq(ConsolidationDetailsV3Response.class));
+
+    assertNull(mockRequest.getId());
+    assertNull(mockRequest.getConsolidationNumber());
+  }
+
+  @Test
+  void cloneConsolidation_Success_NoCarrierDetails() throws RunnerException {
+    CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+
+    // Mock DAO returning an entity
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+    // Mock conversion: return request object with null carrierDetails
+    ConsolidationDetailsV3Request mockRequest = new ConsolidationDetailsV3Request();
+    mockRequest.setCarrierDetails(null); // explicitly null
+    when(jsonHelper.convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class)))
+            .thenReturn(mockRequest);
+
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    when(jsonHelper.convertValue(any(ConsolidationDetailsV3Request.class), eq(ConsolidationDetailsV3Response.class)))
+            .thenReturn(mockResponse);
+
+    // Test
+    ConsolidationDetailsV3Response result = consolidationV3Service.cloneConsolidation(request);
+
+    // Verify
+    assertNotNull(result);
+    verify(consolidationDetailsDao).findById(1L);
+    verify(jsonHelper).convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class));
+    verify(jsonHelper).convertValue(any(ConsolidationDetailsV3Request.class), eq(ConsolidationDetailsV3Response.class));
+
+    // Ensure that the null carrierDetails stayed null
+    assertNull(mockRequest.getCarrierDetails());
+  }
+
+
+  @Test
+  void cloneConsolidation_ConversionThrowsException_GenericException() {
+    CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+    when(jsonHelper.convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class)))
+            .thenThrow(new RuntimeException("Mapping failed"));
+
+    assertThrows(GenericException.class, () -> consolidationV3Service.cloneConsolidation(request));
+  }
+
+  @Test
+  void cloneConsolidation_ExceptionWithNullMessage_ThrowsGenericMessage() {
+    CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+    when(jsonHelper.convertValue(any(ConsolidationDetails.class), eq(ConsolidationDetailsV3Request.class)))
+            .thenThrow(new RuntimeException((String) null));
+
+    GenericException ex = assertThrows(GenericException.class, () -> consolidationV3Service.cloneConsolidation(request));
+    assertNull(ex.getMessage());
+  }
+
 
   @Test
   void completeUpdate_NullEntityException() throws RunnerException {

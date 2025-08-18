@@ -13,6 +13,8 @@ public class DaoConstants {
 
     public static final String DAO_GENERIC_RETRIEVE_EXCEPTION_MSG = "Error occurred while trying to retrieve the object. Exception raised is: ";
 
+    public static final String DAO_GENERIC_CLONE_EXCEPTION_MSG = "Error occurred while trying to clone the object. Exception raised is: ";
+
     public static final String DAO_GENERIC_DELETE_EXCEPTION_MSG = "Error occurred while trying to delete the object. Exception raised is: ";
 
     public static final String DAO_GENERIC_CHANGE_STATUS_EXCEPTION_MSG = "Error occurred while trying to enable/disable the document. Exception raised is: ";
