@@ -1451,10 +1451,7 @@ public class PackingV3Service implements IPackingV3Service {
         Set<String> dgPacksUnitSet = new HashSet<>();
         int dgPacksCount = 0;
         boolean skipWeightInCalculation = false;
-        if (TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
-            skipWeightInCalculation = packings.stream()
-                    .anyMatch(packing -> packing.getWeight() == null);
-        }
+        skipWeightInCalculation = isSkipWeightInCalculation(packings, response, skipWeightInCalculation);
         for (Packing packing : packings) {
             setUniquePacksUnit(uniquePacksUnits, dgPacksUnitSet, packing);
             if (!skipWeightInCalculation && packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
@@ -1477,6 +1474,14 @@ public class PackingV3Service implements IPackingV3Service {
         response.setVolume(totalVolume);
         response.setDgPacks(dgPacksCount);
         setPacksUnits(response, uniquePacksUnits, dgPacksUnitSet);
+    }
+
+    public boolean isSkipWeightInCalculation(List<Packing> packings, CargoDetailsResponse response, boolean skipWeightInCalculation) {
+        if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode()) || ((TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_RAI.equals(response.getTransportMode()) && CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_ROA.equals(response.getTransportMode()) && CARGO_TYPE_LTL.equals(response.getShipmentType())))) {
+            skipWeightInCalculation = packings.stream()
+                    .anyMatch(packing -> packing.getWeight() == null);
+        }
+        return skipWeightInCalculation;
     }
 
     private static void setUniquePacksUnit(Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet, Packing packing) {
