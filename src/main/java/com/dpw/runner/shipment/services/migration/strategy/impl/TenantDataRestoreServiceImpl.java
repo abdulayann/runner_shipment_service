@@ -55,19 +55,8 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     public void restoreTenantData(Integer tenantId) {
         transactionTemplate.execute(status -> {
             try {
-                // Run shipment + consolidation in parallel
-                CompletableFuture<Void> shipmentFuture = CompletableFuture.runAsync(
-                        () -> executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId),
-                        asyncRestoreHandlerExecutor
-                );
-
-                CompletableFuture<Void> consolidationFuture = CompletableFuture.runAsync(
-                        () -> executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId),
-                        asyncRestoreHandlerExecutor
-                );
-                CompletableFuture.allOf(shipmentFuture, consolidationFuture).join();
-
-                // If both succeeded, run booking
+                executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
+                executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
                 executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
                 return null;
             } catch (Exception e) {
