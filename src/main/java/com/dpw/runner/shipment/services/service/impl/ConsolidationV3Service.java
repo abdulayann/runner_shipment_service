@@ -27,13 +27,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
@@ -3867,7 +3861,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
-
+        if(remarks != null)
+            sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
         if(remarks != null && !shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
@@ -5080,6 +5075,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if (listIsNullOrEmpty(request.getIncludeColumns())) {
             throw new RunnerException("IncludeColumns can't be null or empty");
+        }
+    }
+
+    private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
+                                            Set<ShipmentRequestedType> requestedTypes, String remarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        List<Long> interbranchShipIds = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails1 : shipment) {
+            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+            userNames.add(shipmentDetails1.getCreatedBy());
+            userNames.add(shipmentDetails1.getAssignedTo());
+            tenantIds.add(shipmentDetails1.getTenantId());
+            if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
+                interbranchShipIds.add(shipmentDetails1.getId());
+        }
+        userNames.add(consoleDetails.getCreatedBy());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        for(Long shipmentId : interbranchShipIds) {
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+            } catch (Exception e) {
+                log.error("Error while sending email");
+            }
         }
     }
 }
