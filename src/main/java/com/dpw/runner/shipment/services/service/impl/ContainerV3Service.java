@@ -1933,7 +1933,7 @@ public class ContainerV3Service implements IContainerV3Service {
         container = saveUnAssignContainerResults(shipmentIdsForDetachment, container, unAssignContainerParams);
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
-    private Containers fetchDataForUnAssignContainer(UnAssignContainerRequest request, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+    public Containers fetchDataForUnAssignContainer(UnAssignContainerRequest request, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
         Long containerId = request.getContainerId();
         Containers container = containerDao.findById(containerId)
                 .orElseThrow(() -> new EntityNotFoundException("Container not found with ID: " + containerId));
@@ -1991,7 +1991,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerV3Util.setContainerNetWeight(container); // set container net weight from gross weight and tare weight
         return shipmentIdsForDetachment;
     }
-    private void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container, List<Packing> packingList, List<Long> shipmentIdsForDetachment,
+    public void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container, List<Packing> packingList, List<Long> shipmentIdsForDetachment,
                                                      ShipmentDetails shipmentDetails, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
         Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentDetails.getId()));
         // we are removing all the packages from this shipment, hence container will be detached from shipment (but not for FCL/FTL shipment)
@@ -2001,7 +2001,7 @@ public class ContainerV3Service implements IContainerV3Service {
             handleUnAssignmentLogicWhenOnlyFewPacksAreRemoved(unAssignContainerParams, container, packingList, removePackIds);
         }
     }
-    private void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container, ShipmentDetails shipmentDetails,
+    public void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container, ShipmentDetails shipmentDetails,
                                                                List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds) {
         Long shipmentId = shipmentDetails.getId();
         if(commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType())) {

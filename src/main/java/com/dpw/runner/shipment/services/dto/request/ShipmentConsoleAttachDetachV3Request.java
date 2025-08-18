@@ -22,4 +22,5 @@ public class ShipmentConsoleAttachDetachV3Request implements IRunnerRequest {
     private boolean isFromConsolidation;
     private ConsolidationDetails consolidationDetails;
     private Boolean isFromEt;
+    private Boolean isForcedDetach;
 }
