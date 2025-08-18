@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,7 +12,6 @@ public class AwbOtherInfoResponse implements IRunnerResponse {
     private String shipper;
     private String carrier;
     private String executedAt;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime executedOn;
     private String carrierName;
     private String carrierHqAddress;
