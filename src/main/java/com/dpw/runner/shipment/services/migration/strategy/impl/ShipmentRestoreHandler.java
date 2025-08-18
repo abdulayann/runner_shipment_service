@@ -35,10 +35,14 @@ import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,6 +87,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final INetworkTransferRepository networkTransferRepository;
     private final V1ServiceImpl v1Service;
 
+    @Autowired
+    @Qualifier("asyncShipmentBackupHandlerExecutor")
+    private final ThreadPoolTaskExecutor asyncShipmentBackupHandlerExecutor;
     @Autowired
     private MigrationUtil migrationUtil;
 
@@ -328,15 +335,33 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
-        for (Long shipmentId : nonAttachedShipmentIds) {
-            try {
-                restoreShipmentTransaction(shipmentId, tenantId);
-            } catch (Exception e) {
-                log.error("Failed to restore Shipment id: {}", shipmentId, e);
-                migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
+
+        log.info("Count of no restore shipment ids data : {}", nonAttachedShipmentIds.size());
+        List<CompletableFuture<Void>> futures = nonAttachedShipmentIds.stream()
+                .map(shipmentId -> CompletableFuture.runAsync(
+                        wrapWithContext(() -> {
+                            try {
+                                restoreShipmentTransaction(shipmentId, tenantId);
+                            } catch (Exception e) {
+                                log.error("Failed to restore shipment id: {}", shipmentId, e);
+                                migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT,
+                                        IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                throw new CompletionException(e);
+                            }
+                        }, tenantId),
+                        asyncShipmentBackupHandlerExecutor
+                ))
+                .toList();
+
+        // Wait for all tasks to complete with individual exception handling
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Handle any exceptions from individual futures
+        allFutures.exceptionally(ex -> {
+            log.error("Error during parallel shipment processing", ex);
+            throw new IllegalArgumentException(ex);
+        }).join();
+        log.info("Completed shipment backup for tenant: {}", tenantId);
     }
 
     public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
@@ -352,5 +377,18 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndRestoreTriangularPartnerDetails(Long shipmentId) {
         shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
+
+    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+        return () -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+                task.run();
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        };
     }
 }
