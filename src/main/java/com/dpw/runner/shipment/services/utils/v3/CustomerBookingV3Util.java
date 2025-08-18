@@ -51,15 +51,13 @@ public class CustomerBookingV3Util {
             containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
+        booking.setContainers(null);
+        booking.setTeuCount(null);
         if (containers.isEmpty() && packings.isEmpty()) {
             saveBooking(booking, isForMigration);
             return;
         }
-        if(containers.isEmpty()) {
-            booking.setContainers(null);
-            booking.setTeuCount(null);
-        }
-        else {
+        else if(!containers.isEmpty()) {
             updateContainersAndTeuInBooking(containers, codeTeuMap, booking);
         }
         updatePackagesInBookingCargoSummary(containers, packings, booking);
