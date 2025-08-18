@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -33,6 +34,7 @@ import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerResult;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -549,11 +551,11 @@ public class ShipmentsV3Util {
                 : new BigDecimal(convertUnit(valueType, packVal, packUnit, shipmentUnit).toString());
 
         boolean mismatch = (convertedPackVal != null && convertedContVal != null && convertedPackVal.compareTo(convertedContVal) != 0);
-
-        String containerDisplay = contVal != null ? contVal.stripTrailingZeros().toPlainString() + " " + contUnit : "";
-        String packageDisplay = packVal != null ? packVal.stripTrailingZeros().toPlainString() + " " + packUnit : "";
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        String containerDisplay = contVal != null ? IReport.convertToWeightNumberFormat(contVal, v1TenantSettingsResponse) + " " + contUnit : "";
+        String packageDisplay = packVal != null ?   IReport.convertToWeightNumberFormat(packVal, v1TenantSettingsResponse) + " " + packUnit : "";
         String difference = (mismatch)
-                ? convertedPackVal.subtract(convertedContVal).abs().stripTrailingZeros().toPlainString() + " " + shipmentUnit
+                ? IReport.convertToWeightNumberFormat(convertedPackVal.subtract(convertedContVal).abs(), v1TenantSettingsResponse) + " " + shipmentUnit
                 : null;
 
         return mismatch
