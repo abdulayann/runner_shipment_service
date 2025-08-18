@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -113,9 +114,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
 
+
     @Transactional
     @Override
-    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId) {
+    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap) {
 
         log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
@@ -132,7 +134,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Step 3: Convert V2 console + its attached shipments into V3 structure
-        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
         // Step 4: Save all containers separately first, as they must be saved before referencing in packings
@@ -192,7 +194,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param packingVsContainerGuid map to record packing-to-container association during transformation
      * @return transformed V3-compatible consolidation
      */
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap) {
+
+        if(codeTeuMap.isEmpty()){
+            codeTeuMap = migrationUtil.initCodeTeuMap();
+        }
 
         UUID consolGuid = consolidationDetails.getGuid();
         log.info("Mapping V2 to V3 for Consolidation [guid={}]", consolGuid);
@@ -233,7 +239,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         log.info("Prepared shipment ↔ container mappings for [{}] container(s)", containerGuidToShipments.size());
 
         // Step 4: Distribute multi-count containers into individual container instances
-        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments);
+        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap);
         clonedConsole.setContainersList(splitContainers);
 
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
@@ -412,7 +418,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param containerGuidToShipments   Mapping of original container GUID to shipment GUIDs (used to reattach new containers)
      * @return A list of containers where each has containerCount == 1
      */
-    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments) {
+    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments, Map<String, BigDecimal> codeTeuMap) {
         List<Containers> resultContainers = new ArrayList<>();
 
         for (Containers container : inputContainers) {
@@ -434,6 +440,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
             // Step 2: For each newly generated container, propagate shipment links from original
             for (Containers tempContainer : tempContainers) {
+                setTeuInContainers(codeTeuMap, tempContainer);
                 // Only copy mapping if it's a new, unsaved container and not already mapped
                 if (tempContainer.getId() == null && !containerGuidToShipments.containsKey(tempContainer.getGuid())) {
                     List<UUID> shipmentUuids = containerGuidToShipments.get(originalGuid);
@@ -449,6 +456,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         log.info("Finished container splitting. Input: {}, Output: {}", inputContainers.size(), resultContainers.size());
         return resultContainers;
+    }
+
+    private void setTeuInContainers(Map<String, BigDecimal> codeTeuMap, Containers tempContainer) {
+        if (!codeTeuMap.isEmpty() && codeTeuMap.containsKey(tempContainer.getContainerCode())) {
+            tempContainer.setTeu(codeTeuMap.get(tempContainer.getContainerCode()));
+        }
     }
 
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) { //NOSONAR

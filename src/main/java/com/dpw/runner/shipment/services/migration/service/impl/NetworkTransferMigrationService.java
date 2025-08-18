@@ -1,17 +1,21 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
@@ -28,8 +32,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -69,8 +75,19 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Autowired
     private MigrationUtil migrationUtil;
 
+    @Autowired
+    private MDMServiceAdapter mdmServiceAdapter;
+
+
+    private Map<String, BigDecimal> codeTeuMap = new HashMap<>();
+
+    private void initCodeTeuMap() {
+        if(codeTeuMap.isEmpty())
+            codeTeuMap = migrationUtil.initCodeTeuMap();
+    }
+
     @Override
-    public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId) throws RunnerException {
+    public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
         log.info("Starting V2 to V3 migration for Network Transfer [id={}]", networkTransferId);
         Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findById(networkTransferId);
         if(networkTransferOptional.isEmpty()) {
@@ -81,7 +98,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         if(Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)){
             return migrateShipmentV2ToV3(networkTransfer, entityPayload);
         }else{
-            return migrateConsolidationV2ToV3(networkTransfer, entityPayload);
+            return migrateConsolidationV2ToV3(networkTransfer, entityPayload, codeTeuMap);
         }
     }
 
@@ -111,7 +128,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         return networkTransfer;
     }
 
-    private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
+    private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, Map<String, BigDecimal> codeTeuMap) {
         Long consolidationId = networkTransfer.getEntityId();
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolidationId);
@@ -129,7 +146,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         }
         log.info("Notes added for Network Transfer Consolidation [id={}]", networkTransfer.getId());
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false);
+        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, codeTeuMap);
         setMigrationStatus(v3Consol);
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v3Consol, EntityTransferV3ConsolidationDetails.class);
         log.info("Mapping completed for Network Transfer -> Consolidation [id={}]", networkTransfer.getId());
@@ -382,11 +399,11 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-
+                    initCodeTeuMap();
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating NetworkTransfer [id={}] and start time: {}", nteId, System.currentTimeMillis());
-                            NetworkTransfer migrated = migrateNteFromV2ToV3(nteId);
+                            NetworkTransfer migrated = migrateNteFromV2ToV3(nteId, codeTeuMap);
                             log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}] and end time: {}", nteId, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {

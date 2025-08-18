@@ -373,15 +373,17 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void setContainerValuesForLCL(Containers containers, EntityTransferContainerType containerType) throws RunnerException {
-        if (containers.getGrossWeight() != null && !isStringNullOrEmpty(containers.getGrossWeightUnit())
-                && !isStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
-            Double weight = (Double) convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
-            containers.setAchievedWeight(BigDecimal.valueOf(weight));
-        }
-        if (containers.getGrossVolume() != null && !isStringNullOrEmpty(containers.getGrossVolumeUnit())
-                && !isStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
-            Double volume = (Double) convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), containerType.getCubicCapacityUnit());
-            containers.setAchievedVolume(BigDecimal.valueOf(volume));
+        if(containers.getShipmentsList()!=null && !containers.getShipmentsList().isEmpty()) {
+            if (containers.getGrossWeight() != null && !isStringNullOrEmpty(containers.getGrossWeightUnit())
+                    && !isStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
+                Double weight = (Double) convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
+                containers.setAchievedWeight(BigDecimal.valueOf(weight));
+            }
+            if (containers.getGrossVolume() != null && !isStringNullOrEmpty(containers.getGrossVolumeUnit())
+                    && !isStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
+                Double volume = (Double) convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), containerType.getCubicCapacityUnit());
+                containers.setAchievedVolume(BigDecimal.valueOf(volume));
+            }
         }
     }
 
