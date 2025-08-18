@@ -3169,8 +3169,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public void updateContainerFromCargo(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) throws RunnerException {
-        if (!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
-                Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()) ||
+        if (Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()) ||
                 !isShipmentCargoFieldsChanged(shipmentDetails, oldShipment))
             return;
         containerV3Service.updateAttachedContainersData(List.of(shipmentDetails.getContainerAssignedToShipmentCargo()));
