@@ -73,7 +73,7 @@ public class EntityLevelRollbackService {
             // Read the full DO $$ ... $$ block as a single statement
             String sql = reader.lines().collect(Collectors.joining("\n")).trim();
 
-            String schema = String.format("public_%s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyddMM_mmss")));
+            String schema = String.format("public_%s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyddMM_HHmmss")));
             if (!sql.isEmpty()) {
                 sql = sql.replaceAll("__SCHEMA__", schema);
                 log.info("Executing PL/pgSQL block:\n{}", sql);
