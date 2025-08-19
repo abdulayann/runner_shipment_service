@@ -40,6 +40,7 @@ public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(CalculateAchievedValueRequest request) throws RunnerException;
     ConsolidationDetailsV3Response create(ConsolidationDetailsV3Request request);
     Pair<ConsolidationDetails, Long> createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request request);
+    ConsolidationDetailsV3Response cloneConsolidation(CommonGetRequest commonGetRequest) throws RunnerException;
     ConsolidationDetailsV3Response completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException;
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;

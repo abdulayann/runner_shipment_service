@@ -504,6 +504,56 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consolidationDetailsLongPair;
     }
 
+    @Transactional
+    @Override
+    public ConsolidationDetailsV3Response cloneConsolidation(CommonGetRequest commonGetRequest) throws RunnerException {
+
+        if (Objects.isNull(commonGetRequest)) {
+            log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_RETRIEVE_EMPTY_REQUEST);
+        }
+        if (Objects.isNull(commonGetRequest.getId())) {
+            log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST);
+        }
+
+        String responseMsg;
+        try {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(commonGetRequest.getId());
+            if (!consolidationDetails.isPresent()) {
+                log.error(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, commonGetRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ConsolidationDetailsV3Request cloneConsolidationDetailsV3Request = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsV3Request.class);
+            cloneConsolidationDetailsV3Request.setId(null);
+            cloneConsolidationDetailsV3Request.setConsolidationNumber(null);
+            cloneConsolidationDetailsV3Request.setMawb(null);
+            cloneConsolidationDetailsV3Request.setReferenceNumber(null);
+            cloneConsolidationDetailsV3Request.setAgentReference(null);
+            cloneConsolidationDetailsV3Request.setCoLoadBookingReference(null);
+            cloneConsolidationDetailsV3Request.setMrnNumber(null);
+            cloneConsolidationDetailsV3Request.setMsnNumber(null);
+            cloneConsolidationDetailsV3Request.setBookingAgent(null);
+            cloneConsolidationDetailsV3Request.setReferenceNumbersList(null);
+            cloneConsolidationDetailsV3Request.setCarrierBookingRef(null);
+            cloneConsolidationDetailsV3Request.setSourceGuid(null);
+
+            if(!Objects.isNull(cloneConsolidationDetailsV3Request.getCarrierDetails())) {
+                cloneConsolidationDetailsV3Request.getCarrierDetails().setId(null);
+                cloneConsolidationDetailsV3Request.getCarrierDetails().setGuid(null);
+            }
+
+            log.info("Consolidation details cloning started for Id {} with Request Id {}", commonGetRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            return jsonHelper.convertValue(cloneConsolidationDetailsV3Request, ConsolidationDetailsV3Response.class);
+
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CLONE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new GenericException(e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public ConsolidationDetailsV3Response completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException {

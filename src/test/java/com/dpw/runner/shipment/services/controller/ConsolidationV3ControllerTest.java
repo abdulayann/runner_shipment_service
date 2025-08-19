@@ -90,6 +90,20 @@ class ConsolidationV3ControllerTest {
   }
 
   @Test
+  void testCloneById_shouldReturnSuccessResponse() throws RunnerException {
+
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    when(consolidationV3Service.cloneConsolidation(any())).thenReturn(mockResponse);
+    when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+    ResponseEntity<IRunnerResponse> response = controller.cloneById(consolidationDetailsRequest.getId());
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).cloneConsolidation(any());
+  }
+
+  @Test
   void testRetrieveById_shouldReturnSuccessResponse() throws Exception {
     Long id = 123L;
     String guid = "guid-123";
