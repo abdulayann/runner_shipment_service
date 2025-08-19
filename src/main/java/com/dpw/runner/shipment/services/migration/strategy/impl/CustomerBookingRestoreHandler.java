@@ -90,7 +90,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
-        List<CompletableFuture<Object>> futures = allBackupBookingIds.stream()
+        List<CompletableFuture<Object>> bookingFutures = allBackupBookingIds.stream()
                 .map(id -> trxExecutor.runInAsyncForBooking(() -> {
                     try {
                         v1Service.setAuthContext();
@@ -111,14 +111,13 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        // Wait for all tasks to complete with individual exception handling
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> bookingFuture = CompletableFuture.allOf(bookingFutures.toArray(new CompletableFuture[0]));
 
-        // Handle any exceptions from individual futures
-        allFutures.exceptionally(ex -> {
+        bookingFuture.exceptionally(ex -> {
             log.error("Error during parallel booking processing", ex);
             throw new IllegalArgumentException(ex);
         }).join();
+
         log.info("Completed booking backup for tenant: {}", tenantId);
     }
 

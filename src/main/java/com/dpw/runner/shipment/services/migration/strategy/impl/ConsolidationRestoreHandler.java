@@ -93,7 +93,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
 
-        List<CompletableFuture<Object>> futures = consolidationIds.stream()
+        List<CompletableFuture<Object>> consolefutures = consolidationIds.stream()
                 .map(id -> trxExecutor.runInAsyncForConsole(() -> {
                     try {
                         v1Service.setAuthContext();
@@ -119,11 +119,10 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        // Wait for all tasks to complete with individual exception handling
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> consoleFuture = CompletableFuture.allOf(consolefutures.toArray(new CompletableFuture[0]));
 
-        // Handle any exceptions from individual futures
-        allFutures.exceptionally(ex -> {
+        // Handle any exceptions from individual consolefutures
+        consoleFuture.exceptionally(ex -> {
             log.error("Error during parallel consolidation processing", ex);
             throw new IllegalArgumentException(ex);
         }).join();

@@ -336,7 +336,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
 
         log.info("Count of no restore shipment ids data : {}", nonAttachedShipmentIds.size());
-        List<CompletableFuture<Object>> futures = nonAttachedShipmentIds.stream()
+        List<CompletableFuture<Object>> shipmentFutures = nonAttachedShipmentIds.stream()
                 .map(id -> trxExecutor.runInAsyncForShipment(() -> {
                     try {
                         v1Service.setAuthContext();
@@ -357,14 +357,12 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        // Wait for all tasks to complete with individual exception handling
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        // Handle any exceptions from individual futures
-        allFutures.exceptionally(ex -> {
+        CompletableFuture<Void> shipmentFuture = CompletableFuture.allOf(shipmentFutures.toArray(new CompletableFuture[0]));
+        shipmentFuture.exceptionally(ex -> {
             log.error("Error during parallel shipment processing", ex);
             throw new IllegalArgumentException(ex);
         }).join();
+
         log.info("Completed shipment backup for tenant: {}", tenantId);
     }
 
