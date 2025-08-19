@@ -18,7 +18,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -56,33 +55,6 @@ public class RoutingValidationUtil {
         }
         if (request.getId() == null) {
             throw new ValidationException("Routing ID is missing.");
-        }
-    }
-
-    public void validateRoutingLegs(List<RoutingsRequest> incomingRoutings) {
-
-        for (RoutingsRequest routingsRequest : incomingRoutings) {
-            validateRoutingLeg(routingsRequest.getEtd(), routingsRequest.getEta(),
-                    routingsRequest.getAtd(), routingsRequest.getAta());
-        }
-    }
-
-    private void validateRoutingLeg(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
-
-        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
-            throw new ValidationException("ETD cannot be more than ETA");
-        }
-
-        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
-            throw new ValidationException("ATA cannot be less than ATD");
-        }
-
-        if (Objects.nonNull(atd) && atd.toLocalDate().isAfter(LocalDate.now())) {
-            throw new ValidationException("ATD cannot be more than Current Date");
-        }
-
-        if (Objects.nonNull(ata) && ata.toLocalDate().isAfter(LocalDate.now())) {
-            throw new ValidationException("ATA cannot be more than Current Date");
         }
     }
 
@@ -205,7 +177,7 @@ public class RoutingValidationUtil {
             if (shipmentDetails.isEmpty()) {
                 throw new ValidationException("Please provide the valid shipment id");
             }
-            if (shipmentDetails.get().getConsolRef() != null) {
+            if (StringUtility.isNotEmpty(shipmentDetails.get().getConsolRef())) {
                 int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
                 if (inheritCarriage == 0) {
                     throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");

@@ -248,7 +248,7 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
-    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -940,6 +940,7 @@ public class ReportConstants {
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
+    public static final String VALIDATE_HOUSE_BILL = "/validate-house-bill";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
     public static final String UN = "UN";
@@ -1542,6 +1543,6 @@ public class ReportConstants {
     public static final String PACKS_GOODS_DESCRIPTION2 = "PacksGoodsDescription2";
     public static final String PACKAGES = "Packages";
 
-
+    public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
 
 }

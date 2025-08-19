@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -155,6 +156,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private MasterDataKeyUtils masterDataKeyUtils;
     @Mock
     private CargoService cargoService;
+    @Mock
+    private CustomerBookingV3Util customerBookingV3Util;
 
     @Mock
     private INotesDao notesDao;
@@ -716,7 +719,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertEquals("SINGLE_USAGE", request.getContractStatus());
@@ -816,7 +819,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertEquals("SINGLE_USAGE", request.getContractStatus());
@@ -879,7 +882,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
         assertTrue(response.getCharges().isEmpty());
@@ -983,7 +986,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse platformResponse = customerBookingService.platformCreateBooking(request);
 
         // Assertions
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(platformResponse.getBookingNumber());
     }
 
@@ -1017,8 +1020,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setWeightUnit("KG");
         // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
-        when(containerDao.findByBookingIdIn(anyList())).thenReturn(Collections.emptyList());
-        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(bookingCharge);
@@ -1032,8 +1033,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.ONE);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -2419,7 +2418,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         PlatformToRunnerCustomerBookingResponse platformResponse = customerBookingService.platformCreateBooking(request);
 
         // Assert
-        verify(customerBookingDao, times(2)).save(customerBooking);
+        verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(platformResponse.getBookingNumber());
     }
 
@@ -3743,10 +3742,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing1.setPacksType("BAG");
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
-        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
-        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
-        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         customerBookingService.updatePackingInfoInBooking(1L);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
@@ -3796,55 +3791,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of());
         customerBookingService.updateContainerInfoInBooking(2L);
-        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
-    }
-
-    @Test
-    void testUpdateCargoInfoInBookingWithContainers() throws RunnerException {
-        Containers containers = new Containers();
-        containers.setContainerCode("20FR");
-        containers.setContainerCount(1L);
-        containers.setBookingId(2L);
-        containers.setId(3L);
-        containers.setPackagesPerContainer(1L);
-        containers.setCargoWeightPerContainer(BigDecimal.TEN);
-        containers.setContainerPackageType("BAG");
-        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
-        Map<String, BigDecimal> teuMap = new HashMap<>();
-        teuMap.put("20FR", BigDecimal.ONE);
-        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
-        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of());
-        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
-        customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
-        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
-    }
-
-    @Test
-    void testUpdateCargoInfoInBookingWithPackages() throws RunnerException {
-        Packing packing = new Packing();
-        packing.setBookingId(1L);
-        packing.setVolume(BigDecimal.TEN);
-        packing.setVolumeUnit("M3");
-        packing.setWeight(BigDecimal.TEN);
-        packing.setWeightUnit("KG");
-        packing.setPacks("2");
-        packing.setPacksType("BAG");
-        Packing packing1 = new Packing();
-        packing1.setBookingId(2L);
-        packing1.setVolume(BigDecimal.ONE);
-        packing1.setVolumeUnit("M3");
-        packing1.setWeightUnit("KG");
-        packing1.setPacksType("BAG");
-        packing1.setPacks("3");
-        Map<String, BigDecimal> teuMap = new HashMap<>();
-        teuMap.put("20FR", BigDecimal.ONE);
-        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of());
-        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
-        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
-        volumeWeightChargeable.setChargeable(BigDecimal.ONE);
-        when(consolidationService.determineWeightChargeableUnit(any())).thenReturn("KG");
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        customerBookingService.updateCargoInformation(customerBooking, teuMap, null);
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
 

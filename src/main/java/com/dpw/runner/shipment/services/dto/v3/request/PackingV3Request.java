@@ -84,6 +84,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String commodityGroup;
     private Boolean isDimension;
     private Boolean isContractEnforced;
+    @Size(max=25000, message = "max size is 25000 for handling info")
     private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
     private String unNumberAir;

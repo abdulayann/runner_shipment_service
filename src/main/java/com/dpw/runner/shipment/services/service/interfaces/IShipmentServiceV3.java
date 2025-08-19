@@ -46,6 +46,7 @@ public interface IShipmentServiceV3 {
     NotificationCount getPendingNotificationCount();
 
     ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel);
 
     ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId);
     ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId);
@@ -55,6 +56,9 @@ public interface IShipmentServiceV3 {
     void delete(CommonRequestModel commonRequestModel);
 
     ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData, String source) throws RunnerException, AuthenticationException;
+
+    ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdExternal(CommonRequestModel commonRequestModel, String source);
+    ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel commonRequestModel, String source);
 
     ShipmentDetailsV3Response completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 

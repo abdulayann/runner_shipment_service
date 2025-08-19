@@ -251,11 +251,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -352,6 +355,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -4620,8 +4625,132 @@ public class ConsolidationService implements IConsolidationService {
         if (invalidateExcel(commonRequestModel, request)) return;
 
         applyPermissionFilter(commonRequestModel);
-        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+        request.setPageSize(exportExcelLimit);
+
+        Page<ConsolidationLiteResponse> consolidationDetailsPageLite = fetchConsolidationPageForExport(request);
+        long consolidationCount = consolidationDetailsPageLite.getTotalElements();
+
+        if(consolidationCount <= exportExcelLimit){
+            downloadShipmentListExcel(response, consolidationDetailsPageLite);
+        }else{
+            request.setPageSize(Integer.MAX_VALUE);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
+                TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+                txTemplate.execute(status -> {
+                    emailConsolidationListExcel(response, request);
+                    return null;
+                });
+            }), executorService);
+        }
+        log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
+    }
+
+    private Page<ConsolidationLiteResponse> fetchConsolidationPageForExport(ListCommonRequest request) {
+        log.info("Entering fetchConsolidationPageForExport with request: {}", request);
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple =
+                fetchData(request, ConsolidationDetails.class, tableNames);
+
+        log.debug("Specification generated: {}", tuple.getLeft());
+        log.debug("Pageable details: {}", tuple.getRight());
+
         Page<ConsolidationLiteResponse> consolidationDetailsPageLite = customConsolidationDetailsRepository.findAllLiteConsol(tuple.getLeft(), tuple.getRight());
+
+        log.info("Fetched {} records, totalElements: {}, totalPages: {}",
+                consolidationDetailsPageLite.getNumberOfElements(),
+                consolidationDetailsPageLite.getTotalElements(),
+                consolidationDetailsPageLite.getTotalPages());
+
+        return consolidationDetailsPageLite;
+    }
+
+    private void downloadShipmentListExcel(HttpServletResponse response, Page<ConsolidationLiteResponse> consolidationLiteResponsePage) {
+        log.info("Starting download of Consolidation list Excel. Request Id {}", LoggerHelper.getRequestIdFromMDC());
+
+        exportConsolidationListToExcel(consolidationLiteResponsePage, response, false);
+        log.info("Shipment list Excel download completed successfully.");
+    }
+
+    private void emailConsolidationListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
+        log.info("Starting email of Consolidation list Excel. Request model: {}", listCommonRequest);
+
+        Page<ConsolidationLiteResponse> consolidationDetailsPage = fetchConsolidationPageForExport(listCommonRequest);
+        log.info("Fetched {} Consolidations(s) for Excel email.", consolidationDetailsPage.getTotalElements());
+
+        exportConsolidationListToExcel(consolidationDetailsPage, response, true);
+        log.info("Shipment list Excel email process completed successfully.");
+    }
+
+    public void exportConsolidationListToExcel(Page<ConsolidationLiteResponse> consolidationDetailsPage, HttpServletResponse response, boolean sendEmail) {
+        // Build the Excel workbook
+        Workbook workbook = buildExcelWorkbook(consolidationDetailsPage);
+
+        // Generate filename with timestamp
+        String filenameWithTimestamp = generateFilename();
+
+        if (sendEmail) {
+            // Send via email if limit exceeded
+            sendExcelViaEmail(workbook, filenameWithTimestamp);
+        } else {
+            // Download directly
+            downloadExcelFile(workbook, filenameWithTimestamp, response);
+        }
+    }
+
+    // Method 3: Download Excel file
+    private void downloadExcelFile(Workbook workbook, String filename, HttpServletResponse response) {
+        try {
+            response.reset();
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
+                workbook.write(outputStream);
+                log.info("Excel file written to response successfully with filename: {}", filename);
+            } catch (IOException e) {
+                log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
+                throw new GenericException("Failed to write Excel file to response", e);
+            }
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Method 2: Send Excel via email
+    private void sendExcelViaEmail(Workbook workbook, String filename) {
+        try {
+            log.info("Record count exceeds export limit. Sending Excel via email.");
+            commonUtils.sendExcelFileViaEmail(workbook, filename);
+            log.info("Excel file sent via email successfully with filename: {}", filename);
+        } catch (Exception e) {
+            log.error("Error sending Excel file via email: {}", e.getMessage(), e);
+            throw new GenericException("Failed to send Excel file via email", e);
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Utility method to safely close workbook
+    private void closeWorkbook(Workbook workbook) {
+        if (workbook != null) {
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                log.warn("Error closing workbook: {}", e.getMessage(), e);
+            }
+        }
+    }
+
+    private String generateFilename() {
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
+        String timestamp = currentTime.format(formatter);
+        return "Consolidations_listing_" + timestamp + Constants.XLSX;
+    }
+
+    private Workbook buildExcelWorkbook(Page<ConsolidationLiteResponse> consolidationDetailsPageLite) {
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean isShipmentLevelContainer = shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer();
@@ -4629,95 +4758,62 @@ public class ConsolidationService implements IConsolidationService {
 
         List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsList, isShipmentLevelContainer);
 
-        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
             headerMap.put(ConsolidationConstants.CONSOLIDATION_HEADER.get(i), i);
         }
-        try(Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("ConsolidationList");
-            makeHeadersInSheet(sheet, workbook);
 
-            for (int i = 0; i < consoleResponse.size(); i++) {
-                Row itemRow = sheet.createRow(i + 1);
-                ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ConsolidationList");
+        makeHeadersInSheet(sheet, workbook);
+
+        for (int i = 0; i < consoleResponse.size(); i++) {
+            Row itemRow = sheet.createRow(i + 1);
+            ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+            try {
                 LocalTimeZoneHelper.transformTimeZone(consol);
-                itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(getValueOrDefault(consol.getConsolidationType(), ""));
-
-                itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(getValueOrDefault(consol.getConsolidationNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(getValueOrDefault(consol.getTransportMode(), ""));
-
-                itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(getValueOrDefault(consol.getShipmentType(), ""));
-
-                addItemRowForCarrierDetailsDate(itemRow, headerMap, consol);
-
-                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getIsDomestic(), ""));
-
-                itemRow.createCell(headerMap.get("Created By")).setCellValue(getValueOrDefault(consol.getCreatedBy(), ""));
-
-                itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
-
-                itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(getValueOrDefault(consol.getPayment(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
-
-                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
-
-                itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getEstimatedTerminalCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getTerminalCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(getStringValueOrDefault(consol.getShipInstructionCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getHazardousBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(getStringValueOrDefault(consol.getVerifiedGrossMassCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(getStringValueOrDefault(consol.getReeferCutoff(), ""));
-
-
-                itemRow.createCell(headerMap.get("Booking Type")).setCellValue(getValueOrDefault(consol.getBookingType(), ""));
-
-                itemRow.createCell(headerMap.get("Reference Number")).setCellValue(getValueOrDefault(consol.getReferenceNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(getValueOrDefault(consol.getBookingStatus(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Container Count")).setCellValue(getStringValueOrDefault(consol.getContainerCount(), ""));
-
-                addPolPodItemRow(itemRow, headerMap, consol);
-
-                itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
-
-                addItemRowForCarrierDetailsUnLocation(itemRow, headerMap, consol);
+            } catch (IllegalAccessException e) {
+                throw new GenericException(e);
             }
 
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Consolidations_listing_" + timestamp + Constants.XLSX;
-
-            Integer exportExcelLimit = getExportExcelLimit();
-            if (consoleResponse.size() > exportExcelLimit) {
-                // Send the file via email
-                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
-            }else {
-                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-                response.setHeader("Content-Disposition",
-                    "attachment; filename=" + filenameWithTimestamp);
-
-                try (OutputStream outputStream = response.getOutputStream()) {
-                    workbook.write(outputStream);
-                }
-            }
+            populateRowData(itemRow, headerMap, consol);
         }
 
+        return workbook;
+    }
+
+    private void populateRowData(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
+        itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(getValueOrDefault(consol.getConsolidationType(), ""));
+        itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(getValueOrDefault(consol.getConsolidationNumber(), ""));
+        itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(getValueOrDefault(consol.getTransportMode(), ""));
+        itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(getValueOrDefault(consol.getShipmentType(), ""));
+
+        addItemRowForCarrierDetailsDate(itemRow, headerMap, consol);
+
+        itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getIsDomestic(), ""));
+        itemRow.createCell(headerMap.get("Created By")).setCellValue(getValueOrDefault(consol.getCreatedBy(), ""));
+        itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
+        itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(getValueOrDefault(consol.getPayment(), ""));
+        itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
+        itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
+        itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getEstimatedTerminalCutoff(), ""));
+        itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getTerminalCutoff(), ""));
+        itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
+        itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(getStringValueOrDefault(consol.getShipInstructionCutoff(), ""));
+        itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getHazardousBookingCutoff(), ""));
+        itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(getStringValueOrDefault(consol.getVerifiedGrossMassCutoff(), ""));
+        itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(getStringValueOrDefault(consol.getReeferCutoff(), ""));
+        itemRow.createCell(headerMap.get("Booking Type")).setCellValue(getValueOrDefault(consol.getBookingType(), ""));
+        itemRow.createCell(headerMap.get("Reference Number")).setCellValue(getValueOrDefault(consol.getReferenceNumber(), ""));
+        itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(getValueOrDefault(consol.getBookingStatus(), ""));
+        itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+        itemRow.createCell(headerMap.get("Container Count")).setCellValue(getStringValueOrDefault(consol.getContainerCount(), ""));
+
+        addPolPodItemRow(itemRow, headerMap, consol);
+
+        itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+
+        addItemRowForCarrierDetailsUnLocation(itemRow, headerMap, consol);
     }
 
   private boolean invalidateExcel(CommonRequestModel commonRequestModel, ListCommonRequest request) {

@@ -111,4 +111,10 @@ public class ReportController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = FETCH_SUCCESSFUL)})
+    @PostMapping(ReportConstants.VALIDATE_HOUSE_BILL)
+    public ResponseEntity<IRunnerResponse> validateHouseBill(@RequestBody @Valid ReportRequest request) {
+        reportService.validateHouseBill(request);
+        return ResponseHelper.buildSuccessResponse();
+    }
 }

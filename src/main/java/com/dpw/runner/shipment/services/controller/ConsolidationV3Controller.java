@@ -157,9 +157,19 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.API_LIST_V3)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
-        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(listCommonRequest, getMasterData);
+        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
         return ResponseHelper.buildListSuccessConsolidationResponse(consolidationListV3Response.getConsolidationListResponses(), consolidationListV3Response.getTotalPages(),
             consolidationListV3Response.getNumberOfRecords());
+
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_EXT)
+    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        log.info("Received Consolidation list External request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.listExternal(listCommonRequest);
+        return ResponseHelper.buildListSuccessConsolidationResponse(consolidationListV3Response.getConsolidationListResponses(), consolidationListV3Response.getTotalPages(),
+                consolidationListV3Response.getNumberOfRecords());
 
     }
 

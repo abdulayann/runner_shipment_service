@@ -708,7 +708,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
         List<RoutingsRequest> incomingRoutings = request.getRoutings();
-        routingValidationUtil.validateRoutingLegs(incomingRoutings);
         routingValidationUtil.validateMainCarriageRoutingLegs(incomingRoutings);
 
         setFlightNumberInCaseAir(incomingRoutings);

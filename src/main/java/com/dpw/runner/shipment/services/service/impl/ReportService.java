@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
+
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -75,6 +79,7 @@ import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -131,6 +136,29 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -146,24 +174,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 @Service
 @Slf4j
@@ -248,8 +258,6 @@ public class ReportService implements IReportService {
     @Autowired
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
-
-    private final Map<String, Integer> namingCache = new ConcurrentHashMap<>();
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
@@ -956,6 +964,7 @@ public class ReportService implements IReportService {
             String discrepancyNote) {
 
         List<Packing> packingList = shipment.getPackingList();
+        Set<Containers> containersList = shipment.getContainersList();
 
         if (ObjectUtils.isEmpty(packingList)) {
             return; // No packings → Nothing to validate
@@ -964,12 +973,15 @@ public class ReportService implements IReportService {
         boolean hasUnassignedPackage = packingList.stream()
                 .anyMatch(p -> p.getContainerId() == null);
 
-        if (hasUnassignedPackage) {
+        boolean hasUnassignedContainers = containersList.stream()
+                .anyMatch(c -> ObjectUtils.isEmpty(c.getPacksList()));
+
+        if (hasUnassignedPackage || hasUnassignedContainers) {
             Boolean allowUnassigned = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
             if (Boolean.TRUE.equals(allowUnassigned)) {
-                throw new ReportExceptionWarning("Unassigned packages found — review " + discrepancyNote);
+                throw new ReportExceptionWarning("Unassigned packages/containers found — review " + discrepancyNote);
             } else {
-                throw new ReportException("Unassigned packages found — Cannot Generate " + documentName + ".");
+                throw new ReportException("Unassigned packages/containers found — Cannot Generate " + documentName + ".");
             }
         }
     }
@@ -994,15 +1006,6 @@ public class ReportService implements IReportService {
         if (!SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
-
-        if (Boolean.TRUE.equals(reportRequest.getForValidation())) {
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "Seaway Bill",
-                    "Seaway for possible cargo discrepancies."
-            );
-        }
     }
 
     private void handleHouseBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
@@ -1020,25 +1023,12 @@ public class ReportService implements IReportService {
                 (isOriginalBill && !validPrintTypes.contains(upperPrintType)) ||
                         (!isOriginalBill && validPrintTypes.contains(upperPrintType));
 
-        if (Boolean.TRUE.equals(reportRequest.getForValidation()) &&
-                (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
-                        || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                        || ReportConstants.COPY.equalsIgnoreCase(printType))) {
-
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "BL",
-                    "BL for possible cargo discrepancies."
-            );
-        }
-
         if (isSurrenderMismatch || isOriginalMismatch) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
     }
 
-    private ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
+    public ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
                 || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) || !List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo))
@@ -2632,6 +2622,33 @@ public class ReportService implements IReportService {
         return response;
     }
 
+    @Override
+    public void validateHouseBill(ReportRequest reportRequest) {
+        IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+
+        ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        if (report instanceof HblReport) {
+            validateUnassignedPackagesInternal(
+                    shipment,
+                    shipmentSettingsDetails,
+                    "BL",
+                    "BL for possible cargo discrepancies."
+            );
+
+        } else if (report instanceof SeawayBillReport) {
+            validateUnassignedPackagesInternal(
+                    shipment,
+                    shipmentSettingsDetails,
+                    "Seaway Bill",
+                    "Seaway for possible cargo discrepancies."
+            );
+        } else {
+            throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
+        }
+    }
+
     public void getEmailTemplate(Long emailTemplateId, List<EmailTemplatesRequest> emailTemplatesRequests) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List <Object> criteria1 = Arrays.asList(List.of(EntityTransferConstants.ID), "=", emailTemplateId);
@@ -2732,6 +2749,7 @@ public class ReportService implements IReportService {
 
     public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
+        double start = System.currentTimeMillis();
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
@@ -2765,6 +2783,11 @@ public class ReportService implements IReportService {
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
                     break;
+                case PICKUP_ORDER_V3, DELIVERY_ORDER_V3, TRANSPORT_ORDER_V3:
+                    filename = StringUtility.convertToString(dataRetrieved.get(TI_REFERENCE_NUMBER)) + DocumentConstants.DOT_PDF;
+                    childType = StringUtility.convertToString(dataRetrieved.get(TI_REFERENCE_NUMBER));
+                    docType = TRANSPORT_INSTRUCTIONS;
+                    break;
                 default:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
@@ -2775,7 +2798,9 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
+                log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                return response;
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
                 throw new ValidationException("Failed to generate the document. Kindly retry.");
@@ -2810,22 +2835,16 @@ public class ReportService implements IReportService {
                         Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
                         Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
                 );
-
+                // Base document name from mapping or fallback
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-
-                String key = entityGuid + "|" + docType + "|" + identifier + "|" + (childType != null ? childType : "");
-
-                // Initialize & increment atomically
-                int count = namingCache.compute(key, (k, v) -> (v == null)
-                        ? getExistingDocumentCount(entityGuid, docType, childType)
-                        : v + 1);
-
-                String suffix = count > 0 ? "_" + count : "";
-
+                int count = getExistingDocumentCount(entityGuid, docType, childType, docUploadRequest.getEntityType());
+                String suffix = count > 0 ? "_" + (count)  : "";
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
-                    customFileName = baseDocName + "_" + StringUtility.convertToString(childType).toUpperCase() + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
-                } else {
+                    customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                } else if (Objects.equals(docType, TRANSPORT_INSTRUCTIONS)) {
+                    customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + suffix + DocumentConstants.DOT_PDF;
+                }else {
                     customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
@@ -2836,26 +2855,32 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
-    private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
+
+    private int getExistingDocumentCount(String entityGuid, String docType, String childType, String type) {
         try {
             DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
                     .entityKey(entityGuid)
+                    .entityType(type)
+                    .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
                     .build();
             DocumentManagerMultipleEntityFileRequest multiRequest = DocumentManagerMultipleEntityFileRequest.builder()
                     .entities(Collections.singletonList(request))
+                    .needCount(true)
                     .build();
 
             DocumentManagerListResponse<DocumentManagerEntityFileResponse> response =
                     documentManagerService.fetchMultipleFilesWithTenant(multiRequest);
 
             if (response != null && response.getData() != null) {
-                return (int) response.getData().stream()
-                        .filter(file -> file.getFileType() != null && file.getFileType().trim().equalsIgnoreCase(docType.trim()))
-                        .filter(file -> childType == null || childType.isBlank() || (file.getChildType() != null &&
-                                file.getChildType().trim().equalsIgnoreCase(childType.trim()))).count();
+                var data = response.getData().stream()
+                        .filter(file -> Objects.equals(file.getChildType(), childType)
+                                && Objects.equals(file.getDocCode(), docType))
+                        .findFirst()
+                        .orElse(null);
+                return data != null && data.getCount() != null ? data.getCount() : 0;
             }
         } catch (Exception e) {
-            log.error("Error counting documents for entity {}: {}", entityGuid, e.getMessage());
+            log.error("{} | Error counting documents for entity {}: {}", LoggerHelper.getRequestIdFromMDC(), entityGuid, e.getMessage());
         }
         return 0;
     }

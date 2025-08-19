@@ -118,21 +118,21 @@ class PackingV3ControllerTest {
 
     @Test
     void updateBulkFromShipment() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("SHIPMENT"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("SHIPMENT"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromShipment(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
     void updateBulkFromConsolidation() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("CONSOLIDATION"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("CONSOLIDATION"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromConsolidation(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
     void updateBulkFromCustomerBooking() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("BOOKING"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("BOOKING"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromCustomerBooking(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

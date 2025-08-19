@@ -58,6 +58,7 @@ import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -88,6 +89,8 @@ import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
@@ -223,6 +226,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -843,7 +847,8 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testList() {
-    assertThrows(ValidationException.class, () -> consolidationV3Service.list(null, true));
+    var request = CommonRequestModel.builder().build();
+    assertThrows(ValidationException.class, () -> consolidationV3Service.list(request, true));
   }
 
   @Test
@@ -5965,5 +5970,54 @@ if (unitConversionUtilityMockedStatic != null) {
 
         verify(consolidationDetailsDao, never()).findByGuid(any());
     }
+
+
+  @Test
+  void testListExternal_InvalidRequest_ThrowsValidationException(){
+    assertThrows(ValidationException.class, () -> consolidationV3Service.listExternal(null));
+  }
+
+  @Test
+  void testListExternal_Success_WithIncludeColumns() {
+    // arrange
+    testConsol.setId(1L);
+    ListCommonRequest request = new ListCommonRequest();
+    request.setIncludeColumns(List.of("id", "consolidationNumber"));
+    IRunnerResponse dto = ConsolidationMapper.INSTANCE.toConsolidationListResponse(testConsol);
+    Page<ConsolidationDetails> page = new PageImpl<>(List.of(testConsol));
+
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(page);
+    when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any()))
+            .thenReturn(dto);
+
+    // act
+    ConsolidationListV3Response resp = consolidationV3Service.listExternal(request);
+
+    // assert
+    assertNotNull(resp);
+    assertEquals(1, resp.getConsolidationListResponses().size());
+  }
+
+  @Test
+  void testListExternal_Success_WithoutIncludeColumns() {
+    // arrange
+    testConsol.setId(2L);
+    ListCommonRequest request = new ListCommonRequest();
+    request.setIncludeColumns(Collections.emptyList());  // no filters -> full DTO
+    Page<ConsolidationDetails> page = new PageImpl<>(List.of(testConsol));
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(page);
+
+    // act
+    ConsolidationListV3Response resp = consolidationV3Service.listExternal(request);
+
+    // assert
+    assertNotNull(resp);
+    assertEquals(1, resp.getConsolidationListResponses().size());
+    assertEquals(testConsol.getId(), resp.getConsolidationListResponses().get(0).getId());
+    assertEquals(testConsol.getConsolidationNumber(), resp.getConsolidationListResponses().get(0).getConsolidationNumber());
+    assertEquals(testConsol.getTransportMode(), resp.getConsolidationListResponses().get(0).getTransportMode());
+
+    verify(commonUtils, never()).setIncludedFieldsToResponse(any(), anySet(), any());
+  }
 
 }

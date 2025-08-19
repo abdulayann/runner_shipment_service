@@ -54,7 +54,8 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsV3ExternalResponse retrieveByIdExternalPartial(CommonGetRequest commonGetRequest) throws RunnerException, AuthenticationException;
     Map<String, Object> getAllMasterData(Long id, String source) throws RunnerException, AuthenticationException;
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
-    ConsolidationListV3Response list(ListCommonRequest listCommonRequest, boolean getMasterData);
+    ConsolidationListV3Response list(CommonRequestModel listCommonRequest, boolean getMasterData);
+    ConsolidationListV3Response listExternal(ListCommonRequest listCommonRequest);
     ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
         throws RunnerException;

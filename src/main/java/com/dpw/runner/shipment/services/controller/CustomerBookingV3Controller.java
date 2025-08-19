@@ -220,7 +220,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(ApiConstants.BOOKING_API_UPDATE_PACKAGES)
     public ResponseEntity<IRunnerResponse> updateBookingPackages(@RequestBody @Valid List<PackingV3Request> packingV3RequestList) throws RunnerException {
-        BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
+        BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING, false);
         return ResponseHelper.buildSuccessResponse(bulkPackingResponse);
     }
 

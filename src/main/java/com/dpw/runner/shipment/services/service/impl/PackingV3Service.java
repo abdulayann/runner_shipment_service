@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -100,6 +101,9 @@ public class PackingV3Service implements IPackingV3Service {
     private IShipmentDao shipmentDao;
 
     @Autowired
+    private IContainerDao containerDao;
+
+    @Autowired
     private IAuditLogService auditLogService;
 
     @Autowired
@@ -160,6 +164,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
+        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -291,14 +296,28 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
+    void addDGValidation(Map<Long, Packing> oldPackingMap, Map<Long, Packing> updatedPackingMap, Set<Long> requestIds) {
 
         for (Long packingId : requestIds) {
             Packing updatedPacking = updatedPackingMap.get(packingId);
             Packing oldPacking = oldPackingMap.get(packingId);
 
-            if(oldPacking != null && updatedPacking.getContainerId() != null && isStringNullOrEmpty(oldPacking.getDGClass()) && !isStringNullOrEmpty(updatedPacking.getDGClass())){
+            if(oldPacking != null && updatedPacking.getContainerId() != null) {
+
+                Containers container = containerDao.findById(updatedPacking.getContainerId())
+                        .orElseThrow(() -> new ValidationException("Container not present with id : " + updatedPacking.getContainerId()));
+
+                boolean dgClassAdded = isStringNullOrEmpty(oldPacking.getDGClass())
+                        && !isStringNullOrEmpty(updatedPacking.getDGClass());
+
+                boolean missingContainerDGFields = isStringNullOrEmpty(container.getDgClass())
+                        || isStringNullOrEmpty(container.getUnNumber())
+                        || isStringNullOrEmpty(container.getProperShippingName());
+
+                if (dgClassAdded && missingContainerDGFields) {
                     throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
+                }
+
             }
         }
     }
@@ -365,6 +384,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
@@ -456,7 +476,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     @Transactional
-    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
@@ -465,7 +485,7 @@ public class PackingV3Service implements IPackingV3Service {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-
+        validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
@@ -563,6 +583,16 @@ public class PackingV3Service implements IPackingV3Service {
                 Boolean openForAttachment = consolidationList.stream().toList().get(0).getOpenForAttachment();
                 if (openForAttachment != null && !openForAttachment ) {
                     throw new ValidationException("Allow Shipment Attachment is Off, Please enable to proceed further.");
+                }
+            }
+        }
+    }
+
+    private void validateCommodityInPackingRequest(List<PackingV3Request> packingV3RequestList, boolean isFromQuote, String module) {
+        if(Constants.SHIPMENT.equalsIgnoreCase(module) && !isFromQuote) {
+            for (PackingV3Request packingV3Request : packingV3RequestList) {
+                if (Objects.isNull(packingV3Request.getCommodity())) {
+                    throw new ValidationException("Please select Commodity in the Packages to save");
                 }
             }
         }
@@ -1421,10 +1451,7 @@ public class PackingV3Service implements IPackingV3Service {
         Set<String> dgPacksUnitSet = new HashSet<>();
         int dgPacksCount = 0;
         boolean skipWeightInCalculation = false;
-        if (TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
-            skipWeightInCalculation = packings.stream()
-                    .anyMatch(packing -> packing.getWeight() == null);
-        }
+        skipWeightInCalculation = isSkipWeightInCalculation(packings, response, skipWeightInCalculation);
         for (Packing packing : packings) {
             setUniquePacksUnit(uniquePacksUnits, dgPacksUnitSet, packing);
             if (!skipWeightInCalculation && packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
@@ -1447,6 +1474,14 @@ public class PackingV3Service implements IPackingV3Service {
         response.setVolume(totalVolume);
         response.setDgPacks(dgPacksCount);
         setPacksUnits(response, uniquePacksUnits, dgPacksUnitSet);
+    }
+
+    public boolean isSkipWeightInCalculation(List<Packing> packings, CargoDetailsResponse response, boolean skipWeightInCalculation) {
+        if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode()) || ((TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_RAI.equals(response.getTransportMode()) && CARGO_TYPE_LCL.equals(response.getShipmentType())) || (TRANSPORT_MODE_ROA.equals(response.getTransportMode()) && CARGO_TYPE_LTL.equals(response.getShipmentType())))) {
+            skipWeightInCalculation = packings.stream()
+                    .anyMatch(packing -> packing.getWeight() == null);
+        }
+        return skipWeightInCalculation;
     }
 
     private static void setUniquePacksUnit(Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet, Packing packing) {

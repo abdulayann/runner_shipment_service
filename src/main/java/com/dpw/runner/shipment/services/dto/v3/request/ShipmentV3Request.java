@@ -188,6 +188,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
     private LocalDateTime cargoReadyDate;
+    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;

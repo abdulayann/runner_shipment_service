@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentVersionContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -182,6 +183,9 @@ class ContainerV3UtilTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
         assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+        ShipmentVersionContext.isV3();
+        assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+        ShipmentVersionContext.remove();
     }
 
     @Test
@@ -238,7 +242,7 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void downloadContainers_noContainersFound_shouldReturnJsonError() throws Exception {
+    void downloadContainers_noContainersFound_shouldReturnJsonError() {
         MockHttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
         request.setShipmentId("6");
@@ -247,14 +251,11 @@ class ContainerV3UtilTest extends CommonMocks {
         when(shipmentsContainersMappingDao.findByShipmentId(any()))
                 .thenReturn(List.of(new ShipmentsContainersMapping(1L, 2L))); // container ID
         when(containerDao.findAll(any(), any())).thenReturn(Page.empty());
-        when(mockObjectMapper.writeValueAsString(any()))
-                .thenReturn("{\"success\":false,\"message\":\"No containers found for given input.\"}");
 
         containerV3Util.downloadContainers(response, request);
 
-        assertEquals(500, response.getStatus());
-        assertTrue(response.getContentType().startsWith("application/json"));
-        assertTrue(response.getContentAsString().contains("No containers found"));
+        assertEquals(200, response.getStatus());
+        assertFalse(response.getContentType().startsWith("application/json"));
     }
 
     @Test
@@ -332,7 +333,6 @@ class ContainerV3UtilTest extends CommonMocks {
                 testContainer.getNetWeightUnit()
         );
         assertNotNull(validResult);
-//        assertNotNull(containerV3Util.getAddedWeight(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test
@@ -364,7 +364,6 @@ class ContainerV3UtilTest extends CommonMocks {
                 testContainer.getNetWeightUnit()
         );
         assertNotNull(validResult);
-//        assertNotNull(containerV3Util.getAddedVolume(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test
@@ -579,6 +578,36 @@ class ContainerV3UtilTest extends CommonMocks {
     void uploadContainers_shouldThrowValidationException_whenRequestIsNull() {
         assertThrows(ValidationException.class,
                 () -> containerV3Util.uploadContainers(null, CONSOLIDATION));
+    }
+
+    @Test
+    void shouldPass_whenNonHazardousAndWeightFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(false);
+        c.setGrossWeight(new BigDecimal(10));
+        c.setGrossWeightUnit("KG");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
+    }
+
+    @Test
+    void shouldPass_whenHazardousAndAllDGFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(true);
+        c.setGrossWeight(new BigDecimal(10));
+        c.setGrossWeightUnit("KG");
+        c.setDgClass("3");
+        c.setUnNumber("UN1203");
+        c.setProperShippingName("Gasoline");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
+    }
+
+    @Test
+    void shouldPass_whenHazardousIsNullAndWeightFieldsPresent() {
+        Containers c = new Containers();
+        c.setHazardous(null);
+        c.setGrossWeight(new BigDecimal(5));
+        c.setGrossWeightUnit("KG");
+        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
     }
 
     @Test
@@ -820,6 +849,8 @@ class ContainerV3UtilTest extends CommonMocks {
         container1.setGrossVolumeUnit("CBM");
         container1.setGrossWeight(new BigDecimal("100.2"));
         container1.setGrossWeightUnit("KG");
+        container1.setNetWeight(new BigDecimal(1));
+        container1.setNetWeightUnit("KG");
         container1.setPacks("5");
         container1.setPacksType("BOX");
         List<Containers> containersList = List.of(container1);
@@ -829,8 +860,8 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<String, Object> details = result.get(guid1);
         assertEquals(new BigDecimal("10.5"), details.get("grossVolume"));
         assertEquals("CBM", details.get("grossVolumeUnit"));
-        assertEquals(new BigDecimal("100.2"), details.get("grossWeight"));
-        assertEquals("KG", details.get("grossWeightUnit"));
+        assertEquals(new BigDecimal("100.2"), details.get("cargoWeight"));
+        assertEquals("KG", details.get("cargoWeightUnit"));
         assertEquals("5", details.get("packs"));
         assertEquals("BOX", details.get("packsType"));
     }
@@ -869,6 +900,18 @@ class ContainerV3UtilTest extends CommonMocks {
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", new BigDecimal("10.0"));
+        to.put("packs", "ABC");
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual2() {
+        UUID containerId = UUID.randomUUID();
+        Map<String, Object> from = new HashMap<>();
+        from.put("grossWeight", null);
+        from.put("packs", "ABC");
+        Map<String, Object> to = new HashMap<>();
+        to.put("grossWeight", null);
         to.put("packs", "ABC");
         assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
     }

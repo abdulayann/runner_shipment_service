@@ -27,13 +27,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
@@ -223,6 +217,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -854,7 +849,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
+            List<Packing> packingList = commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate);
+            for(Packing packing : packingList) {
+                packing.setId(null);
+                packing.setGuid(null);
+                packing.setBookingId(null);
+            }
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(packingList, id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         return containerAssignedToShipmentCargo;
@@ -871,7 +872,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
-                    newContainer.setGrossWeight(newContainer.getGrossWeight());
+                    newContainer.setNetWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setNetWeightUnit(newContainer.getContainerWeightUnit());
+                    newContainer.setGrossWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setGrossWeightUnit(newContainer.getContainerWeightUnit());
+                    if(!Objects.isNull(newContainer.getPackagesPerContainer())) {
+                        newContainer.setPacks(String.valueOf(newContainer.getPackagesPerContainer()));
+                    }
+                    newContainer.setPacksType(newContainer.getContainerPackageType());
                     expandedContainers.add(newContainer);
                 }
             }
@@ -3494,7 +3502,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ConsolidationListV3Response list(ListCommonRequest request, boolean getMasterData) {
+    public ConsolidationListV3Response list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
@@ -3511,6 +3520,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
         response.setConsolidationListResponses(consolidationListResponses);
+        return response;
+    }
+
+    @Override
+    public ConsolidationListV3Response listExternal(ListCommonRequest request) {
+        if (request == null) {
+            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
+        }
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+
+        List<IRunnerResponse> consoleResponse;
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            // sending overall consolidation response
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), null);
+        }
+        else {
+            // sending specified column response
+            Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), includeColumns);
+        }
+
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response response = new ConsolidationListV3Response();
+        response.setTotalPages(consolidationDetailsPage.getTotalPages());
+        response.setNumberOfRecords(consolidationDetailsPage.getTotalElements());
+
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
+        response.setConsolidationListResponses(consolidationListResponses);
+
         return response;
     }
 
@@ -3549,6 +3592,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 checkForBookingIdFilter(filterCriteria.getInnerFilter());
             }
         }
+    }
+
+    private List<IRunnerResponse> convertEntityToDtoList(List<ConsolidationDetails> lst, @Nullable Set<String> includeColumns){
+        if (CollectionUtils.isEmpty(lst)) {
+            return new ArrayList<>();
+        }
+
+        boolean hasFilters = includeColumns != null && !includeColumns.isEmpty();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+
+        for (ConsolidationDetails details : lst) {
+            final ConsolidationListResponse dto;
+
+            if (hasFilters) {
+                // send included columns only
+                dto = (ConsolidationListResponse) commonUtils.setIncludedFieldsToResponse(
+                        details, includeColumns, new ConsolidationListResponse());
+            }
+            else{
+                // send whole consolidation data
+                dto = ConsolidationMapper.INSTANCE
+                        .toConsolidationListResponse(details);
+            }
+
+            responseList.add(dto);
+        }
+
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst, boolean getMasterData) {
@@ -3720,7 +3791,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
-        return this.list(consolListRequest, true);
+        return this.list(CommonRequestModel.builder().data(consolListRequest).build(), true);
     }
 
     @Override
@@ -3790,7 +3861,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
-
+        if(remarks != null)
+            sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
         if(remarks != null && !shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
@@ -4024,6 +4096,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .shipmentId(shipmentDetails1.getId())
                             .shipmentNumber(shipmentDetails1.getShipmentId())
                             .hbl(shipmentDetails1.getHouseBill())
+                            .tenantId(shipmentDetails1.getTenantId())
                             .build());
                     }
                     return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);
@@ -5003,6 +5076,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if (listIsNullOrEmpty(request.getIncludeColumns())) {
             throw new RunnerException("IncludeColumns can't be null or empty");
+        }
+    }
+
+    private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
+                                            Set<ShipmentRequestedType> requestedTypes, String remarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        List<Long> interbranchShipIds = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails1 : shipment) {
+            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+            userNames.add(shipmentDetails1.getCreatedBy());
+            userNames.add(shipmentDetails1.getAssignedTo());
+            tenantIds.add(shipmentDetails1.getTenantId());
+            if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
+                interbranchShipIds.add(shipmentDetails1.getId());
+        }
+        userNames.add(consoleDetails.getCreatedBy());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        for(Long shipmentId : interbranchShipIds) {
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+            } catch (Exception e) {
+                log.error("Error while sending email");
+            }
         }
     }
 }
