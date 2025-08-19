@@ -4096,6 +4096,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .shipmentId(shipmentDetails1.getId())
                             .shipmentNumber(shipmentDetails1.getShipmentId())
                             .hbl(shipmentDetails1.getHouseBill())
+                            .tenantId(shipmentDetails1.getTenantId())
                             .build());
                     }
                     return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);

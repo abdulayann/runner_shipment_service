@@ -17,4 +17,5 @@ public class ShipmentDetachResponse {
     String shipmentNumber;
     Long shipmentId;
     String hbl;
+    Integer tenantId;
 }
