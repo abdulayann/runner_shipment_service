@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
@@ -87,5 +88,7 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
     ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException;
     CheckDGShipmentV3 getDGShipment(Long consoleId);
+    Map<String, Object> fetchConsolidation(Map<String, Object> requestPayload);
+    Map<String, Object> getConsolidationDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request);
     ConsolidationDetailsV3Response getDefaultConsolidation();
 }

@@ -770,7 +770,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public Map<String, Object> fetchShipments(Map<String, Object> requestPayload) {
-        long totalCount = fetchTotalCount(requestPayload);
+        long totalCount = commonUtils.fetchTotalCount(requestPayload, ShipmentDetails.class);
         int pageNo = (int) requestPayload.getOrDefault("pageNo", 1);
         int pageSize = (int) requestPayload.getOrDefault("pageSize", 25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
@@ -797,7 +797,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails", requestPayload);
 
         cq.multiselect(selections).distinct(true);
 
@@ -832,31 +832,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private Class<?> determineEntityClass(Map<String, Object> requestPayload) {
-        // Check if there's a specific entity type in the request
-        if (requestPayload.containsKey("entityType")) {
-            String entityType = (String) requestPayload.get("entityType");
-            return ShipmentConstants.ENTITY_MAPPINGS.get(entityType);
-        }
-
-        // Default to ShipmentDetails if not specified
-        return ShipmentDetails.class;
-    }
-    public long fetchTotalCount(Map<String, Object> requestPayload) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
-        Root<ShipmentDetails> root = countQuery.from(ShipmentDetails.class);
-
-        // Build predicates same way as main query
-        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, requestPayload);
-
-        countQuery.select(cb.countDistinct(root)); // count distinct root entities
-        if (!predicates.isEmpty()) {
-            countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
-        }
-
-        return entityManager.createQuery(countQuery).getSingleResult();
-    }
     @Override
     public Map<String, Object> getShipmentDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
         // Step 1: Read requested columns
@@ -874,7 +849,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails", requestPayload);
 
         cq.multiselect(selections).distinct(true);
 
