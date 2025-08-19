@@ -128,8 +128,6 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
             log.info("Started processing of consol id : {}", consolidationId);
-            TenantContext.setCurrentTenant(tenantId);
-            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
             if (Objects.isNull(consolidationBackupDetails)) {
                 log.info("No Consolidation records found for consol id : {}", consolidationId);
@@ -178,8 +176,6 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new IllegalArgumentException(e);
-        } finally {
-            v1Service.clearAuthContext();
         }
     }
 

@@ -345,7 +345,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                         TenantContext.setCurrentTenant(tenantId);
                         UserContext.getUser().setPermissions(new HashMap<>());
                         return trxExecutor.runInTrx(() -> {
-                            restoreShipmentTransaction(id, tenantId);
+                            restoreShipmentTransaction(id);
                             return null;
                         });
                     } catch (Exception e) {
@@ -364,15 +364,11 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     }
 
 
-    public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) {
-        TenantContext.setCurrentTenant(tenantId);
-        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+    public void restoreShipmentTransaction(Long shipmentId) {
         try {
             restoreShipmentDetails(shipmentId, null, null);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
-        } finally {
-            v1Service.clearAuthContext();
         }
     }
 
