@@ -446,6 +446,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        throwErrorForAirDRTConsolidation(consolidationDetails.getTransportMode(), consolidationDetails.getConsolidationType());
+
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
@@ -468,6 +470,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         return consolidationDetailsV3Response;
+    }
+
+    private void throwErrorForAirDRTConsolidation(String transportMode, String consolidationType) {
+        String consolType =  consolidationType == null ? "" : consolidationType.trim();
+        String transpMode = transportMode == null ? "" : transportMode.trim();
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transpMode) && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolType)){
+            throw new ValidationException(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR);
+        }
     }
 
     @Transactional
@@ -516,7 +526,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-
+        throwErrorForAirDRTConsolidation(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getConsolidationType());
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);

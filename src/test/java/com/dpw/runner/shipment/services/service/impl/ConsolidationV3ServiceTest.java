@@ -621,6 +621,31 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(ValidationException.class, () -> consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request));
   }
 
+    @Test
+    void create_airDrtConsolidation_shouldThrowException() {
+        // Arrange: Create a request for a new consolidation with an invalid combination (AIR/DRT)
+        ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+        request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        request.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+
+        // Arrange: Mock the jsonHelper to convert the request DTO to an entity object.
+        ConsolidationDetails consolidationDetailsEntity = new ConsolidationDetails();
+        consolidationDetailsEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetailsEntity.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetailsEntity);
+
+        // Act & Assert: Verify that calling create throws a ValidationException
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            consolidationV3Service.create(request);
+        });
+
+        // Assert: Check if the exception message is correct
+        assertEquals(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR, exception.getMessage());
+
+        // Verify that the jsonHelper's convertValue method was called as expected
+        verify(jsonHelper).convertValue(request, ConsolidationDetails.class);
+    }
+
   @Test
   void testRetrieveByIdOrGuid_IdSuccess() throws RunnerException {
     ConsolidationDetailsV3Request request = ConsolidationDetailsV3Request.builder().id(1L).build();
@@ -1055,6 +1080,35 @@ if (unitConversionUtilityMockedStatic != null) {
     mockTenantSettings();
 
     assertThrows(GenericException.class, () -> spyService.completeUpdate(consolidationDetailsV3Request));
+  }
+
+  @Test
+  void completeUpdate_airDrtConsolidation_shouldThrowException(){
+      // Arrange: Create a request to update a consolidation to an invalid state (AIR/DRT)
+      ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+      request.setId(1L); // An existing ID
+      request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+      request.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+
+      // Arrange: Mock the DAO to return an existing consolidation entity when looked up by ID.
+      ConsolidationDetails existingConsolidation = new ConsolidationDetails();
+      existingConsolidation.setId(1L);
+      existingConsolidation.setTransportMode(Constants.TRANSPORT_MODE_SEA); // Its previous state was valid
+      existingConsolidation.setConsolidationType(Constants.CONSOLIDATION_TYPE_AGT);
+
+      // Mock the behavior of the DAO to find the existing entity
+      when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(existingConsolidation));
+
+      // Act & Assert: Verify that calling completeUpdate throws a ValidationException
+      ValidationException exception = assertThrows(ValidationException.class, () -> {
+          consolidationV3Service.completeUpdate(request);
+      });
+
+      // Assert: Check if the exception message is correct
+      assertEquals(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR, exception.getMessage());
+
+      // Verify that the DAO's findById method was called as part of the update pre-check
+      verify(consolidationDetailsDao).findById(1L);
   }
 
   @Test
