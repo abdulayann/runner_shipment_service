@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -35,22 +36,22 @@ import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 @Generated
+@SuppressWarnings({"java:S4144", "java:S1192"})
 public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     private final ObjectMapper objectMapper;
@@ -88,8 +89,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final V1ServiceImpl v1Service;
 
     @Autowired
-    @Qualifier("asyncShipmentBackupHandlerExecutor")
-    private final ThreadPoolTaskExecutor asyncShipmentBackupHandlerExecutor;
+    private HelperExecutor trxExecutor;
+
     @Autowired
     private MigrationUtil migrationUtil;
 
@@ -337,38 +338,42 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
 
         log.info("Count of no restore shipment ids data : {}", nonAttachedShipmentIds.size());
-        List<CompletableFuture<Void>> futures = nonAttachedShipmentIds.stream()
-                .map(shipmentId -> CompletableFuture.runAsync(
-                        wrapWithContext(() -> {
-                            try {
-                                restoreShipmentTransaction(shipmentId, tenantId);
-                            } catch (Exception e) {
-                                log.error("Failed to restore shipment id: {}", shipmentId, e);
-                                migrationUtil.saveErrorResponse(shipmentId, Constants.SHIPMENT,
-                                        IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                                throw new CompletionException(e);
-                            }
-                        }, tenantId),
-                        asyncShipmentBackupHandlerExecutor
-                ))
+        List<CompletableFuture<Object>> shipmentFutures = nonAttachedShipmentIds.stream()
+                .map(id -> trxExecutor.runInAsyncForShipment(() -> {
+                    try {
+                        v1Service.setAuthContext();
+                        TenantContext.setCurrentTenant(tenantId);
+                        UserContext.getUser().setPermissions(new HashMap<>());
+                        return trxExecutor.runInTrx(() -> {
+                            restoreShipmentTransaction(id, tenantId);
+                            return null;
+                        });
+                    } catch (Exception e) {
+                        log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
+                        migrationUtil.saveErrorResponse(id, Constants.SHIPMENT,
+                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                        throw new IllegalArgumentException(e);
+                    } finally {
+                        v1Service.clearAuthContext();
+                    }
+                }))
                 .toList();
 
-        // Wait for all tasks to complete with individual exception handling
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        // Handle any exceptions from individual futures
-        allFutures.exceptionally(ex -> {
-            log.error("Error during parallel shipment processing", ex);
-            throw new IllegalArgumentException(ex);
-        }).join();
+        futureCompletion(shipmentFutures);
         log.info("Completed shipment backup for tenant: {}", tenantId);
     }
 
-    public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
+
+    public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) {
         TenantContext.setCurrentTenant(tenantId);
         UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-        restoreShipmentDetails(shipmentId, null, null);
-        v1Service.clearAuthContext();
+        try {
+            restoreShipmentDetails(shipmentId, null, null);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        } finally {
+            v1Service.clearAuthContext();
+        }
     }
 
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {
@@ -377,18 +382,5 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndRestoreTriangularPartnerDetails(Long shipmentId) {
         shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
-    }
-
-    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
-        return () -> {
-            try {
-                v1Service.setAuthContext();
-                TenantContext.setCurrentTenant(tenantId);
-                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                task.run();
-            } finally {
-                v1Service.clearAuthContext();
-            }
-        };
     }
 }

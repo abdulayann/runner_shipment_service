@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -69,5 +70,13 @@ public class MigrationUtil {
         } catch (RunnerException ex) {
             throw new MdmException(ex.getMessage());
         }
+    }
+
+    public static void futureCompletion(List<CompletableFuture<Object>> futures) {
+
+        CompletableFuture<Void> completableFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        completableFuture.exceptionally(ex -> {
+            throw new IllegalArgumentException(ex);
+        }).join();
     }
 }
