@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 @Generated
-@SuppressWarnings("all")
+@SuppressWarnings({"java:S4144", "java:S1192"})
 public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     private final ObjectMapper objectMapper;
