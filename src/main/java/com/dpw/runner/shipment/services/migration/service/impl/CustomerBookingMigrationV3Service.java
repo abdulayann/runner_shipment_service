@@ -160,6 +160,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
         log.info("fetched {} bookingIds for Migrations", bookingIds.size());
+        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -168,7 +169,6 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-                    Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
                     return trxExecutor.runInTrx(() -> {
                         try {
 
@@ -205,6 +205,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
         log.info("fetched {} bookings for Migrations", bookingIds.size());
+        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -213,7 +214,6 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-                    Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating v3 to v2 Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
@@ -431,6 +431,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
         try {
+            v1Service.setAuthContext();
             DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
             List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
             return containerTypes.stream()
