@@ -35,6 +35,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -119,13 +121,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        CompletableFuture<Void> consoleFuture = CompletableFuture.allOf(consolefutures.toArray(new CompletableFuture[0]));
-
-        // Handle any exceptions from individual consolefutures
-        consoleFuture.exceptionally(ex -> {
-            log.error("Error during parallel consolidation processing", ex);
-            throw new IllegalArgumentException(ex);
-        }).join();
+        futureCompletion(consolefutures);
         log.info("Completed consolidation backup for tenant: {}", tenantId);
     }
 

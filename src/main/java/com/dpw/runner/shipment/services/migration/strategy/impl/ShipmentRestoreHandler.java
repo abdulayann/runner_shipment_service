@@ -45,6 +45,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -357,14 +359,10 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        CompletableFuture<Void> shipmentFuture = CompletableFuture.allOf(shipmentFutures.toArray(new CompletableFuture[0]));
-        shipmentFuture.exceptionally(ex -> {
-            log.error("Error during parallel shipment processing", ex);
-            throw new IllegalArgumentException(ex);
-        }).join();
-
+        futureCompletion(shipmentFutures);
         log.info("Completed shipment backup for tenant: {}", tenantId);
     }
+
 
     public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) {
         TenantContext.setCurrentTenant(tenantId);

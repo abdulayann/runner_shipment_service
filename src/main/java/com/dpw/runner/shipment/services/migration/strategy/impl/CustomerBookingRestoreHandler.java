@@ -46,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
 @Slf4j
@@ -111,13 +112,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                 }))
                 .toList();
 
-        CompletableFuture<Void> bookingFuture = CompletableFuture.allOf(bookingFutures.toArray(new CompletableFuture[0]));
-
-        bookingFuture.exceptionally(ex -> {
-            log.error("Error during parallel booking processing", ex);
-            throw new IllegalArgumentException(ex);
-        }).join();
-
+        futureCompletion(bookingFutures);
         log.info("Completed booking backup for tenant: {}", tenantId);
     }
 

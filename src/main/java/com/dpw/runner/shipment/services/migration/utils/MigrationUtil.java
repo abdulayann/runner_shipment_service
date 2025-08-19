@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -45,5 +46,13 @@ public class MigrationUtil {
                 .response_message(jsonHelper.convertToJson(message))
                 .build();
         integrationResponseDao.save(response);
+    }
+
+    public static void futureCompletion(List<CompletableFuture<Object>> futures) {
+
+        CompletableFuture<Void> completableFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        completableFuture.exceptionally(ex -> {
+            throw new IllegalArgumentException(ex);
+        }).join();
     }
 }
