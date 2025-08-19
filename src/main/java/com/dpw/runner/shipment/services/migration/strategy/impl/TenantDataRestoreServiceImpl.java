@@ -10,12 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +23,6 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     @Autowired
     private TenantDataRestoreServiceImpl self;
     private final List<RestoreServiceHandler> restoreHandlers;
-    private final TransactionTemplate transactionTemplate;
-    private final ThreadPoolTaskExecutor asyncRestoreHandlerExecutor;
     private final EmailServiceUtility emailServiceUtility;
     private final HelperExecutor trxExecutor;
 
@@ -53,17 +47,14 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
 
     @Override
     public void restoreTenantData(Integer tenantId) {
-        transactionTemplate.execute(status -> {
             try {
                 executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
                 executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
                 executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
-                return null;
             } catch (Exception e) {
                 log.error("Restore failed for tenant: {}", tenantId, e);
                 throw new IllegalArgumentException(e);
             }
-        });
     }
 
     private RestoreServiceHandler getHandler(Class<? extends RestoreServiceHandler> clazz) {
