@@ -15,4 +15,8 @@ public interface ICustomerBookingV3MigrationService {
 
     Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId);
     Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId);
+
+    Map<String, Integer> migrateV2ToV3ForSingleBooking(Long bookingId);
+
+    Map<String, Integer> migrateV3ToV2ForSingleBooking(Long bookingId);
 }
