@@ -111,12 +111,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import javax.persistence.Entity;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.*;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
@@ -220,6 +216,9 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -3169,6 +3168,8 @@ public class CommonUtils {
                 ));
     }
 
+
+
     public void fillEmptyColumnLists(Map<String, List<String>> requestedColumns) {
         Map<String, Class<?>> entityMappings = ShipmentConstants.ENTITY_MAPPINGS; // from our fixed Map.ofEntries(...)
         for (Map.Entry<String, Class<?>> e : entityMappings.entrySet()) {
@@ -3263,13 +3264,48 @@ public class CommonUtils {
         return finalList;
     }
 
+    /**
+     * Generic method to build JPA joins and selections for any entity that extends MultiTenancy.
+     *
+     * Usage examples:
+     * - For ShipmentDetails: buildJoinsAndSelections(requestedColumns, shipmentRoot, selections, columnOrder, "shipmentDetails", requestPayload)
+     * - For ConsolidationDetails: buildJoinsAndSelections(requestedColumns, consolidationRoot, selections, columnOrder, "consolidationDetails", requestPayload)
+     *
+     * @param requestedColumns Map of entity keys to their requested column lists
+     * @param root Root entity (must extend MultiTenancy)
+     * @param selections List to store JPA selections
+     * @param columnOrder List to store column order for result mapping
+     * @param rootEntityKey The key representing the root entity (e.g., "shipmentDetails", "consolidationDetails")
+     * @param requestPayload The full request payload to extract sort field information
+     */
     @SuppressWarnings("unchecked")
-    public void buildJoinsAndSelections(
+    public <T extends MultiTenancy> void buildJoinsAndSelections(
             Map<String, List<String>> requestedColumns,
-            Root<ShipmentDetails> root,
+            Root<T> root,
             List<Selection<?>> selections,
-            List<String> columnOrder
+            List<String> columnOrder,
+            String rootEntityKey,
+            Map<String, Object> requestPayload
     ) {
+        String sortField = extractSortFieldFromPayload(requestPayload);
+        Set<String> rootEntityColumns = new HashSet<>(requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
+
+        // If there's a sort field and it's not already in the root entity columns, validate and add it
+        if (sortField != null && !rootEntityColumns.contains(sortField)) {
+            // Validate that the sort field exists in the entity before adding it
+            if (isValidFieldForEntity(root, sortField)) {
+                rootEntityColumns.add(sortField);
+                // Update the requestedColumns map to include the sort field
+                Map<String, List<String>> updatedRequestedColumns = new HashMap<>(requestedColumns);
+                updatedRequestedColumns.put(rootEntityKey, new ArrayList<>(rootEntityColumns));
+                requestedColumns = updatedRequestedColumns;
+                log.debug("Auto-included sort field '{}' for entity '{}'", sortField, rootEntityKey);
+            } else {
+                log.warn("Invalid sort field '{}' for entity type '{}'. Field does not exist in entity.", sortField, rootEntityKey);
+                throw new IllegalArgumentException(getValidFieldSuggestions(rootEntityKey, sortField));
+            }
+        }
+
         for (Map.Entry<String, List<String>> entry : requestedColumns.entrySet()) {
             String entityKey = entry.getKey();
             List<String> cols = entry.getValue();
@@ -3279,11 +3315,11 @@ public class CommonUtils {
                 continue;
             }
 
-            if ("shipmentDetails".equals(entityKey)) {
+            if (rootEntityKey.equals(entityKey)) {
                 // Parent entity: add columns directly from the root
                 for (String col : cols) {
                     selections.add(root.get(col));
-                    columnOrder.add("shipmentDetails." + col);
+                    columnOrder.add(rootEntityKey + "." + col);
                 }
             } else {
                 // Join according to mapping key
@@ -3297,15 +3333,114 @@ public class CommonUtils {
 
                 for (String col : cols) {
                     selections.add(join.get(col));
-                    columnOrder.add("shipmentDetails." + entityKey + "." + col);
+                    columnOrder.add(rootEntityKey + "." + entityKey + "." + col);
                 }
-                selections.add(root.get("updatedAt"));
-                columnOrder.add("shipmentDetails.updatedAt");
             }
         }
     }
-    public List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
-                                                      Root<ShipmentDetails> root,
+    /**
+     * Generic method to fetch total count for any entity that extends MultiTenancy.
+     *
+     * Usage examples:
+     * - For ShipmentDetails: fetchTotalCount(requestPayload, ShipmentDetails.class)
+     * - For ConsolidationDetails: fetchTotalCount(requestPayload, ConsolidationDetails.class)
+     * - For any other entity extending MultiTenancy: fetchTotalCount(requestPayload, YourEntity.class)
+     *
+     * @param requestPayload The request payload containing filter criteria
+     * @param entityClass The entity class (must extend MultiTenancy)
+     * @return Total count of entities matching the criteria
+     */
+    public <T extends MultiTenancy> long fetchTotalCount(Map<String, Object> requestPayload, Class<T> entityClass) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<T> root = countQuery.from(entityClass);
+
+        // Build predicates same way as main query
+        List<Predicate> predicates = buildPredicatesFromFilters(cb, root, requestPayload);
+
+        countQuery.select(cb.countDistinct(root)); // count distinct root entities
+        if (!predicates.isEmpty()) {
+            countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        return entityManager.createQuery(countQuery).getSingleResult();
+    }
+
+    /**
+     * Helper method to extract sort field from request payload
+     *
+     * @param requestPayload The request payload
+     * @return The sort field name, or null if not present
+     */
+    private String extractSortFieldFromPayload(Map<String, Object> requestPayload) {
+        if (requestPayload == null) {
+            return null;
+        }
+
+        Object sortRequest = requestPayload.get("sortRequest");
+        if (sortRequest instanceof Map) {
+            Map<String, Object> sortMap = (Map<String, Object>) sortRequest;
+            Object fieldName = sortMap.get("fieldName");
+            return fieldName instanceof String ? (String) fieldName : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Validates if a field name exists in the given entity type
+     *
+     * @param root The JPA Root entity
+     * @param fieldName The field name to validate
+     * @return true if the field exists in the entity, false otherwise
+     */
+    private <T extends MultiTenancy> boolean isValidFieldForEntity(Root<T> root, String fieldName) {
+        try {
+            // Try to access the field using JPA metamodel - this will throw exception if field doesn't exist
+            root.get(fieldName);
+            return true;
+        } catch (IllegalArgumentException e) {
+            // Field doesn't exist in the entity
+            log.debug("Field '{}' does not exist in entity type '{}'", fieldName, root.getJavaType().getSimpleName());
+            return false;
+        }
+    }
+
+    /**
+     * Gets a user-friendly error message with suggestions for valid sort fields
+     *
+     * @param entityType The entity type name
+     * @param invalidField The invalid field name
+     * @return Error message with suggestions
+     */
+    private String getValidFieldSuggestions(String entityType, String invalidField) {
+        StringBuilder message = new StringBuilder();
+        message.append("Invalid sort field '").append(invalidField).append("' for entity type '").append(entityType).append("'. ");
+
+        if ("consolidationDetails".equals(entityType)) {
+            message.append("Valid fields include: id, consolidationNumber, consolidationType, transportMode, mawb, createdAt, updatedAt, etc.");
+        } else if ("shipmentDetails".equals(entityType)) {
+            message.append("Valid fields include: id, shipmentNumber, direction, transportMode, mawb, createdAt, updatedAt, etc.");
+        } else {
+            message.append("Please use a valid field name that exists in the ").append(entityType).append(" entity.");
+        }
+
+        return message.toString();
+    }
+    /**
+     * Generic method to build JPA predicates from filter criteria for any entity that extends MultiTenancy.
+     *
+     * Usage examples:
+     * - For ShipmentDetails: buildPredicatesFromFilters(cb, shipmentRoot, requestPayload)
+     * - For ConsolidationDetails: buildPredicatesFromFilters(cb, consolidationRoot, requestPayload)
+     *
+     * @param cb CriteriaBuilder instance
+     * @param root Root entity (must extend MultiTenancy)
+     * @param requestPayload The request payload containing filter criteria
+     * @return List of JPA predicates built from the filter criteria
+     */
+    public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
+                                                      Root<T> root,
                                                       Map<String, Object> requestPayload) {
         List<Predicate> predicates = new ArrayList<>();
 
