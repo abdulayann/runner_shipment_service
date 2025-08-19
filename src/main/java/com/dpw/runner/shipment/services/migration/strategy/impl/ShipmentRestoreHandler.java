@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 @Generated
+@SuppressWarnings("all")
 public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     private final ObjectMapper objectMapper;

@@ -51,6 +51,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKI
 @Slf4j
 @RequiredArgsConstructor
 @Generated
+@SuppressWarnings("all")
 public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     private final ICustomerBookingBackupRepository backupRepository;
