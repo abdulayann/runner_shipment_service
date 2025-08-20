@@ -250,8 +250,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request) {
-        if(isNotAirExport(request))
+        if(isNotAirExport(request)) {
             return false;
+        }
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
