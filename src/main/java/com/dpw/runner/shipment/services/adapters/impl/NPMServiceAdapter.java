@@ -419,19 +419,36 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     {
         if(uom == null || uom.isEmpty())
             return uom;
+
         uom = uom.toLowerCase();
         switch(uom)
         {
             case "perctr":
                 return NPMConstants.CONTAINER_COUNT;
             case "percbm":
-                return "Volume";
+                return NPMConstants.VOLUME;
+            case "perm3":
+                return NPMConstants.VOLUME;
             case "perkg":
-                return "Weight";
+                return NPMConstants.WEIGHT;
             case "pership":
                 return NPMConstants.SHIPMENT_CAMEL_CASE;
+            case "perhawb":
+                return NPMConstants.SHIPMENT_CAMEL_CASE;
+            case "perawb":
+                return NPMConstants.PER_BL_AWB;
+            case "perpiece":
+                return NPMConstants.PACKAGE;
+            case "pergwkg":
+                return NPMConstants.WEIGHT;
+            case "perchkg":
+                return NPMConstants.CHARGEABLE;
+            case "permi":
+                return NPMConstants.PER_MILE;
+            case "perkm":
+                return NPMConstants.PER_KILOMETER;
             default:
-                return uom;
+                return NPMConstants.CUSTOM;
         }
     }
 
