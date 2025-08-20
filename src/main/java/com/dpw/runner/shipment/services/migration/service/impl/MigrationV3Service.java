@@ -114,13 +114,8 @@ public class MigrationV3Service implements IMigrationV3Service {
     private MDMServiceAdapter mdmServiceAdapter;
 
 
-    private Map<String, BigDecimal> codeTeuMap = new HashMap<>();
-
-
-    private void initCodeTeuMap() {
-        if(codeTeuMap.isEmpty()) {
-            codeTeuMap = migrationUtil.initCodeTeuMap();
-        }
+    private Map<String, BigDecimal> initCodeTeuMap() {
+        return migrationUtil.initCodeTeuMap();
     }
 
 
@@ -174,7 +169,8 @@ public class MigrationV3Service implements IMigrationV3Service {
         // Queue for async processing of consolidation migrations
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolIds.size());
-
+        v1Service.setAuthContext();
+        Map<String, BigDecimal> codeTeuMap = initCodeTeuMap();
         consolIds.forEach(id -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -183,7 +179,6 @@ public class MigrationV3Service implements IMigrationV3Service {
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-                    initCodeTeuMap();
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
@@ -253,7 +248,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         map.put("Total Shipment Migrated", migratedShipmentIds.size());
         log.info("Shipment migration complete: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentIds.size(), tenantId);
 
-        Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId);
+        Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap);
         map.putAll(nteStats);
 
         Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);

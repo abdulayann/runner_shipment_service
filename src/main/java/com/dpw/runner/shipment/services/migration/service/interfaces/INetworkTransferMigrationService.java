@@ -11,5 +11,5 @@ public interface INetworkTransferMigrationService {
     NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap) throws RunnerException;
     NetworkTransfer migrateNteFromV3ToV2(Long networkTransferId) throws RunnerException;
     Map<String, Integer> migrateNetworkTransferV3ToV2ForTenant(Integer tenantId);
-    Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId);
+    Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap);
 }
