@@ -492,6 +492,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
                 case Custom -> MeasurementBasis.Custom.getBillingValue();
                 case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
+                case Per_Bl_Awb -> MeasurementBasis.Per_Bl_Awb.getBillingValue();
+                case Per_Mile -> MeasurementBasis.Per_Mile.getBillingValue();
+                case Per_Kilometer -> MeasurementBasis.Per_Kilometer.getBillingValue();
             };
 
             if (ObjectUtils.isEmpty(measurementBasisUnit)) {
