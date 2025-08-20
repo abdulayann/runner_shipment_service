@@ -264,16 +264,20 @@ public class RoutingValidationUtil {
 
     public void validateMainCarriageAdjacencyInIncoming(List<RoutingsRequest> incomingRoutings) {
         boolean inInheritedBlock = false;
-        for (RoutingsRequest routing : incomingRoutings) {
+        for (int i = 0; i < incomingRoutings.size(); i++) {
+            RoutingsRequest routing = incomingRoutings.get(i);
             if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
                     Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
                 inInheritedBlock = true;
             } else if (inInheritedBlock) {
-                // Found a non-inherited routing after inherited block started
-                for (RoutingsRequest remaining : incomingRoutings.subList(incomingRoutings.indexOf(routing), incomingRoutings.size())) {
+                for (int j = i; j < incomingRoutings.size(); j++) {
+                    RoutingsRequest remaining = incomingRoutings.get(j);
                     if (remaining.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
                             Boolean.TRUE.equals(remaining.getInheritedFromConsolidation())) {
-                        throw new ValidationException("Invalid routing placement: inherited MAIN_CARRIAGE routing appears non-contiguously. Routing GUID: " + remaining.getGuid());
+                        throw new ValidationException(
+                                "Invalid routing placement: inherited MAIN_CARRIAGE routing appears non-contiguously. Routing GUID: "
+                                        + remaining.getGuid()
+                        );
                     }
                 }
                 break;

@@ -1988,13 +1988,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
-        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
-        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
+        ccEmailsList.addAll(toEmailIds);
+        ccEmailsList.addAll(ccEmailIds);
         if (shipmentDetails.getCreatedBy() == null || shipmentDetails.getAssignedTo() == null) {
             toEmailIds.clear();
             ccEmailIds.clear();
             commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
-            toEmailsList.addAll(new ArrayList<>(toEmailIds));
+            toEmailsList.addAll(toEmailIds);
         }
 
         commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
@@ -2523,7 +2523,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         // - Receiving branch (only if it hasn't already been added)
         if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
             shipmentDetails.setTriangulationPartnerList(console.getTriangulationPartnerList() != null
-                    ? new ArrayList<>(console.getTriangulationPartnerList()) : null);
+                    ? console.getTriangulationPartnerList() : null);
             shipmentDetails.setTriangulationPartner(console.getTriangulationPartner());
             shipmentDetails.setDocumentationPartner(console.getDocumentationPartner());
 
@@ -3086,9 +3086,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Boolean isNonFtlOrFclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
-            shipmentsCount = shipmentDetailsList.stream().count();
-            isNonFtlOrFclAttached = shipmentDetailsList.stream().anyMatch(this::isNonFtlOrFclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                shipmentsCount++;
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);

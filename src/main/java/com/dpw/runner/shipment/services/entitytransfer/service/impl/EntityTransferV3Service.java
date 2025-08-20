@@ -1223,14 +1223,15 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return automaticTransfer != null && automaticTransfer.equals("true");
     }
 
-    public void createBulkExportEventForMultipleShipments(ConsolidationDetails consolidationDetails, Map<String, List<Integer>> shipmentGuidBranchMap) {
-        if (CollectionUtils.isEmpty(shipmentGuidBranchMap) || CommonUtils.setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
-            return;
-        }
+    public void createBulkExportEventForMultipleShipments(ConsolidationDetails consolidationDetails, Map<String, List<Integer>> shipmentGuidBranchMap) {if (CollectionUtils.isEmpty(shipmentGuidBranchMap)
+            || CommonUtils.setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+        return;
+    }
 
-        // Group shipments by Tenant ID to reduce unnecessary context switching
-        Map<Integer, List<ShipmentDetails>> shipmentsByTenant = consolidationDetails.getShipmentsList().stream()
-                .collect(Collectors.groupingBy(ShipmentDetails::getTenantId));
+        List<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList().stream().toList();
+
+        Map<Integer, List<ShipmentDetails>> shipmentsByTenant =
+                shipmentsList.stream().collect(Collectors.groupingBy(ShipmentDetails::getTenantId));
 
         Integer originalTenant = TenantContext.getCurrentTenant();
 
@@ -1238,22 +1239,30 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 .flatMap(List::stream)
                 .collect(Collectors.toSet());
 
-        var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds.stream().toList());
-        Map<Integer, Object> branchMap = new HashMap<>();
+        // Fetch tenant details only once
+        Map<Integer, Object> tenantMap = v1ServiceUtil.getTenantDetails(new ArrayList<>(tenantIds));
+
+        // BranchMap only if needed
+        Map<Integer, Object> branchMap = Collections.emptyMap();
         if (isAutomaticTransfer()) {
-            Set<Integer> shipmentUniqueTenantIds = consolidationDetails.getShipmentsList().stream()
-                    .map(ShipmentDetails::getTenantId)
-                    .collect(Collectors.toSet());
-            branchMap = v1ServiceUtil.getTenantDetails(shipmentUniqueTenantIds.stream().toList());
+            // Deduplicate tenant IDs directly from shipmentsByTenant keys (faster than scanning shipments again)
+            branchMap = v1ServiceUtil.getTenantDetails(new ArrayList<>(shipmentsByTenant.keySet()));
         }
 
         Map<Integer, Object> finalBranchMap = branchMap;
-        shipmentsByTenant.forEach((tenantId, shipments) -> {
+
+        for (Map.Entry<Integer, List<ShipmentDetails>> entry : shipmentsByTenant.entrySet()) {
+            Integer tenantId = entry.getKey();
+            List<ShipmentDetails> tenantShipments = entry.getValue();
+
+            // Only switch if really different
             if (!Objects.equals(originalTenant, tenantId)) {
                 TenantContext.setCurrentTenant(tenantId);
             }
-            List<EventsRequest> eventsList = new ArrayList<>();
-            for (ShipmentDetails shipment : shipments) {
+
+            // Collect all events for this tenant in one pass
+            List<EventsRequest> eventsList = new ArrayList<>(tenantShipments.size() * 2); // pre-size buffer
+            for (ShipmentDetails shipment : tenantShipments) {
                 List<EventsRequest> events = prepareEvents(
                         shipment.getId(),
                         EventConstants.PRST,
@@ -1263,14 +1272,17 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                         finalBranchMap,
                         tenantId
                 );
-                if (!CommonUtils.listIsNullOrEmpty(events)) {
+                if (events != null && !events.isEmpty()) {
                     eventsList.addAll(events);
                 }
             }
-            eventService.saveAllEvent(eventsList);
-        });
 
-        // Restore the original tenant
+            if (!eventsList.isEmpty()) {
+                eventService.saveAllEvent(eventsList);
+            }
+        }
+
+        // Restore context at the end
         TenantContext.setCurrentTenant(originalTenant);
     }
 

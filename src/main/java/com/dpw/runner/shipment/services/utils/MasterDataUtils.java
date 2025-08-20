@@ -326,44 +326,54 @@ public class MasterDataUtils{
     }
 
     public void setShipmentTypeMasterData(List<IRunnerResponse> responseList) {
-        // Step 1: Prepare unique master list requests
-        Set<MasterListRequest> masterListRequests = responseList.stream()
+        // Step 1: Collect unique job types
+        Set<String> uniqueJobTypes = responseList.stream()
                 .filter(ShipmentListResponse.class::isInstance)
-                .map(r -> (ShipmentListResponse) r)
-                .map(ShipmentListResponse::getJobType)
+                .map(r -> ((ShipmentListResponse) r).getJobType())
                 .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (uniqueJobTypes.isEmpty()) {
+            return; // No job types to process
+        }
+
+        // Step 2: Build MasterListRequestV2
+        List<MasterListRequest> masterListRequests = uniqueJobTypes.stream()
                 .map(jobType -> MasterListRequest.builder()
                         .ItemType(MasterDataType.SHIPMENT_TYPE.getDescription())
                         .ItemValue(jobType)
                         .build())
-                .collect(Collectors.toSet());
+                .toList();
 
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-        masterListRequestV2.setMasterListRequests(new ArrayList<>(masterListRequests));
+        masterListRequestV2.setMasterListRequests(masterListRequests);
 
-        // Step 2: Fetch master data from cache
+        // Step 3: Fetch master data from cache
         Map<String, EntityTransferMasterLists> masterDataMap = fetchMasterListFromCache(masterListRequestV2);
 
-        // Step 3: Build JobType -> Description map
-        Map<String, String> jobTypeToDescriptionMap = new HashMap<>();
-        for (MasterListRequest request : masterListRequests) {
-            String key = MasterDataType.SHIPMENT_TYPE.name() + "#" + request.getItemValue();
-            EntityTransferMasterLists masterData = masterDataMap.get(key);
-            if (masterData != null) {
-                jobTypeToDescriptionMap.put(request.getItemValue(), masterData.getItemDescription());
-            }
-        }
+        // Step 4: Build JobType -> Description map in one go
+        Map<String, String> jobTypeToDescriptionMap = uniqueJobTypes.stream()
+                .map(jobType -> Map.entry(
+                        jobType,
+                        Optional.ofNullable(masterDataMap.get(MasterDataType.SHIPMENT_TYPE.name() + "#" + jobType))
+                                .map(EntityTransferMasterLists::getItemDescription)
+                                .orElse(null)
+                ))
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        // Step 4: Set the master data back into responses
-        for (IRunnerResponse response : responseList) {
-            if (response instanceof ShipmentListResponse shipmentResponse) {
-                String jobType = shipmentResponse.getJobType();
-                if (jobType != null && jobTypeToDescriptionMap.containsKey(jobType)) {
-                    Map<String, String> map = Map.of(jobType, jobTypeToDescriptionMap.get(jobType));
-                    shipmentResponse.setShipmentTypeMasterData(map);
-                }
-            }
-        }
+        // Step 5: Set master data back into responses
+        responseList.stream()
+                .filter(ShipmentListResponse.class::isInstance)
+                .map(ShipmentListResponse.class::cast)
+                .forEach(shipmentResponse -> {
+                    String jobType = shipmentResponse.getJobType();
+                    if (jobType != null && jobTypeToDescriptionMap.containsKey(jobType)) {
+                        shipmentResponse.setShipmentTypeMasterData(
+                                Map.of(jobType, jobTypeToDescriptionMap.get(jobType))
+                        );
+                    }
+                });
     }
 
     private void setTenantsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -789,29 +799,56 @@ public class MasterDataUtils{
 
     // Fetch All Locations in single call from V1
     public <T> List<String> createInBulkUnLocationsRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
-        if (Objects.isNull(entityPayload))
-            return null;
+        if (entityPayload == null) {
+            return Collections.emptyList();
+        }
 
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> locCodesList = new ArrayList<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        if (cache == null) {
+            throw new IllegalStateException("Cache not available: " + CacheConstants.CACHE_KEY_MASTER_DATA);
+        }
+
+        // Preload all fields for this class only once
+        Map<String, Field> declaredFieldsMap = Arrays.stream(entityPayload.getClass().getDeclaredFields())
+                .collect(Collectors.toMap(Field::getName, f -> {
+                    f.setAccessible(true);
+                    return f;
+                }));
+
         List<String> fields = fetchFieldsMap(mainClass, Constants.UNLOCATIONS);
-        for (String field: fields){
+
+        for (String fieldName : fields) {
+            Field field = declaredFieldsMap.get(fieldName);
+            if (field == null) {
+                continue; // skip missing fields
+            }
+
             try {
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
-                field1.setAccessible(true);
-                String locCode = (String) field1.get(entityPayload);
-                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
-                if(locCode != null && !locCode.isEmpty()) {
-                    if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
-                    else if (!Objects.isNull(cacheMap)) cacheMap.put(locCode, cacheValue.get());
-                    fieldNameKeyMap.put(field, locCode);
+                String locCode = (String) field.get(entityPayload);
+                if (locCode == null || locCode.isEmpty()) {
+                    continue;
                 }
-            } catch (Exception e) {
-                log.error("Error in createInBulkUnLocationsRequest : {}", e.getMessage(), e);
+
+                Cache.ValueWrapper cacheValue = cache.get(
+                        keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode)
+                );
+
+                if (cacheValue == null) {
+                    locCodesList.add(locCode);
+                } else if (cacheMap != null) {
+                    cacheMap.put(locCode, cacheValue.get());
+                }
+
+                fieldNameKeyMap.put(fieldName, locCode);
+            } catch (IllegalAccessException e) {
+                log.error("Error reading field {} in createInBulkUnLocationsRequest", fieldName, e);
                 throw new GenericException(e);
             }
         }
+
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return locCodesList;
     }
@@ -851,38 +888,42 @@ public class MasterDataUtils{
             return keyMasterDataMap;
         }
 
-        log.info("Request: {} || UnLocationsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+        log.info("Request: {} || UnLocationsList: {}",
+                LoggerHelper.getRequestIdFromMDC(),
+                jsonHelper.convertToJson(requests));
 
         int batchSize = take;
-        int totalBatches = (int) Math.ceil((double) requests.size() / batchSize); // Calculate total number of batches
+        List<String> requestList = new ArrayList<>(requests);
 
-        for (int i = 0; i < totalBatches; i++) {
-
-            List<String> batch = requests.stream()
-                .skip((long) i * batchSize)
-                .limit(batchSize)
-                .toList();
+        for (int start = 0; start < requestList.size(); start += batchSize) {
+            List<String> batch = requestList.subList(start, Math.min(start + batchSize, requestList.size()));
 
             CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> field = new ArrayList<>(List.of(onField));
-            String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(batch)));
-            request.setCriteriaRequests(criteria);
+            request.setCriteriaRequests(List.of(
+                    List.of(onField),
+                    Operators.IN.getValue(),
+                    List.of(batch)
+            ));
 
             V1DataResponse response = v1Service.fetchUnlocation(request);
             List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
 
-            if (!Objects.isNull(unLocationsList)) {
-                if(onField.equals(EntityTransferConstants.UNLOCATION_CODE))
-                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getLocCode(), location));
-                else if(onField.equals(EntityTransferConstants.NAME))
-                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getName(), location));
-                else
-                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getLocationsReferenceGUID(), location));
+            if (unLocationsList != null) {
+                for (EntityTransferUnLocations location : unLocationsList) {
+                    String key;
+                    if (EntityTransferConstants.UNLOCATION_CODE.equals(onField)) {
+                        key = location.getLocCode();
+                    } else if (EntityTransferConstants.NAME.equals(onField)) {
+                        key = location.getName();
+                    } else {
+                        key = location.getLocationsReferenceGUID();
+                    }
+                    keyMasterDataMap.put(key, location);
+                }
             }
         }
-
         return keyMasterDataMap;
+
     }
 
     public Map<String, EntityTransferOrganizations> fetchInOrganizations(Set<String> requests, String onField) {
@@ -2176,49 +2217,64 @@ public class MasterDataUtils{
      */
     public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
         try {
+            if (shipmentDetails == null || shipmentDetails.isEmpty()) {
+                return;
+            }
+
+            // Map: ShipmentId -> ShipmentListResponse
+            Map<Long, ShipmentListResponse> dataMap = responseList.stream()
+                    .filter(ShipmentListResponse.class::isInstance)
+                    .map(ShipmentListResponse.class::cast)
+                    .collect(Collectors.toMap(ShipmentListResponse::getId, r -> r));
+
             Map<String, Object> cacheMap = new HashMap<>();
-            Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-            for (IRunnerResponse response : responseList)
-                dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
 
-            if(shipmentDetails != null && !shipmentDetails.isEmpty()) {
-                List<UUID> guidsList = createBillRequest(shipmentDetails, cacheMap);
-                if (!guidsList.isEmpty()) {
-                    ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
-                            .guidsList(guidsList).build();
-                    ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
-                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING, guidsList.stream().map(UUID::toString).collect(Collectors.toSet()), new ShipmentBillingListResponse.BillingData(), cacheMap);
-                }
+            List<UUID> guidsList = createBillRequest(shipmentDetails, cacheMap);
 
-                for (ShipmentDetails details: shipmentDetails) {
-                    Object cache = null;
-                    cache = getCacheValue(CacheConstants.BILLING, cacheMap, details.getGuid().toString(), cache);
+            // Fetch billing data only if there are GUIDs
+            if (!guidsList.isEmpty()) {
+                ShipmentBillingListRequest billingRequest = ShipmentBillingListRequest.builder()
+                        .guidsList(guidsList)
+                        .build();
 
-                    if (!Objects.isNull(cache)) {
-                        var billingData = (ShipmentBillingListResponse.BillingData) cache;
-                        if (!Objects.isNull(billingData)) {
-                            ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
+                ShipmentBillingListResponse billingResponse = getShipmentBillingListResponse(billingRequest);
 
-                            shipmentListResponse.setBillStatus(details.getJobStatus());
-                            shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
-                            shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
-                            shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
-                            shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
-                            shipmentListResponse.setTotalCost(billingData.getTotalCost());
-                            shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
-                            shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
-                            shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
-                            shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
-                            shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
-                            shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
-                            shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
-                        }
+                pushToCache(
+                        billingResponse.getData(),
+                        CacheConstants.BILLING,
+                        guidsList.stream().map(UUID::toString).collect(Collectors.toSet()),
+                        new ShipmentBillingListResponse.BillingData(),
+                        cacheMap
+                );
+            }
 
+            // Populate shipment responses with billing data
+            shipmentDetails.forEach(details -> {
+                Object cachedObj = getCacheValue(CacheConstants.BILLING, cacheMap, details.getGuid().toString(), null);
+                if (cachedObj instanceof ShipmentBillingListResponse.BillingData billingData) {
+                    ShipmentListResponse shipmentResponse = dataMap.get(details.getId());
+                    if (shipmentResponse != null) {
+                        shipmentResponse.setBillStatus(details.getJobStatus());
+                        shipmentResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
+                        shipmentResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
+                        shipmentResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
+                        shipmentResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
+                        shipmentResponse.setTotalCost(billingData.getTotalCost());
+                        shipmentResponse.setTotalRevenue(billingData.getTotalRevenue());
+                        shipmentResponse.setTotalProfit(billingData.getTotalProfit());
+                        shipmentResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
+                        shipmentResponse.setTotalPostedCost(billingData.getTotalPostedCost());
+                        shipmentResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
+                        shipmentResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
+                        shipmentResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
                     }
                 }
-            }
+            });
+
         } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: fetchBillDataForShipments in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+            log.error("Request: {} | Error Occurred in fetchBillDataForShipments: {}",
+                    LoggerHelper.getRequestIdFromMDC(),
+                    ex.getMessage(), ex);
         }
     }
 

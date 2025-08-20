@@ -1953,14 +1953,13 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         unAssignContainerParams.setConsolidationId(container.getConsolidationId());
         // check fcl/ftl shipment and fetch old shipment wt vol for recalculation
-        for(Long shipmentId: request.getShipmentPackIds().keySet()) {
-            if(unAssignContainerParams.getShipmentDetailsMap().containsKey(shipmentId)) {
-                ShipmentDetails shipmentDetails = unAssignContainerParams.getShipmentDetailsMap().get(shipmentId);
-                if(commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType())) {
-                    unAssignContainerParams.getFclOrFtlShipmentIds().add(shipmentId);
-                }
-            }
-        }
+        request.getShipmentPackIds().keySet().stream()
+                .map(unAssignContainerParams.getShipmentDetailsMap()::get)
+                .filter(Objects::nonNull)
+                .filter(sd -> commonUtils.isSeaFCLOrRoadFTL(sd.getTransportMode(), sd.getShipmentType()))
+                .map(BaseEntity::getId)
+                .forEach(unAssignContainerParams.getFclOrFtlShipmentIds()::add);
+
         setUnassignedContainerParems(unAssignContainerParams);
         unAssignContainerParams.setOldContainersEntity(jsonHelper.convertValue(container, Containers.class));
         containerV3Util.resetContainerDataForRecalculation(container);

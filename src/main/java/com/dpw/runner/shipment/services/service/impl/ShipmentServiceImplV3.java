@@ -4076,7 +4076,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             formatWeightAndVolumeFieldsForAttachmentPannel(response, tenantSettings);
             responseList.add(response);
         });
-        shipmentMasterDataHelper.getMasterDataForList(shipmentDetails, responseList, getMasterData, true, request.getIncludeColumns().stream().collect(Collectors.toSet()));
+        shipmentMasterDataHelper.getMasterDataForList(shipmentDetails, responseList, getMasterData, true, new HashSet<>(request.getIncludeColumns()));
 
         return responseList;
     }
