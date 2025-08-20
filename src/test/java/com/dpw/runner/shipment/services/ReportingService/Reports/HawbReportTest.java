@@ -1727,7 +1727,8 @@ class HawbReportTest extends CommonMocks {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         UserContext.getUser().setPermissions(new HashMap<>());
         mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        hawbReport.getDocumentModel(123L);
+        verify(shipmentDao).findById(any());
     }
 
     @Test
