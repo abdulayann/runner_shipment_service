@@ -6884,7 +6884,7 @@ public class ShipmentService implements IShipmentService {
             return false;
         if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
-        return !isAirDgUser();
+        return false;
     }
 
     public boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
