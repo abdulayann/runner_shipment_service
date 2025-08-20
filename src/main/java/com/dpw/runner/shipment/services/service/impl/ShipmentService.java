@@ -9620,11 +9620,6 @@ public class ShipmentService implements IShipmentService {
             if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
                 throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
             }
-        } else {
-            if (checkForDGShipmentAndAirDgFlag(shipmentDetails))
-                throw new ValidationException("You do not have necessary permissions for this.");
         }
     }
-
-
 }
