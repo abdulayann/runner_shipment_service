@@ -295,8 +295,9 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request) {
-        if(isNotAirExport(request))
+        if(isNotAirExport(request)) {
             return false;
+        }
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
