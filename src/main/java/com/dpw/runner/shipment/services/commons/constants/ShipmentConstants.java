@@ -183,6 +183,7 @@ public class ShipmentConstants {
     public static final String ACHIEVED_QUANTITIES = "achievedQuantities";
     public static final String SHIPMENT_DETAILS = "shipmentDetails";
     public static final String CONSOLIDATION_DETAILS = "consolidationDetails";
+    public static final String TRANSPORTER_DETAIL = "transporterDetail";
     public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
             Map.entry(SHIPMENT_DETAILS, ShipmentDetails.class),
             Map.entry(Constants.ADDITIONAL_DETAILS, AdditionalDetails.class),
@@ -218,7 +219,8 @@ public class ShipmentConstants {
             Map.entry(DEPARTURE_DETAILS, ArrivalDepartureDetails.class),
             Map.entry(ARRIVAL_DETAILS, ArrivalDepartureDetails.class),
             Map.entry(ALLOCATIONS, Allocations.class),
-            Map.entry(ACHIEVED_QUANTITIES, AchievedQuantities.class)
+            Map.entry(ACHIEVED_QUANTITIES, AchievedQuantities.class),
+            Map.entry(TRANSPORTER_DETAIL, Parties.class)
 
     );
     public static final Set<String> JSON_FIELDS = Set.of("orgData");
