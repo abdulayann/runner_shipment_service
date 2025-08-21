@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
@@ -50,4 +51,5 @@ public class AwbResponse implements IRunnerResponse {
     private AirMessagingAdditionalFields airMessagingAdditionalFields;
 
     private String userDisplayName;
+    private PrintType printType;
 }
