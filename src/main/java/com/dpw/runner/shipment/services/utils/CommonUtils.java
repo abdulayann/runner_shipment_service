@@ -94,6 +94,7 @@ import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
@@ -3129,7 +3130,7 @@ public class CommonUtils {
                 .map(Field::getName)
                 .toList();
     }
-    public Set<String> detectCollectionRelationships(Map<String, List<String>> requestedColumns, Class<?> entityClass) {
+    public Set<String> detectCollectionRelationships(Map<String, Object> requestedColumns, Class<?> entityClass) {
         Set<String> collections = new HashSet<>();
 
         for (String key : requestedColumns.keySet()) {
@@ -3145,24 +3146,104 @@ public class CommonUtils {
 
         return collections;
     }
-    public Map<String, List<String>> extractRequestedColumns(Map<String, Object> payload) {
-        Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
+    public Map<String, Object> extractRequestedColumns(Map<String, Object> payload, String mainEntityKey) {
+        if (payload == null || payload.isEmpty()) {
+            return new HashMap<>();
+        }
 
-        return payload.entrySet().stream()
-                .filter(e -> validEntityKeys.contains(e.getKey())) // only keep real entity keys
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> (List<String>) e.getValue()
-                ));
+        // If the payload contains a specific main entity key, use it
+        if (payload.containsKey(mainEntityKey)) {
+            return Collections.singletonMap(mainEntityKey, (List<String>) payload.get(mainEntityKey));
+        }
+            // Get the includeColumns list from the payload
+            List<String> includeColumns = (List<String>) payload.get("includeColumns");
+
+            if (includeColumns == null || includeColumns.isEmpty()) {
+                return new HashMap<>();
+            }
+
+            Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
+            Map<String, Object> entityColumnsMap = new HashMap<>();
+
+            for (String column : includeColumns) {
+                String[] parts = column.split("\\.");
+
+                if (parts.length == 1) {
+                    // Root-level field: belongs to shipmentDetails or mainEntityKey
+                    if (validEntityKeys.contains(mainEntityKey)) {
+                        entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
+                        List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
+                        fields.add(parts[0]);
+                    }
+                } else {
+                    // Nested field
+                    String topLevelEntity = parts[0];
+
+                    if (!validEntityKeys.contains(topLevelEntity)) {
+                        continue; // Skip unknown entities
+                    }
+
+                    // If it's two levels deep, store as List<String>
+                    if (parts.length == 2) {
+                        entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<String>());
+                        List<String> fields = (List<String>) entityColumnsMap.get(topLevelEntity);
+                        fields.add(parts[1]);
+                    } else {
+                        // Deep nesting (3 or more parts)
+                        // We assume structure like pickupDetails.transporterDetail.orgData.FullName
+                        Map<String, Object> nested = (Map<String, Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new HashMap<String, Object>());
+                        buildNestedMap(nested, parts, 1);
+                    }
+                }
+            }
+
+            return entityColumnsMap;
+        }
+
+    @SuppressWarnings("unchecked")
+    private void buildNestedMap(Map<String, Object> currentMap, String[] parts, int index) {
+        String current = parts[index];
+
+        // Stop condition — add this part to the parent as a field
+        if (ShipmentConstants.JSON_FIELDS.contains(current) || index == parts.length - 1) {
+            currentMap.computeIfAbsent(current, k -> new ArrayList<>());
+            return;
+        }
+
+        Object next = currentMap.get(current);
+
+        // If next level exists and is a map, go deeper
+        if (next instanceof Map) {
+            buildNestedMap((Map<String, Object>) next, parts, index + 1);
+        } else if (next instanceof List) {
+            // Already a list, just add the new field if stop condition hit
+            String stopField = parts[index + 1];
+            List<String> list = (List<String>) next;
+            if (!list.contains(stopField)) {
+                list.add(stopField);
+            }
+        } else {
+            // Create a map for the next level
+            if (index + 2 < parts.length && !ShipmentConstants.JSON_FIELDS.contains(parts[index + 1])) {
+                Map<String, Object> nextMap = new HashMap<>();
+                currentMap.put(current, nextMap);
+                buildNestedMap(nextMap, parts, index + 1);
+            } else {
+                // Next part is a terminal field, collect in list
+                List<String> fieldList = new ArrayList<>();
+                fieldList.add(parts[index + 1]);
+                currentMap.put(current, fieldList);
+            }
+        }
     }
 
 
 
-    public void fillEmptyColumnLists(Map<String, List<String>> requestedColumns) {
+    public void fillEmptyColumnLists(Map<String, Object> requestedColumns) {
         Map<String, Class<?>> entityMappings = ShipmentConstants.ENTITY_MAPPINGS; // from our fixed Map.ofEntries(...)
         for (Map.Entry<String, Class<?>> e : entityMappings.entrySet()) {
             String key = e.getKey();
-            if (requestedColumns.containsKey(key) && requestedColumns.get(key).isEmpty()) {
+            if (requestedColumns.containsKey(key) && requestedColumns.get(key)== null) {
                 requestedColumns.put(key, getAllSimpleFieldNames(e.getValue()));
             }
         }
@@ -3268,7 +3349,7 @@ public class CommonUtils {
      */
     @SuppressWarnings("unchecked")
     public <T extends MultiTenancy> void buildJoinsAndSelections(
-            Map<String, List<String>> requestedColumns,
+            Map<String, Object> requestedColumns,
             Root<T> root,
             List<Selection<?>> selections,
             List<String> columnOrder,
@@ -3276,7 +3357,7 @@ public class CommonUtils {
             Map<String, Object> requestPayload
     ) {
         String sortField = extractSortFieldFromPayload(requestPayload);
-        Set<String> rootEntityColumns = new HashSet<>(requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
+        Set<String> rootEntityColumns = new HashSet<>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
 
         // If there's a sort field and it's not already in the root entity columns, validate and add it
         if (sortField != null && !rootEntityColumns.contains(sortField)) {
@@ -3284,7 +3365,7 @@ public class CommonUtils {
             if (isValidFieldForEntity(root, sortField)) {
                 rootEntityColumns.add(sortField);
                 // Update the requestedColumns map to include the sort field
-                Map<String, List<String>> updatedRequestedColumns = new HashMap<>(requestedColumns);
+                Map<String, Object> updatedRequestedColumns = new HashMap<>(requestedColumns);
                 updatedRequestedColumns.put(rootEntityKey, new ArrayList<>(rootEntityColumns));
                 requestedColumns = updatedRequestedColumns;
                 log.debug("Auto-included sort field '{}' for entity '{}'", sortField, rootEntityKey);
@@ -3293,36 +3374,64 @@ public class CommonUtils {
                 throw new IllegalArgumentException(getValidFieldSuggestions(rootEntityKey, sortField));
             }
         }
-
-        for (Map.Entry<String, List<String>> entry : requestedColumns.entrySet()) {
+//        processSelections(requestedColumns, rootEntityKey, root, selections, columnOrder);
+        for (Map.Entry<String, Object> entry : requestedColumns.entrySet()) {
             String entityKey = entry.getKey();
-            List<String> cols = entry.getValue();
-
-            // Skip if no columns were requested (should be auto-filled before this method)
-            if (cols == null || cols.isEmpty()) {
-                continue;
+            Object value = entry.getValue();
+            if(value instanceof List){
+               processList(value, rootEntityKey, root, selections, columnOrder, entityKey);
+            }
+            else{
+                 processNestedMap(value, rootEntityKey, root, selections, columnOrder, entityKey);
             }
 
-            if (rootEntityKey.equals(entityKey)) {
-                // Parent entity: add columns directly from the root
-                for (String col : cols) {
-                    selections.add(root.get(col));
-                    columnOrder.add(rootEntityKey + "." + col);
-                }
-            } else {
-                // Join according to mapping key
-                Class<?> entityClass = ShipmentConstants.ENTITY_MAPPINGS.get(entityKey);
-                if (entityClass == null) {
-                    throw new IllegalArgumentException("No mapping found for key: " + entityKey);
-                }
 
-                // Join on this relationship
-                Join<Object, Object> join = root.join(entityKey, JoinType.LEFT);
+        }
+    }
+    public void processNestedMap(Object value, String rootEntityKey, Root<?> root,
+                            List<Selection<?>> selections, List<String> columnOrder,  String entityKey) {
+        Map<String, Object> nestedInnerMap = (Map<String, Object>) value;
+        for (Map.Entry<String, Object> entry : nestedInnerMap.entrySet()) {
+            String innerEntityKey = entry.getKey();
+            Object innerValue = entry.getValue();
+            if (value instanceof List) {
+                processList(value, rootEntityKey, root, selections, columnOrder, entityKey);
+                return;
+            }
+            else{
+                processNestedMap(value, rootEntityKey, root, selections, columnOrder, entityKey);
 
-                for (String col : cols) {
-                    selections.add(join.get(col));
-                    columnOrder.add(rootEntityKey + "." + entityKey + "." + col);
-                }
+            }
+        }
+
+    }
+    public void processList(Object value, String rootEntityKey, Root<?> root,
+                           List<Selection<?>> selections, List<String> columnOrder,  String entityKey) {
+        List<String> cols = (List<String>) value;
+        // Skip if no columns were requested (should be auto-filled before this method)
+        if (cols == null || cols.isEmpty()) {
+            return;
+        }
+
+        if (rootEntityKey.equals(entityKey)) {
+            // Parent entity: add columns directly from the root
+            for (String col : cols) {
+                selections.add(root.get(col));
+                columnOrder.add(rootEntityKey + "." + col);
+            }
+        } else {
+            // Join according to mapping key
+            Class<?> entityClass = ShipmentConstants.ENTITY_MAPPINGS.get(entityKey);
+            if (entityClass == null) {
+                throw new IllegalArgumentException("No mapping found for key: " + entityKey);
+            }
+
+            // Join on this relationship
+            Join<Object, Object> join = root.join(entityKey, JoinType.LEFT);
+
+            for (String col : cols) {
+                selections.add(join.get(col));
+                columnOrder.add(rootEntityKey + "." + entityKey + "." + col);
             }
         }
     }
@@ -3465,13 +3574,13 @@ public class CommonUtils {
 
                         case "<" -> {
                             if (value instanceof String string) {
-                                yield cb.greaterThan(root.get(fieldName), string);
+                                yield cb.lessThan(root.get(fieldName), string);
                             } else if (value instanceof Number number) {
-                                yield cb.gt(root.get(fieldName), number);
+                                yield cb.lt(root.get(fieldName), number);
                             } else if (value instanceof Date date) {
-                                yield cb.greaterThan(root.get(fieldName),  date);
+                                yield cb.lessThan(root.get(fieldName),  date);
                             } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                                yield cb.lessThan(root.get(fieldName), localDateTime);
                             }  else {
                                 throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
                             }
@@ -3479,13 +3588,13 @@ public class CommonUtils {
 
                         case ">=" -> {
                             if (value instanceof String string) {
-                                yield cb.greaterThan(root.get(fieldName), string);
+                                yield cb.greaterThanOrEqualTo(root.get(fieldName), string);
                             } else if (value instanceof Number number) {
                                 yield cb.gt(root.get(fieldName), number);
                             } else if (value instanceof Date date) {
-                                yield cb.greaterThan(root.get(fieldName),  date);
+                                yield cb.greaterThanOrEqualTo(root.get(fieldName),  date);
                             } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                                yield cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
                             } else {
                                 throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
                             }
@@ -3493,13 +3602,13 @@ public class CommonUtils {
 
                         case "<=" -> {
                             if (value instanceof String string) {
-                                yield cb.greaterThan(root.get(fieldName), string);
+                                yield cb.lessThanOrEqualTo(root.get(fieldName), string);
                             } else if (value instanceof Number number) {
-                                yield cb.gt(root.get(fieldName), number);
+                                yield cb.lt(root.get(fieldName), number);
                             } else if (value instanceof Date date) {
-                                yield cb.greaterThan(root.get(fieldName),  date);
+                                yield cb.lessThanOrEqualTo(root.get(fieldName),  date);
                             } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.greaterThan(root.get(fieldName), localDateTime);
+                                yield cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
                             }  else {
                                 throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
                             }
@@ -3515,18 +3624,7 @@ public class CommonUtils {
                         default -> null;
                     };
 
-                    if (innerPredicate == null) {
-                        innerPredicate = p;
-                    } else {
-                        String logic = Optional.ofNullable(((Map<?, ?>) inner).get("logicOperator"))
-                                .map(Object::toString)
-                                .orElse("and");
-                        if ("or".equalsIgnoreCase(logic)) {
-                            innerPredicate = cb.or(innerPredicate, p);
-                        } else {
-                            innerPredicate = cb.and(innerPredicate, p);
-                        }
-                    }
+                    innerPredicate = calculateInnerPredicate(cb, (Map<?, ?>) inner, innerPredicate, p);
                 }
                 if (innerPredicate != null) {
                     predicates.add(innerPredicate);
@@ -3534,6 +3632,21 @@ public class CommonUtils {
             }
         }
         return predicates;
+    }
+    private Predicate calculateInnerPredicate(CriteriaBuilder cb, Map<?, ?> inner, Predicate innerPredicate, Predicate p) {
+        if (innerPredicate == null) {
+            innerPredicate = p;
+        } else {
+            String logic = Optional.ofNullable(inner.get("logicOperator"))
+                    .map(Object::toString)
+                    .orElse("and");
+            if ("or".equalsIgnoreCase(logic)) {
+                innerPredicate = cb.or(innerPredicate, p);
+            } else {
+                innerPredicate = cb.and(innerPredicate, p);
+            }
+        }
+        return innerPredicate;
     }
 
 }
