@@ -48,6 +48,7 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     @Override
     public void restoreTenantData(Integer tenantId) {
             try {
+                executeHandler(getHandler(NetworkTransferRestoreHandler.class), tenantId);
                 executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
                 executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
                 executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
