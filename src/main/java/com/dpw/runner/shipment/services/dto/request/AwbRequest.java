@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -45,4 +46,5 @@ public class AwbRequest implements IRunnerRequest {
     private AwbStatus linkedHawbAirMessageStatus;
     private LocalDateTime originalPrintedAt;
     private AirMessagingAdditionalFields airMessagingAdditionalFields;
+    private PrintType printType;
 }
