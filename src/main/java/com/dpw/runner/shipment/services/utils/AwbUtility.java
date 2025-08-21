@@ -318,7 +318,9 @@ public class AwbUtility {
     }
 
     private void processConsoleUnLoc(Awb awb, ConsolidationDetails consolidationDetails, Map<String, UnlocationsResponse> unlocationsMap, AwbAirMessagingResponse awbResponse) {
-        setExecutedAtCityInAwbAirMessagingResponse(awbResponse, awb);
+        if(awb.getAwbPackingInfo() != null) {
+            setExecutedAtCityInAwbAirMessagingResponse(awbResponse, awb);
+        }
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
@@ -330,7 +332,7 @@ public class AwbUtility {
     }
 
     private void setExecutedAtCityInAwbAirMessagingResponse(AwbAirMessagingResponse awbResponse, Awb awb) {
-        if(awb.getAwbPackingInfo() != null) {
+        if(awbResponse.getMeta() != null && awb.getAwbOtherInfo() != null) {
             awbResponse.getMeta().setExecutedAtCity(awb.getAwbOtherInfo().getExecutedAt());
         }
     }
