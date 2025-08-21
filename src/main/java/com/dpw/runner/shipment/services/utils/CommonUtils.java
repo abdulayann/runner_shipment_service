@@ -3333,20 +3333,6 @@ public class CommonUtils {
         return finalList;
     }
 
-    /**
-     * Generic method to build JPA joins and selections for any entity that extends MultiTenancy.
-     *
-     * Usage examples:
-     * - For ShipmentDetails: buildJoinsAndSelections(requestedColumns, shipmentRoot, selections, columnOrder, "shipmentDetails", requestPayload)
-     * - For ConsolidationDetails: buildJoinsAndSelections(requestedColumns, consolidationRoot, selections, columnOrder, "consolidationDetails", requestPayload)
-     *
-     * @param requestedColumns Map of entity keys to their requested column lists
-     * @param root Root entity (must extend MultiTenancy)
-     * @param selections List to store JPA selections
-     * @param columnOrder List to store column order for result mapping
-     * @param rootEntityKey The key representing the root entity (e.g., "shipmentDetails", "consolidationDetails")
-     * @param requestPayload The full request payload to extract sort field information
-     */
     @SuppressWarnings("unchecked")
     public <T extends MultiTenancy> void buildJoinsAndSelections(
             Map<String, Object> requestedColumns,
@@ -3361,10 +3347,8 @@ public class CommonUtils {
 
         // If there's a sort field and it's not already in the root entity columns, validate and add it
         if (sortField != null && !rootEntityColumns.contains(sortField)) {
-            // Validate that the sort field exists in the entity before adding it
             if (isValidFieldForEntity(root, sortField)) {
                 rootEntityColumns.add(sortField);
-                // Update the requestedColumns map to include the sort field
                 Map<String, Object> updatedRequestedColumns = new HashMap<>(requestedColumns);
                 updatedRequestedColumns.put(rootEntityKey, new ArrayList<>(rootEntityColumns));
                 requestedColumns = updatedRequestedColumns;
@@ -3374,79 +3358,105 @@ public class CommonUtils {
                 throw new IllegalArgumentException(getValidFieldSuggestions(rootEntityKey, sortField));
             }
         }
-//        processSelections(requestedColumns, rootEntityKey, root, selections, columnOrder);
+
+        // Use a map to cache joins to avoid duplicate joins
+        Map<String, Join<?, ?>> joinCache = new HashMap<>();
+
         for (Map.Entry<String, Object> entry : requestedColumns.entrySet()) {
             String entityKey = entry.getKey();
             Object value = entry.getValue();
-            if(value instanceof List){
-               processList(value, rootEntityKey, root, selections, columnOrder, entityKey);
-            }
-            else{
-                 processNestedMap(value, rootEntityKey, root, selections, columnOrder, entityKey);
-            }
 
-
+            processEntity(value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
         }
     }
-    public void processNestedMap(Object value, String rootEntityKey, Root<?> root,
-                            List<Selection<?>> selections, List<String> columnOrder,  String entityKey) {
-        Map<String, Object> nestedInnerMap = (Map<String, Object>) value;
-        for (Map.Entry<String, Object> entry : nestedInnerMap.entrySet()) {
-            String innerEntityKey = entry.getKey();
-            Object innerValue = entry.getValue();
-            if (value instanceof List) {
-                processList(value, rootEntityKey, root, selections, columnOrder, entityKey);
-                return;
-            }
-            else{
-                processNestedMap(value, rootEntityKey, root, selections, columnOrder, entityKey);
 
-            }
+    private void processEntity(Object value, String rootEntityKey, Root<?> root,
+                               List<Selection<?>> selections, List<String> columnOrder,
+                               String entityKey, Map<String, Join<?, ?>> joinCache) {
+        if (value instanceof List) {
+            processList(value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
+        } else if (value instanceof Map) {
+            processNestedMap((Map<String, Object>) value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
         }
-
     }
+
+    public void processNestedMap(Map<String, Object> nestedMap, String rootEntityKey, Root<?> root,
+                                 List<Selection<?>> selections, List<String> columnOrder,
+                                 String parentEntityKey, Map<String, Join<?, ?>> joinCache) {
+
+        for (Map.Entry<String, Object> entry : nestedMap.entrySet()) {
+            String childEntityKey = entry.getKey();
+            Object childValue = entry.getValue();
+
+            // Build the full path for this nested entity
+            String fullPath = parentEntityKey + "." + childEntityKey;
+
+            processEntity(childValue, rootEntityKey, root, selections, columnOrder, fullPath, joinCache);
+        }
+    }
+
     public void processList(Object value, String rootEntityKey, Root<?> root,
-                           List<Selection<?>> selections, List<String> columnOrder,  String entityKey) {
+                            List<Selection<?>> selections, List<String> columnOrder,
+                            String entityPath, Map<String, Join<?, ?>> joinCache) {
         List<String> cols = (List<String>) value;
-        // Skip if no columns were requested (should be auto-filled before this method)
+
         if (cols == null || cols.isEmpty()) {
             return;
         }
 
-        if (rootEntityKey.equals(entityKey)) {
-            // Parent entity: add columns directly from the root
+        if (rootEntityKey.equals(entityPath)) {
+            // Root entity: add columns directly from the root
             for (String col : cols) {
                 selections.add(root.get(col));
                 columnOrder.add(rootEntityKey + "." + col);
             }
         } else {
-            // Join according to mapping key
-            Class<?> entityClass = ShipmentConstants.ENTITY_MAPPINGS.get(entityKey);
-            if (entityClass == null) {
-                throw new IllegalArgumentException("No mapping found for key: " + entityKey);
-            }
-
-            // Join on this relationship
-            Join<Object, Object> join = root.join(entityKey, JoinType.LEFT);
+            // Handle nested joins
+            Path<?> joinPath = buildJoinPath(root, entityPath, joinCache);
 
             for (String col : cols) {
-                selections.add(join.get(col));
-                columnOrder.add(rootEntityKey + "." + entityKey + "." + col);
+                selections.add(joinPath.get(col));
+                columnOrder.add(rootEntityKey + "." + entityPath + "." + col);
             }
         }
     }
-    /**
-     * Generic method to fetch total count for any entity that extends MultiTenancy.
-     *
-     * Usage examples:
-     * - For ShipmentDetails: fetchTotalCount(requestPayload, ShipmentDetails.class)
-     * - For ConsolidationDetails: fetchTotalCount(requestPayload, ConsolidationDetails.class)
-     * - For any other entity extending MultiTenancy: fetchTotalCount(requestPayload, YourEntity.class)
-     *
-     * @param requestPayload The request payload containing filter criteria
-     * @param entityClass The entity class (must extend MultiTenancy)
-     * @return Total count of entities matching the criteria
-     */
+
+    private Path<?> buildJoinPath(Root<?> root, String entityPath, Map<String, Join<?, ?>> joinCache) {
+        // Check if we already have this join cached
+        if (joinCache.containsKey(entityPath)) {
+            return joinCache.get(entityPath);
+        }
+
+        String[] pathParts = entityPath.split("\\.");
+        Path<?> currentPath = root;
+
+        // Build the join path step by step
+        StringBuilder currentPathBuilder = new StringBuilder();
+        for (String part : pathParts) {
+            if (currentPathBuilder.length() > 0) {
+                currentPathBuilder.append(".");
+            }
+            currentPathBuilder.append(part);
+            String currentFullPath = currentPathBuilder.toString();
+
+            if (joinCache.containsKey(currentFullPath)) {
+                currentPath = joinCache.get(currentFullPath);
+            } else {
+                // Create new join
+                Join<?, ?> join;
+                if (currentPath instanceof Root) {
+                    join = ((Root<?>) currentPath).join(part, JoinType.LEFT);
+                } else {
+                    join = ((Join<?, ?>) currentPath).join(part, JoinType.LEFT);
+                }
+                joinCache.put(currentFullPath, join);
+                currentPath = join;
+            }
+        }
+
+        return currentPath;
+    }
+
     public <T extends MultiTenancy> long fetchTotalCount(Map<String, Object> requestPayload, Class<T> entityClass) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
@@ -3462,13 +3472,6 @@ public class CommonUtils {
 
         return entityManager.createQuery(countQuery).getSingleResult();
     }
-
-    /**
-     * Helper method to extract sort field from request payload
-     *
-     * @param requestPayload The request payload
-     * @return The sort field name, or null if not present
-     */
     private String extractSortFieldFromPayload(Map<String, Object> requestPayload) {
         if (requestPayload == null) {
             return null;
@@ -3484,13 +3487,6 @@ public class CommonUtils {
         return null;
     }
 
-    /**
-     * Validates if a field name exists in the given entity type
-     *
-     * @param root The JPA Root entity
-     * @param fieldName The field name to validate
-     * @return true if the field exists in the entity, false otherwise
-     */
     private <T extends MultiTenancy> boolean isValidFieldForEntity(Root<T> root, String fieldName) {
         try {
             // Try to access the field using JPA metamodel - this will throw exception if field doesn't exist
@@ -3502,14 +3498,6 @@ public class CommonUtils {
             return false;
         }
     }
-
-    /**
-     * Gets a user-friendly error message with suggestions for valid sort fields
-     *
-     * @param entityType The entity type name
-     * @param invalidField The invalid field name
-     * @return Error message with suggestions
-     */
     private String getValidFieldSuggestions(String entityType, String invalidField) {
         StringBuilder message = new StringBuilder();
         message.append("Invalid sort field '").append(invalidField).append("' for entity type '").append(entityType).append("'. ");
@@ -3524,18 +3512,7 @@ public class CommonUtils {
 
         return message.toString();
     }
-    /**
-     * Generic method to build JPA predicates from filter criteria for any entity that extends MultiTenancy.
-     *
-     * Usage examples:
-     * - For ShipmentDetails: buildPredicatesFromFilters(cb, shipmentRoot, requestPayload)
-     * - For ConsolidationDetails: buildPredicatesFromFilters(cb, consolidationRoot, requestPayload)
-     *
-     * @param cb CriteriaBuilder instance
-     * @param root Root entity (must extend MultiTenancy)
-     * @param requestPayload The request payload containing filter criteria
-     * @return List of JPA predicates built from the filter criteria
-     */
+
     public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
                                                       Root<T> root,
                                                       Map<String, Object> requestPayload) {
