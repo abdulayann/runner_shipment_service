@@ -50,15 +50,7 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -5079,7 +5071,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
 
         // Step 1: Read requested columns
-        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload, ShipmentConstants.CONSOLIDATION_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5138,9 +5130,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     public Map<String, Object> getConsolidationDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
         // Step 1: Read requested columns
-        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload, ShipmentConstants.CONSOLIDATION_DETAILS);
 
-        // Step 2: Auto-fill empty column lists with all columns
+//         Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
 
         // Step 5: Collection types detection (OneToMany / ManyToMany)

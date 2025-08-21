@@ -772,12 +772,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
 
         // Step 1: Read requested columns
-        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload,  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
-
-
+//
+//
         // Step 5: Collection types detection (OneToMany / ManyToMany)
         Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
 
@@ -831,7 +831,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public Map<String, Object> getShipmentDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
         // Step 1: Read requested columns
-        Map<String, List<String>> requestedColumns = commonUtils.extractRequestedColumns(requestPayload);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload,  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
