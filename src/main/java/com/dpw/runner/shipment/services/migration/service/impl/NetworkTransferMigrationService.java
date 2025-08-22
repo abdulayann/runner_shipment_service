@@ -389,7 +389,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
                 try {
-                    v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
                     return trxExecutor.runInTrx(() -> {
