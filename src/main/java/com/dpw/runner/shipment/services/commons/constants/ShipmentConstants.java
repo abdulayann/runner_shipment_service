@@ -232,6 +232,7 @@ public class ShipmentConstants {
 
     // Shipment V3.0 API Endpoints
     public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
+    public static final String SHIPMENT_EXTERNAL_API_HANDLE = "/api/v3/shipment/external";
     public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
 
 
@@ -281,6 +282,9 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
     public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
+    public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
+    public static final String SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
+    public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
 
     public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
 

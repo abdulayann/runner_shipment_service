@@ -121,19 +121,19 @@ public class PackingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromConsolidation(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.BOOKING));
+        return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.BOOKING, false));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})

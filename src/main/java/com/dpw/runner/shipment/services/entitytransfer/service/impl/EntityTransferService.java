@@ -528,7 +528,7 @@ public class EntityTransferService implements IEntityTransferService {
                     ConsolidationDetails v2Consol = jsonHelper.convertValue(consol, ConsolidationDetails.class);
                     setNotesInConsol(v2Consol);
                     Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false);
+                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, new HashMap<>());
                     var entityTransferConsolePayload = prepareConsolidationPayload(v3ConsolidationDetails, sendConsolidationRequest, true);
                     entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
                     setPackingVsContainerGuid(entityTransferConsolePayload, packingVsContainerGuid);

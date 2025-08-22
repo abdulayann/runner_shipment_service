@@ -10,12 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +23,6 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     @Autowired
     private TenantDataRestoreServiceImpl self;
     private final List<RestoreServiceHandler> restoreHandlers;
-    private final TransactionTemplate transactionTemplate;
-    private final ThreadPoolTaskExecutor asyncRestoreHandlerExecutor;
     private final EmailServiceUtility emailServiceUtility;
     private final HelperExecutor trxExecutor;
 
@@ -37,9 +31,10 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
 
         trxExecutor.runInAsync(() ->  {
             try {
+                long startTime = System.currentTimeMillis();
                 restoreTenantData(tenantId);
                 log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
-                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "", "Restore From V3 to V2",  false);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully : " + (System.currentTimeMillis()-startTime), "Restore From V3 to V2",  false);
             } catch (Exception e) {
                 log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Restore From V3 to V2", true);
@@ -53,28 +48,15 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
 
     @Override
     public void restoreTenantData(Integer tenantId) {
-        transactionTemplate.execute(status -> {
             try {
-                // Run shipment + consolidation in parallel
-                CompletableFuture<Void> shipmentFuture = CompletableFuture.runAsync(
-                        () -> executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId),
-                        asyncRestoreHandlerExecutor
-                );
-
-                CompletableFuture<Void> consolidationFuture = CompletableFuture.runAsync(
-                        () -> executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId),
-                        asyncRestoreHandlerExecutor
-                );
-                CompletableFuture.allOf(shipmentFuture, consolidationFuture).join();
-
-                // If both succeeded, run booking
+                executeHandler(getHandler(NetworkTransferRestoreHandler.class), tenantId);
+                executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
+                executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
                 executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
-                return null;
             } catch (Exception e) {
                 log.error("Restore failed for tenant: {}", tenantId, e);
                 throw new IllegalArgumentException(e);
             }
-        });
     }
 
     private RestoreServiceHandler getHandler(Class<? extends RestoreServiceHandler> clazz) {

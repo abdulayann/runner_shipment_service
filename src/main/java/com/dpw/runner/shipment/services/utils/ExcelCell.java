@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 public @interface ExcelCell {
     int order() default 999;
     String displayName() default "";
+    String displayNameOverride() default "";
+    boolean requiredInV3() default true;
 }

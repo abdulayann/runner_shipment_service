@@ -419,6 +419,8 @@ public class Constants {
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
     public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String CARGO_WEIGHT = "cargoWeight";
+    public static final String CARGO_WEIGHT_UNIT = "cargoWeightUnit";
     public static final String GROSS_WEIGHT_UNIT = "grossWeightUnit";
     public static final String GROSS_VOLUME = "grossVolume";
     public static final String GROSS_VOLUME_UNIT = "grossVolumeUnit";

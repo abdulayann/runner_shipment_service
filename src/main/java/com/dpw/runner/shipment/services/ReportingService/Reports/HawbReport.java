@@ -43,6 +43,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE_PARTY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RCP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_CODE;
@@ -183,6 +184,8 @@ public class HawbReport extends IReport{
         }
 
         populateShippedOnboardFields(hawbModel.shipmentDetails, dictionary);
+        populateDGFields(hawbModel.shipmentDetails, dictionary);
+        populateReeferFields(hawbModel.shipmentDetails, dictionary);
 
         populateUserFields(hawbModel.usersDto, dictionary);
 
@@ -203,6 +206,7 @@ public class HawbReport extends IReport{
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
             populateRaKcData(dictionary, hawbModel.shipmentDetails);
             populateShipmentOrders(hawbModel.shipmentDetails, dictionary);
+            dictionary.put(SHIPMENT_CARGO_TYPE, hawbModel.shipmentDetails.getShipmentType());
         }
 
         var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();

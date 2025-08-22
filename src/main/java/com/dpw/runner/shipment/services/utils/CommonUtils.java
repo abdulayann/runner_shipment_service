@@ -1404,10 +1404,10 @@ public class CommonUtils {
             dictionary.put(ReportConstants.POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getLocCode());
             dictionary.put(POD_NAME, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
         }
-        dictionary.put(ALLOCATED_WEIGHT, consolidationDetails.getAllocations().getWeight());
-        dictionary.put(ALLOCATED_WEIGHT_UNIT, consolidationDetails.getAllocations().getWeightUnit());
-        dictionary.put(ALLOCATED_VOLUME, consolidationDetails.getAllocations().getVolume());
-        dictionary.put(ALLOCATED_VOLUME_UNIT, consolidationDetails.getAllocations().getVolumeUnit());
+        dictionary.put(ALLOCATED_WEIGHT, Objects.nonNull(consolidationDetails.getAllocations()) ? consolidationDetails.getAllocations().getWeight() : null);
+        dictionary.put(ALLOCATED_WEIGHT_UNIT, Objects.nonNull(consolidationDetails.getAllocations()) ? consolidationDetails.getAllocations().getWeightUnit() : null);
+        dictionary.put(ALLOCATED_VOLUME, Objects.nonNull(consolidationDetails.getAllocations()) ? consolidationDetails.getAllocations().getVolume() : null);
+        dictionary.put(ALLOCATED_VOLUME_UNIT, Objects.nonNull(consolidationDetails.getAllocations()) ? consolidationDetails.getAllocations().getVolumeUnit() : null);
         dictionary.put(REQUEST_DATE_TIME, convertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
         dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
     }
@@ -2921,6 +2921,12 @@ public class CommonUtils {
     public boolean isFCLorFTL(String cargoType) {
         return (CARGO_TYPE_FCL.equals(cargoType) || CARGO_TYPE_FTL.equals(cargoType));
     }
+    public boolean isFCL(String cargoType) {
+        return CARGO_TYPE_FCL.equals(cargoType);
+    }
+    public boolean isLCL(String cargoType) {
+        return CARGO_TYPE_LCL.equals(cargoType);
+    }
 
     public String getPacksUnit(String curUnit, String entityPacksUnit) {
         if(isStringNullOrEmpty(curUnit))
@@ -3095,6 +3101,20 @@ public class CommonUtils {
             }
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
+        }
+        return null;
+    }
+
+    @Nullable
+    public Long getLongValue(Object value) {
+        if (value != null) {
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else if (value instanceof String) {
+                return Long.parseLong((String) value);
+            } else {
+                throw new IllegalArgumentException("Unsupported Party ID type: " + value.getClass());
+            }
         }
         return null;
     }

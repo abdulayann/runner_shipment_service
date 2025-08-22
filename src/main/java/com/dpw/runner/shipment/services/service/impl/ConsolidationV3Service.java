@@ -27,13 +27,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
@@ -121,6 +115,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -222,6 +217,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -853,7 +849,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
+            List<Packing> packingList = commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate);
+            for(Packing packing : packingList) {
+                packing.setId(null);
+                packing.setGuid(null);
+                packing.setBookingId(null);
+            }
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(packingList, id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         return containerAssignedToShipmentCargo;
@@ -870,7 +872,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
-                    newContainer.setGrossWeight(newContainer.getGrossWeight());
+                    newContainer.setNetWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setNetWeightUnit(newContainer.getContainerWeightUnit());
+                    newContainer.setGrossWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setGrossWeightUnit(newContainer.getContainerWeightUnit());
+                    if(!Objects.isNull(newContainer.getPackagesPerContainer())) {
+                        newContainer.setPacks(String.valueOf(newContainer.getPackagesPerContainer()));
+                    }
+                    newContainer.setPacksType(newContainer.getContainerPackageType());
                     expandedContainers.add(newContainer);
                 }
             }
@@ -2477,19 +2486,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setBookingAgent(console.getBookingAgent());
         serviceTypeAutoPopulation(console, shipmentDetails);
 
-        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
-            //Non-Editable Fields
-            shipmentDetails.setPartner(console.getPartner());
-
-            shipmentDetails.setMasterBill(console.getBol());
-            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
-            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-            //Editable Fields
-            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
-            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+        if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
@@ -2500,6 +2497,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+        } else{
+            // SEA, Rail , Road behaviour will be same
+            //Non-Editable Fields
+            shipmentDetails.setPartner(console.getPartner());
+
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+
+            //Editable Fields
+            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
         if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
@@ -2943,7 +2952,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationDetailsV3Response retrieveById(CommonGetRequest request, String source) throws RunnerException, AuthenticationException {
         if (request.getId() == null && request.getGuid() == null) {
             log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
         }
         Long id = request.getId();
         Optional<ConsolidationDetails> consolidationDetails;
@@ -3047,6 +3056,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         consolidationDetailsV3Response.setShipmentWtVolResponse(shipmentWtVolResponse);
         consolidationDetailsV3Response.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
+    }
+
+    protected void calculateShipmentWtVolForExternal(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3ExternalResponse consolidationDetailsV3ExternalResponse) throws RunnerException{
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        consolidationDetailsV3ExternalResponse.setShipmentWtVolResponse(shipmentWtVolResponse);
+        consolidationDetailsV3ExternalResponse.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
     }
 
     @Override
@@ -3487,7 +3502,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ConsolidationListV3Response list(ListCommonRequest request, boolean getMasterData) {
+    public ConsolidationListV3Response list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
@@ -3504,6 +3520,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
         response.setConsolidationListResponses(consolidationListResponses);
+        return response;
+    }
+
+    @Override
+    public ConsolidationListV3Response listExternal(ListCommonRequest request) {
+        if (request == null) {
+            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
+        }
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+
+        List<IRunnerResponse> consoleResponse;
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            // sending overall consolidation response
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), null);
+        }
+        else {
+            // sending specified column response
+            Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), includeColumns);
+        }
+
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response response = new ConsolidationListV3Response();
+        response.setTotalPages(consolidationDetailsPage.getTotalPages());
+        response.setNumberOfRecords(consolidationDetailsPage.getTotalElements());
+
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
+        response.setConsolidationListResponses(consolidationListResponses);
+
         return response;
     }
 
@@ -3542,6 +3592,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 checkForBookingIdFilter(filterCriteria.getInnerFilter());
             }
         }
+    }
+
+    private List<IRunnerResponse> convertEntityToDtoList(List<ConsolidationDetails> lst, @Nullable Set<String> includeColumns){
+        if (CollectionUtils.isEmpty(lst)) {
+            return new ArrayList<>();
+        }
+
+        boolean hasFilters = includeColumns != null && !includeColumns.isEmpty();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+
+        for (ConsolidationDetails details : lst) {
+            final ConsolidationListResponse dto;
+
+            if (hasFilters) {
+                // send included columns only
+                dto = (ConsolidationListResponse) commonUtils.setIncludedFieldsToResponse(
+                        details, includeColumns, new ConsolidationListResponse());
+            }
+            else{
+                // send whole consolidation data
+                dto = ConsolidationMapper.INSTANCE
+                        .toConsolidationListResponse(details);
+            }
+
+            responseList.add(dto);
+        }
+
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst, boolean getMasterData) {
@@ -3713,7 +3791,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
-        return this.list(consolListRequest, true);
+        return this.list(CommonRequestModel.builder().data(consolListRequest).build(), true);
     }
 
     @Override
@@ -3783,7 +3861,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
-
+        if(remarks != null)
+            sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
         if(remarks != null && !shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
@@ -4017,6 +4096,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .shipmentId(shipmentDetails1.getId())
                             .shipmentNumber(shipmentDetails1.getShipmentId())
                             .hbl(shipmentDetails1.getHouseBill())
+                            .tenantId(shipmentDetails1.getTenantId())
                             .build());
                     }
                     return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);
@@ -4915,4 +4995,121 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
 
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternal(CommonGetRequest request) throws RunnerException, AuthenticationException {
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        Long id = request.getId();
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // logging data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        ConsolidationDetailsV3ExternalResponse response = jsonHelper.convertValue(consolDetails, ConsolidationDetailsV3ExternalResponse.class);
+
+        // calc shipment weight and volume
+        calculateShipmentWtVolDetail(consolDetails, response);
+
+        return response;
+
+    }
+    
+    private  ConsolidationDetails getConsolDetailsByIdorGuid(Long id, CommonGetRequest request) throws RunnerException, AuthenticationException{
+        Optional<ConsolidationDetails> consolidationDetails;
+
+        // retrieve data based on id/guid
+        if (id != null) {
+            consolidationDetails = consolidationDetailsDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        return consolidationDetails.get();
+    }
+
+    private void calculateShipmentWtVolDetail(ConsolidationDetails consolDetails, ConsolidationDetailsV3ExternalResponse response){
+        try {
+            // calculate Shipment Weight and Volume
+            this.calculateShipmentWtVolForExternal(consolDetails, response);
+        } catch (Exception e) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, e.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternalPartial(CommonGetRequest request) throws RunnerException, AuthenticationException{
+
+        // validate id's and non empty includedColumns in request
+        validateRequest(request);
+
+        Long id = request.getId();
+
+        // get consolidation details acc to source
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // log data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        // building response based on filtered Columns
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        ConsolidationDetailsV3ExternalResponse response = (ConsolidationDetailsV3ExternalResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, includeColumns, new ConsolidationDetailsV3ExternalResponse());
+        // calculate Shipment Weight and Volume for external resp
+        calculateShipmentWtVolDetail(consolDetails, response);
+
+        return response;
+    }
+
+    private void validateRequest(CommonGetRequest request) throws RunnerException{
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external partial retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        if (listIsNullOrEmpty(request.getIncludeColumns())) {
+            throw new RunnerException("IncludeColumns can't be null or empty");
+        }
+    }
+
+    private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
+                                            Set<ShipmentRequestedType> requestedTypes, String remarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        List<Long> interbranchShipIds = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails1 : shipment) {
+            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+            userNames.add(shipmentDetails1.getCreatedBy());
+            userNames.add(shipmentDetails1.getAssignedTo());
+            tenantIds.add(shipmentDetails1.getTenantId());
+            if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
+                interbranchShipIds.add(shipmentDetails1.getId());
+        }
+        userNames.add(consoleDetails.getCreatedBy());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        for(Long shipmentId : interbranchShipIds) {
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+            } catch (Exception e) {
+                log.error("Error while sending email");
+            }
+        }
+    }
 }

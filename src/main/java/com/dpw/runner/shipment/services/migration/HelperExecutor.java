@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 @Generated
 public class HelperExecutor {
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public <V> V runInTrx(IRun<V> runnable) {
         return runnable.run();
     }
@@ -25,4 +25,18 @@ public class HelperExecutor {
         return CompletableFuture.completedFuture(runnable.run());
     }
 
+    @Async("asyncExecutorForConsole")
+    public <V> CompletableFuture<V> runInAsyncForConsole(IRun<V> runnable) {
+        return CompletableFuture.completedFuture(runnable.run());
+    }
+
+    @Async("asyncExecutorForShipment")
+    public <V> CompletableFuture<V> runInAsyncForShipment(IRun<V> runnable) {
+        return CompletableFuture.completedFuture(runnable.run());
+    }
+
+    @Async("asyncExecutorForBooking")
+    public <V> CompletableFuture<V> runInAsyncForBooking(IRun<V> runnable) {
+        return CompletableFuture.completedFuture(runnable.run());
+    }
 }

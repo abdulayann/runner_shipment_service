@@ -206,6 +206,21 @@ class NetworkTransferDaoTest {
         verify(networkTransferRepository).findNteForMigrationStatuses(statuses, tenantId);
     }
 
+
+    @Test
+    void testFindAllNteForMigrationStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PENDING");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(10L, 20L);
+
+        when(networkTransferRepository.findAllNteForMigrationStatuses(statuses, tenantId)).thenReturn(expected);
+
+        List<Long> actual = networkTransferDao.findAllNteForMigrationStatuses(statuses, tenantId);
+
+        assertEquals(expected, actual);
+        verify(networkTransferRepository).findAllNteForMigrationStatuses(statuses, tenantId);
+    }
+
     @Test
     void testFindNteByIds() {
         List<Long> ids = List.of(100L, 200L);
@@ -245,6 +260,18 @@ class NetworkTransferDaoTest {
         List<Long> actual = networkTransferDao.findNteForMigrationStatuses(statuses, tenantId);
         assertEquals(expectedIds, actual);
         verify(networkTransferRepository).findNteForMigrationStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testFindAllNteForMigrationStatuses_returnsMatchingIds() {
+        List<String> statuses = List.of("MIGRATED", "PENDING");
+        Integer tenantId = 101;
+        List<Long> expectedIds = List.of(100L, 200L);
+        when(networkTransferRepository.findAllNteForMigrationStatuses(statuses, tenantId))
+                .thenReturn(expectedIds);
+        List<Long> actual = networkTransferDao.findAllNteForMigrationStatuses(statuses, tenantId);
+        assertEquals(expectedIds, actual);
+        verify(networkTransferRepository).findAllNteForMigrationStatuses(statuses, tenantId);
     }
 
     @Test

@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -41,14 +42,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 @Generated
+@SuppressWarnings({"java:S4144", "java:S1192"})
 public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     private final ICustomerBookingBackupRepository backupRepository;
@@ -63,9 +67,12 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     private final V1ServiceImpl v1Service;
     private final CustomKeyGenerator keyGenerator;
     private final CacheManager cacheManager;
-
     @Autowired
     private MigrationUtil migrationUtil;
+
+    @Autowired
+    private HelperExecutor trxExecutor;
+
 
     @Override
     public void restore(Integer tenantId) {
@@ -84,15 +91,29 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
         log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
-        for (Long bookingId : allBackupBookingIds) {
-            try {
-                restoreCustomerBookingData(bookingId, tenantId);
-            } catch (Exception e) {
-                log.error("Failed to restore Booking id: {}", bookingId, e);
-                migrationUtil.saveErrorResponse(bookingId, Constants.CUSTOMER_BOOKING, IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
+        List<CompletableFuture<Object>> bookingFutures = allBackupBookingIds.stream()
+                .map(id -> trxExecutor.runInAsyncForBooking(() -> {
+                    try {
+                        v1Service.setAuthContext();
+                        TenantContext.setCurrentTenant(tenantId);
+                        UserContext.getUser().setPermissions(new HashMap<>());
+                        return trxExecutor.runInTrx(() -> {
+                            restoreCustomerBookingData(id, tenantId);
+                            return null;
+                        });
+                    } catch (Exception e) {
+                        log.error("Booking migration failed [id={}]: {}", id, e.getMessage(), e);
+                        migrationUtil.saveErrorResponse(id, Constants.CUSTOMER_BOOKING,
+                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                        throw new IllegalArgumentException(e);
+                    } finally {
+                        v1Service.clearAuthContext();
+                    }
+                }))
+                .toList();
+
+        futureCompletion(bookingFutures);
+        log.info("Completed booking backup for tenant: {}", tenantId);
     }
 
     public void restoreCustomerBookingData(Long bookingId, Integer tenantId) {

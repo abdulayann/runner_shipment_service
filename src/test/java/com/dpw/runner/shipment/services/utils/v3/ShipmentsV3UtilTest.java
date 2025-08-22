@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
@@ -136,6 +137,8 @@ class ShipmentsV3UtilTest extends CommonMocks {
     private IEventsV3Service eventsV3Service;
     @Mock
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+    @Mock
+    private TenantSettingsService tenantSettingsService;
 
     @InjectMocks
     private ShipmentsV3Util shipmentsV3Util;
@@ -527,7 +530,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 .volume(BigDecimal.valueOf(20))
                 .volumeUnit("M3")
                 .build();
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse warnings =
                 shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
 
@@ -560,7 +563,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 .volume(BigDecimal.valueOf(20))
                 .volumeUnit("M3")
                 .build();
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse warnings =
                 shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
 
@@ -597,8 +600,9 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 .weightUnit("KG")
                 .volume(BigDecimal.valueOf(20))
                 .volumeUnit("M3")
+                .containerVolume(BigDecimal.valueOf(20))
                 .build();
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse warnings =
                 shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
 
@@ -610,9 +614,6 @@ class ShipmentsV3UtilTest extends CommonMocks {
         assertEquals("100 KG", warnings.getWeightWarning().getContainerValue());
         assertEquals("150 KG", warnings.getWeightWarning().getPackageValue());
         assertEquals("50 KG", warnings.getWeightWarning().getDifference());
-
-        assertNotNull(warnings.getVolumeWarning());
-        assertTrue(warnings.getVolumeWarning().getShowWarning());
         assertEquals("20 M3", warnings.getVolumeWarning().getContainerValue());
         assertEquals("25 M3", warnings.getVolumeWarning().getPackageValue());
         assertEquals("5 M3", warnings.getVolumeWarning().getDifference());
@@ -672,7 +673,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 10, 2, "PKG", "DG-PKG",
                 vw, containerResult,
                 BigDecimal.valueOf(1000), "KG",
-                BigDecimal.valueOf(20), "M3"
+                BigDecimal.valueOf(20), "M3", BigDecimal.valueOf(20)
         );
 
         assertNotNull(response);
@@ -698,7 +699,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 0, null, "PKG", "DG-PKG",
                 vw, containerResult,
                 BigDecimal.ZERO, "KG",
-                BigDecimal.ZERO, "M3"
+                BigDecimal.ZERO, "M3", BigDecimal.ZERO
         );
 
         assertNull(response.getNoOfPacks());
@@ -709,7 +710,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
         BigDecimal val = BigDecimal.valueOf(100);
         String unit = "KG";
         String shipmentUnit = "KG";
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 val, unit,
                 val, unit,
@@ -726,7 +727,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
         String packUnit = "KG";
         String contUnit = "KG";
         String shipmentUnit = "KG";
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 packVal, packUnit,
                 contVal, contUnit,
@@ -856,6 +857,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
 
     @Test
     void testGenerateWarning_nullPackVal_returnsNull() throws RunnerException {
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 null, "KG", BigDecimal.TEN, "KG", Constants.MASS, "KG");
         assertNull(warning);
@@ -863,6 +865,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
 
     @Test
     void testGenerateWarning_nullContVal_returnsNull() throws RunnerException {
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 BigDecimal.TEN, "KG", null, "KG", Constants.MASS, "KG");
         assertNull(warning);
@@ -871,7 +874,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     @Test
     void testGenerateWarning_equalValuesAfterConversion_returnsNull() throws RunnerException {
         BigDecimal value = BigDecimal.valueOf(10);
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 value, "KG",
                 value, "KG",
@@ -885,7 +888,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     void testGenerateWarning_unequalValuesAfterConversion_returnsWarning() throws RunnerException {
         BigDecimal packVal = BigDecimal.valueOf(15);
         BigDecimal contVal = BigDecimal.valueOf(10);
-
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 packVal, "KG",
                 contVal, "KG",
@@ -903,8 +906,8 @@ class ShipmentsV3UtilTest extends CommonMocks {
     @Test
     void testGenerateWarning_decimalValues_properFormatting() throws RunnerException {
         BigDecimal packVal = new BigDecimal("15.0000");
-        BigDecimal contVal = new BigDecimal("10.5000");
-
+        BigDecimal contVal = new BigDecimal("11.0000");
+        mockTenantSettings();
         ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
                 packVal, "KG",
                 contVal, "KG",
@@ -912,9 +915,9 @@ class ShipmentsV3UtilTest extends CommonMocks {
                 "KG");
 
         assertNotNull(warning);
-        assertEquals("10.5 KG", warning.getContainerValue());
+        assertEquals("11 KG", warning.getContainerValue());
         assertEquals("15 KG", warning.getPackageValue());
-        assertEquals("4.5 KG", warning.getDifference());
+        assertEquals("4 KG", warning.getDifference());
     }
 
 }

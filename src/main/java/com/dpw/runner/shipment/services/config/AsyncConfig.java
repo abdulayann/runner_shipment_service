@@ -50,6 +50,27 @@ public class AsyncConfig implements AsyncConfigurer {
         return createExecutor("BackupBookingHandlerAsyncThread-", 10, 10);
     }
 
+    @Bean(name = "asyncNetworkTransferBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupNetworkTransferHandlerExecutor() {
+        return createExecutor("BackupNetworkTransferHandlerAsyncThread-", 10, 10);
+    }
+
+
+    @Bean(name = "asyncExecutorForConsole")
+    public ThreadPoolTaskExecutor asyncConsoleRestoreHandlerExecutor() {
+        return createExecutor("RestoreConsoleHandlerAsyncThread-", 1, 30);
+    }
+
+    @Bean(name = "asyncExecutorForBooking")
+    public ThreadPoolTaskExecutor asyncBookingRestoreHandlerExecutor() {
+        return createExecutor("RestoreBookingHandlerAsyncThread-", 1, 30);
+    }
+
+    @Bean(name = "asyncExecutorForShipment")
+    public ThreadPoolTaskExecutor asyncShipmentRestoreHandlerExecutor() {
+        return createExecutor("RestoreShipmentHandlerAsyncThread-", 1, 30);
+    }
+
     @Bean(name = "asyncExecutorForMigration3")
     public ThreadPoolTaskExecutor taskExecutorForMigration3() {
         return createBackupRestoreMigrationExecutor("MyMigrationAsyncThread-", 10, 30);
@@ -76,7 +97,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setKeepAliveSeconds(60);
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
-        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
     }

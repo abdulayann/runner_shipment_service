@@ -648,8 +648,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
-        // Find old shipment with source guid
-        List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
+        List<ShipmentDetails> oldShipmentDetailsList = getOldShipmentDetailsList(entityTransferShipmentDetails);
         ShipmentDetails oldShipmentDetails = oldShipmentDetailsList!=null && !oldShipmentDetailsList.isEmpty()? oldShipmentDetailsList.get(0): null;
 
         // Import shipment implementation
@@ -669,6 +668,15 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         updateNteStatus(importShipmentRequest, shipmentDetailsResponse);
 
         return shipmentId;
+    }
+
+    private List<ShipmentDetails> getOldShipmentDetailsList(EntityTransferV3ShipmentDetails entityTransferShipmentDetails) {
+        var tenantId = UserContext.getUser().getTenantId();
+        if(entityTransferShipmentDetails.getSendToBranch() == null) {
+            entityTransferShipmentDetails.setSendToBranch(tenantId);
+        }
+        // Find old shipment with source guid
+        return shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
     }
 
     private void rejectionForReTransferNte(Long taskId, String rejectionRemarks, String entityType) {
@@ -1001,7 +1009,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 }
                 MutableBoolean isCreateShip = new MutableBoolean(false);
 
-                List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(ship.getGuid(), ship.getSendToBranch());
+                List<ShipmentDetails> oldShipmentDetailsList = getOldShipmentDetailsList(ship);
 
                 // Create shipment
                 ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest, isCreateShip, department, oldShipmentDetailsList);
@@ -1046,9 +1054,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         ShipmentEtV3Request shipmentRequest = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class);
         var tenantId = UserContext.getUser().getTenantId();
         shipmentRequest.setDepartment(department);
-        if(entityTransferShipmentDetails.getSendToBranch() == null) {
-            entityTransferShipmentDetails.setSendToBranch(tenantId);
-        }
         // Set Inter Branch TenantId in TenantContext for inter branch Shipment
         if(Objects.equals(shipmentRequest.getTransportMode(), TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();

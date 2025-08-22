@@ -31,6 +31,7 @@ public class DocumentManagerDataResponse implements IRunnerResponse {
     private String fileId;
 
     private String timeUploaded;
+    private String uploadedAtTime;
 
     private List<DocumentManagerFileResponse> files;
 }

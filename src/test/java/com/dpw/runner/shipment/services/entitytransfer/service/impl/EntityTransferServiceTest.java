@@ -69,6 +69,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -547,7 +548,8 @@ class EntityTransferServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
-        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false))).thenReturn(consolidationDetails);
+        Map<String, BigDecimal> codeTeuMap = new HashMap<>();
+        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap))).thenReturn(consolidationDetails);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(ConsolidationDetailsResponse.builder().build());

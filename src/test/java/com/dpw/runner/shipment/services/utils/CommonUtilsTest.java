@@ -5711,4 +5711,39 @@ class CommonUtilsTest {
         EntityTransferAddress result = commonUtils.getEntityTransferAddress("AIR");
         assertNull(result);
     }
+
+    @Test
+    void getLongValue_shouldReturnNullForNullInput() {
+        assertNull(commonUtils.getLongValue(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("validNumberProviders")
+    void getLongValue_shouldReturnLongForNumberTypes(Number number, long expected) {
+        assertEquals(expected, commonUtils.getLongValue(number));
+    }
+
+    @Test
+    void getLongValue_shouldReturnLongForStringNumber() {
+        assertEquals(123L, commonUtils.getLongValue("123"));
+    }
+
+    @Test
+    void getLongValue_shouldThrowForUnsupportedType() {
+        Object invalidValue = new Object();
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> commonUtils.getLongValue(invalidValue));
+        assertTrue(exception.getMessage().contains("Unsupported Party ID type"));
+    }
+
+    private static Stream<Arguments> validNumberProviders() {
+        return Stream.of(
+                Arguments.of(123, 123L),
+                Arguments.of(123.45f, 123L),
+                Arguments.of(123.67d, 123L),
+                Arguments.of(123L, 123L),
+                Arguments.of((short)123, 123L),
+                Arguments.of((byte)123, 123L)
+        );
+    }
 }

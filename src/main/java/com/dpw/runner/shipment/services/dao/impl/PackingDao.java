@@ -596,6 +596,11 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
+    public List<Long> getContainerIdByContainerNumberAndType(String containerNumber, Long id, String type) {
+        return packingRepository.getContainerIdByContainerNumberAndType(containerNumber, id, type);
+    }
+
+    @Override
     public void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId) {
         packingRepository.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
     }

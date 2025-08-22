@@ -33,7 +33,7 @@ public interface IPackingV3Service {
 
     String delete(Long id, String module) throws RunnerException;
 
-    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module) throws RunnerException;
+    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module, boolean fromQuote) throws RunnerException;
 
     BulkPackingResponse deleteBulk(List<PackingV3Request> request, String module) throws RunnerException;
 
@@ -41,7 +41,7 @@ public interface IPackingV3Service {
 
     PackingResponse retrieveById(Long id, String guid, String xSource);
 
-    PackingListResponse list(ListCommonRequest listCommonRequest, boolean getMasterData, String xSource);
+    PackingListResponse list(ListCommonRequest listCommonRequest, boolean getMasterData, String xSource, String type);
 
 
     List<PackingResponse> fetchPacksAttachedToContainers(List<Long> containerIds);

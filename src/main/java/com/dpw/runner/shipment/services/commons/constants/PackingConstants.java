@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -39,6 +40,10 @@ public class PackingConstants {
             Map.entry(Constants.CONSOLIDATION_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONSOLIDATION_ID).build()),
             Map.entry(Constants.CONTAINER_ID, RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName(Constants.CONTAINER_ID).build()),
             Map.entry("bookingId", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(Long.class).fieldName("bookingId").build()),
-            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("updatedAt").build())
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
+            Map.entry("packs", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(String.class).fieldName("packs").build()),
+            Map.entry("weight", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(BigDecimal.class).fieldName("weight").build()),
+            Map.entry("volume", RunnerEntityMapping.builder().tableName(Constants.PACKING_LC).dataType(BigDecimal.class).fieldName("volume").build())
     );
 }

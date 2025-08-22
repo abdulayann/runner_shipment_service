@@ -70,6 +70,7 @@ public class ReportConstants {
     public static final String TI_DRIVER_MOBILE_NUMBER = "TI_MobileNumber";
     public static final String TI_DRIVER_ID = "TI_DriverID";
     public static final String TI_CONTAINER_NUM = "TI_ContainerNumber";
+    public static final String YES = "YES";
 
 
     private ReportConstants(){}
@@ -173,6 +174,8 @@ public class ReportConstants {
     public static final String COMMODITY_DESC = "CommodityDesc";
     public static final String COMMODITY_DESC_NAME = "CommodityDescName";
     public static final String IS_DG = "IsDG";
+    public static final String S_DG_FLAG = "S_DG_Flag";
+    public static final String SHIPMENT_CARGO_TYPE = "S_CargoType";
     public static final String AIR_UN_NUMBER = "AirUNNumber";
     public static final String AIR_DG_CLASS = "AirDGClass";
     public static final String AIR_DG_CLASS_DESCRIPTION = "AirDGClassDescription";
@@ -245,7 +248,7 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
-    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -937,6 +940,7 @@ public class ReportConstants {
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
+    public static final String VALIDATE_HOUSE_BILL = "/validate-house-bill";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
     public static final String UN = "UN";
@@ -1500,6 +1504,7 @@ public class ReportConstants {
     public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
     public static final String S_BORROWED_FROM = "S_BorrowedFrom";
     public static final String S_REEFER_FLAG = "S_ReeferFlag";
+    public static final String SHIPMENT_REEFER_FLAG = "S_Reefer_Flag";
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";
@@ -1538,6 +1543,6 @@ public class ReportConstants {
     public static final String PACKS_GOODS_DESCRIPTION2 = "PacksGoodsDescription2";
     public static final String PACKAGES = "Packages";
 
-
+    public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
 
 }

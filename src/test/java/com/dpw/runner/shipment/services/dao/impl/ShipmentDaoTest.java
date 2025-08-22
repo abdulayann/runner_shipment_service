@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -125,6 +126,8 @@ class ShipmentDaoTest extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IContainerDao containerDao;
 
     @Test
     void testFindByHblNumberAndExcludeShipmentId() {
@@ -159,6 +162,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
+        mockShipmentSettings();
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
@@ -1941,6 +1945,46 @@ class ShipmentDaoTest extends CommonMocks {
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
+    void applyContainerShipmentValidationsTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).isRunnerV3Enabled(true).build());
+
+        Containers containers = new Containers();
+        containers.setHazardous(true);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .containersList(Set.of(containers))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails.setId(1L);
+        mockShipmentSettings();
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertTrue(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
+    void applyContainerShipmentValidationsTest_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).isRunnerV3Enabled(true).build());
+
+        Containers containers = new Containers();
+        containers.setHazardous(false);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .containersList(Set.of(containers))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails.setId(1L);
+        mockShipmentSettings();
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
     }
 
     @Test

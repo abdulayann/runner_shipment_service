@@ -68,17 +68,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -214,12 +204,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1775,7 +1760,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
         BulkPackingResponse bulkPackingResponse = new BulkPackingResponse();
         bulkPackingResponse.setPackingResponseList(List.of(new PackingResponse()));
-        when(packingV3Service.updateBulk(any(), any())).thenReturn(bulkPackingResponse);
+        when(packingV3Service.updateBulk(any(), any(), anyBoolean())).thenReturn(bulkPackingResponse);
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -6928,7 +6913,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.getContainerResult(any())).thenReturn(new ContainerResult());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any()))
                 .thenReturn(new VolumeWeightChargeable());
-        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new CargoDetailsResponse());
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromPacks("ROA", packingList, containersSet, new ShipmentSettingsDetails(), false);
@@ -6956,7 +6941,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.getPacksType(anyList())).thenReturn(List.of("GEN", "DGG"));
         when(shipmentsV3Util.calculateWeightFromContainersFallBack(anySet(), any())).thenReturn(new ContainerResult());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
-        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(shipmentsV3Util.buildShipmentResponse(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new CargoDetailsResponse());
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromPacks("SEA", List.of(p), Set.of(containers), new ShipmentSettingsDetails(), false);
@@ -6997,7 +6982,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         lenient().when(shipmentsV3Util.buildShipmentResponse(
                 eq(5), eq(0), eq("PACK_TYPE"), isNull(),
                 eq(vw), any(ContainerResult.class), any(), eq("KG"),
-                eq(BigDecimal.valueOf(10)), eq("CBM")
+                eq(BigDecimal.valueOf(10)), eq("CBM"), eq(BigDecimal.valueOf(10))
         )).thenReturn(expectedResponse);
 
         CargoDetailsResponse response = shipmentServiceImplV3.calculateCargoSummaryFromContainers("AIR", containersSet, settings);
@@ -7032,7 +7017,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         lenient().when(shipmentsV3Util.buildShipmentResponse(
                 eq(3), eq(3), eq("BOX"), eq("DG_BOX"),
                 eq(vw), any(ContainerResult.class), any(), eq("KG"),
-                eq(BigDecimal.valueOf(20)), eq("M3")
+                eq(BigDecimal.valueOf(20)), eq("M3"), eq(BigDecimal.valueOf(20))
         )).thenReturn(expected);
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
@@ -7067,7 +7052,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentsV3Util.buildShipmentResponse(
                 eq(2), eq(0), eq("BOX"), isNull(),
                 eq(vw), eq(containerResult), any(), eq("KG"),
-                isNull(), eq("CBM")
+                isNull(), eq("CBM"), any()
         )).thenReturn(expected);
 
         CargoDetailsResponse result = shipmentServiceImplV3.calculateCargoSummaryFromContainers("SEA", containersSet, settings);
@@ -7300,5 +7285,433 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.setPlaceOfIssueInAdditionalDetailsIfExist(entityTransferAddress, shipmentDetails);
         assertNotNull(shipmentDetails.getAdditionalDetails(), "AdditionalDetails should have been created");
         assertEquals("New York", shipmentDetails.getAdditionalDetails().getPlaceOfIssue());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_listRequestNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_NullIncludeColumns() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setNotificationFlag(true);
+        listCommonRequest.setIncludeColumns(null);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_EmptyIncludeColumns() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setNotificationFlag(true);
+        listCommonRequest.setIncludeColumns(new ArrayList<String>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_listShipment_withoutMasterData_CheckResponseData() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(new ArrayList<>()).build();
+        listCommonRequest.setIncludeColumns(List.of("ordersCount", "pickupDetails.shipperRef"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentListResponse shipmentListResponse = new ShipmentListResponse();
+        shipmentListResponse.setContainsHazardous(false);
+        shipmentListResponse.setPickupDetails(new PickupDeliveryDetailsListResponse());
+        shipmentListResponse.setId(1L);
+
+        ShipmentDetails ship = new ShipmentDetails();
+        ship.setId(1L);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType(ReportConstants.SRN);
+        referenceNumbers.setReferenceNumber("123");
+        ship.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetailsList.add(ship);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+
+        when(shipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(shipmentListResponse);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.listShipment(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_withoutId() {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_idPresent_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_guidPresent_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().guid(String.valueOf(UUID.randomUUID())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_retrieveForNteFails() {
+        CommonGetRequest request = CommonGetRequest.builder().guid(String.valueOf(UUID.randomUUID())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(commonRequestModel, NETWORK_TRANSFER);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_StatusNull_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_StatusNotPresent_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(Integer.MAX_VALUE);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataExternal_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(0);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdExternal(requestModel, "SOME_SOURCE");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        verify(shipmentDao).findById(123L);
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_withoutId() {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_idPresent_includeColumnNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_guidPresent_includeColumnNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_guidPresent_includeColumnsEmpty() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_retrieveForNteFails() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, NETWORK_TRANSFER);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_shipmentDetailsNotPresent() {
+        CommonGetRequest request = CommonGetRequest.builder()
+                .guid(String.valueOf(UUID.randomUUID()))
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(commonRequestModel, "Source");
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void test_retrieveShipmentDataUsingIncludeColumns_Success() {
+        CommonGetRequest getRequest = CommonGetRequest.builder()
+                .id(123L)
+                .includeColumns(new ArrayList<>(List.of("one", "two", "three")))
+                .build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveExternalResponse shipmentRetrieveExternalResponse = new ShipmentRetrieveExternalResponse();
+        shipmentRetrieveExternalResponse.setStatus(0);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class))).thenReturn(shipmentRetrieveExternalResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        verify(shipmentDao).findById(123L);
+    }
+    @Test
+    void testAirModeWithNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing(); // default constructor
+        p1.setWeight(null);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeights_shouldNotSetEmptyWeight() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(BigDecimal.TEN);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.ONE);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testOtherMode_shouldNotCheckEmptyWeight() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode("OTHER");
+        response.setShipmentType("OTHER");
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Flag should not be set for unrelated mode");
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testEmptyPackingList_shouldNotSetFlags() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setPackingList(Collections.emptyList());
+
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndType(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertFalse(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testExternalResponse_airModeWithNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+    @Test
+    void testSeaModeWithLCLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeightsPresent_shouldNotSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(BigDecimal.ONE);
+        Packing p2 = new Packing();
+        p2.setWeight(BigDecimal.TEN);
+
+        shipment.setPackingList(Arrays.asList(p1, p2));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testRaiModeWithLCLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        response.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testRoadModeWithLTLAndNullWeight_shouldSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        response.setShipmentType(Constants.CARGO_TYPE_LTL);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertTrue(response.getIsEmptyWeightPackAvailable());
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testOtherMode_shouldNotSetEmptyWeightFlag() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        Packing p1 = new Packing();
+        p1.setWeight(null);
+
+        shipment.setPackingList(Collections.singletonList(p1));
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode("OTHER_MODE");
+        response.setShipmentType("OTHER_TYPE");
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Flag should not be set for unrelated mode");
+        assertTrue(response.getIsPacksAvailable());
+    }
+
+    @Test
+    void testEmptyPackingList_shouldNotSetAnyFlags() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setPackingList(Collections.emptyList());
+
+        ShipmentRetrieveExternalResponse response = new ShipmentRetrieveExternalResponse();
+        response.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        shipmentServiceImplV3.setDgPackCountAndTypeExternalResponse(shipment, response);
+
+        assertFalse(response.getIsEmptyWeightPackAvailable(), "Should not set empty weight flag when no packings");
+        assertFalse(response.getIsPacksAvailable(), "Should not set packs available when list is empty");
     }
 }

@@ -76,6 +76,7 @@ public interface IPackingDao {
     PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer currentTenant);
 
     boolean checkPackingExistsForShipment(Long shipmentId);
+    List<Long> getContainerIdByContainerNumberAndType(String containerNumber, Long id, String type);
 
     void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long id);
 

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
+import com.dpw.runner.shipment.services.migration.entity.NetworkTransferBackupEntity;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -39,6 +40,7 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     private static final int BATCH_SIZE = 150;
     private final ShipmentBackupHandler shipmentBackupHandler;
     private final ConsolidationBackupHandler consolidationBackupHandler;
+    private final NetworkTransferBackupHandler networkTransferBackupHandler;
     private final CustomerBookingBackupHandler customerBookingBackupHandler;
     private final PlatformTransactionManager transactionManager;
     @Qualifier("asyncBackupHandlerExecutor")
@@ -56,17 +58,20 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
                 createBackupFuture(() -> shipmentBackupHandler.backup(tenantId));
         CompletableFuture<List<ConsolidationBackupEntity>> consolidationFuture =
                 createBackupFuture(() -> consolidationBackupHandler.backup(tenantId));
+        CompletableFuture<List<NetworkTransferBackupEntity>> networkTransferFuture =
+                createBackupFuture(() -> networkTransferBackupHandler.backup(tenantId));
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-                customerBookingFuture, shipmentFuture, consolidationFuture);
+                customerBookingFuture, shipmentFuture, consolidationFuture, networkTransferFuture);
 
         try {
             allFutures.join();
             List<CustomerBookingBackupEntity> customerBookings = customerBookingFuture.join();
             List<ShipmentBackupEntity> shipments = shipmentFuture.join();
             List<ConsolidationBackupEntity> consolidations = consolidationFuture.join();
+            List<NetworkTransferBackupEntity> networkTransfers = networkTransferFuture.join();
 
-            saveAllToDb(customerBookings, shipments, consolidations, tenantId);
+            saveAllToDb(customerBookings, shipments, consolidations, networkTransfers, tenantId);
 
         } catch (CompletionException e) {
             log.error("Backup failed for tenant {}", tenantId, e);
@@ -76,7 +81,9 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
 
     private void saveAllToDb(List<CustomerBookingBackupEntity> customerBookings,
                              List<ShipmentBackupEntity> shipments,
-                             List<ConsolidationBackupEntity> consolidations, Integer tenantId) {
+                             List<ConsolidationBackupEntity> consolidations,
+                             List<NetworkTransferBackupEntity> networkTransfers,
+                             Integer tenantId) {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
@@ -87,7 +94,7 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                batchSaveAll(customerBookings, shipments, consolidations);
+                batchSaveAll(customerBookings, shipments, consolidations, networkTransfers);
                 return null;
             } catch (Exception e) {
                 status.setRollbackOnly();
@@ -101,11 +108,13 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
 
     private void batchSaveAll(List<CustomerBookingBackupEntity> bookings,
                               List<ShipmentBackupEntity> shipments,
-                              List<ConsolidationBackupEntity> consolidations) {
+                              List<ConsolidationBackupEntity> consolidations,
+                              List<NetworkTransferBackupEntity> networkTransfers) {
         log.info("Started saving in db for tenant id");
         saveBatch(bookings);
         saveBatch(shipments);
         saveBatch(consolidations);
+        saveBatch(networkTransfers);
     }
 
     /*
