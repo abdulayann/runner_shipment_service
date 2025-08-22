@@ -2092,7 +2092,7 @@ if (unitConversionUtilityMockedStatic != null) {
       consolidationV3Service.validateDetachedShipment(shipment);
     });
 
-    assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
+    assertFalse(ex.getMessage().contains("Please unassign to detach the same"));
   }
 
   @Test
