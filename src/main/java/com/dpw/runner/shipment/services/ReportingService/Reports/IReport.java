@@ -172,6 +172,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 
 @Slf4j
 @SuppressWarnings({"unchecked", "java:S2259"})
@@ -4633,7 +4636,7 @@ public abstract class IReport {
     private void validateAirDGCheck(ShipmentModel shipmentModel) {
         ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
-        if (!Boolean.TRUE.equals(countryAirCargoSecurity) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+        if (!Boolean.TRUE.equals(countryAirCargoSecurity) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 boolean dgPack = false;
                 if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
                     for (PackingModel packingModel: shipmentModel.getPackingList()) {
@@ -4687,15 +4690,13 @@ public abstract class IReport {
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
+        if(Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && DIRECTION_EXP.equals(consolidationModel.getShipmentType()) && !isAirDgUser()) {
             throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
 
     public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
+        if(Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentModel.getDirection().equals(Constants.DIRECTION_EXP) && !isAirDgUser()) {
             throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }

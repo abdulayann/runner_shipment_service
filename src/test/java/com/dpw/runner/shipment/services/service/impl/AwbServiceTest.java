@@ -624,7 +624,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(new EntityTransferMasterLists()));
         when(jsonHelper.convertValueToList(any(List.class), eq(String.class))).thenReturn(List.of("EDD", "ETD", "XRY"));
 
-        mockShipmentSettings();
         mockTenantSettings();
         ShipmentDetails shipmentDetails = testShipment;
         shipmentDetails.setMasterBill("098-2343234");
