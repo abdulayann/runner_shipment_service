@@ -160,6 +160,8 @@ public class MigrationV3Service implements IMigrationV3Service {
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
 
         // Taking json backup for respective tenantID.
+        v1Service.setAuthContext();
+        Map<String, BigDecimal> codeTeuMap = initCodeTeuMap();
         backupService.backupTenantData(tenantId);
         Map<String, Integer> map = new HashMap<>();
         map.putAll(this.migrateConsolidation(tenantId));
@@ -256,8 +258,6 @@ public class MigrationV3Service implements IMigrationV3Service {
         // Queue for async processing of consolidation migrations
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolIds.size());
-        v1Service.setAuthContext();
-        Map<String, BigDecimal> codeTeuMap = initCodeTeuMap();
         consolIds.forEach(id -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
