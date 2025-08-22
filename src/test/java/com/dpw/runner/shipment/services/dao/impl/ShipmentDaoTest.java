@@ -1948,6 +1948,46 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void applyContainerShipmentValidationsTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).isRunnerV3Enabled(true).build());
+
+        Containers containers = new Containers();
+        containers.setHazardous(true);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .containersList(Set.of(containers))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails.setId(1L);
+        mockShipmentSettings();
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertTrue(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
+    void applyContainerShipmentValidationsTest_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).isRunnerV3Enabled(true).build());
+
+        Containers containers = new Containers();
+        containers.setHazardous(false);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .containersList(Set.of(containers))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails.setId(1L);
+        mockShipmentSettings();
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
     void applyShipmentValidationsExpTest_CountryAirCargoSecurity() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
 
