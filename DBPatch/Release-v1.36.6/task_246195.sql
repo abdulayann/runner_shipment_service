@@ -55,7 +55,7 @@ set
     "OrgOrganizationCode": "FRC00009712"
 }'
 where
-    id = (select client_id from shipment_details  where id=82616);
+    id = (select client_id from shipment_details where id=82616);
 
 update
     shipment_details
@@ -63,7 +63,7 @@ set
     client_dps_address_id = 101037,
     updated_at = NOW()
 where
-    id=82616
+    id=82616;
 
 -- Query 2: Update for FRC00038277 / FRO00039943 (GREILSAMMER SA)
 -- Shipment: PARA25071395
@@ -127,7 +127,7 @@ set
     client_dps_address_id = 103839,
     updated_at = NOW()
 where
-    id=72076
+    id=72076;
 
 -- Query 3: Update for FRC00038277 / FRO00039943 (GREILSAMMER SA)
 -- Shipment: PARA25071394
@@ -191,4 +191,4 @@ set
     client_dps_address_id = 103839,
     updated_at = NOW()
 where
-    id=72073
+    id=72073;
