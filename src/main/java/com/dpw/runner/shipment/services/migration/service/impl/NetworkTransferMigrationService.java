@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Shipm
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.INetworkTransferBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
@@ -73,6 +74,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
     @Autowired
     private MDMServiceAdapter mdmServiceAdapter;
+
+    @Autowired
+    private INetworkTransferBackupRepository networkTransferBackupRepository;
 
 
     @Override
@@ -401,6 +405,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
+                    networkTransferBackupRepository.deleteBackupByTenantIdAndNetworkTransferId(nteId, tenantId);
                     migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
