@@ -17,10 +17,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
@@ -135,6 +132,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
@@ -3146,23 +3144,12 @@ public class CommonUtils {
 
         return collections;
     }
-    public Map<String, Object> extractRequestedColumns(Map<String, Object> payload, String mainEntityKey) {
-        if (payload == null || payload.isEmpty()) {
-            return new HashMap<>();
-        }
-
-        // If the payload contains a specific main entity key, use it
-        if (payload.containsKey(mainEntityKey)) {
-            return Collections.singletonMap(mainEntityKey, (List<String>) payload.get(mainEntityKey));
-        }
-            // Get the includeColumns list from the payload
-            List<String> includeColumns = (List<String>) payload.get("includeColumns");
-
-            if (includeColumns == null || includeColumns.isEmpty()) {
-                return new HashMap<>();
+    public Map<String, Object> extractRequestedColumns(List<String> includeColumns, String mainEntityKey) {
+            if (includeColumns.isEmpty()) {
+              return new HashMap<>();
             }
 
-            Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
+        Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
             Map<String, Object> entityColumnsMap = new HashMap<>();
 
             for (String column : includeColumns) {
@@ -3340,9 +3327,9 @@ public class CommonUtils {
             List<Selection<?>> selections,
             List<String> columnOrder,
             String rootEntityKey,
-            Map<String, Object> requestPayload
+            String sortField
     ) {
-        String sortField = extractSortFieldFromPayload(requestPayload);
+
         Set<String> rootEntityColumns = new HashSet<>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
 
         // If there's a sort field and it's not already in the root entity columns, validate and add it
@@ -3457,13 +3444,13 @@ public class CommonUtils {
         return currentPath;
     }
 
-    public <T extends MultiTenancy> long fetchTotalCount(Map<String, Object> requestPayload, Class<T> entityClass) {
+    public <T extends MultiTenancy> long fetchTotalCount(ListCommonRequest listCommonRequest, Class<T> entityClass) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<T> root = countQuery.from(entityClass);
 
         // Build predicates same way as main query
-        List<Predicate> predicates = buildPredicatesFromFilters(cb, root, requestPayload);
+        List<Predicate> predicates = buildPredicatesFromFilters(cb, root, listCommonRequest);
 
         countQuery.select(cb.countDistinct(root)); // count distinct root entities
         if (!predicates.isEmpty()) {
@@ -3472,19 +3459,13 @@ public class CommonUtils {
 
         return entityManager.createQuery(countQuery).getSingleResult();
     }
-    private String extractSortFieldFromPayload(Map<String, Object> requestPayload) {
-        if (requestPayload == null) {
+    public String extractSortFieldFromPayload(ListCommonRequest requestPayload) {
+        if (requestPayload == null || requestPayload.getSortRequest() == null) {
             return null;
         }
 
-        Object sortRequest = requestPayload.get("sortRequest");
-        if (sortRequest instanceof Map) {
-            Map<String, Object> sortMap = (Map<String, Object>) sortRequest;
-            Object fieldName = sortMap.get("fieldName");
-            return fieldName instanceof String ? (String) fieldName : null;
-        }
-
-        return null;
+        SortRequest sortRequest = requestPayload.getSortRequest();
+        return sortRequest.getFieldName();
     }
 
     private <T extends MultiTenancy> boolean isValidFieldForEntity(Root<T> root, String fieldName) {
@@ -3512,24 +3493,22 @@ public class CommonUtils {
 
         return message.toString();
     }
-
     public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
                                                       Root<T> root,
-                                                      Map<String, Object> requestPayload) {
+                                                                               ListCommonRequest listCommonRequest) {
         List<Predicate> predicates = new ArrayList<>();
 
-        List<Map<String, Object>> filterCriteria =
-                (List<Map<String, Object>>) requestPayload.getOrDefault("filterCriteria", Collections.emptyList());
+        List<FilterCriteria> filterCriteria = listCommonRequest.getFilterCriteria();
 
-        for (Map<String, Object> group : filterCriteria) {
-            Object innerFilterObj = group.get("innerFilter");
-            if (innerFilterObj instanceof List) {
+        for (FilterCriteria group : filterCriteria) {
+            List<FilterCriteria> innerFilterObj = group.getInnerFilter();
+//            if (innerFilterObj instanceof List) {
                 Predicate innerPredicate = null;
-                for (Object inner : (List<?>) innerFilterObj) {
-                    Map<String, Object> critMap = (Map<String, Object>) ((Map<?, ?>) inner).get("criteria");
-                    String fieldName = (String) critMap.get("fieldName");
-                    String operator = (String) critMap.get("operator");
-                    Object value = critMap.get("value");
+                for (FilterCriteria inner :   innerFilterObj) {
+                    Criteria critMap = inner.getCriteria();
+                    String fieldName = critMap.getFieldName();
+                    String operator = critMap.getOperator();
+                    Object value = critMap.getValue();
 
                     Predicate p = switch (operator.trim().toLowerCase()) {
                         case "="  -> cb.equal(root.get(fieldName), value);
@@ -3601,20 +3580,20 @@ public class CommonUtils {
                         default -> null;
                     };
 
-                    innerPredicate = calculateInnerPredicate(cb, (Map<?, ?>) inner, innerPredicate, p);
+                    innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
                 }
                 if (innerPredicate != null) {
                     predicates.add(innerPredicate);
                 }
             }
-        }
+//        }
         return predicates;
     }
-    private Predicate calculateInnerPredicate(CriteriaBuilder cb, Map<?, ?> inner, Predicate innerPredicate, Predicate p) {
+    private Predicate calculateInnerPredicate(CriteriaBuilder cb, FilterCriteria inner, Predicate innerPredicate, Predicate p) {
         if (innerPredicate == null) {
             innerPredicate = p;
         } else {
-            String logic = Optional.ofNullable(inner.get("logicOperator"))
+            String logic = Optional.ofNullable(inner.getLogicOperator())
                     .map(Object::toString)
                     .orElse("and");
             if ("or".equalsIgnoreCase(logic)) {

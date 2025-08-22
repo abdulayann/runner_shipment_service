@@ -88,7 +88,7 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
     ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException;
     CheckDGShipmentV3 getDGShipment(Long consoleId);
-    Map<String, Object> fetchConsolidation(Map<String, Object> requestPayload);
-    Map<String, Object> getConsolidationDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request);
+    ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest);
+    Map<String, Object> getConsolidationDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request);
     ConsolidationDetailsV3Response getDefaultConsolidation();
 }

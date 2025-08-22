@@ -104,6 +104,7 @@ import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.actuate.solr.SolrHealthIndicator;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
@@ -769,14 +770,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public Map<String, Object> fetchShipments(Map<String, Object> requestPayload) {
-        long totalCount = commonUtils.fetchTotalCount(requestPayload, ShipmentDetails.class);
-        int pageNo = (int) requestPayload.getOrDefault("pageNo", 1);
-        int pageSize = (int) requestPayload.getOrDefault("pageSize", 25);
+    public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) {
+        long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+        int pageNo = listCommonRequest.getPageNo();
+        int pageSize = Optional.ofNullable(listCommonRequest.getPageSize()).orElse(25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
 
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload,  ShipmentConstants.SHIPMENT_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(listCommonRequest.getIncludeColumns(),  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -790,14 +791,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
         Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
         // Step 3: Parse filterCriteria into predicates
-        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, requestPayload);
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
 
         // Step 4: Parse sortRequest
-        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, requestPayload);
+        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, listCommonRequest);
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails", requestPayload);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails",  commonUtils.extractSortFieldFromPayload(listCommonRequest));
 
         cq.multiselect(selections).distinct(true);
 
@@ -820,22 +821,40 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships);
+        List<ShipmentDetails> shiplist = new ArrayList<>();
+        for( Map<String, Object> curr : nestedList) {
+            ShipmentDetails ship = jsonHelper.convertValue(curr.get("shipmentDetails"), ShipmentDetails.class);
+            System.out.println("Shipments: " + ship.toString());
+            shiplist.add(ship);
+        }
 
-        // Step 9: Build final response map with data + pagination info
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("pageNo", pageNo);
-        response.put("pageSize", pageSize);
-        response.put("totalPages", totalPages);
-        response.put("totalCount", totalCount);
-        response.put("data", nestedList);
+        List<IRunnerResponse> shipmentListResponses = new ArrayList<>();
+        for( ShipmentDetails curr : shiplist) {
+            IRunnerResponse shipmentListResponse = (ShipmentListResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentListResponse());
+            shipmentListResponses.add(shipmentListResponse);
+        }
+//        List<IRunnerResponse> filteredList = convertEntityListToDtoList( jsonHelper.convertValueToList(nestedList, ShipmentDetails.class), false, shipmentListResponses,  requestedColumns.keySet());
+//
+        return ResponseHelper.buildListSuccessResponse(
+                shipmentListResponses,
+                totalPages,
+                totalCount);
 
-        return response;
+//         Step 9: Build final response map with data + pagination info
+//        Map<String, Object> response = new LinkedHashMap<>();
+//        response.put("pageNo", pageNo);
+//        response.put("pageSize", pageSize);
+//        response.put("totalPages", totalPages);
+//        response.put("totalCount", totalCount);
+//        response.put("data", shipmentListResponses);
+//
+//        return response;
     }
 
     @Override
-    public Map<String, Object> getShipmentDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
+    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload,  ShipmentConstants.SHIPMENT_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(commonGetRequest.getIncludeColumns(),  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -849,16 +868,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails", requestPayload);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails",  null);
 
         cq.multiselect(selections).distinct(true);
 
         // Add filter by id if provided
-        if (request.getId() != null) {
-            Predicate idPredicate = cb.equal(root.get("id"), request.getId());
+        if (commonGetRequest.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
             cq.where(idPredicate);
-        } else if(request.getGuid() != null) {
-            Predicate idPredicate = cb.equal(root.get("guid"), request.getGuid());
+        } else if(commonGetRequest.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
             cq.where(idPredicate);
         }
 
@@ -878,7 +897,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
         ;
         response.put("data", nestedList);
-        return response;
+        return null;
     }
 
 

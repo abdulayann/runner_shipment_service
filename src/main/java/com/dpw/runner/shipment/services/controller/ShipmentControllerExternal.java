@@ -21,11 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
 
 @RestController
@@ -69,11 +67,11 @@ public class ShipmentControllerExternal {
     }
 
     @PostMapping(ApiConstants.API_DYNAMIC_LIST)
-    public Map<String, Object> getShipmentList(@RequestBody Map<String, Object> requestedColumns) {
-        return shipmentService.fetchShipments(requestedColumns);
+    public ResponseEntity<IRunnerResponse> getShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return shipmentService.fetchShipments(listCommonRequest);
     }
     @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
-    public  Map<String, Object> retrieveShipmentDetails(@RequestBody Map<String, Object> requestedColumns, @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam(required = false) Long id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = false) @RequestParam(required = false) UUID guid) {
+    public  ResponseEntity<IRunnerResponse> retrieveShipmentDetails(@RequestBody @Valid CommonGetRequest commonGetRequest, @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam(required = false) Long id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = false) @RequestParam(required = false) UUID guid) {
         ShipmentDynamicRequest request = new ShipmentDynamicRequest();
         if(id!=null) {
             request.setId(id);
@@ -82,6 +80,6 @@ public class ShipmentControllerExternal {
         } else {
             throw new ValidationException("Id or Guid is mandatory");
         }
-        return shipmentService.getShipmentDetails(requestedColumns, request);
+        return shipmentService.getShipmentDetails(commonGetRequest, request);
     }
 }

@@ -5021,14 +5021,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
     @Override
-    public Map<String, Object> fetchConsolidation(Map<String, Object> requestPayload) {
-        long totalCount = commonUtils.fetchTotalCount(requestPayload, ConsolidationDetails.class);
-        int pageNo = (int) requestPayload.getOrDefault("pageNo", 1);
-        int pageSize = (int) requestPayload.getOrDefault("pageSize", 25);
+    public ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) {
+        long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ConsolidationDetails.class);
+        int pageNo = listCommonRequest.getPageNo();
+        int pageSize =  Optional.of(listCommonRequest.getPageSize()).orElse(25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
 
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload, ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(listCommonRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5042,14 +5042,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
         Root<ConsolidationDetails> root = cq.from(ConsolidationDetails.class);
         // Step 3: Parse filterCriteria into predicates
-        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, requestPayload);
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
 
         // Step 4: Parse sortRequest
-        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, requestPayload);
+        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, listCommonRequest);
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", requestPayload);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", commonUtils.extractSortFieldFromPayload(listCommonRequest));
 
         cq.multiselect(selections).distinct(true);
 
@@ -5071,7 +5071,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
-        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships);
+//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, ConsolidationDetails.class);
 
         // Step 9: Build final response map with data + pagination info
         Map<String, Object> response = new LinkedHashMap<>();
@@ -5079,15 +5079,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.put("pageSize", pageSize);
         response.put("totalPages", totalPages);
         response.put("totalCount", totalCount);
-        response.put("data", nestedList);
+//        response.put("data", nestedList);
 
-        return response;
+        return null;
     }
 
     @Override
-    public Map<String, Object> getConsolidationDetails(Map<String, Object> requestPayload, ShipmentDynamicRequest request) {
+    public Map<String, Object> getConsolidationDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(requestPayload, ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(commonGetRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
 
 //         Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5101,7 +5101,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", requestPayload);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", null);
 
         cq.multiselect(selections).distinct(true);
 
@@ -5127,9 +5127,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             finalResult.add(rowMap);
         }
         Map<String, Object> response = new LinkedHashMap<>();
-        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
-        ;
-        response.put("data", nestedList);
+//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
+//        ;
+//        response.put("data", nestedList);
         return response;
     }
 
