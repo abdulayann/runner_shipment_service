@@ -141,7 +141,7 @@ public class MigrationV3Service implements IMigrationV3Service {
     public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId) {
 
         trxExecutor.runInAsync(() -> {
-            try{
+            try {
                 var response = migrateV3ToV2(tenantId, bookingId);
                 log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
@@ -164,7 +164,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, BigDecimal> codeTeuMap = initCodeTeuMap();
         backupService.backupTenantData(tenantId);
         Map<String, Integer> map = new HashMap<>();
-        map.putAll(this.migrateConsolidation(tenantId));
+        map.putAll(this.migrateConsolidation(tenantId,codeTeuMap));
         map.putAll(this.migrateShipment(tenantId));
         Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap);
         map.putAll(nteStats);
@@ -249,7 +249,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         return map;
     }
 
-    private Map<String, Integer> migrateConsolidation(Integer tenantId) {
+    private Map<String, Integer> migrateConsolidation(Integer tenantId, Map<String, BigDecimal> codeTeuMap) {
         // Step 1: Fetch all V2 consolidations for tenant
         Map<String, Integer> map = new HashMap<>();
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
