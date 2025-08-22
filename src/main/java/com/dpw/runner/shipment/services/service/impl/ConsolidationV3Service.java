@@ -175,6 +175,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IContainerV3Service containerV3Service;
 
     @Autowired
+    private ContainerV3Util containerV3Util;
+
+    @Autowired
     private IContainerService containerService;
 
     @Autowired
@@ -3854,7 +3857,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Containers containers  = containersMap.get(packing.getContainerId());
                 String containerNumber = packing.getPacksType();
                 if(containers != null) {
-                    containerNumber = !isStringNullOrEmpty(containers.getContainerNumber()) ? containers.getContainerNumber() : containers.getContainerCode();
+                    containerNumber = containerV3Util.getContainerNumberOrType(containers);
                 }
                 String errorMsg;
                 if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
@@ -3877,7 +3880,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) {
         for (Containers container : containersList) {
             if (container.getId() != null) {
-                String containerNumber = !isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerNumber() : container.getContainerCode();
+                String containerNumber = containerV3Util.getContainerNumberOrType(container);
                 String errorMsg;
                 if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
                     errorMsg = String.format("Selected %s Shipment - %s is available with Container : %s, please remove the same to detach.",
