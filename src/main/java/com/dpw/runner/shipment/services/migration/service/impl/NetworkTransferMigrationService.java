@@ -4,21 +4,19 @@ import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.INetworkTransferBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
@@ -35,7 +33,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -78,13 +75,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Autowired
     private MDMServiceAdapter mdmServiceAdapter;
 
+    @Autowired
+    private INetworkTransferBackupRepository networkTransferBackupRepository;
 
-    private Map<String, BigDecimal> codeTeuMap = new HashMap<>();
-
-    private void initCodeTeuMap() {
-        if(codeTeuMap.isEmpty())
-            codeTeuMap = migrationUtil.initCodeTeuMap();
-    }
 
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
@@ -384,7 +377,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     }
 
     @Override
-    public Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap) {
         Map<String, Integer> map = new HashMap<>();
         List<Long> networkTranferList = fetchNteFromDB(List.of(MigrationStatus.NT_CREATED.name(), MigrationStatus.NT_PROCESSED_FOR_V3.name()), tenantId);
         map.put("Total NetworkTransfer", networkTranferList.size());
@@ -399,7 +392,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
-                    initCodeTeuMap();
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating NetworkTransfer [id={}] and start time: {}", nteId, System.currentTimeMillis());
@@ -413,6 +405,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
+                    networkTransferBackupRepository.deleteBackupByTenantIdAndNetworkTransferId(nteId, tenantId);
                     migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {

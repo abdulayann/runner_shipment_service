@@ -126,6 +126,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
                                 triggerEntityId, transactionId);
                         this.pushShipmentData(triggerEntityId, false, false);
                     }
+                    sendBookingUpdateToPlatform(message, transactionId, triggerEntity, triggerEntityId);
 
                     if (Objects.equals(triggerEntity, Constants.CONSOLIDATION)) {
 
@@ -156,6 +157,18 @@ public class PushToDownstreamService implements IPushToDownstreamService {
                 log.info("[InternalKafkaPush] No dependent triggers found for containerId={} | transactionId={}",
                         message.getParentEntityId(), transactionId);
             }
+        }
+    }
+
+    private void sendBookingUpdateToPlatform(PushToDownstreamEventDto message, String transactionId, String triggerEntity, Long triggerEntityId) {
+        if (Objects.equals(triggerEntity, Constants.CUSTOMER_BOOKING)) {
+            log.info("[InternalKafkaPush] Triggering shipment push | Booking={} | source=Container | transactionId={}",
+                    triggerEntityId, transactionId);
+            PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
+            pushToDownstreamEventDto.setParentEntityId(triggerEntityId);
+            pushToDownstreamEventDto.setParentEntityName(triggerEntity);
+            pushToDownstreamEventDto.setMeta(message.getMeta());
+            this.pushCustomerBookingDataToPlatform(pushToDownstreamEventDto, transactionId);
         }
     }
 

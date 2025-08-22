@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 @Generated
 public class HelperExecutor {
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public <V> V runInTrx(IRun<V> runnable) {
         return runnable.run();
     }

@@ -81,6 +81,12 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @Query(value = "SELECT id FROM network_transfer WHERE tenant_id = ?2 AND status IN ('TRANSFERRED', 'RETRANSFERRED') AND migration_status IN (?1) AND is_deleted = false", nativeQuery = true)
     List<Long> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
 
+    @Query(value = "SELECT id FROM network_transfer WHERE tenant_id = ?2 AND migration_status IN (?1) AND is_deleted = false", nativeQuery = true)
+    List<Long> findAllNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
+
+    @Query("Delete from network_transfer nt where nt.tenantId = ?1")
+    void deleteAllByTenantId(Integer tenantId);
+
     @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_guid in (?1)", nativeQuery = true)
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);

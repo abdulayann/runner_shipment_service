@@ -180,7 +180,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     }
 
     private void validateAndSetNetworkTransferDetails(List<NetworkTransfer> networkTransferList, Long consolidationId) {
-        List<NetworkTransfer> networkTransferDbList = networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION_ID);
+        List<NetworkTransfer> networkTransferDbList = networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION);
 
         List<NetworkTransfer> toSaveList = new ArrayList<>();
 
