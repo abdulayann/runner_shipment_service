@@ -86,7 +86,7 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
 
     @Modifying
     @Transactional
-    @Query(value = "Delete from network_transfer nt where nt.tenantId = ?1", nativeQuery = true)
+    @Query(value = "Delete from network_transfer nt where nt.tenant_id = ?1", nativeQuery = true)
     void deleteAllByTenantId(Integer tenantId);
 
     @ExcludeTenantFilter
