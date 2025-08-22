@@ -52,7 +52,7 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean(name = "asyncExecutorForMigration3")
     public ThreadPoolTaskExecutor taskExecutorForMigration3() {
-        return createBackupRestoreMigrationExecutor("MyMigrationAsyncThread-", 10, 10);
+        return createBackupRestoreMigrationExecutor("MyMigrationAsyncThread-", 10, 30);
     }
 
     private ThreadPoolTaskExecutor createBackupRestoreMigrationExecutor(String threadNamePrefix, int corePoolSize, int maxPoolSize) {
