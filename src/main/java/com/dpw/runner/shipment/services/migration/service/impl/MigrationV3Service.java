@@ -217,6 +217,7 @@ public class MigrationV3Service implements IMigrationV3Service {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
                 try {
+                    v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
 
@@ -262,6 +263,7 @@ public class MigrationV3Service implements IMigrationV3Service {
             Future<Long> future = trxExecutor.runInAsync(() -> {
 
                 try {
+                    v1Service.setAuthContext();
                     TenantContext.setCurrentTenant(tenantId);
                     UserContext.getUser().setPermissions(new HashMap<>());
                     return trxExecutor.runInTrx(() -> {
