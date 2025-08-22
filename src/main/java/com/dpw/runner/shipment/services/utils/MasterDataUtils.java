@@ -1179,17 +1179,20 @@ public class MasterDataUtils{
 
     public Map<String, EntityTransferVessels> fetchInBulkVessels(Set<String> requests) {
         Map<String, EntityTransferVessels> keyMasterDataMap = new HashMap<>();
-        if(!requests.isEmpty()) {
-            log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
-            String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchVesselData(request);
+        if (requests != null) {
+            requests = requests.stream().filter(req -> req != null && !req.trim().isEmpty()).collect(Collectors.toSet());
+            if(!requests.isEmpty()) {
+                log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+                CommonV1ListRequest request = new CommonV1ListRequest();
+                List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
+                String operator = Operators.IN.getValue();
+                List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+                request.setCriteriaRequests(criteria);
+                V1DataResponse response = v1Service.fetchVesselData(request);
 
-            List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
-            vesselsList.forEach(vessel -> keyMasterDataMap.put(vessel.getGuid().toString(), vessel));
+                List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
+                vesselsList.forEach(vessel -> keyMasterDataMap.put(vessel.getGuid().toString(), vessel));
+            }
         }
         return keyMasterDataMap;
     }

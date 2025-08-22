@@ -48,6 +48,8 @@ public class TransportOrderReport extends IReport{
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             validateAirDGAndAirSecurityCheckShipments(transportOrderModel.shipmentDetails);
+        }else{
+            validateAirDGCheckShipments(transportOrderModel.shipmentDetails);
         }
         validateAirAndOceanDGCheck(transportOrderModel.shipmentDetails);
         return transportOrderModel;

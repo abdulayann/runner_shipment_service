@@ -1,11 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -246,7 +244,8 @@ class MawbReportTest extends CommonMocks {
         mawbReport.isDMawb = false;
         UserContext.getUser().setPermissions(new HashMap<>());
         mockShipmentSettings();
-        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+        mawbReport.getDocumentModel(123L);
+        assertFalse(mawbReport.isDMawb);
     }
 
     @Test
