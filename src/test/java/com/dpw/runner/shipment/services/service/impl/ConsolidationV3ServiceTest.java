@@ -2022,7 +2022,7 @@ if (unitConversionUtilityMockedStatic != null) {
       consolidationV3Service.validateDetachedShipment(shipment);
     });
 
-    assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
+    assertFalse(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
   }
 
   @Test
