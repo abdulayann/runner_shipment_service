@@ -36,7 +36,7 @@ import java.util.UUID;
 @Getter
 @Table(name = "shipment_details")
 @Accessors(chain = true)
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
