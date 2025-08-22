@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -125,6 +126,8 @@ class ShipmentDaoTest extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IContainerDao containerDao;
 
     @Test
     void testFindByHblNumberAndExcludeShipmentId() {
