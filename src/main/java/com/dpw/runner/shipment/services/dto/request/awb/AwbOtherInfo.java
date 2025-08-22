@@ -20,7 +20,6 @@ public class AwbOtherInfo implements Serializable {
     private String entityType;
     private String shipper;
     private String carrier;
-    @UnlocationData
     private String executedAt;
     private LocalDateTime executedOn;
     private String carrierName;

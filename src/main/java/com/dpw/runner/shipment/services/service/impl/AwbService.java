@@ -4020,9 +4020,9 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setCustomOriginCode(getCountryCode(org.getCountry()));
             // Set Executed At
             if (StringUtility.isNotEmpty(address.getCity()))
-                executedAt = setUnLocationDataWithDiarcties(address.getCity());
+                executedAt = address.getCity();
             else if (StringUtility.isNotEmpty(org.getCity()))
-                executedAt = setUnLocationDataWithDiarcties(org.getCity());
+                executedAt = org.getCity();
             else
                 executedAt = null;
         }
