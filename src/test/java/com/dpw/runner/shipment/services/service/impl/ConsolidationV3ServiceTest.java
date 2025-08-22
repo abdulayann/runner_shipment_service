@@ -2026,6 +2026,34 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
+  void testValidateDetachedShipment_whenPackingAttachedToContainer_shouldThrowRunnerException_FCL() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
+    shipment.setShipmentId("SH999");
+    shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+    Containers container = new Containers();
+    container.setId(10L);
+    container.setContainerNumber("CONT01");
+    shipment.setContainersList(Set.of(container));
+
+    Packing packing = new Packing();
+    packing.setContainerId(10L);
+    packing.setInnerPacksCount(5L);
+
+    when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
+    when(commonUtils.isFCLorFTL(Constants.CARGO_TYPE_FCL)).thenReturn(true);
+    // assuming isSeaPackingList returns true
+
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
+      consolidationV3Service.validateDetachedShipment(shipment);
+    });
+
+    assertFalse(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
+  }
+
+  @Test
   void testValidateDetachedShipment_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
@@ -2037,6 +2065,28 @@ if (unitConversionUtilityMockedStatic != null) {
     shipment.setContainersList(Set.of(container));
 
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
+
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
+      consolidationV3Service.validateDetachedShipment(shipment);
+    });
+
+    assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
+  }
+
+  @Test
+  void testValidateDetachedShipment_whenContainerStillAttachedToShipment_shouldThrowRunnerException_FCL() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setShipmentId("SH567");
+    shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+    Containers container = new Containers();
+    container.setId(20L);
+    container.setContainerNumber("CONT02");
+    shipment.setContainersList(Set.of(container));
+
+    when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
+    when(commonUtils.isFCLorFTL(Constants.CARGO_TYPE_FCL)).thenReturn(true);
 
     ValidationException ex = assertThrows(ValidationException.class, () -> {
       consolidationV3Service.validateDetachedShipment(shipment);
