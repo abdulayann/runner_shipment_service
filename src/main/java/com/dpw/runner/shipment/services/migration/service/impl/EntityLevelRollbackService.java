@@ -62,7 +62,7 @@ public class EntityLevelRollbackService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public String backupEntity() {
+    public String backupEntity(Integer tenantId) {
         try (
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/backup_schema.sql")))
@@ -73,7 +73,7 @@ public class EntityLevelRollbackService {
             // Read the full DO $$ ... $$ block as a single statement
             String sql = reader.lines().collect(Collectors.joining("\n")).trim();
 
-            String schema = String.format("public_%s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyddMM_mmss")));
+            String schema = String.format("public_%s_%s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyddMM_HHmm")), tenantId);
             if (!sql.isEmpty()) {
                 sql = sql.replaceAll("__SCHEMA__", schema);
                 log.info("Executing PL/pgSQL block:\n{}", sql);
