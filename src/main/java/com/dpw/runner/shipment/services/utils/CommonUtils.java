@@ -3119,14 +3119,23 @@ public class CommonUtils {
         return flatList;
     }
     public List<String> getAllSimpleFieldNames(Class<?> entityClass) {
-        return Arrays.stream(entityClass.getDeclaredFields())
+        List<String> fields = Arrays.stream(entityClass.getDeclaredFields())
                 .filter(f -> !Modifier.isStatic(f.getModifiers()))
                 .filter(f -> !Modifier.isTransient(f.getModifiers()))
                 .filter(f -> !"serialVersionUID".equals(f.getName()))
                 .filter(f -> !Collection.class.isAssignableFrom(f.getType()))
                 .filter(f -> !f.getType().isAnnotationPresent(Entity.class))
                 .map(Field::getName)
-                .toList();
+                .collect(Collectors.toList());
+
+        if (!fields.contains("id")) {
+            fields.add(0, "id");
+        } else {
+            // Move id to first position if it exists
+            fields.remove("id");
+            fields.add(0, "id");
+        }
+        return  fields;
     }
     public Set<String> detectCollectionRelationships(Map<String, Object> requestedColumns, Class<?> entityClass) {
         Set<String> collections = new HashSet<>();
@@ -3156,8 +3165,12 @@ public class CommonUtils {
                 String[] parts = column.split("\\.");
 
                 if (parts.length == 1) {
+                    if (validEntityKeys.contains(parts[0])) {
+                        entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
+                        // For child entities, empty list means "include all fields"
+                    }
                     // Root-level field: belongs to shipmentDetails or mainEntityKey
-                    if (validEntityKeys.contains(mainEntityKey)) {
+                   else if (validEntityKeys.contains(mainEntityKey)) {
                         entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
                         List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
                         fields.add(parts[0]);
@@ -3230,10 +3243,17 @@ public class CommonUtils {
         Map<String, Class<?>> entityMappings = ShipmentConstants.ENTITY_MAPPINGS; // from our fixed Map.ofEntries(...)
         for (Map.Entry<String, Class<?>> e : entityMappings.entrySet()) {
             String key = e.getKey();
-            if (requestedColumns.containsKey(key) && requestedColumns.get(key)== null) {
+            Object value = requestedColumns.get(key);
+            if (requestedColumns.containsKey(key)   && isEmptyOrNull(value)) {
                 requestedColumns.put(key, getAllSimpleFieldNames(e.getValue()));
             }
         }
+    }
+    private boolean isEmptyOrNull(Object value) {
+        if (value == null) return true;
+        if (value instanceof List) return ((List<?>) value).isEmpty();
+        if (value instanceof Map) return ((Map<?, ?>) value).isEmpty();
+        return false;
     }
     // Helper method to convert flat map -> nested map
     public List<Map<String, Object>> convertToNestedMapWithCollections(
