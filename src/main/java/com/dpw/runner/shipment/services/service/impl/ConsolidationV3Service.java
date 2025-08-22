@@ -3854,7 +3854,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Containers containers  = containersMap.get(packing.getContainerId());
                 String containerNumber = packing.getPacksType();
                 if(containers != null) {
-                    containerNumber = containers.getContainerNumber() != null ? containers.getContainerNumber() : containers.getContainerCode();
+                    containerNumber = !isStringNullOrEmpty(containers.getContainerNumber()) ? containers.getContainerNumber() : containers.getContainerCode();
                 }
                 String errorMsg;
                 if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
