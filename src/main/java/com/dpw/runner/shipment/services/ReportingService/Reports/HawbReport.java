@@ -84,7 +84,9 @@ public class HawbReport extends IReport{
                 validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
             }
         } else {
-            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            }
         }
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
