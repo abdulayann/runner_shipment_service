@@ -119,6 +119,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -153,6 +154,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -354,6 +356,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+    @Mock
+    private ProductIdentifierUtility productEngine;
 
     private ShipmentDetails shipmentDetailsEntity;
     private ConsolidationDetails consolidationDetailsEntity;
@@ -7714,4 +7718,252 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertFalse(response.getIsEmptyWeightPackAvailable(), "Should not set empty weight flag when no packings");
         assertFalse(response.getIsPacksAvailable(), "Should not set packs available when list is empty");
     }
+
+    @Test
+    void getDefaultShipment_happyPath_SeaExport() {
+        // Arrange
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setDefaultTransportMode(TRANSPORT_MODE_SEA);
+        settings.setDefaultShipmentType(DIRECTION_EXP);
+        settings.setDefaultContainerType(SHIPMENT_TYPE_LCL);
+        settings.setWeightChargeableUnit("KG");
+        settings.setVolumeChargeableUnit("CBM");
+        settings.setIsRunnerV3Enabled(true);
+
+        V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        tenantEntity.setCurrencyCode("USD");
+        tenantEntity.setUnloco(12345);
+
+        UnlocationsResponse unlocation = new UnlocationsResponse();
+        unlocation.setLocationsReferenceGUID("TESTLOCGUID");
+
+        PartiesResponse defaultAgent = new PartiesResponse();
+        defaultAgent.setOrgCode("AGENT001");
+        defaultAgent.setOrgData(Map.of("TenantId", 5));
+
+        Map<String, Object> masterDataMap = new HashMap<>();
+        masterDataMap.put("key", "value");
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        when(v1Service.retrieveTenant()).thenReturn(mockV1Response);
+        when(mockV1Response.getEntity()).thenReturn(tenantEntity);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantEntity);
+        when(masterDataUtils.fetchUnlocationByOneIdentifier(anyString(), anyString())).thenReturn(List.of(unlocation));
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("SEA-EXP-DEPT");
+        doReturn("HBL-SEA-EXP-001").when(shipmentServiceImplV3).generateCustomHouseBL(null);
+        doReturn(masterDataMap).when(shipmentServiceImplV3).fetchAllMasterDataByKey(isNull(), any(ShipmentDetailsResponse.class));
+
+        // Act
+        ShipmentDetailsResponse response = shipmentServiceImplV3.getDefaultShipment();
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(TRANSPORT_MODE_SEA, response.getTransportMode());
+        assertEquals(DIRECTION_EXP, response.getDirection());
+        assertEquals(SHIPMENT_TYPE_LCL, response.getShipmentType());
+        assertEquals("KG", response.getWeightUnit());
+        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals(SYSTEM, response.getSource());
+        assertEquals(UserContext.getUser().getUsername(), response.getCreatedBy());
+        assertEquals("HBL-SEA-EXP-001", response.getHouseBill());
+        assertEquals("SEA-EXP-DEPT", response.getDepartment());
+        assertEquals("USD", response.getFreightLocalCurrency());
+        assertNotNull(response.getAdditionalDetails().getExportBroker());
+        assertEquals("AGENT001", response.getAdditionalDetails().getExportBroker().getOrgCode());
+        assertEquals(5L, response.getOriginBranch());
+        assertEquals(masterDataMap, response.getMasterDataMap());
+
+        verify(shipmentServiceImplV3, times(2)).generateCustomHouseBL(null);
+        verify(shipmentServiceImplV3).setDefaultAgentAndTenant(any(ShipmentDetailsResponse.class));
+        verify(shipmentServiceImplV3).fetchAllMasterDataByKey(isNull(), any(ShipmentDetailsResponse.class));
+    }
+
+    @Test
+    void getDefaultShipment_happyPath_AirImport() {
+        // Arrange
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setDefaultTransportMode(TRANSPORT_MODE_AIR);
+        settings.setDefaultShipmentType(DIRECTION_IMP);
+        settings.setIsRunnerV3Enabled(false); // Test non-V3 enabled path for placeOfIssue
+
+        V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        UnlocationsResponse unlocation = new UnlocationsResponse();
+        unlocation.setLocationsReferenceGUID("TESTLOCGUID");
+        PartiesResponse defaultAgent = new PartiesResponse();
+        defaultAgent.setOrgCode("AGENT002");
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        when(v1Service.retrieveTenant()).thenReturn(mockV1Response);
+        when(mockV1Response.getEntity()).thenReturn(tenantEntity);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantEntity);
+        when(masterDataUtils.fetchUnlocationByOneIdentifier(anyString(), anyString())).thenReturn(List.of(unlocation));
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        doReturn(new HashMap<>()).when(shipmentServiceImplV3).fetchAllMasterDataByKey(isNull(), any(ShipmentDetailsResponse.class));
+
+        // Act
+        ShipmentDetailsResponse response = shipmentServiceImplV3.getDefaultShipment();
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(TRANSPORT_MODE_AIR, response.getTransportMode());
+        assertEquals(DIRECTION_IMP, response.getDirection());
+        assertNull(response.getHouseBill(), "House Bill should not be generated for non-SEA/EXP shipments");
+        assertNotNull(response.getAdditionalDetails().getImportBroker());
+        assertEquals("AGENT002", response.getAdditionalDetails().getImportBroker().getOrgCode());
+        assertNull(response.getOriginBranch());
+        assertEquals("TESTLOCGUID", response.getAdditionalDetails().getPlaceOfIssue());
+
+        verify(shipmentServiceImplV3, never()).generateCustomHouseBL(null);
+    }
+
+    @Test
+    void getDefaultShipment_whenV1ServiceFails_throwsGenericException() {
+        // Arrange
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+
+        String expectedErrorMessage = "Failed to set default agent and tenant data";
+        doThrow(new RuntimeException(expectedErrorMessage))
+                .when(shipmentServiceImplV3).setDefaultAgentAndTenant(any(ShipmentDetailsResponse.class));
+
+        // Act & Assert
+        GenericException exception = assertThrows(GenericException.class, () -> {
+            shipmentServiceImplV3.getDefaultShipment();
+        });
+
+        // Now the message will match what we threw.
+        assertEquals(expectedErrorMessage, exception.getMessage());
+
+        verify(v1Service, never()).retrieveTenant();
+    }
+
+    @Test
+    void getDefaultShipment_whenUnlocationNotFound_handlesGracefully() {
+        // Arrange
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setDefaultTransportMode(TRANSPORT_MODE_AIR);
+        settings.setDefaultShipmentType(DIRECTION_IMP);
+
+        V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
+        TenantModel tenantEntity = new TenantModel();
+        PartiesResponse defaultAgent = new PartiesResponse();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        when(v1Service.retrieveTenant()).thenReturn(mockV1Response);
+        when(mockV1Response.getEntity()).thenReturn(tenantEntity);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantEntity);
+        // Simulate no unlocation found
+        when(masterDataUtils.fetchUnlocationByOneIdentifier(anyString(), anyString())).thenReturn(Collections.emptyList());
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        doReturn(new HashMap<>()).when(shipmentServiceImplV3).fetchAllMasterDataByKey(isNull(), any(ShipmentDetailsResponse.class));
+
+        // Act
+        ShipmentDetailsResponse response = shipmentServiceImplV3.getDefaultShipment();
+
+        // Assert
+        assertNotNull(response);
+        // Verify that placeOfIssue is not set, and no NullPointerException occurred
+        assertNull(response.getAdditionalDetails().getPlaceOfIssue());
+        assertNull(response.getAdditionalDetails().getPlaceOfSupply());
+        assertNull(response.getAdditionalDetails().getPaidPlace());
+    }
+
+    @Test
+    void generateCustomHouseBL_restrictHblGen(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
+        mockShipmentSettings();
+        String hbl = shipmentServiceImplV3.generateCustomHouseBL(null);
+        String mockHbl = null;
+
+        assertEquals(mockHbl, hbl);
+    }
+
+    @Test
+    void generateCustomHouseBL_product_sequence() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().customisedSequence(true).build());
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setHouseBill(null);
+        String mockHbl = "hblPrefix-hblSuffix-001";
+
+        // Mock
+        when(productEngine.getCustomizedBLNumber(any())).thenReturn(mockHbl);
+        mockShipmentSettings();
+        // Test
+        String hbl = shipmentServiceImplV3.generateCustomHouseBL(mockShipment);
+
+        assertEquals(mockHbl, hbl);
+    }
+
+    @Test
+    void generateCustomHouseBL_random() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .customisedSequence(false).housebillNumberGeneration("Random").build());
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setHouseBill(null);
+        mockShipmentSettings();
+        // Test
+        String hbl = shipmentServiceImplV3.generateCustomHouseBL(mockShipment);
+
+        assertNotNull(hbl);
+        assertEquals(10, hbl.length());
+    }
+
+    @Test
+    void generateCustomHouseBL_serial() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .customisedSequence(false).housebillNumberGeneration("Serial").build());
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setHouseBill(null);
+
+        //Mock
+        when(v1Service.getShipmentSerialNumber()).thenReturn("112344");
+
+        mockShipmentSettings();
+        // Test
+        String hbl = shipmentServiceImplV3.generateCustomHouseBL(mockShipment);
+
+        assertNotNull(hbl);
+        assertEquals("112344", hbl);
+    }
+
+    @Test
+    void getDefaultShipment_whenSetDefaultAgentAndTenantFails_shouldHandleGracefullyAndContinue() {
+        // Arrange
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setDefaultTransportMode(TRANSPORT_MODE_SEA);
+        settings.setDefaultShipmentType(DIRECTION_EXP);
+        settings.setIsRunnerV3Enabled(true);
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+        // This will trigger the catch block
+        when(v1Service.retrieveTenant()).thenThrow(new RuntimeException("Simulated V1 service failure"));
+
+        // Mock other dependencies that are called outside the failing try-catch block
+        doReturn("HBL-SEA-EXP-001").when(shipmentServiceImplV3).generateCustomHouseBL(null);
+        doReturn(new HashMap<>()).when(shipmentServiceImplV3).fetchAllMasterDataByKey(isNull(), any(ShipmentDetailsResponse.class));
+
+        // Act
+        ShipmentDetailsResponse response = assertDoesNotThrow(() -> shipmentServiceImplV3.getDefaultShipment());
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(TRANSPORT_MODE_SEA, response.getTransportMode());
+        assertEquals(DIRECTION_EXP, response.getDirection());
+
+        // Verify that the fields that would have been set inside the try block are null,
+        assertNull(response.getFreightLocalCurrency());
+        assertNull(response.getAdditionalDetails().getExportBroker());
+        assertNull(response.getOriginBranch());
+        assertNull(response.getAdditionalDetails().getPlaceOfIssue());
+
+        // Verify that the failing method was indeed called.
+        verify(v1Service).retrieveTenant();
+    }
+
 }

@@ -249,4 +249,13 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getDGShipment(id));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)
+    })
+    @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
+        ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
+        return ResponseHelper.buildSuccessResponse(defaultConsolidation);
+    }
+
 }
