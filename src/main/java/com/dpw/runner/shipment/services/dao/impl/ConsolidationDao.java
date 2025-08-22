@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -978,7 +979,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails,
                                              Set<String> errors, boolean allowDGValueChange) {
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails) && (!allowDGValueChange)) {
+        if(checkForNonDGConsoleAndAirDGFlag(request) && (!allowDGValueChange)) {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
             if (isDGShipmentAttached) {
@@ -992,7 +993,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Dg consolidation validations
-        if (checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if (checkForDGConsoleAndAirDGFlag(request)) {
 
             // Non dg user cannot save dg consolidation
             if (! UserContext.isAirDgUser())
