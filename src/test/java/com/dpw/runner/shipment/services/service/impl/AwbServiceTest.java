@@ -590,6 +590,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setRoutingsList(null);
         testShipment.getPackingList().get(0).setPacks(String.valueOf(1));
+        mockShipmentSettings();
         addShipmentDataForAwbGeneration(testShipment);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
