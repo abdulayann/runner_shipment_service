@@ -10,5 +10,5 @@ CREATE TABLE if not exists network_transfer_backup (
     updated_at timestamp NOT NULL,
     updated_by varchar(50) NULL,
     is_deleted bool DEFAULT false NULL,
-    back_up_time_utc timestamptz NULL,
+    back_up_time_utc timestamptz NULL
 );
