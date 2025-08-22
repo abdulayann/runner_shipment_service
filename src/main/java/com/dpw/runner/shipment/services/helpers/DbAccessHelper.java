@@ -578,12 +578,11 @@ public class DbAccessHelper {
      */
     public static <T> Order buildSortOrder(CriteriaBuilder cb,
                                  Root<T> root,
-                                 Map<String, Object> payload) {
-        Map<String, Object> sortRequest =
-                (Map<String, Object>) payload.get("sortRequest");
+                                           ListCommonRequest payload) {
+        SortRequest sortRequest =  payload.getSortRequest();
         if (sortRequest != null) {
-            String fieldName = (String) sortRequest.get("fieldName");
-            String order = (String) sortRequest.get("order");
+            String fieldName = sortRequest.getFieldName();
+            String order = sortRequest.getOrder();
             if ("DESC".equalsIgnoreCase(order)) {
                 return cb.desc(root.get(fieldName));
             } else {
