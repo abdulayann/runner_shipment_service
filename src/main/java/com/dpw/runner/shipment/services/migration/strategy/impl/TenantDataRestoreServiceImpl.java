@@ -31,9 +31,10 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
 
         trxExecutor.runInAsync(() ->  {
             try {
+                long startTime = System.currentTimeMillis();
                 restoreTenantData(tenantId);
                 log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
-                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully", "Restore From V3 to V2",  false);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully : ", "Restore From V3 to V2",  false);
             } catch (Exception e) {
                 log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Restore From V3 to V2", true);
