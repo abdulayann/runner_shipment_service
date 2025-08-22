@@ -3877,7 +3877,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) {
         for (Containers container : containersList) {
             if (container.getId() != null) {
-                String containerNumber = container.getContainerNumber() != null ? container.getContainerNumber() : container.getContainerCode();
+                String containerNumber = !isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerNumber() : container.getContainerCode();
                 String errorMsg;
                 if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
                     errorMsg = String.format("Selected %s Shipment - %s is available with Container : %s, please remove the same to detach.",
