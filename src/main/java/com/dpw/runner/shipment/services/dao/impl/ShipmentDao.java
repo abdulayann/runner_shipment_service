@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
@@ -552,7 +553,7 @@ public class ShipmentDao implements IShipmentDao {
     private void addUnLocationValidationErrors(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
             String unLoc = null;
-            if (request.getDirection().equals(Constants.DIRECTION_EXP)) {
+            if (request.getDirection().equals(DIRECTION_EXP)) {
                 unLoc = request.getCarrierDetails().getOriginPort();
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for Loading Port is not allowed or invalid");

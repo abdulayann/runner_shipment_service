@@ -6855,8 +6855,6 @@ public class ShipmentService implements IShipmentService {
         addShipmentTypeCriteria(consolidationDetails, setShipmentTypefilter, isFcl, defaultRequest, isLcl);
         CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
         CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
-        if(checkForNonDGConsoleAndAirDgFlagAndNonDGUser(consolidationDetails))
-            CommonUtils.andCriteria(CONTAINS_HAZARDOUS, false, "=", defaultRequest);
         List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(Constants.TRANSPORT_MODE).operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
@@ -7060,14 +7058,6 @@ public class ShipmentService implements IShipmentService {
 
     private boolean checkForAirTransportMode(ConsolidationDetails consolidationDetails) {
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
-    }
-
-    private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails consolidationDetails) {
-        if(!checkForAirTransportMode(consolidationDetails))
-            return false;
-        if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
-            return false;
-        return false;
     }
 
     public boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
