@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -23,19 +20,13 @@ import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
-import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
 @Slf4j
@@ -74,10 +65,12 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
                 UserContext.getUser().setPermissions(new HashMap<>());
                 networkTransferDao.deleteAllByTenantId(tenantId);
                 List<NetworkTransfer> networkTransfers = networkTransferBackupEntities.stream()
+                        .filter(ids -> !ids.getIsDeleted())
                         .map(backupEntity -> {
                             try {
                                 NetworkTransfer networkTransfer = objectMapper.readValue(backupEntity.getNetworkTransferDetails(), NetworkTransfer.class);
-                                networkTransfer.setId(null); // Reset ID for new entity
+                                networkTransfer.setId(null);// Reset ID for new entity
+                                backupRepository.makeIsDeleteTrueToMarkRestoreSuccessful(backupEntity.getId());
                                 return networkTransfer;
                             } catch (JsonProcessingException e) {
                                 log.error("Error processing JSON for Network Transfer: {}", e.getMessage(), e);
@@ -99,10 +92,6 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
         }
 
         log.info("Completed network Transfer restore for tenant: {}", tenantId);
-    }
-
-    public static List<Long> ensureNonEmptyIds(List<Long> ids) {
-        return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
     }
 }
 
