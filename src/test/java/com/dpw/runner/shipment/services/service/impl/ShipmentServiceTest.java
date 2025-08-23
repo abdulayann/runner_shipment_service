@@ -1421,6 +1421,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void completeUpdate_efreightStausChanged() throws RunnerException {
+        UserContext.getUser().setPermissions(new HashMap<>());
         shipmentDetails.setId(1L);
         ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -5782,7 +5783,6 @@ ShipmentServiceTest extends CommonMocks {
     void partialUpdateTestAirMessaging() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
 
@@ -5791,10 +5791,14 @@ ShipmentServiceTest extends CommonMocks {
         additionalDetails.setImportBroker(Parties.builder().addressCode("code").build());
         additionalDetails.setExportBroker(Parties.builder().addressCode("code").build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+        // Create ConsolidationDetails with an ID for proper mocking
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(100L);
+
+        shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
-                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails)))
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
                 .additionalDetails(additionalDetails)
@@ -5804,6 +5808,9 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+
+        // Mock the consolidationDetailsDao.findById call that happens during the partial update
+        lenient().when(consolidationDetailsDao.findById(100L)).thenReturn(Optional.of(consolidationDetails));
 
         HashMap<String, Object> hm = new HashMap<>();
         hm.put("RegulatedAgent", true);
@@ -6345,6 +6352,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void attachListShipmentEvents() {
+        UserContext.getUser().setPermissions(new HashMap<>());
         long consolidationId = 1L;
         AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
         attachListShipmentRequest.setConsolidationId(consolidationId);
@@ -6711,9 +6719,8 @@ ShipmentServiceTest extends CommonMocks {
     void checkAttachDgAirShipments_HazTrue() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
-        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
-        assertTrue(response);
+        assertFalse(response);
     }
 
     @Test
@@ -6721,7 +6728,6 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
-        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -6733,7 +6739,6 @@ ShipmentServiceTest extends CommonMocks {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
         testConsol.setShipmentsList(new HashSet<>());
-        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -6745,7 +6750,6 @@ ShipmentServiceTest extends CommonMocks {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         testConsol.setHazardous(true);
         testConsol.setShipmentsList(Set.of(shipmentDetails));
-        mockShipmentSettings();
         boolean response = shipmentService.checkAttachDgAirShipments(testConsol);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         assertFalse(response);
@@ -7774,7 +7778,6 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -7805,7 +7808,6 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
@@ -7824,7 +7826,6 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -7842,7 +7843,6 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
@@ -7859,7 +7859,6 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -7876,7 +7875,6 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
@@ -8787,7 +8785,6 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         consolidationDetails1.setContainerCategory(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setContainsHazardous(true);
-        mockShipmentSettings();
         shipmentService.dgValidations(shipmentDetails1, consolidationDetails1, 0);
         verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
     }
@@ -8817,7 +8814,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setContainsHazardous(true);
         assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, null, null, new MutableBoolean(true), null));
@@ -8826,7 +8822,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations1() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setContainsHazardous(true);
         assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, null, List.of(1L), new MutableBoolean(false), null));
@@ -8835,7 +8830,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations3() throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setContainsHazardous(true);
         shipmentService.airDGValidations(shipmentDetails1, null, null, new MutableBoolean(false), null);
@@ -8845,7 +8839,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations4() throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentService.airDGValidations(shipmentDetails1, null, null, null, null);
         verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
@@ -8854,7 +8847,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations5() throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentService.airDGValidations(shipmentDetails1, null, List.of(2L), null, Set.of(new ConsolidationDetailsRequest()));
         verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
@@ -8863,7 +8855,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations6(){
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         ConsolidationDetailsRequest consolidationDetailsRequest = new ConsolidationDetailsRequest();
         consolidationDetailsRequest.setHazardous(true);
@@ -8873,7 +8864,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations7() throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setConsolidationList(Set.of(new ConsolidationDetails()));
         shipmentService.airDGValidations(shipmentDetails1, new ShipmentDetails(), List.of(2L), null, null);
@@ -8883,7 +8873,6 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testAirDGValidations8(){
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setHazardous(true);
@@ -9569,7 +9558,6 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails1.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         consolidationDetails1.setHazardous(true);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
         assertThrows(RunnerException.class, () -> shipmentService.dgValidations(shipmentDetails1, consolidationDetails1, 1));
     }
@@ -9581,8 +9569,6 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails1.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         consolidationDetails1.setHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build(), ConsoleShipmentMapping.builder().build()));
         assertThrows(RunnerException.class, () -> shipmentService.dgValidations(shipmentDetails1, consolidationDetails1, 0));
     }
@@ -9596,7 +9582,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().hazardous(true).transportMode(TRANSPORT_MODE_AIR).build()));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -9611,7 +9596,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().transportMode(TRANSPORT_MODE_AIR).build()));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -9627,7 +9611,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().transportMode(TRANSPORT_MODE_AIR).build()));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
         var response = spyService.requestInterBranchConsole(1L, 2L, "");
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());

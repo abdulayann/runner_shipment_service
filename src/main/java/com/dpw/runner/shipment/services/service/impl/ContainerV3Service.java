@@ -1113,6 +1113,12 @@ public class ContainerV3Service implements IContainerV3Service {
                 triggersList.add(vTrigger);
             }
         }
+        if (ObjectUtils.isNotEmpty(container.getBookingId())) {
+            PushToDownstreamEventDto.Triggers vTrigger = PushToDownstreamEventDto.Triggers.builder()
+                    .entityId(container.getBookingId())
+                    .entityName(Constants.CUSTOMER_BOOKING).build();
+            triggersList.add(vTrigger);
+        }
 
         pushToDownstreamEventDto.setTriggers(triggersList);
         dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);

@@ -146,7 +146,9 @@ public class MawbReport extends IReport {
                 validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
             }
         } else {
-            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            }
         }
     }
 
@@ -158,7 +160,9 @@ public class MawbReport extends IReport {
                 validateAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
             }
         } else {
-            validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
+            }
         }
     }
 

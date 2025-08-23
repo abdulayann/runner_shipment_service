@@ -406,9 +406,8 @@ public class AwbUtility {
     }
 
     private void processConsoleUnLoc(Awb awb, ConsolidationDetails consolidationDetails, Map<String, UnlocationsResponse> unlocationsMap, AwbAirMessagingResponse awbResponse) {
-        if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
-            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
-            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        if(awb.getAwbPackingInfo() != null) {
+            setExecutedAtCityInAwbAirMessagingResponse(awbResponse, awb);
         }
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
@@ -417,6 +416,12 @@ public class AwbUtility {
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getDestinationPort());
             awbResponse.getMeta().setPod(populateUnlocFields(unloc));
+        }
+    }
+
+    private void setExecutedAtCityInAwbAirMessagingResponse(AwbAirMessagingResponse awbResponse, Awb awb) {
+        if(awbResponse.getMeta() != null && awb.getAwbOtherInfo() != null) {
+            awbResponse.getMeta().setExecutedAtCity(awb.getAwbOtherInfo().getExecutedAt());
         }
     }
 
@@ -450,8 +455,6 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
-        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null)
-            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -694,9 +697,6 @@ public class AwbUtility {
                     unlocoRequests.add(party.getSpecifiedAddressLocation());
             });
         }
-        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null) {
-            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
 
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
@@ -728,10 +728,7 @@ public class AwbUtility {
     }
 
     private void processUnLocData(Awb awb, ShipmentDetails shipmentDetails, Map<String, UnlocationsResponse> unlocationsMap, AwbAirMessagingResponse awbResponse) {
-        if(awb.getAwbOtherInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
-            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
-            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
-        }
+        setExecutedAtCityInAwbAirMessagingResponse(awbResponse, awb);
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
