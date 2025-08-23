@@ -3351,6 +3351,20 @@ public class CommonUtils {
 
         return finalList;
     }
+    public List<String> refineIncludeColumns(List<String> includeColumns) {
+        return includeColumns.stream()
+                .map(column -> {
+                    if (column.contains(Constants.ORG_DATA)) {
+                        return column.substring(0, column.indexOf(Constants.ORG_DATA) + Constants.ORG_DATA.length());
+                    } else if (column.contains(Constants.ADDRESS_DATA)) {
+                        return column.substring(0, column.indexOf(Constants.ADDRESS_DATA) + Constants.ADDRESS_DATA.length());
+                    } else {
+                        return column;
+                    }
+                })
+                .distinct() // remove duplicates if any
+                .toList();
+    }
 
     @SuppressWarnings("unchecked")
     public <T extends MultiTenancy> void buildJoinsAndSelections(
@@ -3362,7 +3376,7 @@ public class CommonUtils {
             String sortField
     ) {
 
-        Set<String> rootEntityColumns = new HashSet<>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
+        Set<String> rootEntityColumns = new HashSet<String>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
 
         // If there's a sort field and it's not already in the root entity columns, validate and add it
         if (sortField != null && !rootEntityColumns.contains(sortField)) {
@@ -3409,7 +3423,6 @@ public class CommonUtils {
 
             // Build the full path for this nested entity
             String fullPath = parentEntityKey + "." + childEntityKey;
-
             processEntity(childValue, rootEntityKey, root, selections, columnOrder, fullPath, joinCache);
         }
     }
@@ -3448,7 +3461,6 @@ public class CommonUtils {
 
         String[] pathParts = entityPath.split("\\.");
         Path<?> currentPath = root;
-
         // Build the join path step by step
         StringBuilder currentPathBuilder = new StringBuilder();
         for (String part : pathParts) {
