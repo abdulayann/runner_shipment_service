@@ -775,9 +775,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         int pageNo = listCommonRequest.getPageNo();
         int pageSize = Optional.ofNullable(listCommonRequest.getPageSize()).orElse(25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+        List<String> includeColumns = commonUtils.refineIncludeColumns(listCommonRequest.getIncludeColumns());
 
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(listCommonRequest.getIncludeColumns(),  ShipmentConstants.SHIPMENT_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -853,8 +854,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
+        List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(commonGetRequest.getIncludeColumns(),  ShipmentConstants.SHIPMENT_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -895,7 +897,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         Map<String, Object> response = new LinkedHashMap<>();
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
-        ;
         response.put("data", nestedList);
         return null;
     }
