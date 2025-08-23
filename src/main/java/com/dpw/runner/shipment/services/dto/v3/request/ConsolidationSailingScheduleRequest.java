@@ -18,6 +18,8 @@ public class ConsolidationSailingScheduleRequest implements IRunnerRequest {
     private LocalDateTime shippingInstructionCutoff;
     private LocalDateTime dgCutoff;
     private LocalDateTime reeferCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime carrierReceiptCutOff;
     private LocalDateTime earliestEmptyEquipmentPickUp;
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;

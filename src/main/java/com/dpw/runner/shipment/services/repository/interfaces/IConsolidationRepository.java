@@ -149,6 +149,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
                 s.shipInstructionCutoff = :shipInstructionCutoff,
                 s.hazardousBookingCutoff = :hazardousBookingCutoff,
                 s.reeferCutoff = :reeferCutoff,
+                s.carrierDocCutOff = :carrierDocCutOff,
+                s.carrierReceiptCutOff = :carrierReceiptCutOff,
                 s.earliestEmptyEquPickUp = :earliestEmptyEquPickUp,
                 s.latestFullEquDeliveredToCarrier = :latestFullEquDeliveredToCarrier,
                 s.earliestDropOffFullEquToCarrier = :earliestDropOffFullEquToCarrier
@@ -161,6 +163,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             @Param("shipInstructionCutoff") LocalDateTime shipInstructionCutoff,
             @Param("hazardousBookingCutoff") LocalDateTime hazardousBookingCutoff,
             @Param("reeferCutoff") LocalDateTime reeferCutoff,
+            @Param("carrierDocCutOff") LocalDateTime carrierDocCutOff,
+            @Param("carrierReceiptCutOff") LocalDateTime carrierReceiptCutOff,
             @Param("earliestEmptyEquPickUp") LocalDateTime earliestEmptyEquPickUp,
             @Param("latestFullEquDeliveredToCarrier") LocalDateTime latestFullEquDeliveredToCarrier,
             @Param("earliestDropOffFullEquToCarrier") LocalDateTime earliestDropOffFullEquToCarrier
@@ -171,9 +175,10 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query("""
             UPDATE ConsolidationDetails s
             SET s.latDate = :latDate
+                s.carrierReceiptCutOff = :carrierReceiptCutOff
             WHERE s.id = :consolidationId
             """)
-    void updateSailingScheduleRelatedInfoForAir(@Param("consolidationId") Long consolidationId, @Param("latDate") LocalDateTime latDate);
+    void updateSailingScheduleRelatedInfoForAir(@Param("consolidationId") Long consolidationId, @Param("latDate") LocalDateTime latDate, @Param("carrierReceiptCutOff") LocalDateTime carrierReceiptCutOff);
 
     @Query(value = "SELECT bookingNumber FROM ConsolidationDetails WHERE id = :consolidationId")
     String getBookingNumberFromConsol(@Param("consolidationId") Long consolidationId);

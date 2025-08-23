@@ -70,6 +70,8 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime carrierReceiptCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;

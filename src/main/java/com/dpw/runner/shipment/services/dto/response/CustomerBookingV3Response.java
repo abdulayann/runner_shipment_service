@@ -166,6 +166,10 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime reeferCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierReceiptCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquipmentPickUp;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;

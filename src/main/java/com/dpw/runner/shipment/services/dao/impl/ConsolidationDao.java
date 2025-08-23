@@ -829,13 +829,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId) {
         consolidationRepository.updateSailingScheduleRelatedInfo(consolidationId, request.getTerminalCutoff(), request.getVerifiedGrossMassCutoff(),
                 request.getShippingInstructionCutoff(), request.getDgCutoff(), request.getReeferCutoff(),
+                request.getCarrierDocCutOff(), request.getCarrierReceiptCutOff(),
                 request.getEarliestEmptyEquipmentPickUp(), request.getLatestFullEquipmentDeliveredToCarrier(),
                 request.getEarliestDropOffFullEquipmentToCarrier());
     }
 
     @Override
     public void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId) {
-        consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime());
+        consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime(), request.getCarrierReceiptCutOff());
     }
 
     @Override

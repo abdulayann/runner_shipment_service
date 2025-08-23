@@ -2481,6 +2481,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     deliveryMode(customerBookingRequest.getServiceMode()).
                     partner(customerBookingRequest.getPartner()).
                     bookingAgent(customerBookingRequest.getBookingAgent()).
+                    carrierDocCutOff(customerBookingRequest.getCarrierDocCutOff()).
+                    carrierReceiptCutOff(customerBookingRequest.getCarrierReceiptCutOff()).
                     coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                     coLoadBookingReference(customerBookingRequest.getPartnerBkgNumber()).
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
@@ -2818,6 +2820,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shippingInstructionCutoff(customerBookingRequest.getShippingInstructionCutoff()).
                 dgCutoff(customerBookingRequest.getDgCutoff()).
                 reeferCutoff(customerBookingRequest.getReeferCutoff()).
+                carrierDocCutOff(customerBookingRequest.getCarrierDocCutOff()).
+                carrierReceiptCutOff(customerBookingRequest.getCarrierReceiptCutOff()).
                 earliestEmptyEquipmentPickUp(customerBookingRequest.getEarliestEmptyEquipmentPickUp()).
                 latestFullEquipmentDeliveredToCarrier(customerBookingRequest.getLatestFullEquipmentDeliveredToCarrier()).
                 earliestDropOffFullEquipmentToCarrier(customerBookingRequest.getEarliestDropOffFullEquipmentToCarrier()).

@@ -994,13 +994,14 @@ public class ShipmentDao implements IShipmentDao {
     public void updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest request, Long shipmentId) {
         shipmentRepository.updateSailingScheduleRelatedInfo(shipmentId, request.getTerminalCutoff(), request.getVerifiedGrossMassCutoff(),
                 request.getShippingInstructionCutoff(), request.getDgCutoff(), request.getReeferCutoff(),
+                request.getCarrierDocCutOff(), request.getCarrierReceiptCutOff(),
                 request.getEarliestEmptyEquipmentPickUp(), request.getLatestFullEquipmentDeliveredToCarrier(),
                 request.getEarliestDropOffFullEquipmentToCarrier());
     }
 
     @Override
     public void updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest request, Long shipmentId) {
-        shipmentRepository.updateSailingScheduleRelatedInfoForAir(shipmentId, request.getLatestArrivalTime());
+        shipmentRepository.updateSailingScheduleRelatedInfoForAir(shipmentId, request.getLatestArrivalTime(), request.getCarrierReceiptCutOff());
     }
 
     @Override

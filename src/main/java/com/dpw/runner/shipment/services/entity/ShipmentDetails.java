@@ -699,6 +699,12 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "reefer_cut_off")
     private LocalDateTime reeferCutoff;
 
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "carrier_receipt_cut_off")
+    private LocalDateTime carrierReceiptCutOff;
+
     @Column(name = "earliest_empty_equipment_pickup")
     private LocalDateTime earliestEmptyEquipmentPickUp;
 

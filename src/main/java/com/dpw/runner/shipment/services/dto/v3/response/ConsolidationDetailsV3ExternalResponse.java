@@ -50,6 +50,8 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private LocalDateTime earliestEmptyEquPickUp;
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime shipInstructionCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime carrierReceiptCutOff;
     private Boolean isLocked;
     private String shipmentType;
     private String lockedBy;

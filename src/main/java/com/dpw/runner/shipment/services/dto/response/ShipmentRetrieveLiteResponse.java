@@ -24,6 +24,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -250,6 +251,10 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private LocalDateTime dgCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime reeferCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierReceiptCutOff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquipmentPickUp;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)

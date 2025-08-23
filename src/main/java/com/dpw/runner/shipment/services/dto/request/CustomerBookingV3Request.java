@@ -137,6 +137,10 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private LocalDateTime shippingInstructionCutoff;
     private LocalDateTime dgCutoff;
     private LocalDateTime reeferCutoff;
+    @ExcludeTimeZone
+    private LocalDateTime carrierDocCutOff;
+    @ExcludeTimeZone
+    private LocalDateTime carrierReceiptCutOff;
     private LocalDateTime earliestEmptyEquipmentPickUp;
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;

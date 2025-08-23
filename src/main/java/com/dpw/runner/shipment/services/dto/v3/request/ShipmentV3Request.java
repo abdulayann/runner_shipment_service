@@ -237,6 +237,10 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private LocalDateTime brokerageAtOriginDate;
     @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+    @ExcludeTimeZone
+    private LocalDateTime carrierDocCutOff;
+    @ExcludeTimeZone
+    private LocalDateTime carrierReceiptCutOff;
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
     private LocalDateTime shippingInstructionCutoff;

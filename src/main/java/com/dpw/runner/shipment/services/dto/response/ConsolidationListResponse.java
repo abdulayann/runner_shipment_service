@@ -58,6 +58,8 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime carrierReceiptCutOff;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;

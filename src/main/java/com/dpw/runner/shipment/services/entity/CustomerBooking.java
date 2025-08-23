@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
@@ -405,6 +406,12 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "reefer_cut_off")
     private LocalDateTime reeferCutoff;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "carrier_receipt_cut_off")
+    private LocalDateTime carrierReceiptCutOff;
 
     @Column(name = "earliest_empty_equipment_pickup")
     private LocalDateTime earliestEmptyEquipmentPickUp;

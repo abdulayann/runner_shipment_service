@@ -4058,9 +4058,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails newConsolidation, ShipmentDetails shipmentDetails, Boolean fromAttachShipment){
         if (Boolean.TRUE.equals(fromAttachShipment)) {
                 shipmentDetails.setLatestArrivalTime(newConsolidation.getLatDate());
+                shipmentDetails.setCarrierReceiptCutOff(newConsolidation.getCarrierReceiptCutOff());
         } else {
             updateIfChanged(oldConsolidation.getLatDate(), newConsolidation.getLatDate(),
                 shipmentDetails::setLatestArrivalTime);
+            updateIfChanged(oldConsolidation.getCarrierReceiptCutOff(), newConsolidation.getCarrierReceiptCutOff(),
+                shipmentDetails::setCarrierReceiptCutOff);
         }
     }
 
@@ -4082,7 +4085,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setEarliestEmptyEquipmentPickUp(newConsolidation.getEarliestEmptyEquPickUp());
             shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(newConsolidation.getLatestFullEquDeliveredToCarrier());
             shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(newConsolidation.getEarliestDropOffFullEquToCarrier());
-
+            shipmentDetails.setCarrierDocCutOff(newConsolidation.getCarrierDocCutOff());
+            shipmentDetails.setCarrierReceiptCutOff(newConsolidation.getCarrierReceiptCutOff());
     }
 
     private void applySeaCutoffsUpdate(ConsolidationDetails oldConsolidation, ConsolidationDetails newConsolidation,
@@ -4101,6 +4105,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         updateIfChanged(oldConsolidation.getReeferCutoff(), newConsolidation.getReeferCutoff(),
             shipmentDetails::setReeferCutoff);
+
+        updateIfChanged(oldConsolidation.getCarrierDocCutOff(), newConsolidation.getCarrierDocCutOff(),
+            shipmentDetails::setCarrierDocCutOff);
+
+        updateIfChanged(oldConsolidation.getCarrierReceiptCutOff(), newConsolidation.getCarrierReceiptCutOff(),
+                shipmentDetails::setCarrierReceiptCutOff);
 
         updateIfChanged(oldConsolidation.getEarliestEmptyEquPickUp(), newConsolidation.getEarliestEmptyEquPickUp(),
             shipmentDetails::setEarliestEmptyEquipmentPickUp);

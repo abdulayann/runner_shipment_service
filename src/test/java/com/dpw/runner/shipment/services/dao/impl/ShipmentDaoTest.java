@@ -2161,7 +2161,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
                         Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
                         Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
-                        Mockito.<LocalDateTime>any());
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
 
         ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
         request.setCarrier("Carrier");
@@ -2179,7 +2179,7 @@ class ShipmentDaoTest extends CommonMocks {
         verify(shipmentRepository).updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
                 Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
                 Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
-                Mockito.<LocalDateTime>any());
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
         assertEquals("00:00", request.getDgCutoff().toLocalTime().toString());
         assertEquals("00:00", request.getEarliestDropOffFullEquipmentToCarrier().toLocalTime().toString());
         assertEquals("00:00", request.getEarliestEmptyEquipmentPickUp().toLocalTime().toString());
@@ -2204,7 +2204,7 @@ class ShipmentDaoTest extends CommonMocks {
                 .updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
                         Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
                         Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
-                        Mockito.<LocalDateTime>any());
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
 
         ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
         request.setCarrier("Carrier");
@@ -2222,7 +2222,7 @@ class ShipmentDaoTest extends CommonMocks {
         verify(shipmentRepository).updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
                 Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
                 Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
-                Mockito.<LocalDateTime>any());
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
     }
 
     /**
@@ -2232,7 +2232,7 @@ class ShipmentDaoTest extends CommonMocks {
     @Test
     void testUpdateSailingScheduleRelatedInfoForAir() {
         doNothing().when(shipmentRepository)
-                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any());
+                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
 
         ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
         request.setCarrier("Carrier");
@@ -2248,7 +2248,7 @@ class ShipmentDaoTest extends CommonMocks {
         request.setVerifiedGrossMassCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
         shipmentDao.updateSailingScheduleRelatedInfoForAir(request, 1L);
         verify(shipmentRepository).updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(),
-                Mockito.<LocalDateTime>any());
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
         assertEquals("00:00", request.getDgCutoff().toLocalTime().toString());
         assertEquals("00:00", request.getEarliestDropOffFullEquipmentToCarrier().toLocalTime().toString());
         assertEquals("00:00", request.getEarliestEmptyEquipmentPickUp().toLocalTime().toString());
@@ -2270,7 +2270,7 @@ class ShipmentDaoTest extends CommonMocks {
     @Test
     void testUpdateSailingScheduleRelatedInfoForAir2() {
         doThrow(new ConstraintViolationException(new HashSet<>())).when(shipmentRepository)
-                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any());
+                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
 
         ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
         request.setCarrier("Carrier");
@@ -2287,7 +2287,7 @@ class ShipmentDaoTest extends CommonMocks {
         assertThrows(ConstraintViolationException.class,
                 () -> shipmentDao.updateSailingScheduleRelatedInfoForAir(request, 1L));
         verify(shipmentRepository).updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(),
-                Mockito.<LocalDateTime>any());
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any());
     }
 
     @Test

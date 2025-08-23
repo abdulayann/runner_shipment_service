@@ -220,6 +220,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
                 s.shippingInstructionCutoff = :shippingInstructionCutoff,
                 s.dgCutoff = :dgCutoff,
                 s.reeferCutoff = :reeferCutoff,
+                s.carrierDocCutOff = :carrierDocCutOff,
+                s.carrierReceiptCutOff = :carrierReceiptCutOff,
                 s.earliestEmptyEquipmentPickUp = :earliestEmptyEquipmentPickUp,
                 s.latestFullEquipmentDeliveredToCarrier = :latestFullEquipmentDeliveredToCarrier,
                 s.earliestDropOffFullEquipmentToCarrier = :earliestDropOffFullEquipmentToCarrier
@@ -232,6 +234,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             @Param("shippingInstructionCutoff") LocalDateTime shippingInstructionCutoff,
             @Param("dgCutoff") LocalDateTime dgCutoff,
             @Param("reeferCutoff") LocalDateTime reeferCutoff,
+            @Param("carrierDocCutOff") LocalDateTime carrierDocCutOff,
+            @Param("carrierReceiptCutOff") LocalDateTime carrierReceiptCutOff,
             @Param("earliestEmptyEquipmentPickUp") LocalDateTime earliestEmptyEquipmentPickUp,
             @Param("latestFullEquipmentDeliveredToCarrier") LocalDateTime latestFullEquipmentDeliveredToCarrier,
             @Param("earliestDropOffFullEquipmentToCarrier") LocalDateTime earliestDropOffFullEquipmentToCarrier
@@ -241,10 +245,13 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Transactional
     @Query("""
             UPDATE ShipmentDetails s
-            SET s.latestArrivalTime = :latestArrivalTime
+            SET s.latestArrivalTime = :latestArrivalTime,
+                s.carrierReceiptCutOff = :carrierReceiptCutOff
             WHERE s.id = :shipmentId
             """)
-    void updateSailingScheduleRelatedInfoForAir(@Param("shipmentId") Long shipmentId, @Param("latestArrivalTime") LocalDateTime latestArrivalTime);
+    void updateSailingScheduleRelatedInfoForAir(@Param("shipmentId") Long shipmentId,
+                                                @Param("latestArrivalTime") LocalDateTime latestArrivalTime,
+                                                @Param("carrierReceiptCutOff") LocalDateTime carrierReceiptCutOff);
 
     @Modifying
     @Transactional
