@@ -33,7 +33,7 @@ public class MigrationV3Controller {
         log.info("Received migration request from V2 to V3 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId());
+        return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId(), request.getCount());
     }
 
     @PostMapping(value = "/v3/v2")
@@ -41,7 +41,7 @@ public class MigrationV3Controller {
         log.info("Received migration request from V3 to V2 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId());
+        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId(), request.getCount());
     }
 
 }
