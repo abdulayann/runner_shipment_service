@@ -182,7 +182,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         if (shipmentDetails.getContainersList() != null) {
             for (Containers container : shipmentDetails.getContainersList()) {
                 Long containerId = container.getId();
-                if (containerId != null) {
+                if (null != containerId && null != containerShipmentMap) {
                     containerShipmentMap.computeIfAbsent(containerId, k -> new ArrayList<>()).add(shipmentId);
                 }
             }
