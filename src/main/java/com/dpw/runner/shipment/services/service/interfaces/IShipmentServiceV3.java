@@ -53,7 +53,7 @@ public interface IShipmentServiceV3 {
     ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId);
     ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId);
 
-    ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request);
+    ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest);
 
     ShipmentDetailsV3Response create(CommonRequestModel commonRequestModel);
 

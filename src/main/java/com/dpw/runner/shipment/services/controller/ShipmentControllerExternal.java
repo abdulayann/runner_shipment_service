@@ -72,14 +72,9 @@ public class ShipmentControllerExternal {
     }
     @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
     public  ResponseEntity<IRunnerResponse> retrieveShipmentDetails(@RequestBody @Valid CommonGetRequest commonGetRequest, @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam(required = false) Long id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = false) @RequestParam(required = false) UUID guid) {
-        ShipmentDynamicRequest request = new ShipmentDynamicRequest();
-        if(id!=null) {
-            request.setId(id);
-        } else if(guid !=null) {
-            request.setGuid(guid);
-        } else {
+        if(commonGetRequest.getId() == null && commonGetRequest.getGuid() ==null) {
             throw new ValidationException("Id or Guid is mandatory");
         }
-        return shipmentService.getShipmentDetails(commonGetRequest, request);
+        return shipmentService.getShipmentDetails(commonGetRequest);
     }
 }

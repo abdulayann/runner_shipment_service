@@ -846,7 +846,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
+    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) {
         List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
         Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
