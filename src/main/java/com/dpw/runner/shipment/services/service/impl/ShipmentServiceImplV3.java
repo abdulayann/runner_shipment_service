@@ -767,6 +767,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) {
+        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
+            throw new ValidationException("Include columns can not be empty");
+        }
+        if (listCommonRequest.getPageNo() == null || listCommonRequest.getPageNo() < 1) {
+            throw new ValidationException("PageSize should be greater than 1");
+        }
+        listCommonRequest.getIncludeColumns().add("id");
         long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
         int pageNo = listCommonRequest.getPageNo();
         int pageSize = Optional.ofNullable(listCommonRequest.getPageSize()).orElse(25);
