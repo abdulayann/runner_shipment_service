@@ -58,17 +58,17 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean(name = "asyncExecutorForConsole")
     public ThreadPoolTaskExecutor asyncConsoleRestoreHandlerExecutor() {
-        return createExecutor("RestoreConsoleHandlerAsyncThread-", 10, 20);
+        return createExecutor("RestoreConsoleHandlerAsyncThread-", 10, 15);
     }
 
     @Bean(name = "asyncExecutorForBooking")
     public ThreadPoolTaskExecutor asyncBookingRestoreHandlerExecutor() {
-        return createExecutor("RestoreBookingHandlerAsyncThread-", 10, 20);
+        return createExecutor("RestoreBookingHandlerAsyncThread-", 10, 15);
     }
 
     @Bean(name = "asyncExecutorForShipment")
     public ThreadPoolTaskExecutor asyncShipmentRestoreHandlerExecutor() {
-        return createExecutor("RestoreShipmentHandlerAsyncThread-", 10, 20);
+        return createExecutor("RestoreShipmentHandlerAsyncThread-", 10, 15);
     }
 
     @Bean(name = "asyncExecutorForMigration3")
