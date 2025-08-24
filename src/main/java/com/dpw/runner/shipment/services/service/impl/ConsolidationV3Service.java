@@ -5115,7 +5115,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<IRunnerResponse> consolListResponses = new ArrayList<>();
         for( ConsolidationDetails curr : consolList) {
-            IRunnerResponse shipmentListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+            IRunnerResponse shipmentListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
             consolListResponses.add(shipmentListResponse);
         }
         return ResponseHelper.buildListSuccessResponse(
@@ -5174,6 +5174,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolDetails = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
 
         }
-        IRunnerResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+        IRunnerResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
         return ResponseHelper.buildSuccessResponse(consolListResponse);    }
 }
