@@ -66,12 +66,12 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1", nativeQuery = true)
     Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = "UPDATE customer_booking SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
     void deleteAdditionalBookingsByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = "UPDATE customer_booking SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
     void revertSoftDeleteByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);

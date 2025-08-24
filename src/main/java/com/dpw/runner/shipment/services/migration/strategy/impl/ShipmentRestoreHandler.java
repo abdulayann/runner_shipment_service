@@ -37,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 
 import java.util.*;
@@ -87,6 +88,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final NetworkTransferDao networkTransferDao;
     private final INetworkTransferRepository networkTransferRepository;
     private final V1ServiceImpl v1Service;
+    private final TransactionTemplate transactionTemplate;
 
     @Autowired
     private HelperExecutor trxExecutor;
@@ -345,7 +347,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                         v1Service.setAuthContext();
                         TenantContext.setCurrentTenant(tenantId);
                         UserContext.getUser().setPermissions(new HashMap<>());
-                        return trxExecutor.runInTrx(() -> {
+                        return transactionTemplate.execute(status -> {
                             restoreShipmentTransaction(id);
                             return null;
                         });

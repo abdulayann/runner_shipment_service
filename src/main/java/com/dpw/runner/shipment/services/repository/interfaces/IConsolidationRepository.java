@@ -190,12 +190,12 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             """)
     void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = "UPDATE consolidation_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
     void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = "UPDATE consolidation_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
     void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);

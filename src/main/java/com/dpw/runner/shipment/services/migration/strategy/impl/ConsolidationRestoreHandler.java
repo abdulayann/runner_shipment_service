@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -28,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -73,6 +73,8 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     @Autowired
     private MigrationUtil migrationUtil;
 
+    private final TransactionTemplate transactionTemplate;
+
 
     @Override
     public void restore(Integer tenantId) {
@@ -101,7 +103,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                         v1Service.setAuthContext();
                         TenantContext.setCurrentTenant(tenantId);
                         UserContext.getUser().setPermissions(new HashMap<>());
-                        return trxExecutor.runInTrx(() -> {
+                        return transactionTemplate.execute(status -> {
                             processAndRestoreConsolidation(id, tenantId);
                             return null;
                         });
