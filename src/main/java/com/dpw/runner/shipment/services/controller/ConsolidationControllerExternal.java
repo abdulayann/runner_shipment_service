@@ -81,16 +81,10 @@ public class ConsolidationControllerExternal {
         return consolidationV3Service.fetchConsolidation(listCommonRequest);
     }
     @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
-    public  Map<String, Object> retrieveConsolidationDetails(@RequestBody CommonGetRequest commonGetRequest, @ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = false) @RequestParam(required = false) Long id, @ApiParam(value = ConsolidationConstants.CONSOLIDATION_GUID, required = false) @RequestParam(required = false) UUID guid) {
-
-        ShipmentDynamicRequest request = new ShipmentDynamicRequest();
-        if(id!=null) {
-            request.setId(id);
-        } else if(guid !=null) {
-            request.setGuid(guid);
-        } else {
+    public  ResponseEntity<IRunnerResponse> retrieveConsolidationDetails(@RequestBody CommonGetRequest commonGetRequest) {
+        if(commonGetRequest.getId() == null && commonGetRequest.getGuid() ==null) {
             throw new ValidationException("Id or Guid is mandatory");
         }
-        return consolidationV3Service.getConsolidationDetails(commonGetRequest, request);
+        return consolidationV3Service.getConsolidationDetails(commonGetRequest);
     }
 }

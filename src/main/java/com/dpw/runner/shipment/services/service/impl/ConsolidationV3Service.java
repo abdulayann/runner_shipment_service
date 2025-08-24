@@ -88,16 +88,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -5069,9 +5060,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         int pageNo = listCommonRequest.getPageNo();
         int pageSize =  Optional.of(listCommonRequest.getPageSize()).orElse(25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+        List<String> includeColumns = commonUtils.refineIncludeColumns(listCommonRequest.getIncludeColumns());
 
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(listCommonRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5092,7 +5084,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", commonUtils.extractSortFieldFromPayload(listCommonRequest));
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.CONSOLIDATION_ROOT_KEY_NAME, commonUtils.extractSortFieldFromPayload(listCommonRequest));
 
         cq.multiselect(selections).distinct(true);
 
@@ -5114,23 +5106,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
-//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, ConsolidationDetails.class);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
+        List<ConsolidationDetails> consolList = new ArrayList<>();
+        for( Map<String, Object> curr : nestedList) {
+            ConsolidationDetails consol = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
+            consolList.add(consol);
+        }
 
-        // Step 9: Build final response map with data + pagination info
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("pageNo", pageNo);
-        response.put("pageSize", pageSize);
-        response.put("totalPages", totalPages);
-        response.put("totalCount", totalCount);
-//        response.put("data", nestedList);
-
-        return null;
+        List<IRunnerResponse> consolListResponses = new ArrayList<>();
+        for( ConsolidationDetails curr : consolList) {
+            IRunnerResponse shipmentListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+            consolListResponses.add(shipmentListResponse);
+        }
+        return ResponseHelper.buildListSuccessResponse(
+                consolListResponses,
+                totalPages,
+                totalCount);
     }
 
     @Override
-    public Map<String, Object> getConsolidationDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
+    public ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) {
+        List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(commonGetRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);
 
 //         Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5144,16 +5142,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", null);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.CONSOLIDATION_ROOT_KEY_NAME, null);
 
         cq.multiselect(selections).distinct(true);
 
         // Add filter by id if provided
-        if (request.getId() != null) {
-            Predicate idPredicate = cb.equal(root.get("id"), request.getId());
+        if (commonGetRequest.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
             cq.where(idPredicate);
-        } else if(request.getGuid() != null) {
-            Predicate idPredicate = cb.equal(root.get("guid"), request.getGuid());
+        } else if(commonGetRequest.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
             cq.where(idPredicate);
         }
 
@@ -5169,10 +5167,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
             finalResult.add(rowMap);
         }
-        Map<String, Object> response = new LinkedHashMap<>();
-//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
-//        ;
-//        response.put("data", nestedList);
-        return response;
-    }
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
+
+        ConsolidationDetails consolDetails = new ConsolidationDetails();
+        for( Map<String, Object> curr : nestedList) {
+            consolDetails = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
+
+        }
+        IRunnerResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+        return ResponseHelper.buildSuccessResponse(consolListResponse);    }
 }

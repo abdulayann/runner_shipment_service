@@ -859,7 +859,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails",  null);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  null);
 
         cq.multiselect(selections).distinct(true);
 
@@ -884,10 +884,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             finalResult.add(rowMap);
         }
-        Map<String, Object> response = new LinkedHashMap<>();
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
-        response.put("data", nestedList);
-        return null;
+        ShipmentDetails shipDetails = new ShipmentDetails();
+        for( Map<String, Object> curr : nestedList) {
+            shipDetails = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
+
+        }
+        IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(includeColumns), new ShipmentDetailsResponse());
+       return ResponseHelper.buildSuccessResponse(shipmentListResponse);
     }
 
 
