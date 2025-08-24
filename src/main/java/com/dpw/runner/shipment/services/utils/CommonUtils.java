@@ -842,7 +842,7 @@ public class CommonUtils {
     }
 
     public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
-        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+                                                 OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
 
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -852,7 +852,7 @@ public class CommonUtils {
 
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+                template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -1817,7 +1817,7 @@ public class CommonUtils {
     public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
-            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
+                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null && !auditLogList.isEmpty()){
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
             populateDGSenderDetailsFromAudit(changesMap, dictionary);
@@ -1918,27 +1918,27 @@ public class CommonUtils {
 
     public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
         MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
-            .builder()
-            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
-            .entityUuid(shipmentDetails.getGuid().toString())
-            .roleId(roleId)
-            .taskType(DG_OCEAN_APPROVAL)
-            .status(PENDING_ACTION_TASK)
-            .userId(UserContext.getUser().getUserId())
-            .isCreatedFromV2(true)
-            .sendEmail(false)
-            .build();
+                .builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityUuid(shipmentDetails.getGuid().toString())
+                .roleId(roleId)
+                .taskType(DG_OCEAN_APPROVAL)
+                .status(PENDING_ACTION_TASK)
+                .userId(UserContext.getUser().getUserId())
+                .isCreatedFromV2(true)
+                .sendEmail(false)
+                .build();
 
         try {
             MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
             return TaskCreateResponse
-                .builder()
-                .tasksId(mdmTaskCreateResponse.getId().toString())
-                .taskGuid(mdmTaskCreateResponse.getUuid())
-                .build();
+                    .builder()
+                    .tasksId(mdmTaskCreateResponse.getId().toString())
+                    .taskGuid(mdmTaskCreateResponse.getUuid())
+                    .build();
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
-                shipmentDetails.getId(), e.getMessage()));
+                    shipmentDetails.getId(), e.getMessage()));
         }
     }
 
@@ -2626,21 +2626,142 @@ public class CommonUtils {
     }
 
     public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
-        includeColumns.forEach(field -> {
+        // Separate collection fields (that need partial mapping) from regular nested fields
+        Set<String> regularFields = new HashSet<>();
+        Map<String, Set<String>> collectionFields = new HashMap<>();
+
+        for (String field : includeColumns) {
+            if (isCollectionFieldWithSubFields(field, includeColumns) && !field.contains("orgData") && !field.contains("addressData")) {
+                String rootField = field.split("\\.")[0];
+                collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
+            } else {
+                regularFields.add(field);
+            }
+        }
+
+        // Process regular nested fields (like client.orgData.FullName)
+        regularFields.forEach(field -> {
             try {
-                Object value = getNestedFieldValue(entity, field); // Get nested field value
+                Object value = getNestedFieldValue(entity, field);
                 if (value == null) {
                     return;
                 }
 
-                Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
+                // Use the enhanced mapToDTO that considers response type
+                Object dtoValue = mapToDTO(value, response, field);
                 setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
                 log.error("No such field: {}", field, e.getMessage());
             }
         });
 
+        // Process collection fields with partial mapping (like packingList.id, packingList.packs)
+        collectionFields.forEach((rootField, subFields) -> {
+            try {
+                Object value = getNestedFieldValue(entity, rootField);
+                if (value == null) {
+                    return;
+                }
+
+                Object dtoValue;
+                Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
+
+                if (value instanceof List<?>) {
+                    dtoValue = mapListWithSelectedFields((List<?>) value, subFieldNames);
+                } else if (value instanceof Set<?>) {
+                    dtoValue = mapSetWithSelectedFields((Set<?>) value, subFieldNames);
+                } else {
+                    dtoValue = mapToDTO(value);
+                }
+
+                setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
+            } catch (Exception e) {
+                log.error("No such field: {}", rootField, e.getMessage());
+            }
+        });
+
         return response;
+    }
+
+    // Helper method to identify if a field is a collection field that needs partial mapping
+    private boolean isCollectionFieldWithSubFields(String field, Set<String> includeColumns) {
+        if (!field.contains(".")) {
+            return false; // Not a nested field
+        }
+
+        String rootField = field.split("\\.")[0];
+
+        // Check if this root field appears multiple times with different sub-fields
+        // This indicates it's likely a collection that needs partial mapping
+        long subFieldCount = includeColumns.stream()
+                .filter(f -> f.startsWith(rootField + "."))
+                .count();
+
+        // If there are multiple sub-fields for the same root, it's likely a collection
+        // Also check if the root field alone is NOT in the includeColumns (indicating partial selection)
+        return subFieldCount > 1 && !includeColumns.contains(rootField);
+    }
+
+    // Helper method to get sub-fields for a root field
+    private Set<String> getSubFieldsForRoot(String rootField, Set<String> includeColumns) {
+        return includeColumns.stream()
+                .filter(field -> field.startsWith(rootField + "."))
+                .map(field -> field.substring(rootField.length() + 1))
+                .collect(Collectors.toSet());
+    }
+
+    // Method to map list with only selected fields
+    private Object mapListWithSelectedFields(List<?> list, Set<String> selectedFields) {
+        if (list.isEmpty()) return list;
+
+        List<Object> mappedList = new ArrayList<>();
+        for (Object item : list) {
+            Object mappedItem = mapToDTO(item); // First convert to DTO
+            if (mappedItem != null) {
+                Object partialItem = createPartialObject(mappedItem, selectedFields);
+                mappedList.add(partialItem);
+            }
+        }
+        return mappedList;
+    }
+
+    // Method to map set with only selected fields
+    private Object mapSetWithSelectedFields(Set<?> set, Set<String> selectedFields) {
+        if (set.isEmpty()) return set;
+
+        Set<Object> mappedSet = new HashSet<>();
+        for (Object item : set) {
+            Object mappedItem = mapToDTO(item); // First convert to DTO
+            if (mappedItem != null) {
+                Object partialItem = createPartialObject(mappedItem, selectedFields);
+                mappedSet.add(partialItem);
+            }
+        }
+        return mappedSet;
+    }
+
+    // Method to create partial object with only selected fields
+    private Object createPartialObject(Object source, Set<String> selectedFields) {
+        try {
+            // Create a Map to hold only the selected fields
+            Map<String, Object> partialObject = new HashMap<>();
+
+            for (String field : selectedFields) {
+                try {
+                    Object fieldValue = getNestedFieldValue(source, field);
+                    if (fieldValue != null) {
+                        partialObject.put(field, fieldValue);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not extract field {} from object: {}", field, e.getMessage());
+                }
+            }
+
+            return partialObject;
+        } catch (Exception e) {
+            log.error("Error creating partial object: {}", e.getMessage());
+            return source; // Return original object if partial creation fails
+        }
     }
 
     public Object mapToDTO(Object value) {
@@ -2654,12 +2775,79 @@ public class CommonUtils {
             return modelMapper.map(value, PartiesResponse.class);
         } else if (value instanceof ArrivalDepartureDetails) {
             return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+        } else if (value instanceof Packing) {
+            // Handle single Packing object
+            return modelMapper.map(value, PackingResponse.class);
         } else if (value instanceof List<?>) {
             return mapListToDTO(value);
         } else if (value instanceof Set) {
             return mapListToDTOSet(value);
         }
         return value; // Return as is if not mappable
+    }
+
+    // New overloaded method that considers the target response type
+    public Object mapToDTO(Object value, Object response, String fieldPath) {
+        if (value instanceof CarrierDetails) {
+            return modelMapper.map(value, CarrierDetailResponse.class);
+        } else if (value instanceof AdditionalDetails) {
+            // Check what type the response expects for this field
+            Class<?> expectedType = getExpectedFieldType(response, fieldPath);
+            if (expectedType != null && AdditionalDetailsListResponse.class.isAssignableFrom(expectedType)) {
+                return modelMapper.map(value, AdditionalDetailsListResponse.class);
+            } else {
+                return modelMapper.map(value, AdditionalDetailResponse.class);
+            }
+        } else if (value instanceof PickupDeliveryDetails) {
+            return modelMapper.map(value, PickupDeliveryDetailsResponse.class);
+        } else if (value instanceof Parties) {
+            return modelMapper.map(value, PartiesResponse.class);
+        } else if (value instanceof ArrivalDepartureDetails) {
+            return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+        } else if (value instanceof Packing) {
+            return modelMapper.map(value, PackingResponse.class);
+        } else if (value instanceof List<?>) {
+            return mapListToDTO(value);
+        } else if (value instanceof Set) {
+            return mapListToDTOSet(value);
+        }
+        return value; // Return as is if not mappable
+    }
+
+    // Helper method to get the expected field type from the response object
+    private Class<?> getExpectedFieldType(Object response, String fieldPath) {
+        try {
+            String[] fields = fieldPath.split("\\.");
+            Class<?> currentClass = response.getClass();
+
+            for (int i = 0; i < fields.length - 1; i++) {
+                Method getter = currentClass.getMethod("get" + capitalizeV3(fields[i]));
+                currentClass = getter.getReturnType();
+                if (currentClass == null) {
+                    return null;
+                }
+            }
+
+            String lastField = fields[fields.length - 1];
+            Method setter = findSetterMethod(currentClass, lastField);
+            if (setter != null && setter.getParameterCount() > 0) {
+                return setter.getParameterTypes()[0];
+            }
+        } catch (Exception e) {
+            log.debug("Could not determine expected field type for path: {}", fieldPath);
+        }
+        return null;
+    }
+
+    // Helper method to find setter method
+    private Method findSetterMethod(Class<?> clazz, String fieldName) {
+        String setterName = "set" + capitalizeV3(fieldName);
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                return method;
+            }
+        }
+        return null;
     }
 
     public Object mapListToDTOSet(Object value) {
@@ -2672,6 +2860,10 @@ public class CommonUtils {
         } else if (obj instanceof ConsolidationDetails) {
             return modelMapper.map(value, new TypeToken<Set<ConsolidationListResponse>>() {
             }.getType());
+        } else if (obj instanceof Packing) {
+            // Handle Set of Packing objects
+            return modelMapper.map(value, new TypeToken<Set<PackingResponse>>() {
+            }.getType());
         }
         return value;
     }
@@ -2680,46 +2872,49 @@ public class CommonUtils {
         List<?> list = (List<?>) value;
         if (list.isEmpty()) return value;
 
-        if (list.get(0) instanceof Containers) {
+        Object firstElement = list.get(0);
+
+        if (firstElement instanceof Containers) {
             return modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof BookingCarriage) {
+        } else if (firstElement instanceof BookingCarriage) {
             return modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ELDetails) {
+        } else if (firstElement instanceof ELDetails) {
             return modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Events) {
+        } else if (firstElement instanceof Events) {
             return modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Packing) {
+        } else if (firstElement instanceof Packing) {
+            // Handle List of Packing objects (this should cover packingList)
             return modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ReferenceNumbers) {
+        } else if (firstElement instanceof ReferenceNumbers) {
             return modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Routings) {
+        } else if (firstElement instanceof Routings) {
             return modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ServiceDetails) {
+        } else if (firstElement instanceof ServiceDetails) {
             return modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof TruckDriverDetails) {
+        } else if (firstElement instanceof TruckDriverDetails) {
             return modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Notes) {
+        } else if (firstElement instanceof Notes) {
             return modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Jobs) {
+        } else if (firstElement instanceof Jobs) {
             return modelMapper.map(value, new TypeToken<List<JobResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ConsolidationDetails) {
+        } else if (firstElement instanceof ConsolidationDetails) {
             return modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Parties) {
+        } else if (firstElement instanceof Parties) {
             return modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ShipmentOrder) {
+        } else if (firstElement instanceof ShipmentOrder) {
             return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
             }.getType());
         }
@@ -2727,27 +2922,117 @@ public class CommonUtils {
     }
 
     private Object checkForTriangulationPartnerList(Object value, List<?> list) {
-        if (list.get(0) instanceof TriangulationPartner) {
+        if (!list.isEmpty() && list.get(0) instanceof TriangulationPartner) {
             return modelMapper.map(value, new TypeToken<List<TriangulationPartnerResponse>>() {
             }.getType());
         }
         return value;
     }
 
+    // Enhanced getNestedFieldValue method with better error handling
+    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
+        String[] fields = fieldPath.split("\\.");
+        Object value = object;
+
+        for (int i = 0; i < fields.length; i++) {
+            String field = fields[i];
+            if (value == null) {
+                log.debug("Null value encountered at field: {} in path: {}", field, fieldPath);
+                return null;
+            }
+
+            try {
+                // Handle List/Collection access with numeric index
+                if (value instanceof List<?> && isNumeric(field)) {
+                    List<?> list = (List<?>) value;
+                    int index = Integer.parseInt(field);
+                    if (index >= 0 && index < list.size()) {
+                        value = list.get(index);
+                    } else {
+                        log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), fieldPath);
+                        return null;
+                    }
+                }
+                // Handle List/Collection access - return the entire list
+                else if (value instanceof List<?>) {
+                    // For lists, we just return the entire list
+                    // The selective field mapping is now handled in setIncludedFieldsToResponse
+                    if (i == fields.length - 1) {
+                        return value; // Return the entire list
+                    } else {
+                        // This shouldn't happen with proper field paths, but handle gracefully
+                        log.debug("Unexpected nested access on List at field: {} in path: {}", field, fieldPath);
+                        return null;
+                    }
+                }
+                // Handle Map access
+                else if (value instanceof Map) {
+                    value = ((Map<?, ?>) value).get(field);
+                }
+                // Handle regular object field access
+                else {
+                    Method getter = findGetter(value.getClass(), field);
+                    if (getter != null) {
+                        value = getter.invoke(value);
+                    } else {
+                        throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+                    }
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                log.error("Error accessing field: {} in path: {}", field, fieldPath, e);
+                throw new RuntimeException("Error accessing field: " + field, e);
+            }
+        }
+        return value;
+    }
+
+    // Helper method to find getter with multiple naming conventions
+    private Method findGetter(Class<?> clazz, String fieldName) {
+        String capitalizedField = capitalizeV3(fieldName);
+
+        // Try standard getter patterns
+        String[] getterNames = {
+                "get" + capitalizedField,
+                "is" + capitalizedField,
+                fieldName // Direct field name for some cases
+        };
+
+        for (String getterName : getterNames) {
+            try {
+                return clazz.getMethod(getterName);
+            } catch (NoSuchMethodException e) {
+                // Continue trying other patterns
+            }
+        }
+        return null;
+    }
+
+    // Helper method to check if string is numeric
+    private boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // Enhanced setNestedFieldValue with better error handling
     public void setNestedFieldValue(Object object, String fieldPath, Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         String[] fields = fieldPath.split("\\.");
         Object target = object;
 
         for (int i = 0; i < fields.length - 1; i++) {
+            String field = fields[i];
             Method getter;
             try {
-                getter = target.getClass().getMethod("get" + capitalizeV3(fields[i]));
+                getter = target.getClass().getMethod("get" + capitalizeV3(field));
             } catch (NoSuchMethodException e) {
                 // If no getter exists, assume it's a Map field
                 if (target instanceof Map) {
                     Map<String, Object> mapTarget = (Map<String, Object>) target;
-                    mapTarget.putIfAbsent(fields[i], new HashMap<>());
-                    target = mapTarget.get(fields[i]);
+                    mapTarget.putIfAbsent(field, new HashMap<>());
+                    target = mapTarget.get(field);
                     continue;
                 } else {
                     throw e; // Rethrow exception if it's not a map
@@ -2756,9 +3041,13 @@ public class CommonUtils {
             Object nextTarget = getter.invoke(target);
 
             if (nextTarget == null) {
-                Method setter = target.getClass().getMethod("set" + capitalizeV3(fields[i]), getter.getReturnType());
+                Method setter = target.getClass().getMethod("set" + capitalizeV3(field), getter.getReturnType());
                 if (Map.class.isAssignableFrom(getter.getReturnType())) {
                     nextTarget = new HashMap<>(); // Initialize Map
+                } else if (List.class.isAssignableFrom(getter.getReturnType())) {
+                    nextTarget = new ArrayList<>(); // Initialize List
+                } else if (Set.class.isAssignableFrom(getter.getReturnType())) {
+                    nextTarget = new HashSet<>(); // Initialize Set
                 } else {
                     nextTarget = getter.getReturnType().getDeclaredConstructor().newInstance();
                 }
@@ -2768,7 +3057,6 @@ public class CommonUtils {
         }
 
         String lastField = fields[fields.length - 1];
-
         setTargetValue(value, target, lastField);
     }
 
@@ -2776,56 +3064,57 @@ public class CommonUtils {
         if (target instanceof Map) {
             ((Map<String, Object>) target).put(lastField, value);
         } else {
-            Method setter;
-            try {
-                // Use Map.class for flexibility in map types
-                if (value instanceof Map) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), Map.class);
-                } else if (value instanceof List) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), List.class);
-                } else if (value instanceof Set) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), Set.class);
-                } else {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), value.getClass());
-                }
+            Method setter = findSetter(target.getClass(), lastField, value);
+            if (setter != null) {
                 setter.invoke(target, value);
-            } catch (NoSuchMethodException e) {
+            } else {
                 throw new NoSuchMethodException("No setter found for field: " + lastField + " in " + target.getClass().getSimpleName());
             }
         }
     }
 
-    /**
-     * Recursively gets a nested field value using reflection.
-     */
-    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
-        String[] fields = fieldPath.split("\\.");
-        Object value = object;
+    // Enhanced setter finder
+    private Method findSetter(Class<?> clazz, String fieldName, Object value) {
+        String capitalizedField = capitalizeV3(fieldName);
+        String setterName = "set" + capitalizedField;
 
-        for (String field : fields) {
-            if (value == null) {
-                return null;
-            }
+        // Try different parameter types
+        Class<?>[] paramTypes = {
+                value != null ? value.getClass() : Object.class,
+                Object.class,
+                Map.class,
+                List.class,
+                Set.class
+        };
+
+        for (Class<?> paramType : paramTypes) {
             try {
-                // Attempt to get value using getter method
-                Method getter = value.getClass().getMethod("get" + capitalizeV3(field));
-                value = getter.invoke(value);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                // If no getter exists, check if it's a Map and retrieve value by key
-                if (value instanceof Map) {
-                    value = ((Map<?, ?>) value).get(field);
-                } else {
-                    throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+                return clazz.getMethod(setterName, paramType);
+            } catch (NoSuchMethodException e) {
+                // Continue trying other parameter types
+            }
+        }
+
+        // Try to find any setter with the right name
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                Class<?> paramType = method.getParameterTypes()[0];
+                if (value == null || paramType.isAssignableFrom(value.getClass())) {
+                    return method;
                 }
             }
         }
-        return value;
+
+        return null;
     }
 
     /**
      * Capitalizes the first letter of a string.
      */
     public String capitalizeV3(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
@@ -2843,7 +3132,6 @@ public class CommonUtils {
         includeColumns.add("id");
         includeColumns.add("guid");
     }
-
     public static BigDecimal roundBigDecimal(BigDecimal number, int decimalPlaces, RoundingMode roundingMode) {
         return number.setScale(decimalPlaces, roundingMode);
     }
@@ -3166,51 +3454,51 @@ public class CommonUtils {
         return collections;
     }
     public Map<String, Object> extractRequestedColumns(List<String> includeColumns, String mainEntityKey) {
-            if (includeColumns.isEmpty()) {
-              return new HashMap<>();
-            }
+        if (includeColumns.isEmpty()) {
+            return new HashMap<>();
+        }
 
         Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
-            Map<String, Object> entityColumnsMap = new HashMap<>();
+        Map<String, Object> entityColumnsMap = new HashMap<>();
 
-            for (String column : includeColumns) {
-                String[] parts = column.split("\\.");
+        for (String column : includeColumns) {
+            String[] parts = column.split("\\.");
 
-                if (parts.length == 1) {
-                    if (validEntityKeys.contains(parts[0])) {
-                        entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
-                        // For child entities, empty list means "include all fields"
-                    }
-                    // Root-level field: belongs to shipmentDetails or mainEntityKey
-                   else if (validEntityKeys.contains(mainEntityKey)) {
-                        entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
-                        List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
-                        fields.add(parts[0]);
-                    }
+            if (parts.length == 1) {
+                if (validEntityKeys.contains(parts[0])) {
+                    entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
+                    // For child entities, empty list means "include all fields"
+                }
+                // Root-level field: belongs to shipmentDetails or mainEntityKey
+                else if (validEntityKeys.contains(mainEntityKey)) {
+                    entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
+                    List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
+                    fields.add(parts[0]);
+                }
+            } else {
+                // Nested field
+                String topLevelEntity = parts[0];
+
+                if (!validEntityKeys.contains(topLevelEntity)) {
+                    continue; // Skip unknown entities
+                }
+
+                // If it's two levels deep, store as List<String>
+                if (parts.length == 2) {
+                    entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<String>());
+                    List<String> fields = (List<String>) entityColumnsMap.get(topLevelEntity);
+                    fields.add(parts[1]);
                 } else {
-                    // Nested field
-                    String topLevelEntity = parts[0];
-
-                    if (!validEntityKeys.contains(topLevelEntity)) {
-                        continue; // Skip unknown entities
-                    }
-
-                    // If it's two levels deep, store as List<String>
-                    if (parts.length == 2) {
-                        entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<String>());
-                        List<String> fields = (List<String>) entityColumnsMap.get(topLevelEntity);
-                        fields.add(parts[1]);
-                    } else {
-                        // Deep nesting (3 or more parts)
-                        // We assume structure like pickupDetails.transporterDetail.orgData.FullName
-                        Map<String, Object> nested = (Map<String, Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new HashMap<String, Object>());
-                        buildNestedMap(nested, parts, 1);
-                    }
+                    // Deep nesting (3 or more parts)
+                    // We assume structure like pickupDetails.transporterDetail.orgData.FullName
+                    Map<String, Object> nested = (Map<String, Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new HashMap<String, Object>());
+                    buildNestedMap(nested, parts, 1);
                 }
             }
-
-            return entityColumnsMap;
         }
+
+        return entityColumnsMap;
+    }
 
     @SuppressWarnings("unchecked")
     private void buildNestedMap(Map<String, Object> currentMap, String[] parts, int index) {
@@ -3538,7 +3826,7 @@ public class CommonUtils {
         return message.toString();
     }
     public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
-                                                      Root<T> root,
+                                                                               Root<T> root,
                                                                                ListCommonRequest listCommonRequest) {
         List<Predicate> predicates = new ArrayList<>();
 
@@ -3547,89 +3835,89 @@ public class CommonUtils {
         for (FilterCriteria group : filterCriteria) {
             List<FilterCriteria> innerFilterObj = group.getInnerFilter();
 //            if (innerFilterObj instanceof List) {
-                Predicate innerPredicate = null;
-                for (FilterCriteria inner :   innerFilterObj) {
-                    Criteria critMap = inner.getCriteria();
-                    String fieldName = critMap.getFieldName();
-                    String operator = critMap.getOperator();
-                    Object value = critMap.getValue();
+            Predicate innerPredicate = null;
+            for (FilterCriteria inner :   innerFilterObj) {
+                Criteria critMap = inner.getCriteria();
+                String fieldName = critMap.getFieldName();
+                String operator = critMap.getOperator();
+                Object value = critMap.getValue();
 
-                    Predicate p = switch (operator.trim().toLowerCase()) {
-                        case "="  -> cb.equal(root.get(fieldName), value);
-                        case "!=" -> cb.notEqual(root.get(fieldName), value);
-                        case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
-                        case ">" -> {
-                            if (value instanceof String string) {
-                                yield cb.greaterThan(root.get(fieldName), string);
-                            } else if (value instanceof Number number) {
-                                yield cb.gt(root.get(fieldName), number);
-                            } else if (value instanceof Date date) {
-                                yield cb.greaterThan(root.get(fieldName),  date);
-                            } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.greaterThan(root.get(fieldName), localDateTime);
-                            } else {
-                                throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
-                            }
+                Predicate p = switch (operator.trim().toLowerCase()) {
+                    case "="  -> cb.equal(root.get(fieldName), value);
+                    case "!=" -> cb.notEqual(root.get(fieldName), value);
+                    case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
+                    case ">" -> {
+                        if (value instanceof String string) {
+                            yield cb.greaterThan(root.get(fieldName), string);
+                        } else if (value instanceof Number number) {
+                            yield cb.gt(root.get(fieldName), number);
+                        } else if (value instanceof Date date) {
+                            yield cb.greaterThan(root.get(fieldName),  date);
+                        } else if (value instanceof LocalDateTime localDateTime) {
+                            yield cb.greaterThan(root.get(fieldName), localDateTime);
+                        } else {
+                            throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
                         }
+                    }
 
-                        case "<" -> {
-                            if (value instanceof String string) {
-                                yield cb.lessThan(root.get(fieldName), string);
-                            } else if (value instanceof Number number) {
-                                yield cb.lt(root.get(fieldName), number);
-                            } else if (value instanceof Date date) {
-                                yield cb.lessThan(root.get(fieldName),  date);
-                            } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.lessThan(root.get(fieldName), localDateTime);
-                            }  else {
-                                throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
-                            }
+                    case "<" -> {
+                        if (value instanceof String string) {
+                            yield cb.lessThan(root.get(fieldName), string);
+                        } else if (value instanceof Number number) {
+                            yield cb.lt(root.get(fieldName), number);
+                        } else if (value instanceof Date date) {
+                            yield cb.lessThan(root.get(fieldName),  date);
+                        } else if (value instanceof LocalDateTime localDateTime) {
+                            yield cb.lessThan(root.get(fieldName), localDateTime);
+                        }  else {
+                            throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
                         }
+                    }
 
-                        case ">=" -> {
-                            if (value instanceof String string) {
-                                yield cb.greaterThanOrEqualTo(root.get(fieldName), string);
-                            } else if (value instanceof Number number) {
-                                yield cb.gt(root.get(fieldName), number);
-                            } else if (value instanceof Date date) {
-                                yield cb.greaterThanOrEqualTo(root.get(fieldName),  date);
-                            } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
-                            } else {
-                                throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
-                            }
+                    case ">=" -> {
+                        if (value instanceof String string) {
+                            yield cb.greaterThanOrEqualTo(root.get(fieldName), string);
+                        } else if (value instanceof Number number) {
+                            yield cb.gt(root.get(fieldName), number);
+                        } else if (value instanceof Date date) {
+                            yield cb.greaterThanOrEqualTo(root.get(fieldName),  date);
+                        } else if (value instanceof LocalDateTime localDateTime) {
+                            yield cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
+                        } else {
+                            throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
                         }
+                    }
 
-                        case "<=" -> {
-                            if (value instanceof String string) {
-                                yield cb.lessThanOrEqualTo(root.get(fieldName), string);
-                            } else if (value instanceof Number number) {
-                                yield cb.lt(root.get(fieldName), number);
-                            } else if (value instanceof Date date) {
-                                yield cb.lessThanOrEqualTo(root.get(fieldName),  date);
-                            } else if (value instanceof LocalDateTime localDateTime) {
-                                yield cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
-                            }  else {
-                                throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
-                            }
+                    case "<=" -> {
+                        if (value instanceof String string) {
+                            yield cb.lessThanOrEqualTo(root.get(fieldName), string);
+                        } else if (value instanceof Number number) {
+                            yield cb.lt(root.get(fieldName), number);
+                        } else if (value instanceof Date date) {
+                            yield cb.lessThanOrEqualTo(root.get(fieldName),  date);
+                        } else if (value instanceof LocalDateTime localDateTime) {
+                            yield cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
+                        }  else {
+                            throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
                         }
-                        case "contains" -> cb.isMember(value, root.get(fieldName));
-                        case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
-                        case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
-                        case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
-                        case "in" -> root.get(fieldName).in((Collection<?>) value);
-                        case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
-                        case "isnull" -> cb.isNull(root.get(fieldName));
-                        case "isnotnull" -> cb.isNotNull(root.get(fieldName));
-                        default -> null;
-                    };
+                    }
+                    case "contains" -> cb.isMember(value, root.get(fieldName));
+                    case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
+                    case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
+                    case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
+                    case "in" -> root.get(fieldName).in((Collection<?>) value);
+                    case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
+                    case "isnull" -> cb.isNull(root.get(fieldName));
+                    case "isnotnull" -> cb.isNotNull(root.get(fieldName));
+                    default -> null;
+                };
 
-                    innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
-                }
-                if (innerPredicate != null) {
-                    predicates.add(innerPredicate);
-                }
+                innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
             }
+            if (innerPredicate != null) {
+                predicates.add(innerPredicate);
+            }
+        }
 //        }
         return predicates;
     }
