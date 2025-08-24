@@ -832,7 +832,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<IRunnerResponse> shipmentListResponses = new ArrayList<>();
         for( ShipmentDetails curr : shiplist) {
-            IRunnerResponse shipmentListResponse = (ShipmentListResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentListResponse());
+            IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentDetailsResponse());
             shipmentListResponses.add(shipmentListResponse);
         }
    return ResponseHelper.buildListSuccessResponse(
