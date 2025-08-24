@@ -327,13 +327,14 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     @Override
     public void restore(Integer tenantId) {
-
+        log.info("Executing shipment restore tasks for tenantId: {}", tenantId);
         Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
         if (allBackupShipmentIds.isEmpty()) {
             return;
         }
+        log.info("Fetched all shipment ids to restore...");
         shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
-
+        log.info("Deleted additional shipments...");
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
 
@@ -358,9 +359,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                     }
                 }))
                 .toList();
-
+        log.info("Waiting for all shipment restore tasks to complete...");
         futureCompletion(shipmentFutures);
-        log.info("Completed shipment backup for tenant: {}", tenantId);
+        log.info("Completed shipment restore for tenant: {}", tenantId);
     }
 
 
