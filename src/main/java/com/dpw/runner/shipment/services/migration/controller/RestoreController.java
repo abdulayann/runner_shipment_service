@@ -22,8 +22,8 @@ public class RestoreController {
     private TenantDataRestoreService restoreService;
 
     @PostMapping
-    public ResponseEntity<String> backupTenantData(@RequestParam Integer tenantId, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+    public ResponseEntity<String> backupTenantData(@RequestParam Integer tenantId, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey, @RequestParam Integer count) {
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        return restoreService.restoreTenantDataAsync(tenantId);
+        return restoreService.restoreTenantDataAsync(tenantId, count);
     }
 }
