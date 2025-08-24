@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -5026,9 +5027,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         int pageNo = listCommonRequest.getPageNo();
         int pageSize =  Optional.of(listCommonRequest.getPageSize()).orElse(25);
         int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+        List<String> includeColumns = commonUtils.refineIncludeColumns(listCommonRequest.getIncludeColumns());
 
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(listCommonRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);
 
         // Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5049,7 +5051,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", commonUtils.extractSortFieldFromPayload(listCommonRequest));
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.CONSOLIDATION_ROOT_KEY_NAME, commonUtils.extractSortFieldFromPayload(listCommonRequest));
 
         cq.multiselect(selections).distinct(true);
 
@@ -5071,23 +5073,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
-//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, ConsolidationDetails.class);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
+        List<ConsolidationDetails> consolList = new ArrayList<>();
+        for( Map<String, Object> curr : nestedList) {
+            ConsolidationDetails consol = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
+            consolList.add(consol);
+        }
 
-        // Step 9: Build final response map with data + pagination info
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("pageNo", pageNo);
-        response.put("pageSize", pageSize);
-        response.put("totalPages", totalPages);
-        response.put("totalCount", totalCount);
-//        response.put("data", nestedList);
-
-        return null;
+        List<IRunnerResponse> consolListResponses = new ArrayList<>();
+        for( ConsolidationDetails curr : consolList) {
+            IRunnerResponse shipmentListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+            consolListResponses.add(shipmentListResponse);
+        }
+        return ResponseHelper.buildListSuccessResponse(
+                consolListResponses,
+                totalPages,
+                totalCount);
     }
 
     @Override
-    public Map<String, Object> getConsolidationDetails(CommonGetRequest commonGetRequest, ShipmentDynamicRequest request) {
+    public ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) {
+        List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
-        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(commonGetRequest.getIncludeColumns(), ShipmentConstants.CONSOLIDATION_DETAILS);
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);
 
 //         Step 2: Auto-fill empty column lists with all columns
         commonUtils.fillEmptyColumnLists(requestedColumns);
@@ -5101,16 +5109,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>(); // to store column names in order
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "consolidationDetails", null);
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.CONSOLIDATION_ROOT_KEY_NAME, null);
 
         cq.multiselect(selections).distinct(true);
 
         // Add filter by id if provided
-        if (request.getId() != null) {
-            Predicate idPredicate = cb.equal(root.get("id"), request.getId());
+        if (commonGetRequest.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
             cq.where(idPredicate);
-        } else if(request.getGuid() != null) {
-            Predicate idPredicate = cb.equal(root.get("guid"), request.getGuid());
+        } else if(commonGetRequest.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
             cq.where(idPredicate);
         }
 
@@ -5126,114 +5134,116 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
             finalResult.add(rowMap);
         }
-        Map<String, Object> response = new LinkedHashMap<>();
-//        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
-//        ;
-//        response.put("data", nestedList);
-        return response;
-    }
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
 
-    private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
-                                            Set<ShipmentRequestedType> requestedTypes, String remarks) {
-        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
-        Set<Integer> tenantIds = new HashSet<>();
-        Set<String> userNames = new HashSet<>();
+        ConsolidationDetails consolDetails = new ConsolidationDetails();
+        for( Map<String, Object> curr : nestedList) {
+            consolDetails = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
 
-        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
-        List<Long> interbranchShipIds = new ArrayList<>();
-        for(ShipmentDetails shipmentDetails1 : shipment) {
-            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
-            userNames.add(shipmentDetails1.getCreatedBy());
-            userNames.add(shipmentDetails1.getAssignedTo());
-            tenantIds.add(shipmentDetails1.getTenantId());
-            if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
-                interbranchShipIds.add(shipmentDetails1.getId());
         }
-        userNames.add(consoleDetails.getCreatedBy());
+        IRunnerResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(includeColumns), new ConsolidationDetailsResponse());
+        return ResponseHelper.buildSuccessResponse(consolListResponse);    }
 
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
-        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
+                                         Set<ShipmentRequestedType> requestedTypes, String remarks) {
+    Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
+    Map<String, String> usernameEmailsMap = new HashMap<>();
+    Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
+    Set<Integer> tenantIds = new HashSet<>();
+    Set<String> userNames = new HashSet<>();
 
-        for(Long shipmentId : interbranchShipIds) {
-            try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
-            } catch (Exception e) {
-                log.error("Error while sending email");
-            }
-        }
+    Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+    List<Long> interbranchShipIds = new ArrayList<>();
+    for(ShipmentDetails shipmentDetails1 : shipment) {
+        shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+        userNames.add(shipmentDetails1.getCreatedBy());
+        userNames.add(shipmentDetails1.getAssignedTo());
+        tenantIds.add(shipmentDetails1.getTenantId());
+        if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
+            interbranchShipIds.add(shipmentDetails1.getId());
     }
+    userNames.add(consoleDetails.getCreatedBy());
 
-    @Override
-    public ConsolidationDetailsV3Response getDefaultConsolidation(){
-        try{
-            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
-            // Populate the shipment details data on the basis of tenant settings
-            ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
-            response.setCarrierDetails(new CarrierDetailResponse());
-            response.setTransportMode(tenantSettings.getDefaultTransportMode());
-            response.setContainerCategory(tenantSettings.getDefaultContainerType());
-            response.setShipmentType(tenantSettings.getDefaultShipmentType());
-            response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
-                response.setModeOfBooking(Constants.INTTRA);
-            }
+    var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
+    var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+    var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
+    CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
-            // for AIR transportMode, setting default STD consolidationType
-            if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode())){
-                response.setConsolidationType(Constants.CONSOLIDATION_TYPE_STD);
-            }
-            response.setCreatedAt(LocalDateTime.now());
-            response.setCreatedBy(UserContext.getUser().getUsername());
-            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
-
-            // Populate default department
-            response.setDepartment(commonUtils.getAutoPopulateDepartment(
-                    response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
-            ));
-
-            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
-            response.setMasterDataMap(masterDataResponse);
-            setTenantAndDefaultAgent(response);
-            return response;
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
-            log.error(responseMsg, e);
-            throw new GenericException(e.getMessage());
-        }
-    }
-
-    public void setTenantAndDefaultAgent(ConsolidationDetailsV3Response response) {
+    for(Long shipmentId : interbranchShipIds) {
         try {
-            log.info("Fetching Tenant Model using V1");
-            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-            Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
-                            EntityTransferConstants.ID,
-                            StringUtility.convertToString(tenantModel.getUnloco())
-                    ))
-                    .filter(list -> !list.isEmpty())
-                    .map(list -> list.get(0).getLocationsReferenceGUID())
-                    .ifPresent(response::setPlaceOfIssue);
-
-            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
-            if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
-                response.setSendingAgent(partiesResponse);
-                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get(Constants.TENANTID)!=null)
-                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get(Constants.TENANTID).toString()));
-            } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
-                response.setReceivingAgent(partiesResponse);
-            }
-        } catch (Exception e){
-            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+        } catch (Exception e) {
+            log.error("Error while sending email");
         }
     }
+}
 
-    private boolean shouldGenerateBol(String transportMode) {
-        return !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode);
+@Override
+public ConsolidationDetailsV3Response getDefaultConsolidation(){
+    try{
+        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+        // Populate the shipment details data on the basis of tenant settings
+        ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+        response.setCarrierDetails(new CarrierDetailResponse());
+        response.setTransportMode(tenantSettings.getDefaultTransportMode());
+        response.setContainerCategory(tenantSettings.getDefaultContainerType());
+        response.setShipmentType(tenantSettings.getDefaultShipmentType());
+        response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
+        if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
+            response.setModeOfBooking(Constants.INTTRA);
+        }
+
+        // for AIR transportMode, setting default STD consolidationType
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode())){
+            response.setConsolidationType(Constants.CONSOLIDATION_TYPE_STD);
+        }
+        response.setCreatedAt(LocalDateTime.now());
+        response.setCreatedBy(UserContext.getUser().getUsername());
+        response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+        // Populate default department
+        response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+        ));
+
+        Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
+        response.setMasterDataMap(masterDataResponse);
+        setTenantAndDefaultAgent(response);
+        return response;
+    } catch (Exception e) {
+        String responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+        log.error(responseMsg, e);
+        throw new GenericException(e.getMessage());
     }
+}
 
+public void setTenantAndDefaultAgent(ConsolidationDetailsV3Response response) {
+    try {
+        log.info("Fetching Tenant Model using V1");
+        TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                        EntityTransferConstants.ID,
+                        StringUtility.convertToString(tenantModel.getUnloco())
+                ))
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.get(0).getLocationsReferenceGUID())
+                .ifPresent(response::setPlaceOfIssue);
+
+        PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+        if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
+            response.setSendingAgent(partiesResponse);
+            if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get(Constants.TENANTID)!=null)
+                response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get(Constants.TENANTID).toString()));
+        } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
+            response.setReceivingAgent(partiesResponse);
+        }
+    } catch (Exception e){
+        log.error("Failed in fetching tenant data from V1 with error : {}", e);
+    }
+}
+
+private boolean shouldGenerateBol(String transportMode) {
+    return !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode);
+}
 }
