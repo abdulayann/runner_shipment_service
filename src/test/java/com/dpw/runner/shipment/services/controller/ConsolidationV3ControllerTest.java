@@ -49,6 +49,9 @@ class ConsolidationV3ControllerTest {
   @InjectMocks
   private ConsolidationV3Controller controller;
 
+  @InjectMocks
+  private ConsolidationControllerExternal controller2;
+
   @Mock
   private IConsolidationV3Service consolidationV3Service;
 
