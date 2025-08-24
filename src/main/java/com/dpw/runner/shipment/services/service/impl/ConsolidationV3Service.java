@@ -5097,13 +5097,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (sortOrder != null) {
             cq.orderBy(sortOrder);
         }
-
+        long start = System.currentTimeMillis();
         // Step 7: Execute paginated query
         List<Object[]> results = entityManager.createQuery(cq)
                 .setFirstResult((pageNo - 1) * pageSize)
                 .setMaxResults(pageSize)
                 .getResultList();
-
+        log.info("Time taken in executing query: {} ms, filterCriteria: {}", (System.currentTimeMillis()-start), listCommonRequest.getFilterCriteria().toString());
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
@@ -5156,8 +5156,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         TypedQuery<Object[]> query = entityManager.createQuery(cq);
+        long start = System.currentTimeMillis();
         List<Object[]> results = query.getResultList();
-
+        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", (System.currentTimeMillis()-start), commonGetRequest.getId(), commonGetRequest.getGuid());
         // Convert result list to List<Map<String, Object>>
         List<Map<String, Object>> finalResult = new ArrayList<>();
         for (Object[] row : results) {
