@@ -3818,11 +3818,12 @@ public class CommonUtils {
                                                                                ListCommonRequest listCommonRequest) {
         List<Predicate> predicates = new ArrayList<>();
 
+        predicates.add(cb.equal(root.get("tenantId"), UserContext.getUser().getTenantId()));
+        predicates.add(cb.isFalse(root.get("isDeleted")));
         List<FilterCriteria> filterCriteria = listCommonRequest.getFilterCriteria();
 
         for (FilterCriteria group : filterCriteria) {
             List<FilterCriteria> innerFilterObj = group.getInnerFilter();
-//            if (innerFilterObj instanceof List) {
             Predicate innerPredicate = null;
             for (FilterCriteria inner :   innerFilterObj) {
                 Criteria critMap = inner.getCriteria();
