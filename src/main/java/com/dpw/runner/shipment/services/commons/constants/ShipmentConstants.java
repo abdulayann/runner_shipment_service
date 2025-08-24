@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.commons.constants;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import org.apache.kafka.common.protocol.types.Field;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -184,6 +183,7 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS = "shipmentDetails";
     public static final String CONSOLIDATION_DETAILS = "consolidationDetails";
     public static final String TRANSPORTER_DETAIL = "transporterDetail";
+    private static final String CONSOLIDATION_DETAILS_SET = "consolidationList";
     public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
             Map.entry(SHIPMENT_DETAILS, ShipmentDetails.class),
             Map.entry(Constants.ADDITIONAL_DETAILS, AdditionalDetails.class),
@@ -208,6 +208,7 @@ public class ShipmentConstants {
             Map.entry(SHIPMENT_ORDERS, ShipmentOrder.class),
             Map.entry(PICKUP_DELIVERY_DETAILS_INSTRUCTIONS, PickupDeliveryDetails.class),
             Map.entry(CONSOLIDATION_DETAILS, ConsolidationDetails.class),
+            Map.entry(CONSOLIDATION_DETAILS_SET, ConsolidationDetails.class),
             Map.entry(FILE_REPO_LIST, FileRepo.class),
             Map.entry(CONSOLIDATION_ADDRESSES, Parties.class),
             Map.entry(Constants.CONTAINERS_LIST, Containers.class),
