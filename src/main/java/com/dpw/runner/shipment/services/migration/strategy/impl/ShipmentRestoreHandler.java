@@ -328,15 +328,30 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     @Override
     public void restore(Integer tenantId) {
         log.info("Executing shipment restore tasks for tenantId: {}", tenantId);
-        Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
-        if (allBackupShipmentIds.isEmpty()) {
+
+        // Step 1: Wrap initial cleanup in a single transaction
+        Set<Long> nonAttachedShipmentIds = trxExecutor.runInTrx(() -> {
+            Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
+            if (allBackupShipmentIds.isEmpty()) {
+                return Set.of(); // no shipments to restore
+            }
+
+            log.info("delete all additional  shipment ids to restore...");
+            shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
+            log.info("Deleted additional shipments...");
+
+            Set<Long> ids = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
+            log.info("revert extra shipment ids...");
+            shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(ids), tenantId);
+            log.info("revert extra shipment ids completed...");
+
+            return ids;
+        });
+
+        if (nonAttachedShipmentIds.isEmpty()) {
+            log.info("No shipments to restore for tenant: {}", tenantId);
             return;
         }
-        log.info("Fetched all shipment ids to restore...");
-        shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
-        log.info("Deleted additional shipments...");
-        Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
-        shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
 
         log.info("Count of no restore shipment ids data : {}", nonAttachedShipmentIds.size());
         List<CompletableFuture<Object>> shipmentFutures = nonAttachedShipmentIds.stream()

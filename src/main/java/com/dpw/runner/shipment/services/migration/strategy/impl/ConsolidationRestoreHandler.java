@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -78,24 +77,37 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     public void restore(Integer tenantId) {
 
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
+        // STEP 1: Cleanup in a single transaction to prevent leaks
+        Set<Long> activeConsolidationIds = trxExecutor.runInTrx(() -> {
+            List<ConsolidationBackupEntity> backupEntities = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
 
-        List<ConsolidationBackupEntity> consolidationBackupEntities = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
-        Set<Long> consolidationIds = consolidationBackupEntities.stream().map(ConsolidationBackupEntity::getConsolidationId)
-                .collect(Collectors.toSet());
+            if (backupEntities.isEmpty()) {
+                log.info("No consolidation records found for tenant: {}", tenantId);
+                return Collections.emptySet();
+            }
 
-        log.info("Total consolidation IDS : {}", consolidationIds.size());
-        if (consolidationIds.isEmpty()) {
-            log.info("No consolidation records found for tenant: {}", tenantId);
-            return;
-        }
-        log.info("Fetched all consolidation ids to restore...");
-        consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
-        log.info("Deleted additional consolidation...");
-        consolidationIds = consolidationBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
-                .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
-        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
+            Set<Long> allIds = backupEntities.stream()
+                    .map(ConsolidationBackupEntity::getConsolidationId)
+                    .collect(Collectors.toSet());
 
-        List<CompletableFuture<Object>> consolefutures = consolidationIds.stream()
+            // Cleanup old records
+            log.info("Delete additional consolidation ids.....");
+            consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(allIds), tenantId);
+            log.info("Delete additional consolidation ids completed.....");
+
+            // Mark active IDs (not soft-deleted)
+            Set<Long> activeIds = backupEntities.stream()
+                    .filter(e -> !e.getIsDeleted())
+                    .map(ConsolidationBackupEntity::getConsolidationId)
+                    .collect(Collectors.toSet());
+            log.info("Revert soft delete query.....");
+            consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(activeIds), tenantId);
+            log.info("Revert soft delete query compelted.....");
+
+            return activeIds;
+        });
+
+        List<CompletableFuture<Object>> consolefutures = activeConsolidationIds.stream()
                 .map(id -> trxExecutor.runInAsyncForConsole(() -> {
                     try {
                         v1Service.setAuthContext();
