@@ -77,40 +77,21 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
     @Override
     public void restore(Integer tenantId) {
 
-        log.info("Executing customer booking restore for tenantId: {}", tenantId);
+        List<CustomerBookingBackupEntity> customerBookingBackupEntities = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        Set<Long> allBackupBookingIds = customerBookingBackupEntities.stream().map(CustomerBookingBackupEntity::getBookingId)
+                .collect(Collectors.toSet());
+        log.info("Count of booking ids : {}", allBackupBookingIds.size());
+        if (allBackupBookingIds.isEmpty()) {
+            return;
+        }
+        customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
-        // Step 1: Perform cleanup in a single transaction
-        Set<Long> bookingIdsToRestore = trxExecutor.runInTrx(() -> {
-            List<CustomerBookingBackupEntity> backupEntities =
-                    backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        allBackupBookingIds =  customerBookingBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
+                .map(CustomerBookingBackupEntity::getBookingId).collect(Collectors.toSet());
+        customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
 
-            Set<Long> allBackupBookingIds = backupEntities.stream()
-                    .map(CustomerBookingBackupEntity::getBookingId)
-                    .collect(Collectors.toSet());
-
-            log.info("Count of booking ids: {}", allBackupBookingIds.size());
-            if (allBackupBookingIds.isEmpty()) {
-                return Set.of();
-            }
-
-            // Delete additional bookings not present in backup
-            customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
-
-            // Collect non-deleted booking IDs for restoration
-            Set<Long> activeIds = backupEntities.stream()
-                    .filter(entity -> !entity.getIsDeleted())
-                    .map(CustomerBookingBackupEntity::getBookingId)
-                    .collect(Collectors.toSet());
-
-            // Revert soft deletes for these bookings
-            customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(activeIds, tenantId);
-
-            log.info("Count of active booking ids to restore: {}", activeIds.size());
-            return activeIds;
-        });
-
-        log.info("Count of no restore booking ids data : {}", bookingIdsToRestore.size());
-        List<CompletableFuture<Object>> bookingFutures = bookingIdsToRestore.stream()
+        log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
+        List<CompletableFuture<Object>> bookingFutures = allBackupBookingIds.stream()
                 .map(id -> trxExecutor.runInAsyncForBooking(() -> {
                     try {
                         v1Service.setAuthContext();
