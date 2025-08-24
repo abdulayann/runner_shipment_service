@@ -721,6 +721,8 @@ public class Constants {
     public static final String PACKING_GROUP = "packingGroup";
     public static final String ORG_DATA = "orgData";
     public static final String ADDRESS_DATA = "addressData";
+    public static final String SHIPMENT_ROOT_KEY_NAME = "shipmentDetails";
+    public static final String DOT = ".";
 
     private Constants() {
     }
