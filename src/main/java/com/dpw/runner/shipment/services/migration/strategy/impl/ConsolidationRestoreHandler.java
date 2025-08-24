@@ -88,9 +88,9 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             log.info("No consolidation records found for tenant: {}", tenantId);
             return;
         }
-
+        log.info("Fetched all consolidation ids to restore...");
         consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
-
+        log.info("Deleted additional consolidation...");
         consolidationIds = consolidationBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
                 .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
@@ -120,9 +120,9 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                     }
                 }))
                 .toList();
-
+        log.info("Waiting for all consolidation restore tasks to complete...");
         futureCompletion(consolefutures);
-        log.info("Completed consolidation backup for tenant: {}", tenantId);
+        log.info("Completed consolidation restore for tenant: {}", tenantId);
     }
 
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
