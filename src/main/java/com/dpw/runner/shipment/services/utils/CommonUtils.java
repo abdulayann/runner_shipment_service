@@ -2623,64 +2623,151 @@ public class CommonUtils {
         }
     }
 
-    public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
-        // Separate collection fields (that need partial mapping) from regular nested fields
-        Set<String> regularFields = new HashSet<>();
-        Map<String, Set<String>> collectionFields = new HashMap<>();
+//    public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
+//        // Separate collection fields (that need partial mapping) from regular nested fields
+//        Set<String> regularFields = new HashSet<>();
+//        Map<String, Set<String>> collectionFields = new HashMap<>();
+//
+//        for (String field : includeColumns) {
+//            if (isCollectionFieldWithSubFields(field, includeColumns) && !field.contains("orgData") && !field.contains("addressData")) {
+//                String rootField = field.split("\\.")[0];
+//                collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
+//            } else {
+//                regularFields.add(field);
+//            }
+//        }
+//
+//        // Process regular nested fields (like client.orgData.FullName)
+//        regularFields.forEach(field -> {
+//            try {
+//                Object value = getNestedFieldValue(entity, field);
+//                if (value == null) {
+//                    return;
+//                }
+//
+//                // Use the enhanced mapToDTO that considers response type
+//                Object dtoValue = mapToDTO(value, response, field);
+//                setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
+//            } catch (Exception e) {
+//                log.error("No such field: {}", field, e.getMessage());
+//            }
+//        });
+//
+//        // Process collection fields with partial mapping (like packingList.id, packingList.packs)
+//        collectionFields.forEach((rootField, subFields) -> {
+//            try {
+//                Object value = getNestedFieldValue(entity, rootField);
+//                if (value == null) {
+//                    return;
+//                }
+//
+//                Object dtoValue;
+//                Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
+//
+//                if (value instanceof List<?>) {
+//                    dtoValue = mapListWithSelectedFields((List<?>) value, subFieldNames);
+//                } else if (value instanceof Set<?>) {
+//                    dtoValue = mapSetWithSelectedFields((Set<?>) value, subFieldNames);
+//                } else {
+//                    dtoValue = mapToDTO(value);
+//                }
+//
+//                setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
+//            } catch (Exception e) {
+//                log.error("No such field: {}", rootField, e.getMessage());
+//            }
+//        });
+//
+//        return response;
+//    }
+public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
+    FieldClassifier classifier = classifyFields(includeColumns);
+
+    processRegularFields(entity, classifier.regularFields, response);
+    processCollectionFields(entity, classifier.collectionFields, response);
+
+    return response;
+}
+
+    private FieldClassifier classifyFields(Set<String> includeColumns) {
+        FieldClassifier classifier = new FieldClassifier();
 
         for (String field : includeColumns) {
-            if (isCollectionFieldWithSubFields(field, includeColumns) && !field.contains("orgData") && !field.contains("addressData")) {
-                String rootField = field.split("\\.")[0];
-                collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
+            if (isCollectionFieldRequiringPartialMapping(field, includeColumns)) {
+                classifier.addCollectionField(field);
             } else {
-                regularFields.add(field);
+                classifier.addRegularField(field);
             }
         }
 
-        // Process regular nested fields (like client.orgData.FullName)
-        regularFields.forEach(field -> {
-            try {
-                Object value = getNestedFieldValue(entity, field);
-                if (value == null) {
-                    return;
-                }
-
-                // Use the enhanced mapToDTO that considers response type
-                Object dtoValue = mapToDTO(value, response, field);
-                setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
-            } catch (Exception e) {
-                log.error("No such field: {}", field, e.getMessage());
-            }
-        });
-
-        // Process collection fields with partial mapping (like packingList.id, packingList.packs)
-        collectionFields.forEach((rootField, subFields) -> {
-            try {
-                Object value = getNestedFieldValue(entity, rootField);
-                if (value == null) {
-                    return;
-                }
-
-                Object dtoValue;
-                Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
-
-                if (value instanceof List<?>) {
-                    dtoValue = mapListWithSelectedFields((List<?>) value, subFieldNames);
-                } else if (value instanceof Set<?>) {
-                    dtoValue = mapSetWithSelectedFields((Set<?>) value, subFieldNames);
-                } else {
-                    dtoValue = mapToDTO(value);
-                }
-
-                setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
-            } catch (Exception e) {
-                log.error("No such field: {}", rootField, e.getMessage());
-            }
-        });
-
-        return response;
+        return classifier;
     }
 
+    private boolean isCollectionFieldRequiringPartialMapping(String field, Set<String> allFields) {
+        return isCollectionFieldWithSubFields(field, allFields)
+                && !field.contains("orgData")
+                && !field.contains("addressData");
+    }
+
+    private void processRegularFields(Object entity, Set<String> regularFields, Object response) {
+        regularFields.forEach(field -> processRegularField(entity, field, response));
+    }
+
+    private void processRegularField(Object entity, String field, Object response) {
+        try {
+            Object value = getNestedFieldValue(entity, field);
+            if (value == null) return;
+
+            Object dtoValue = mapToDTO(value, response, field);
+            setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
+        } catch (Exception e) {
+            log.error("Failed to process regular field: {}", field, e);
+        }
+    }
+
+    private void processCollectionFields(Object entity, Map<String, Set<String>> collectionFields, Object response) {
+        collectionFields.forEach((rootField, subFields) ->
+                processCollectionField(entity, rootField, subFields, response));
+    }
+
+    private void processCollectionField(Object entity, String rootField, Set<String> subFields, Object response) {
+        try {
+            Object value = getNestedFieldValue(entity, rootField);
+            if (value == null) return;
+
+            Object dtoValue = createCollectionDTO(value, rootField, subFields);
+            setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
+        } catch (Exception e) {
+            log.error("Failed to process collection field: {}", rootField, e);
+        }
+    }
+
+    private Object createCollectionDTO(Object value, String rootField, Set<String> subFields) {
+        Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
+
+        if (value instanceof List<?>) {
+            return mapListWithSelectedFields((List<?>) value, subFieldNames);
+        } else if (value instanceof Set<?>) {
+            return mapSetWithSelectedFields((Set<?>) value, subFieldNames);
+        } else {
+            return mapToDTO(value);
+        }
+    }
+
+    // Helper class to organize field classification
+    private static class FieldClassifier {
+        final Set<String> regularFields = new HashSet<>();
+        final Map<String, Set<String>> collectionFields = new HashMap<>();
+
+        void addRegularField(String field) {
+            regularFields.add(field);
+        }
+
+        void addCollectionField(String field) {
+            String rootField = field.split("\\.")[0];
+            collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
+        }
+    }
     // Helper method to identify if a field is a collection field that needs partial mapping
     private boolean isCollectionFieldWithSubFields(String field, Set<String> includeColumns) {
         if (!field.contains(".")) {
@@ -2927,63 +3014,72 @@ public class CommonUtils {
         return value;
     }
 
-    // Enhanced getNestedFieldValue method with better error handling
     public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
         String[] fields = fieldPath.split("\\.");
-        Object value = object;
+        Object currentValue = object;
 
         for (int i = 0; i < fields.length; i++) {
-            String field = fields[i];
-            if (value == null) {
-                log.debug("Null value encountered at field: {} in path: {}", field, fieldPath);
+            currentValue = getFieldValue(currentValue, fields[i], fieldPath, i == fields.length - 1);
+            if (currentValue == null) {
                 return null;
             }
-
-            try {
-                // Handle List/Collection access with numeric index
-                if (value instanceof List<?> && isNumeric(field)) {
-                    List<?> list = (List<?>) value;
-                    int index = Integer.parseInt(field);
-                    if (index >= 0 && index < list.size()) {
-                        value = list.get(index);
-                    } else {
-                        log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), fieldPath);
-                        return null;
-                    }
-                }
-                // Handle List/Collection access - return the entire list
-                else if (value instanceof List<?>) {
-                    // For lists, we just return the entire list
-                    // The selective field mapping is now handled in setIncludedFieldsToResponse
-                    if (i == fields.length - 1) {
-                        return value; // Return the entire list
-                    } else {
-                        // This shouldn't happen with proper field paths, but handle gracefully
-                        log.debug("Unexpected nested access on List at field: {} in path: {}", field, fieldPath);
-                        return null;
-                    }
-                }
-                // Handle Map access
-                else if (value instanceof Map) {
-                    value = ((Map<?, ?>) value).get(field);
-                }
-                // Handle regular object field access
-                else {
-                    Method getter = findGetter(value.getClass(), field);
-                    if (getter != null) {
-                        value = getter.invoke(value);
-                    } else {
-                        throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
-                    }
-                }
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                log.error("Error accessing field: {} in path: {}", field, fieldPath, e);
-                throw new RuntimeException("Error accessing field: " + field, e);
-            }
         }
-        return value;
+        return currentValue;
     }
 
+    private Object getFieldValue(Object value, String field, String fullPath, boolean isLastField) throws NoSuchMethodException {
+        if (value == null) {
+            log.debug("Null value encountered at field: {} in path: {}", field, fullPath);
+            return null;
+        }
+
+        try {
+            if (value instanceof List<?>) {
+                return handleListAccess((List<?>) value, field, fullPath, isLastField);
+            } else if (value instanceof Map) {
+                return handleMapAccess((Map<?, ?>) value, field);
+            } else {
+                return handleObjectAccess(value, field);
+            }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            log.error("Error accessing field: {} in path: {}", field, fullPath, e);
+            throw new RuntimeException("Error accessing field: " + field, e);
+        }
+    }
+
+    private Object handleListAccess(List<?> list, String field, String fullPath, boolean isLastField) {
+        if (isNumeric(field)) {
+            return getListElementByIndex(list, field, fullPath);
+        } else if (isLastField) {
+            return list; // Return entire list for final field
+        } else {
+            log.debug("Unexpected nested access on List at field: {} in path: {}", field, fullPath);
+            return null;
+        }
+    }
+
+    private Object getListElementByIndex(List<?> list, String field, String fullPath) {
+        int index = Integer.parseInt(field);
+        if (index >= 0 && index < list.size()) {
+            return list.get(index);
+        } else {
+            log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), fullPath);
+            return null;
+        }
+    }
+
+    private Object handleMapAccess(Map<?, ?> map, String field) {
+        return map.get(field);
+    }
+
+    private Object handleObjectAccess(Object value, String field) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Method getter = findGetter(value.getClass(), field);
+        if (getter != null) {
+            return getter.invoke(value);
+        } else {
+            throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+        }
+    }
     // Helper method to find getter with multiple naming conventions
     private Method findGetter(Class<?> clazz, String fieldName) {
         String capitalizedField = capitalizeV3(fieldName);
@@ -3463,16 +3559,7 @@ public class CommonUtils {
             String[] parts = column.split("\\.");
 
             if (parts.length == 1) {
-                if (validEntityKeys.contains(parts[0])) {
-                    entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
-                    // For child entities, empty list means "include all fields"
-                }
-                // Root-level field: belongs to shipmentDetails or mainEntityKey
-                else if (validEntityKeys.contains(mainEntityKey)) {
-                    entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
-                    List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
-                    fields.add(parts[0]);
-                }
+                extractCoulmnMap(mainEntityKey, validEntityKeys, parts, entityColumnsMap);
             } else {
                 // Nested field
                 String topLevelEntity = parts[0];
@@ -3496,6 +3583,19 @@ public class CommonUtils {
         }
 
         return entityColumnsMap;
+    }
+
+    private static void extractCoulmnMap(String mainEntityKey, Set<String> validEntityKeys, String[] parts, Map<String, Object> entityColumnsMap) {
+        if (validEntityKeys.contains(parts[0])) {
+            entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
+            // For child entities, empty list means "include all fields"
+        }
+        // Root-level field: belongs to shipmentDetails or mainEntityKey
+        else if (validEntityKeys.contains(mainEntityKey)) {
+            entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
+            List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
+            fields.add(parts[0]);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -3590,101 +3690,122 @@ public class CommonUtils {
 
             // Process each field
             for (Map.Entry<String, Object> entry : flatRow.entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-
-                if (!key.startsWith(rootKeyValue) || value == null) {
-                    continue;
-                }
-
-                String[] parts = key.substring(rootKeyValue.length()).split("\\.");
-
-                if (parts.length == 1) {
-                    // Direct field on shipment
-                    entityMap.put(parts[0], value);
-                } else if (parts.length == 2 && collectionRelationships.contains(parts[0])) {
-                    // Collection field like consolidationList.id
-                    String collectionName = parts[0];
-                    String fieldName = parts[1];
-
-                    List<Map<String, Object>> collection =
-                            (List<Map<String, Object>>) entityMap.get(collectionName);
-
-                    if (ID.equals(fieldName)) {
-                        // Find or create object with this ID
-                        boolean exists = collection.stream()
-                                .anyMatch(obj -> Objects.equals(obj.get(ID), value));
-
-                        if (!exists) {
-                            Map<String, Object> newObj = new LinkedHashMap<>();
-                            newObj.put(ID, value);
-                            collection.add(newObj);
-                        }
-                    } else {
-                        // Find object by ID and set the field
-                        String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
-                        Object childId = flatRow.get(idKey);
-
-                        if (childId != null) {
-                            Map<String, Object> childObj = collection.stream()
-                                    .filter(obj -> Objects.equals(obj.get(ID), childId))
-                                    .findFirst()
-                                    .orElseGet(() -> {
-                                        Map<String, Object> newObj = new LinkedHashMap<>();
-                                        newObj.put(ID, childId);
-                                        collection.add(newObj);
-                                        return newObj;
-                                    });
-                            childObj.put(fieldName, value);
-                        }
-                    }
-                } else if (parts.length > 2 && collectionRelationships.contains(parts[0])) {
-                    // Nested fields within collections (e.g., consolidationList.address.city)
-                    String collectionName = parts[0];
-
-                    List<Map<String, Object>> collection =
-                            (List<Map<String, Object>>) entityMap.get(collectionName);
-
-                    String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
-                    Object childId = flatRow.get(idKey);
-
-                    if (childId != null) {
-                        Map<String, Object> childObj = collection.stream()
-                                .filter(obj -> Objects.equals(obj.get(ID), childId))
-                                .findFirst()
-                                .orElseGet(() -> {
-                                    Map<String, Object> newObj = new LinkedHashMap<>();
-                                    newObj.put(ID, childId);
-                                    collection.add(newObj);
-                                    return newObj;
-                                });
-
-                        // Build nested structure within child object
-                        Map<String, Object> current = childObj;
-                        for (int i = 1; i < parts.length - 1; i++) {
-                            current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
-                        }
-                        current.put(parts[parts.length - 1], value);
-                    }
-                } else if (parts.length > 1) {
-                    // Regular nested objects (non-collection)
-                    Map<String, Object> current = entityMap;
-                    for (int i = 0; i < parts.length - 1; i++) {
-                        current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
-                    }
-                    current.put(parts[parts.length - 1], value);
-                }
+                ProcessFields(collectionRelationships, flatRow, entry, rootKeyValue, entityMap);
             }
         }
 
         // Convert to final format
         List<Map<String, Object>> finalList = new ArrayList<>();
-        for (Map<String, Object> data : parentMapById.values()) {
-            finalList.add(Collections.singletonMap(rootKey, data));
-        }
+        MapFinalList(rootKey, parentMapById, finalList);
 
         return finalList;
     }
+
+    private static void ProcessFields(Set<String> collectionRelationships, Map<String, Object> flatRow, Map.Entry<String, Object> entry, String rootKeyValue, Map<String, Object> entityMap) {
+        String key = entry.getKey();
+        Object value = entry.getValue();
+
+        if (!key.startsWith(rootKeyValue) || value == null) {
+            return;
+        }
+
+        String[] parts = key.substring(rootKeyValue.length()).split("\\.");
+
+        if (parts.length == 1) {
+            // Direct field on shipment
+            entityMap.put(parts[0], value);
+        } else if (parts.length == 2 && collectionRelationships.contains(parts[0])) {
+            // Collection field like consolidationList.id
+            HandleNonNestedFields(flatRow, parts, entityMap, value, rootKeyValue);
+        } else if (parts.length > 2 && collectionRelationships.contains(parts[0])) {
+            // Nested fields within collections (e.g., consolidationList.address.city)
+            HandleNestedFields(flatRow, parts, entityMap, rootKeyValue, value);
+        } else if (parts.length > 1) {
+            // Regular nested objects (non-collection)
+            HandlerNestedNonCollectionObject(entityMap, parts, value);
+        }
+    }
+
+    private static void MapFinalList(String rootKey, Map<Object, Map<String, Object>> parentMapById, List<Map<String, Object>> finalList) {
+        for (Map<String, Object> data : parentMapById.values()) {
+            finalList.add(Collections.singletonMap(rootKey, data));
+        }
+    }
+
+    private static void HandlerNestedNonCollectionObject(Map<String, Object> entityMap, String[] parts, Object value) {
+        Map<String, Object> current = entityMap;
+        for (int i = 0; i < parts.length - 1; i++) {
+            current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
+        }
+        current.put(parts[parts.length - 1], value);
+    }
+
+    private static void HandleNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, String rootKeyValue, Object value) {
+        String collectionName = parts[0];
+
+        List<Map<String, Object>> collection =
+                (List<Map<String, Object>>) entityMap.get(collectionName);
+
+        String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
+        Object childId = flatRow.get(idKey);
+
+        if (childId != null) {
+            Map<String, Object> childObj = collection.stream()
+                    .filter(obj -> Objects.equals(obj.get(ID), childId))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Map<String, Object> newObj = new LinkedHashMap<>();
+                        newObj.put(ID, childId);
+                        collection.add(newObj);
+                        return newObj;
+                    });
+
+            // Build nested structure within child object
+            Map<String, Object> current = childObj;
+            for (int i = 1; i < parts.length - 1; i++) {
+                current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
+            }
+            current.put(parts[parts.length - 1], value);
+        }
+    }
+
+    private static void HandleNonNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, Object value, String rootKeyValue) {
+        String collectionName = parts[0];
+        String fieldName = parts[1];
+
+        List<Map<String, Object>> collection =
+                (List<Map<String, Object>>) entityMap.get(collectionName);
+
+        if (ID.equals(fieldName)) {
+            // Find or create object with this ID
+            boolean exists = collection.stream()
+                    .anyMatch(obj -> Objects.equals(obj.get(ID), value));
+
+            if (!exists) {
+                Map<String, Object> newObj = new LinkedHashMap<>();
+                newObj.put(ID, value);
+                collection.add(newObj);
+            }
+        } else {
+            // Find object by ID and set the field
+            String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
+            Object childId = flatRow.get(idKey);
+
+            if (childId != null) {
+                Map<String, Object> childObj = collection.stream()
+                        .filter(obj -> Objects.equals(obj.get(ID), childId))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            Map<String, Object> newObj = new LinkedHashMap<>();
+                            newObj.put(ID, childId);
+                            collection.add(newObj);
+                            return newObj;
+                        });
+                childObj.put(fieldName, value);
+            }
+        }
+    }
+
     public List<String> refineIncludeColumns(List<String> includeColumns) {
         return includeColumns.stream()
                 .map(column -> {
@@ -3871,101 +3992,137 @@ public class CommonUtils {
 
         return message.toString();
     }
-    public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(CriteriaBuilder cb,
-                                                                               Root<T> root,
-                                                                               ListCommonRequest listCommonRequest) {
-        List<Predicate> predicates = new ArrayList<>();
 
+    public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(
+            CriteriaBuilder cb,
+            Root<T> root,
+            ListCommonRequest listCommonRequest) {
+        List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(root.get("tenantId"), UserContext.getUser().getTenantId()));
         List<FilterCriteria> filterCriteria = listCommonRequest.getFilterCriteria();
 
         for (FilterCriteria group : filterCriteria) {
-            List<FilterCriteria> innerFilterObj = group.getInnerFilter();
-            Predicate innerPredicate = null;
-            for (FilterCriteria inner :   innerFilterObj) {
-                Criteria critMap = inner.getCriteria();
-                String fieldName = critMap.getFieldName();
-                String operator = critMap.getOperator();
-                Object value = critMap.getValue();
-
-                Predicate p = switch (operator.trim().toLowerCase()) {
-                    case "="  -> cb.equal(root.get(fieldName), value);
-                    case "!=" -> cb.notEqual(root.get(fieldName), value);
-                    case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
-                    case ">" -> {
-                        if (value instanceof String string) {
-                            yield cb.greaterThan(root.get(fieldName), string);
-                        } else if (value instanceof Number number) {
-                            yield cb.gt(root.get(fieldName), number);
-                        } else if (value instanceof Date date) {
-                            yield cb.greaterThan(root.get(fieldName),  date);
-                        } else if (value instanceof LocalDateTime localDateTime) {
-                            yield cb.greaterThan(root.get(fieldName), localDateTime);
-                        } else {
-                            throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
-                        }
-                    }
-
-                    case "<" -> {
-                        if (value instanceof String string) {
-                            yield cb.lessThan(root.get(fieldName), string);
-                        } else if (value instanceof Number number) {
-                            yield cb.lt(root.get(fieldName), number);
-                        } else if (value instanceof Date date) {
-                            yield cb.lessThan(root.get(fieldName),  date);
-                        } else if (value instanceof LocalDateTime localDateTime) {
-                            yield cb.lessThan(root.get(fieldName), localDateTime);
-                        }  else {
-                            throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
-                        }
-                    }
-
-                    case ">=" -> {
-                        if (value instanceof String string) {
-                            yield cb.greaterThanOrEqualTo(root.get(fieldName), string);
-                        } else if (value instanceof Number number) {
-                            yield cb.gt(root.get(fieldName), number);
-                        } else if (value instanceof Date date) {
-                            yield cb.greaterThanOrEqualTo(root.get(fieldName),  date);
-                        } else if (value instanceof LocalDateTime localDateTime) {
-                            yield cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
-                        } else {
-                            throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
-                        }
-                    }
-
-                    case "<=" -> {
-                        if (value instanceof String string) {
-                            yield cb.lessThanOrEqualTo(root.get(fieldName), string);
-                        } else if (value instanceof Number number) {
-                            yield cb.lt(root.get(fieldName), number);
-                        } else if (value instanceof Date date) {
-                            yield cb.lessThanOrEqualTo(root.get(fieldName),  date);
-                        } else if (value instanceof LocalDateTime localDateTime) {
-                            yield cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
-                        }  else {
-                            throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
-                        }
-                    }
-                    case "contains" -> cb.isMember(value, root.get(fieldName));
-                    case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
-                    case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
-                    case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
-                    case "in" -> root.get(fieldName).in((Collection<?>) value);
-                    case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
-                    case "isnull" -> cb.isNull(root.get(fieldName));
-                    case "isnotnull" -> cb.isNotNull(root.get(fieldName));
-                    default -> null;
-                };
-
-                innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
-            }
+            Predicate innerPredicate = buildInnerPredicate(cb, root, group.getInnerFilter());
             if (innerPredicate != null) {
                 predicates.add(innerPredicate);
             }
         }
-//        }
         return predicates;
+    }
+
+    private Predicate buildInnerPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            List<FilterCriteria> innerFilterObj) {
+        Predicate innerPredicate = null;
+        for (FilterCriteria inner : innerFilterObj) {
+            Criteria critMap = inner.getCriteria();
+            String fieldName = critMap.getFieldName();
+            String operator = critMap.getOperator();
+            Object value = critMap.getValue();
+
+            Predicate p = buildPredicateForOperator(cb, root, fieldName, operator, value);
+            innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
+        }
+        return innerPredicate;
+    }
+
+    private Predicate buildPredicateForOperator(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            String operator,
+            Object value) {
+        return switch (operator.trim().toLowerCase()) {
+            case "=" -> cb.equal(root.get(fieldName), value);
+            case "!=" -> cb.notEqual(root.get(fieldName), value);
+            case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
+            case ">" -> buildGreaterThanPredicate(cb, root, fieldName, value);
+            case "<" -> buildLessThanPredicate(cb, root, fieldName, value);
+            case ">=" -> buildGreaterThanOrEqualPredicate(cb, root, fieldName, value);
+            case "<=" -> buildLessThanOrEqualPredicate(cb, root, fieldName, value);
+            case "contains" -> cb.isMember(value, root.get(fieldName));
+            case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
+            case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
+            case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
+            case "in" -> root.get(fieldName).in((Collection<?>) value);
+            case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
+            case "isnull" -> cb.isNull(root.get(fieldName));
+            case "isnotnull" -> cb.isNotNull(root.get(fieldName));
+            default -> null;
+        };
+    }
+
+    private Predicate buildGreaterThanPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.greaterThan(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.gt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.greaterThan(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.greaterThan(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildLessThanPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.lessThan(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.lt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.lessThan(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.lessThan(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildGreaterThanOrEqualPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.gt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildLessThanOrEqualPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.lt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
+        }
     }
     private Predicate calculateInnerPredicate(CriteriaBuilder cb, FilterCriteria inner, Predicate innerPredicate, Predicate p) {
         if (innerPredicate == null) {

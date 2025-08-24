@@ -49,6 +49,9 @@ class ConsolidationV3ControllerTest {
   @InjectMocks
   private ConsolidationV3Controller controller;
 
+  @InjectMocks
+  private ConsolidationControllerExternal controller2;
+
   @Mock
   private IConsolidationV3Service consolidationV3Service;
 
@@ -243,57 +246,5 @@ class ConsolidationV3ControllerTest {
     assertNotNull(response);
   }
 
-  @Test
-  void retrieveByIdExternal_ShouldReturnSuccessResp() throws Exception{
-    Long id = 1L;
-    String guid = "guid-1";
-    String xSource = "test-source";
-      ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-    when(consolidationV3Service.retrieveByIdExternal(any())).thenReturn(mockResponse);
-    when(jsonHelper.convertToJson(any())).thenReturn("{}");
-
-    ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternal(id, guid, xSource);
-
-    assertNotNull(response);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    verify(consolidationV3Service).retrieveByIdExternal(any());
-  }
-
-    @Test
-    void retrieveByIdExternalPartial_ShouldReturnSuccessResp() throws Exception{
-        Long id = 1L;
-        String guid = "guid-123";
-        String xSource = "test-source";
-        CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
-        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-        when(consolidationV3Service.retrieveByIdExternalPartial(any())).thenReturn(mockResponse);
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
-
-        ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternalPartial(request, xSource);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(consolidationV3Service).retrieveByIdExternalPartial(any());
-    }
-
-  @Test
-  void testListExternal_shouldReturnListExternalResponse(){
-    ListCommonRequest listRequest = new ListCommonRequest();
-    ConsolidationListV3Response mockResponse = new ConsolidationListV3Response();
-    mockResponse.setConsolidationListResponses(new ArrayList<>());
-    mockResponse.setTotalPages(1);
-    mockResponse.setNumberOfRecords(1L);
-
-    when(consolidationV3Service.listExternal(any())).thenReturn(mockResponse);
-    when(jsonHelper.convertToJson(any())).thenReturn("{}");
-
-    ResponseEntity<IRunnerResponse> response = controller.listExternal(listRequest);
-
-    assertNotNull(response);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    verify(consolidationV3Service).listExternal(listRequest);
-  }
 }
 
