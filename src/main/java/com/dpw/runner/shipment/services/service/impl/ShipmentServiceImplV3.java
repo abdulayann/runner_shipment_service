@@ -104,7 +104,6 @@ import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.actuate.solr.SolrHealthIndicator;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
@@ -806,7 +805,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
-        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, "shipmentDetails",  commonUtils.extractSortFieldFromPayload(listCommonRequest));
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  commonUtils.extractSortFieldFromPayload(listCommonRequest));
 
         cq.multiselect(selections).distinct(true);
 
@@ -828,11 +827,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
-        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
         List<ShipmentDetails> shiplist = new ArrayList<>();
         for( Map<String, Object> curr : nestedList) {
-            ShipmentDetails ship = jsonHelper.convertValue(curr.get("shipmentDetails"), ShipmentDetails.class);
-            System.out.println("Shipments: " + ship.toString());
+            ShipmentDetails ship = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
             shiplist.add(ship);
         }
 
@@ -841,22 +839,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IRunnerResponse shipmentListResponse = (ShipmentListResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentListResponse());
             shipmentListResponses.add(shipmentListResponse);
         }
-//        List<IRunnerResponse> filteredList = convertEntityListToDtoList( jsonHelper.convertValueToList(nestedList, ShipmentDetails.class), false, shipmentListResponses,  requestedColumns.keySet());
-//
-        return ResponseHelper.buildListSuccessResponse(
+   return ResponseHelper.buildListSuccessResponse(
                 shipmentListResponses,
                 totalPages,
                 totalCount);
-
-//         Step 9: Build final response map with data + pagination info
-//        Map<String, Object> response = new LinkedHashMap<>();
-//        response.put("pageNo", pageNo);
-//        response.put("pageSize", pageSize);
-//        response.put("totalPages", totalPages);
-//        response.put("totalCount", totalCount);
-//        response.put("data", shipmentListResponses);
-//
-//        return response;
     }
 
     @Override
@@ -903,7 +889,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             finalResult.add(rowMap);
         }
         Map<String, Object> response = new LinkedHashMap<>();
-        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
         response.put("data", nestedList);
         return null;
     }

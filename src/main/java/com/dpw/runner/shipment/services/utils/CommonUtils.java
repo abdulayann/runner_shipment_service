@@ -91,7 +91,6 @@ import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
@@ -132,7 +131,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
@@ -3547,58 +3545,35 @@ public class CommonUtils {
     public Object ensureIdInCollection(Object value) {
         if (value instanceof List) {
             List<String> list = (List<String>) value;
-            if (!list.isEmpty() && !list.contains("id")) {
-                list.add("id");
+            if (!list.isEmpty() && !list.contains(ID)) {
+                list.add(ID);
             }
             return list;
         } else if (value instanceof Set) {
             Set<String> set = (Set<String>) value;
-            if(!set.isEmpty() && !set.contains("id")) {
-                set.add("id");
+            if(!set.isEmpty() && !set.contains(ID)) {
+                set.add(ID);
             }
             return set;
         }
         return value;
     }
-
-    // Usage
-    public boolean isEmpty(Object value) {
-        if (value instanceof List) {
-            List<?> list = (List<?>) value;
-            if (list.isEmpty()) return true;
-            ensureIdInCollection(value);
-            return false;
-        }
-        if (value instanceof Set) {
-            Set<?> set = (Set<?>) value;
-            if (set.isEmpty()) return true;
-            ensureIdInCollection(value);
-            return false;
-        }
-        if (value instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>) value;
-            if (map.isEmpty()) return true;
-            ensureIdInCollection(value);
-            return false;
-        }
-        return false;
-    }
     // Helper method to convert flat map -> nested map
     public List<Map<String, Object>> convertToNestedMapWithCollections(
             List<Map<String, Object>> flatList,
-            Set<String> collectionRelationships
-    ) {
+            Set<String> collectionRelationships,
+            String rootKey) {
         Map<Object, Map<String, Object>> parentMapById = new LinkedHashMap<>();
-
+        String rootKeyValue = rootKey+Constants.DOT;
         for (Map<String, Object> flatRow : flatList) {
-            Object parentId = flatRow.get("shipmentDetails.id");
+            Object parentId = flatRow.get(rootKeyValue+ID);
 
-            Map<String, Object> shipmentMap =
+            Map<String, Object> entityMap =
                     parentMapById.computeIfAbsent(parentId, k -> new LinkedHashMap<>());
 
             // Initialize collection arrays
             for (String collKey : collectionRelationships) {
-                shipmentMap.putIfAbsent(collKey, new ArrayList<>());
+                entityMap.putIfAbsent(collKey, new ArrayList<>());
             }
 
             // Process each field
@@ -3606,45 +3581,45 @@ public class CommonUtils {
                 String key = entry.getKey();
                 Object value = entry.getValue();
 
-                if (!key.startsWith("shipmentDetails.") || value == null) {
+                if (!key.startsWith(rootKeyValue) || value == null) {
                     continue;
                 }
 
-                String[] parts = key.substring("shipmentDetails.".length()).split("\\.");
+                String[] parts = key.substring(rootKeyValue.length()).split("\\.");
 
                 if (parts.length == 1) {
                     // Direct field on shipment
-                    shipmentMap.put(parts[0], value);
+                    entityMap.put(parts[0], value);
                 } else if (parts.length == 2 && collectionRelationships.contains(parts[0])) {
                     // Collection field like consolidationList.id
                     String collectionName = parts[0];
                     String fieldName = parts[1];
 
                     List<Map<String, Object>> collection =
-                            (List<Map<String, Object>>) shipmentMap.get(collectionName);
+                            (List<Map<String, Object>>) entityMap.get(collectionName);
 
-                    if ("id".equals(fieldName)) {
+                    if (ID.equals(fieldName)) {
                         // Find or create object with this ID
                         boolean exists = collection.stream()
-                                .anyMatch(obj -> Objects.equals(obj.get("id"), value));
+                                .anyMatch(obj -> Objects.equals(obj.get(ID), value));
 
                         if (!exists) {
                             Map<String, Object> newObj = new LinkedHashMap<>();
-                            newObj.put("id", value);
+                            newObj.put(ID, value);
                             collection.add(newObj);
                         }
                     } else {
                         // Find object by ID and set the field
-                        String idKey = "shipmentDetails." + collectionName + ".id";
+                        String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
                         Object childId = flatRow.get(idKey);
 
                         if (childId != null) {
                             Map<String, Object> childObj = collection.stream()
-                                    .filter(obj -> Objects.equals(obj.get("id"), childId))
+                                    .filter(obj -> Objects.equals(obj.get(ID), childId))
                                     .findFirst()
                                     .orElseGet(() -> {
                                         Map<String, Object> newObj = new LinkedHashMap<>();
-                                        newObj.put("id", childId);
+                                        newObj.put(ID, childId);
                                         collection.add(newObj);
                                         return newObj;
                                     });
@@ -3656,18 +3631,18 @@ public class CommonUtils {
                     String collectionName = parts[0];
 
                     List<Map<String, Object>> collection =
-                            (List<Map<String, Object>>) shipmentMap.get(collectionName);
+                            (List<Map<String, Object>>) entityMap.get(collectionName);
 
-                    String idKey = "shipmentDetails." + collectionName + ".id";
+                    String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
                     Object childId = flatRow.get(idKey);
 
                     if (childId != null) {
                         Map<String, Object> childObj = collection.stream()
-                                .filter(obj -> Objects.equals(obj.get("id"), childId))
+                                .filter(obj -> Objects.equals(obj.get(ID), childId))
                                 .findFirst()
                                 .orElseGet(() -> {
                                     Map<String, Object> newObj = new LinkedHashMap<>();
-                                    newObj.put("id", childId);
+                                    newObj.put(ID, childId);
                                     collection.add(newObj);
                                     return newObj;
                                 });
@@ -3681,7 +3656,7 @@ public class CommonUtils {
                     }
                 } else if (parts.length > 1) {
                     // Regular nested objects (non-collection)
-                    Map<String, Object> current = shipmentMap;
+                    Map<String, Object> current = entityMap;
                     for (int i = 0; i < parts.length - 1; i++) {
                         current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
                     }
@@ -3692,8 +3667,8 @@ public class CommonUtils {
 
         // Convert to final format
         List<Map<String, Object>> finalList = new ArrayList<>();
-        for (Map<String, Object> shipmentData : parentMapById.values()) {
-            finalList.add(Collections.singletonMap("shipmentDetails", shipmentData));
+        for (Map<String, Object> data : parentMapById.values()) {
+            finalList.add(Collections.singletonMap(rootKey, data));
         }
 
         return finalList;
