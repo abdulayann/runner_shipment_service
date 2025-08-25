@@ -17,11 +17,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -122,11 +118,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
+import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -151,6 +143,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
@@ -186,6 +179,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -205,6 +201,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -213,29 +210,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
@@ -354,6 +331,21 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+
+    @Mock
+    private EntityManager entityManager;
+
+    @Mock
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock
+    private CriteriaQuery<Object[]> criteriaQuery;
+
+    @Mock
+    private Root<ShipmentDetails> root;
+
+    @Mock
+    private TypedQuery<Object[]> typedQuery;
 
     private ShipmentDetails shipmentDetailsEntity;
     private ConsolidationDetails consolidationDetailsEntity;
@@ -7510,5 +7502,223 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         verify(shipmentDao).findById(123L);
+    }
+
+    @Test
+    void testFetchShipments_NullIncludeColumns_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(null);
+
+        // When & Then
+        assertThatThrownBy(() -> shipmentServiceImplV3.fetchShipments(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Include columns can not be empty");
+    }
+
+    @Test
+    void testFetchShipments_EmptyIncludeColumns_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(new ArrayList<>());
+
+        // When & Then
+        assertThatThrownBy(() -> shipmentServiceImplV3.fetchShipments(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Include columns can not be empty");
+    }
+
+    @Test
+    void testFetchShipments_NullPageNo_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(List.of("id"));
+        validRequest.setPageNo(0);
+
+        // When & Then
+        assertThatThrownBy(() -> shipmentServiceImplV3.fetchShipments(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("PageSize should be greater than 1");
+    }
+
+    @Test
+    public void testFetchShipments_SuccessWithDefaultPageSize() {
+        // Arrange
+        ListCommonRequest request = new ListCommonRequest();
+        List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
+        request.setIncludeColumns(includeColumns);
+        request.setPageNo(1);
+        request.setPageSize(null); // Should default to 25
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        when(mockFilterCriteria.toString()).thenReturn("mockFilterCriteria");
+        request.setFilterCriteria(List.of(mockFilterCriteria));
+
+        setupMocksForSuccessfulExecution();
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentServiceImplV3.fetchShipments(request);
+
+        // Assert
+        assertNotNull(response);
+        verify(typedQuery).setFirstResult(0); // (1-1) * 25
+        verify(typedQuery).setMaxResults(25);
+    }
+
+
+    private void setupMocksForSuccessfulExecution() {
+//
+        // Mock EntityManager and CriteriaBuilder
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Object[].class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(ShipmentDetails.class)).thenReturn(root);
+
+        // Mock method chaining for CriteriaQuery
+        when(criteriaQuery.multiselect(anyList())).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
+        lenient().when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
+        lenient().when(criteriaQuery.orderBy(any(Order.class))).thenReturn(criteriaQuery);
+
+        lenient().when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
+        lenient().when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
+        lenient().when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
+
+        // Use any() matcher instead of eq(request) since request is modified
+        lenient().when(commonUtils.fetchTotalCount(any(ListCommonRequest.class), eq(ShipmentDetails.class))).thenReturn(100L);
+        lenient().when(commonUtils.refineIncludeColumns(anyList())).thenReturn(new ArrayList<>(Arrays.asList("column1", "column2", "id")));
+        lenient().when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(new HashMap<>());
+        lenient().when(commonUtils.detectCollectionRelationships(any(), eq(ShipmentDetails.class))).thenReturn(new HashSet<>());
+        lenient().when(commonUtils.buildPredicatesFromFilters(any(), any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(commonUtils.extractSortFieldFromPayload(any(ListCommonRequest.class))).thenReturn("defaultSortField");
+
+        // Mock buildJoinsAndSelections
+//        lenient().doAnswer(invocation -> {
+//            List<Selection<?>> selections = invocation.getArgument(1);
+//            List<String> columnOrder = invocation.getArgument(2);
+//            selections.add(mock(Selection.class));
+//            columnOrder.add("mockColumn");
+//            return null;
+//        }).when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), anyString());
+        // Create real List objects for the test
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>();
+
+// Add mock selections to the real lists
+        selections.add(mock(Selection.class));
+        columnOrder.add("mockColumn");
+
+// Don't mock buildJoinsAndSelections at all - let it execute
+// Or mock it to do nothing:
+        doNothing().when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), eq("shipmentDetails"), anyString());
+
+        // Mock query results
+        List<Object[]> queryResults = new ArrayList<>();
+        queryResults.add(new Object[]{"value1", "value2", 1L});
+        when(typedQuery.getResultList()).thenReturn(queryResults);
+
+        // Mock data transformation
+        List<Map<String, Object>> flatList = Arrays.asList(createMockFlatMap());
+        lenient().when(commonUtils.buildFlatList(eq(queryResults), anyList())).thenReturn(flatList);
+
+        List<Map<String, Object>> nestedList = Arrays.asList(createMockNestedMap());
+        lenient().when(commonUtils.convertToNestedMapWithCollections(eq(flatList), anySet(), anyString())).thenReturn(nestedList);
+
+        // Mock ShipmentDetails conversion
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        lenient().when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+
+        // Mock response conversion
+        ShipmentDetailsResponse mockResponse = new ShipmentDetailsResponse();
+        lenient().when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(mockResponse);
+    }
+    private Map<String, Object> createMockFlatMap() {
+        Map<String, Object> flatMap = new HashMap<>();
+        flatMap.put("column1", "value1");
+        flatMap.put("column2", "value2");
+        flatMap.put("id", 1L);
+        return flatMap;
+    }
+
+    private Map<String, Object> createMockNestedMap() {
+        Map<String, Object> nestedMap = new HashMap<>();
+        Map<String, Object> shipmentData = new HashMap<>();
+        shipmentData.put("column1", "value1");
+        shipmentData.put("column2", "value2");
+        shipmentData.put("id", 1L);
+        nestedMap.put(Constants.SHIPMENT_ROOT_KEY_NAME, shipmentData);
+        return nestedMap;
+    }
+
+    @Test
+    public void testGetShipmentDetails_WithValidId_ReturnsShipmentDetails() {
+        // Arrange
+        CommonGetRequest request = new CommonGetRequest();
+        request.setId(123L);
+        request.setIncludeColumns(Arrays.asList("id", "shipmentNumber", "status"));
+
+        // Mock EntityManager and CriteriaBuilder chain
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Object[].class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(ShipmentDetails.class)).thenReturn(root);
+        when(criteriaQuery.multiselect(anyList())).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
+        when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
+        when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
+        Predicate predicate = mock(Predicate.class, withSettings().lenient());
+
+        // Mock predicate creation for ID filtering
+        when(criteriaBuilder.equal(any(), eq(123L))).thenReturn(predicate);
+        when(root.get("id")).thenReturn(mock(Path.class));
+
+        // Mock CommonUtils methods
+        when(commonUtils.refineIncludeColumns(anyList()))
+                .thenReturn(Arrays.asList("id", "shipmentNumber", "status"));
+
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipment", Arrays.asList("id", "shipmentNumber", "status"));
+        when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(requestedColumns);
+        when(commonUtils.detectCollectionRelationships(any(), eq(ShipmentDetails.class)))
+                .thenReturn(new HashSet<>());
+
+        // Mock buildJoinsAndSelections - simplified to avoid ClassCastException
+        doNothing().when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), any());
+
+        // Mock query results
+        List<Object[]> queryResults = new ArrayList<>();
+        queryResults.add(new Object[]{123L, "SHIP-001", "DELIVERED"});
+        when(typedQuery.getResultList()).thenReturn(queryResults);
+
+        // Mock data transformation
+        List<Map<String, Object>> nestedList = new ArrayList<>();
+        Map<String, Object> nestedMap = new HashMap<>();
+        Map<String, Object> shipmentData = new HashMap<>();
+        shipmentData.put("id", 123L);
+        shipmentData.put("status", "DELIVERED");
+        nestedMap.put(Constants.SHIPMENT_ROOT_KEY_NAME, shipmentData);
+        nestedList.add(nestedMap);
+
+        when(commonUtils.convertToNestedMapWithCollections(anyList(), anySet(), anyString()))
+                .thenReturn(nestedList);
+
+        // Mock ShipmentDetails conversion
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(123L);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+
+        // Mock response conversion
+        ShipmentDetailsResponse mockResponse = new ShipmentDetailsResponse();
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentServiceImplV3.getShipmentDetails(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // Verify key interactions
+        verify(criteriaBuilder).equal(any(), eq(123L));
+        verify(criteriaQuery).where(predicate);
+        verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
+        verify(typedQuery).getResultList();
     }
 }

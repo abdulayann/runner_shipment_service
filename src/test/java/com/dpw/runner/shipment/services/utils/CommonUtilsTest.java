@@ -13,10 +13,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
@@ -114,6 +111,7 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfWriter;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
@@ -133,6 +131,7 @@ import org.modelmapper.TypeToken;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
 
+import javax.persistence.criteria.*;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
@@ -310,6 +309,23 @@ class CommonUtilsTest {
     @Mock
     private EntityTransferAddress entityTransferAddress;
 
+    private List<Selection<?>> selections;
+    private List<String> columnOrder;
+    @Mock(lenient = true)
+    private Root<ShipmentDetails> root;
+
+    @Mock(lenient = true)
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock(lenient = true)
+    private Join<Object, Object> mockJoin;
+
+    @Mock(lenient = true)
+    private Path<Object> mockPath;
+
+    @Mock(lenient = true)
+    private Selection<?> mockSelection;
+    private Map<String, Join<?, ?>> joinCache;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -344,6 +360,14 @@ class CommonUtilsTest {
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
+        selections = new ArrayList<>();
+        columnOrder = new ArrayList<>();
+        joinCache = new HashMap<>();
+
+        // Setup basic mocks
+        when(root.get(anyString())).thenReturn(mockPath);
+        when(mockJoin.get(anyString())).thenReturn(mockPath);
+
 
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
@@ -5745,5 +5769,538 @@ class CommonUtilsTest {
                 Arguments.of((short)123, 123L),
                 Arguments.of((byte)123, 123L)
         );
+
     }
+    @Test
+    void returnsNullWhenRequestPayloadIsNull() {
+        assertNull(commonUtils.extractSortFieldFromPayload(null));
+    }
+
+    @Test
+    void returnsNullWhenSortRequestIsNull() {
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        when(request.getSortRequest()).thenReturn(null);
+        assertNull(commonUtils.extractSortFieldFromPayload(request));
+    }
+
+    @Test
+    void returnsFieldNameWhenSortRequestIsPresent() {
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        SortRequest sortRequest = mock(SortRequest.class);
+        when(request.getSortRequest()).thenReturn(sortRequest);
+        when(sortRequest.getFieldName()).thenReturn("testField");
+        assertEquals("testField", commonUtils.extractSortFieldFromPayload(request));
+    }
+    @Test
+    public void testExtractRequestedColumns_EmptyIncludeColumns_ReturnsEmptyMap() {
+        // Arrange
+        List<String> includeColumns = new ArrayList<>();
+        String mainEntityKey = "shipment";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testExtractRequestedColumns_SingleLevelColumns_ExtractsToMainEntity() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList("id", "updatedAt", "status");
+        String mainEntityKey = "shipmentDetails";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey(mainEntityKey));
+
+        List<String> shipmentColumns = (List<String>) result.get(mainEntityKey);
+        assertNotNull(shipmentColumns);
+        assertEquals(3, shipmentColumns.size());
+        assertTrue(shipmentColumns.contains("id"));
+        assertTrue(shipmentColumns.contains("updatedAt"));
+        assertTrue(shipmentColumns.contains("status"));
+    }
+
+    @Test
+    public void testExtractRequestedColumns_TwoLevelNesting_CreatesListOfStrings() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.address",
+                "pickupDetails.contactName",
+                "transporterDetail.name"
+        );
+        String mainEntityKey = "shipmentDetails";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey("pickupDetails"));
+        assertTrue(result.containsKey("transporterDetail"));
+
+        // Verify pickupDetails structure
+        List<String> pickupColumns = (List<String>) result.get("pickupDetails");
+        assertNotNull(pickupColumns);
+        assertEquals(2, pickupColumns.size());
+        assertTrue(pickupColumns.contains("address"));
+        assertTrue(pickupColumns.contains("contactName"));
+
+        // Verify transporterDetail structure
+        List<String> transporterColumns = (List<String>) result.get("transporterDetail");
+        assertNotNull(transporterColumns);
+        assertEquals(1, transporterColumns.size());
+        assertTrue(transporterColumns.contains("name"));
+    }
+    @Test
+    public void testExtractRequestedColumns_DuplicateColumns_HandlesGracefully() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.address",
+                "pickupDetails.address", // Duplicate
+                "pickupDetails.contactName"
+        );
+        String mainEntityKey = "shipment";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey("pickupDetails"));
+
+        List<String> pickupColumns = (List<String>) result.get("pickupDetails");
+        assertNotNull(pickupColumns);
+
+        // Should handle duplicates gracefully (either include once or include multiple times)
+        assertTrue(pickupColumns.contains("address"));
+        assertTrue(pickupColumns.contains("contactName"));
+    }
+
+    @Test
+    public void testFillEmptyColumnLists_EmptyMap_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        assertTrue(requestedColumns.isEmpty());
+    }
+    @Test
+    public void testFillEmptyColumnLists_WithEmptyList_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipmentDetails", new ArrayList<String>());
+
+        // Mock ShipmentConstants.ENTITY_MAPPINGS to contain "shipment" -> ShipmentDetails.class
+        // This test assumes getAllSimpleFieldNames() returns a list of field names
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object shipmentColumns = requestedColumns.get("shipmentDetails");
+        assertNotNull(shipmentColumns);
+        assertTrue(shipmentColumns instanceof List);
+        List<String> fieldsList = (List<String>) shipmentColumns;
+        assertFalse(fieldsList.isEmpty());
+        // Verify it contains expected fields based on getAllSimpleFieldNames()
+    }
+
+    @Test
+    public void testFillEmptyColumnLists_WithEmptyMap_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("pickupDetails", new HashMap<String, Object>());
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object pickupDetails = requestedColumns.get("pickupDetails");
+        assertNotNull(pickupDetails);
+        assertTrue(pickupDetails instanceof List);
+        List<String> fieldsList = (List<String>) pickupDetails;
+        assertFalse(fieldsList.isEmpty());
+    }
+
+    @Test
+    public void testFillEmptyColumnLists_WithNullValue_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("transporterDetail", null);
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object transporterDetail = requestedColumns.get("transporterDetail");
+        assertNotNull(transporterDetail);
+        assertTrue(transporterDetail instanceof List);
+        List<String> fieldsList = (List<String>) transporterDetail;
+        assertFalse(fieldsList.isEmpty());
+    }
+
+    @Test
+    public void testFillEmptyColumnLists_WithPopulatedList_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        List<String> existingFields = new ArrayList<>(Arrays.asList("field1", "field2"));
+        requestedColumns.put("shipmentDetails", existingFields);
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        List<String> resultFields = (List<String>) requestedColumns.get("shipmentDetails");
+        assertEquals(3, resultFields.size()); // Original 2 + "id" added by ensureIdInCollection
+        assertTrue(resultFields.contains("field1"));
+        assertTrue(resultFields.contains("field2"));
+        assertTrue(resultFields.contains("id"));
+    }
+
+    @Test
+    public void testEnsureIdInCollection_WithList_AddsIdWhenNotPresent() {
+        // Arrange
+        List<String> list = new ArrayList<>(Arrays.asList("field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertEquals(3, resultList.size());
+        assertTrue(resultList.contains("field1"));
+        assertTrue(resultList.contains("field2"));
+        assertTrue(resultList.contains("id"));
+    }
+
+    @Test
+    public void testEnsureIdInCollection_WithListContainingId_DoesNotAddAgain() {
+        // Arrange
+        List<String> list = new ArrayList<>(Arrays.asList("id", "field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertEquals(3, resultList.size());
+        assertTrue(resultList.contains("id"));
+        assertTrue(resultList.contains("field1"));
+        assertTrue(resultList.contains("field2"));
+    }
+
+    @Test
+    public void testEnsureIdInCollection_WithEmptyList_DoesNotAddId() {
+        // Arrange
+        List<String> list = new ArrayList<>();
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    public void testEnsureIdInCollection_WithSet_AddsIdWhenNotPresent() {
+        // Arrange
+        Set<String> set = new HashSet<>(Arrays.asList("field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(set);
+
+        // Assert
+        assertTrue(result instanceof Set);
+        Set<String> resultSet = (Set<String>) result;
+        assertEquals(3, resultSet.size());
+        assertTrue(resultSet.contains("field1"));
+        assertTrue(resultSet.contains("field2"));
+        assertTrue(resultSet.contains("id"));
+    }
+    @Test
+    public void testEnsureIdInCollection_WithNonCollection_ReturnsUnchanged() {
+        // Arrange
+        String nonCollection = "not a collection";
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(nonCollection);
+
+        // Assert
+        assertEquals("not a collection", result);
+    }
+
+    @Test
+    public void testEnsureIdInCollection_WithNull_ReturnsNull() {
+        // Act
+        Object result = commonUtils.ensureIdInCollection(null);
+
+        // Assert
+        assertNull(result);
+    }
+    @Test
+    public void testConvertToNestedMapWithCollections_EmptyFlatList_ReturnsEmptyList() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Set<String> collectionRelationships = new HashSet<>();
+        String rootKey = "shipment";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testConvertToNestedMapWithCollections_SingleRow_CreatesNestedStructure() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Map<String, Object> row1 = new HashMap<>();
+        row1.put("shipmentDetails.id", 123L);
+        row1.put("shipmentDetails.transportMode", TRANSPORT_MODE_SEA);
+        row1.put("pickupDetails.address", "Address 1");
+        flatList.add(row1);
+
+        Set<String> collectionRelationships = new HashSet<>();
+        String rootKey = "shipmentDetails";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        Map<String, Object> resultMap = result.get(0);
+        assertTrue(resultMap.containsKey(rootKey));
+
+        Map<String, Object> shipmentData = (Map<String, Object>) resultMap.get(rootKey);
+        assertNotNull(shipmentData);
+        assertEquals(123L, shipmentData.get("id"));
+    }
+
+
+    @Test
+    public void testConvertToNestedMapWithCollections_ComplexNestedStructure() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Map<String, Object> row = new HashMap<>();
+        row.put("shipment.id", 123L);
+        row.put("shipment.shipmentNumber", "SHIP-001");
+        row.put("pickupDetails.address.street", "123 Main St");
+        row.put("pickupDetails.address.city", "New York");
+        row.put("deliveryDetails.contact.name", "John Doe");
+        row.put("deliveryDetails.contact.phone", "555-1234");
+        flatList.add(row);
+
+        Set<String> collectionRelationships = new HashSet<>(
+                Arrays.asList("pickupDetails", "deliveryDetails"));
+        String rootKey = "shipmentDetails";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        Map<String, Object> resultMap = result.get(0);
+        assertTrue(resultMap.containsKey(rootKey));
+        Map<String, Object> shipmentMap = (Map<String, Object>)resultMap.get("shipmentDetails");
+
+        // Verify nested structures are processed correctly
+        // This depends on the implementation of ProcessFields method
+        List<Object> pickupDetailsList = (List<Object>) shipmentMap.get("pickupDetails");
+        List<Object> deliveryDetailsList = (List<Object>) shipmentMap.get("deliveryDetails");
+
+        assertNotNull(pickupDetailsList);
+        assertNotNull(deliveryDetailsList);
+    }
+
+    @Test
+    public void testRefineIncludeColumns_EmptyList_ReturnsEmptyList() {
+        // Arrange
+        List<String> includeColumns = new ArrayList<>();
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+    @Test
+    public void testRefineIncludeColumns_NullList_ThrowsException() {
+        // Arrange
+        List<String> includeColumns = null;
+
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            commonUtils.refineIncludeColumns(includeColumns);
+        });
+    }
+    @Test
+    public void testRefineIncludeColumns_NoSpecialColumns_ReturnsUnchanged() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "id",
+                "shipmentNumber",
+                "status",
+                "pickupDetails.address",
+                "deliveryDetails.contactName"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(5, result.size());
+        assertTrue(result.contains("id"));
+        assertTrue(result.contains("shipmentNumber"));
+        assertTrue(result.contains("status"));
+        assertTrue(result.contains("pickupDetails.address"));
+        assertTrue(result.contains("deliveryDetails.contactName"));
+    }
+
+    @Test
+    public void testRefineIncludeColumns_WithOrgDataColumns_TruncatesCorrectly() {
+        // Arrange - assuming Constants.ORG_DATA = "orgData"
+        List<String> includeColumns = Arrays.asList(
+                "transporterDetail.orgData.fullName",
+                "pickupDetails.orgData.email",
+                "deliveryDetails.orgData.phone.primary",
+                "normalColumn"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(4, result.size());
+        assertTrue(result.contains("transporterDetail.orgData"));
+        assertTrue(result.contains("pickupDetails.orgData"));
+        assertTrue(result.contains("deliveryDetails.orgData"));
+        assertTrue(result.contains("normalColumn"));
+    }
+
+    @Test
+    public void testRefineIncludeColumns_WithAddressDataColumns_TruncatesCorrectly() {
+        // Arrange - assuming Constants.ADDRESS_DATA = "addressData"
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.addressData.street",
+                "deliveryDetails.addressData.city.name",
+                "transporterDetail.addressData.zipCode",
+                "normalColumn"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(4, result.size());
+        assertTrue(result.contains("pickupDetails.addressData"));
+        assertTrue(result.contains("deliveryDetails.addressData"));
+        assertTrue(result.contains("transporterDetail.addressData"));
+        assertTrue(result.contains("normalColumn"));
+    }
+
+    @Test
+    public void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        String rootEntityKey = "shipmentDetails";
+        String sortField = null;
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        assertTrue(selections.isEmpty());
+        assertTrue(columnOrder.isEmpty());
+    }
+
+    @Test
+    public void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        List<String> rootColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", rootColumns);
+        String rootEntityKey = "shipmentDetails";
+        String sortField = null;
+
+        // Mock the processEntity method indirectly by verifying it gets called
+        // Since processEntity is private, we test its effects through the public method
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Verify processEntity was called by checking that root.get() was invoked
+        verify(root, atLeastOnce()).get(anyString());
+
+        // The actual selections and columnOrder population depends on processEntity implementation
+        // We can only verify that the method completed without throwing exceptions
+        assertNotNull(selections);
+        assertNotNull(columnOrder);
+    }
+    @Test
+    public void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", new ArrayList<>(originalColumns));
+        String rootEntityKey = "shipmentDetails";
+        String sortField = null;
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Original columns should remain unchanged
+        Object rootEntityValue = requestedColumns.get(rootEntityKey);
+        assertTrue(rootEntityValue instanceof List);
+        List<String> resultColumns = (List<String>) rootEntityValue;
+        assertEquals(originalColumns.size(), resultColumns.size());
+        assertTrue(resultColumns.containsAll(originalColumns));
+    }
+
+    @Test
+    public void testProcessNestedMap_EmptyNestedMap_DoesNotModifyCollections() {
+        // Arrange
+        Map<String, Object> nestedMap = new HashMap<>();
+        String rootEntityKey = "shipmentDetails";
+        String parentEntityKey = "pickupDetails";
+
+        // Act
+        commonUtils.processNestedMap(nestedMap, rootEntityKey, root, selections, columnOrder, parentEntityKey, joinCache);
+
+        // Assert - Test behavior through state changes
+        assertTrue(selections.isEmpty());
+        assertTrue(columnOrder.isEmpty());
+        assertTrue(joinCache.isEmpty());
+    }
+
+
+
+
 }

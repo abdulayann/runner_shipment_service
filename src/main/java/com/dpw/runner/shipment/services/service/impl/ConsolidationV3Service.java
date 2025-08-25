@@ -5056,6 +5056,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
     @Override
     public ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) {
+        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
+            throw new ValidationException("Include columns can not be empty");
+        }
+        if (listCommonRequest.getPageNo() == null || listCommonRequest.getPageNo() < 1) {
+            throw new ValidationException("PageSize should be greater than 1");
+        }
         long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ConsolidationDetails.class);
         int pageNo = listCommonRequest.getPageNo();
         int pageSize =  Optional.of(listCommonRequest.getPageSize()).orElse(25);
