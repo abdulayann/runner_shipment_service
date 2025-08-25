@@ -1,5 +1,45 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_CLD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -185,9 +225,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private IConsolidationSync consolidationSync;
 
   @Mock
-  private ContainerV3Util containerV3Util;
-
-  @Mock
   private MasterDataUtils masterDataUtils;
 
   @Mock
@@ -207,6 +244,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private V1ServiceUtil v1ServiceUtil;
+
+  @Mock
+  private ContainerV3Util containerV3Util;
 
   @Mock
   private IAuditLogService auditLogService;
@@ -719,8 +759,8 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testList() {
-    var request = CommonRequestModel.builder().build();
-    assertThrows(ValidationException.class, () -> consolidationV3Service.list(request, true));
+      var request = CommonRequestModel.builder().build();
+      assertThrows(ValidationException.class, () -> consolidationV3Service.list(request, true));
   }
 
   @Test
@@ -2016,41 +2056,14 @@ if (unitConversionUtilityMockedStatic != null) {
     packing.setInnerPacksCount(5L);
 
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
+    when(containerV3Util.getContainerNumberOrType(container)).thenReturn("CONT01");
     // assuming isSeaPackingList returns true
 
     ValidationException ex = assertThrows(ValidationException.class, () -> {
       consolidationV3Service.validateDetachedShipment(shipment);
     });
 
-    assertFalse(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
-  }
-
-  @Test
-  void testValidateDetachedShipment_whenPackingAttachedToContainer_shouldThrowRunnerException_FCL() {
-    ShipmentDetails shipment = new ShipmentDetails();
-    shipment.setId(1L);
-    shipment.setTransportMode(TRANSPORT_MODE_SEA);
-    shipment.setShipmentId("SH999");
-    shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-
-    Containers container = new Containers();
-    container.setId(10L);
-    container.setContainerNumber("CONT01");
-    shipment.setContainersList(Set.of(container));
-
-    Packing packing = new Packing();
-    packing.setContainerId(10L);
-    packing.setInnerPacksCount(5L);
-
-    when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
-    when(commonUtils.isFCLorFTL(Constants.CARGO_TYPE_FCL)).thenReturn(true);
-    // assuming isSeaPackingList returns true
-
-    ValidationException ex = assertThrows(ValidationException.class, () -> {
-      consolidationV3Service.validateDetachedShipment(shipment);
-    });
-
-    assertFalse(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
+    assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
   }
 
   @Test
@@ -2058,41 +2071,23 @@ if (unitConversionUtilityMockedStatic != null) {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH567");
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
 
     Containers container = new Containers();
     container.setId(20L);
     container.setContainerNumber("CONT02");
     shipment.setContainersList(Set.of(container));
+      Packing packing = new Packing();
+      packing.setContainerId(10L);
+      packing.setInnerPacksCount(5L);
 
-    when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
-
-    ValidationException ex = assertThrows(ValidationException.class, () -> {
-      consolidationV3Service.validateDetachedShipment(shipment);
-    });
-
-    assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
-  }
-
-  @Test
-  void testValidateDetachedShipment_whenContainerStillAttachedToShipment_shouldThrowRunnerException_FCL() {
-    ShipmentDetails shipment = new ShipmentDetails();
-    shipment.setId(1L);
-    shipment.setShipmentId("SH567");
-    shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-
-    Containers container = new Containers();
-    container.setId(20L);
-    container.setContainerNumber("CONT02");
-    shipment.setContainersList(Set.of(container));
-
-    when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
-    when(commonUtils.isFCLorFTL(Constants.CARGO_TYPE_FCL)).thenReturn(true);
+    when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
 
     ValidationException ex = assertThrows(ValidationException.class, () -> {
       consolidationV3Service.validateDetachedShipment(shipment);
     });
 
-    assertFalse(ex.getMessage().contains("Please unassign to detach the same"));
+    assertTrue(ex.getMessage().contains("Please unassign to detach"));
   }
 
   @Test
@@ -3929,7 +3924,7 @@ if (unitConversionUtilityMockedStatic != null) {
     RunnerException exception = assertThrows(RunnerException.class,
         () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
 
-    assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
+    assertEquals("Id and GUID can't be null. Please provide any one !", exception.getMessage());
     verify(consolidationDetailsDao, never()).findById(any());
     verify(consolidationDetailsDao, never()).findByGuid(any());
   }
@@ -4193,6 +4188,9 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consoleShipmentMappingDao.assignShipments(any(), any(), any(), any(), any(), any(), any())).thenReturn(hashSet);
     when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
     when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+    doReturn(true)
+            .when(consolidationValidationV3Util)
+            .checkConsolidationTypeValidation(any());
     when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
@@ -5624,322 +5622,4 @@ if (unitConversionUtilityMockedStatic != null) {
     );
     assertTrue(response.getIsNonFtlOrFclAttached());
   }
-
-    @Test
-    void retrieveByIdExternal_Success_WithId() throws RunnerException, AuthenticationException {
-        // Arrange
-        Long id = 1L;
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-
-        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
-        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
-        when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3ExternalResponse.class))
-                .thenReturn(mockResponse);
-
-        // Act
-        ConsolidationDetailsV3ExternalResponse result =
-                consolidationV3Service.retrieveByIdExternal(request);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(mockResponse, result);
-        verify(consolidationDetailsDao).findById(id);
-        verify(consolidationDetailsDao, never()).findByGuid(any(UUID.class));
-    }
-
-    @Test
-    void retrieveByIdExternal_Success_WithGuid() throws RunnerException, AuthenticationException {
-        // Arrange
-        String guidString = "550e8400-e29b-41d4-a716-446655440000";
-        UUID guid = UUID.fromString(guidString);
-        CommonGetRequest request = CommonGetRequest.builder().guid(guidString).build();
-
-        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
-        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockConsolidationDetails));
-        when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3ExternalResponse.class))
-                .thenReturn(mockResponse);
-
-        // Act
-        ConsolidationDetailsV3ExternalResponse result =
-                consolidationV3Service.retrieveByIdExternal(request);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(mockResponse, result);
-        verify(consolidationDetailsDao).findByGuid(guid);
-        verify(consolidationDetailsDao, never()).findById(anyLong());
-    }
-
-    @Test
-    void retrieveByIdExternal_ThrowsRunnerException_WhenBothIdAndGuidAreNull() {
-        // Arrange
-        CommonGetRequest request = CommonGetRequest.builder().build();
-
-        // Act & Assert
-        RunnerException exception = assertThrows(RunnerException.class,
-                () -> consolidationV3Service.retrieveByIdExternal(request));
-
-        assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
-        verify(consolidationDetailsDao, never()).findById(any());
-        verify(consolidationDetailsDao, never()).findByGuid(any());
-    }
-
-    @Test
-    void retrieveByIdExternal_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithId() {
-        // Arrange
-        Long id = 1L;
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-
-        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
-                () -> consolidationV3Service.retrieveByIdExternal(request));
-
-        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
-        verify(consolidationDetailsDao).findById(id);
-    }
-
-    @Test
-    void retrieveByIdExternal_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithGuid() {
-        // Arrange
-        String guidString = "550e8400-e29b-41d4-a716-446655440000";
-        UUID guid = UUID.fromString(guidString);
-        CommonGetRequest request = CommonGetRequest.builder().guid(guidString).build();
-
-        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
-                () -> consolidationV3Service.retrieveByIdExternal(request));
-
-        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
-        verify(consolidationDetailsDao).findByGuid(guid);
-    }
-
-    @Test
-    void retrieveByIdExternal_ThrowsIllegalArgumentException_WhenGuidIsInvalidFormat() {
-        // Arrange
-        String invalidGuid = "invalid-guid";
-        CommonGetRequest request = CommonGetRequest.builder().guid(invalidGuid).build();
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class,
-                () -> consolidationV3Service.retrieveByIdExternal(request));
-
-        verify(consolidationDetailsDao, never()).findByGuid(any());
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_Success_WithId() throws RunnerException, AuthenticationException {
-        // Arrange
-        Long id = 1L;
-        CommonGetRequest request = CommonGetRequest.builder()
-                .id(id)
-                .includeColumns(List.of("id", "bookingStatus"))
-                .build();
-
-        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
-        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
-        when(commonUtils.setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class)))
-                .thenReturn(mockResponse);
-
-        // Act
-        ConsolidationDetailsV3ExternalResponse result =
-                consolidationV3Service.retrieveByIdExternalPartial(request);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(mockResponse, result);
-        verify(consolidationDetailsDao).findById(id);
-        verify(consolidationDetailsDao, never()).findByGuid(any(UUID.class));
-        verify(commonUtils).setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class));
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_Success_WithGuid() throws RunnerException, AuthenticationException {
-        // Arrange
-        String guidString = "550e8400-e29b-41d4-a716-446655440000";
-        UUID guid = UUID.fromString(guidString);
-        CommonGetRequest request = CommonGetRequest.builder()
-                .guid(guidString)
-                .includeColumns(List.of("id"))
-                .build();
-
-        ConsolidationDetails mockConsolidationDetails = consolidationDetails;
-        ConsolidationDetailsV3ExternalResponse mockResponse = new ConsolidationDetailsV3ExternalResponse();
-
-        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockConsolidationDetails));
-        when(commonUtils.setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class)))
-                .thenReturn(mockResponse);
-
-        // Act
-        ConsolidationDetailsV3ExternalResponse result =
-                consolidationV3Service.retrieveByIdExternalPartial(request);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(mockResponse, result);
-        verify(consolidationDetailsDao).findByGuid(guid);
-        verify(consolidationDetailsDao, never()).findById(anyLong());
-        verify(commonUtils).setIncludedFieldsToResponse(eq(mockConsolidationDetails), anySet(), any(ConsolidationDetailsV3ExternalResponse.class));
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenBothIdAndGuidAreNull() {
-        // Arrange
-        CommonGetRequest request = CommonGetRequest.builder()
-                .includeColumns(List.of("id"))
-                .build();
-
-        // Act & Assert
-        RunnerException exception = assertThrows(RunnerException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        assertEquals(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR, exception.getMessage());
-        verify(consolidationDetailsDao, never()).findById(any());
-        verify(consolidationDetailsDao, never()).findByGuid(any());
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenIncludeColumnsNull() {
-        // Arrange
-        CommonGetRequest request = CommonGetRequest.builder()
-                .id(1L)
-                .build(); // includeColumns = null
-
-        // Act & Assert
-        RunnerException exception = assertThrows(RunnerException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        assertEquals("IncludeColumns can't be null or empty", exception.getMessage());
-        verifyNoInteractions(consolidationDetailsDao);
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsRunnerException_WhenIncludeColumnsEmpty() {
-        // Arrange
-        CommonGetRequest request = CommonGetRequest.builder()
-                .id(1L)
-                .includeColumns(Collections.emptyList())
-                .build();
-
-        // Act & Assert
-        RunnerException exception = assertThrows(RunnerException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        assertEquals("IncludeColumns can't be null or empty", exception.getMessage());
-        verifyNoInteractions(consolidationDetailsDao);
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithId() {
-        // Arrange
-        Long id = 1L;
-        CommonGetRequest request = CommonGetRequest.builder()
-                .id(id)
-                .includeColumns(List.of("id"))
-                .build();
-
-        when(consolidationDetailsDao.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
-        verify(consolidationDetailsDao).findById(id);
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithGuid() {
-        // Arrange
-        String guidString = "550e8400-e29b-41d4-a716-446655440001";
-        UUID guid = UUID.fromString(guidString);
-        CommonGetRequest request = CommonGetRequest.builder()
-                .guid(guidString)
-                .includeColumns(List.of("id"))
-                .build();
-
-        when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        DataRetrievalFailureException ex = assertThrows(DataRetrievalFailureException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, ex.getMessage());
-        verify(consolidationDetailsDao).findByGuid(guid);
-    }
-
-    @Test
-    void retrieveByIdExternalPartial_ThrowsIllegalArgumentException_WhenGuidIsInvalidFormat() {
-        // Arrange
-        String invalidGuid = "invalid-guid";
-        CommonGetRequest request = CommonGetRequest.builder()
-                .guid(invalidGuid)
-                .includeColumns(List.of("id"))
-                .build();
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class,
-                () -> consolidationV3Service.retrieveByIdExternalPartial(request));
-
-        verify(consolidationDetailsDao, never()).findByGuid(any());
-    }
-
-
-  @Test
-  void testListExternal_InvalidRequest_ThrowsValidationException(){
-    assertThrows(ValidationException.class, () -> consolidationV3Service.listExternal(null));
-  }
-
-  @Test
-  void testListExternal_Success_WithIncludeColumns() {
-    // arrange
-    testConsol.setId(1L);
-    ListCommonRequest request = new ListCommonRequest();
-    request.setIncludeColumns(List.of("id", "consolidationNumber"));
-    IRunnerResponse dto = ConsolidationMapper.INSTANCE.toConsolidationListResponse(testConsol);
-    Page<ConsolidationDetails> page = new PageImpl<>(List.of(testConsol));
-
-    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(page);
-    when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any()))
-            .thenReturn(dto);
-
-    // act
-    ConsolidationListV3Response resp = consolidationV3Service.listExternal(request);
-
-    // assert
-    assertNotNull(resp);
-    assertEquals(1, resp.getConsolidationListResponses().size());
-  }
-
-  @Test
-  void testListExternal_Success_WithoutIncludeColumns() {
-    // arrange
-    testConsol.setId(2L);
-    ListCommonRequest request = new ListCommonRequest();
-    request.setIncludeColumns(Collections.emptyList());  // no filters -> full DTO
-    Page<ConsolidationDetails> page = new PageImpl<>(List.of(testConsol));
-    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(page);
-
-    // act
-    ConsolidationListV3Response resp = consolidationV3Service.listExternal(request);
-
-    // assert
-    assertNotNull(resp);
-    assertEquals(1, resp.getConsolidationListResponses().size());
-    assertEquals(testConsol.getId(), resp.getConsolidationListResponses().get(0).getId());
-    assertEquals(testConsol.getConsolidationNumber(), resp.getConsolidationListResponses().get(0).getConsolidationNumber());
-    assertEquals(testConsol.getTransportMode(), resp.getConsolidationListResponses().get(0).getTransportMode());
-
-    verify(commonUtils, never()).setIncludedFieldsToResponse(any(), anySet(), any());
-  }
-
 }

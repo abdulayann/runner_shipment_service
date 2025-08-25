@@ -211,6 +211,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
@@ -227,6 +228,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
@@ -241,6 +243,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentDetails.setStatus(ShipmentStatus.GenerateHAWB.getValue());
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
@@ -289,8 +292,8 @@ class ShipmentDaoTest extends CommonMocks {
     void applyAgentOrganisationIdValidationTest_AdditionalDetailsNullV3() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(null)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
-
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Origin Agent and Destination Agent cannot be same Organisation."));
@@ -305,6 +308,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(additionalDetails)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
 
         mockShipmentSettings();
@@ -324,6 +328,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(additionalDetails)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
 
         mockShipmentSettings();
@@ -341,6 +346,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(additionalDetails)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
 
         mockShipmentSettings();
@@ -362,6 +368,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(additionalDetails)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
@@ -382,6 +389,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .additionalDetails(additionalDetails)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .build();
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
@@ -592,6 +600,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .direction(Constants.DIRECTION_EXP) // Add missing direction
                 .carrierDetails(CarrierDetails.builder().origin("origin").originPort("origin").destination("destination").destinationPort("destination").build())
                 .build();
 
@@ -1603,6 +1612,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentDetails.setId(1L);
 
         List<ShipmentDetails> shipmentDetailsList = Arrays.asList(shipmentDetails);
@@ -1620,6 +1630,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentDetails.setId(1L);
 
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -1635,6 +1646,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
 
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
@@ -1649,6 +1661,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP); // Add missing direction
         shipmentDetails.setId(1L);
         shipmentDetails.setStatus(ShipmentStatus.Cancelled.getValue());
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
@@ -1953,18 +1966,22 @@ class ShipmentDaoTest extends CommonMocks {
 
         Containers containers = new Containers();
         containers.setHazardous(true);
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .containersList(Set.of(containers))
                 .direction(Constants.DIRECTION_IMP)
+                .packingList(Arrays.asList(packing))
                 .build();
         shipmentDetails.setId(1L);
         mockShipmentSettings();
-        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
+        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
-        assertTrue(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
+        assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
     }
 
     @Test
@@ -1982,9 +1999,8 @@ class ShipmentDaoTest extends CommonMocks {
                 .build();
         shipmentDetails.setId(1L);
         mockShipmentSettings();
-        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(containers));
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
-        assertFalse(errors.contains("The shipment contains DG container. Marking the shipment as non DG is not allowed"));
+        assertFalse(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
     }
 
     @Test

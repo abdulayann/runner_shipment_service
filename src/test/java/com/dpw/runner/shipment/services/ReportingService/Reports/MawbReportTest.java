@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -239,10 +240,22 @@ class MawbReportTest extends CommonMocks {
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setShipmentType(Constants.DIRECTION_EXP); // Add missing shipmentType
         consolidationModel.setHazardous(true);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mawbReport.isDMawb = false;
-        UserContext.getUser().setPermissions(new HashMap<>());
+        ShipmentSettingsDetails mockSettings = ShipmentSettingsDetails.builder()  // Set to false to avoid air cargo security validation
+                .build();
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        // Set up user with DG permission set to false
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+
+        mawbReport.printType= ORIGINAL;
         mockShipmentSettings();
         mawbReport.getDocumentModel(123L);
         assertFalse(mawbReport.isDMawb);

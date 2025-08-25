@@ -148,6 +148,7 @@ public class HawbReport extends IReport{
             if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
                 validateAirDGCheckShipments(hawbModel.shipmentDetails);
             }
+
         }
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
@@ -186,8 +187,6 @@ public class HawbReport extends IReport{
         }
 
         populateShippedOnboardFields(hawbModel.shipmentDetails, dictionary);
-        populateDGFields(hawbModel.shipmentDetails, dictionary);
-        populateReeferFields(hawbModel.shipmentDetails, dictionary);
 
         populateUserFields(hawbModel.usersDto, dictionary);
 
@@ -208,7 +207,6 @@ public class HawbReport extends IReport{
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
             populateRaKcData(dictionary, hawbModel.shipmentDetails);
             populateShipmentOrders(hawbModel.shipmentDetails, dictionary);
-            dictionary.put(SHIPMENT_CARGO_TYPE, hawbModel.shipmentDetails.getShipmentType());
         }
 
         var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();
@@ -714,12 +712,26 @@ public class HawbReport extends IReport{
     }
 
     private void processOtherInfoRows(Map<String, Object> dictionary, AwbOtherInfo otherInfoRows, Map<String, UnlocationsResponse> locCodeMap, String tsDateTimeFormat) {
+        Set<String> locCodes;
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap;
         if(otherInfoRows != null)
         {
-            String executedAtName = Optional.ofNullable(otherInfoRows.getExecutedAt())
-                    .map(String::toUpperCase)
-                    .orElse(null);
-            dictionary.put(ReportConstants.EXECUTED_AT, executedAtName);
+            locCodes = new HashSet<>();
+            locCodes.add(otherInfoRows.getExecutedAt());
+            entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+                String key = entry.getKey();
+                UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                locCodeMap.put(key, value);
+            }
+            String executedAtName = null;
+            if (locCodeMap.get(otherInfoRows.getExecutedAt()) != null) {
+                // Get the name from v1 and convert it to uppercase if not null
+                executedAtName = Optional.ofNullable(locCodeMap.get(otherInfoRows.getExecutedAt()).getName())
+                        .map(String::toUpperCase)
+                        .orElse(null);
+            }
+            dictionary.put(ReportConstants.EXECUTED_AT, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ?  locCodeMap.get(otherInfoRows.getExecutedAt()).getIataCode() : null);
             dictionary.put(ReportConstants.EXECUTED_AT_NAME, executedAtName);
             dictionary.put(ReportConstants.EXECUTED_ON, convertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
             dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());

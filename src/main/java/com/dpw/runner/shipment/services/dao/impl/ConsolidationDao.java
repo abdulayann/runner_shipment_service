@@ -267,19 +267,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMaxId();
     }
 
-    private boolean isNotAirExport(ConsolidationDetails request) {
-        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getShipmentType()));
+    private boolean isNonAirTransportMode(ConsolidationDetails request) {
+        return !Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && !request.getShipmentType().equals(Constants.DIRECTION_EXP) ;
+
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request) {
-        if(isNotAirExport(request)) {
+        if(isNonAirTransportMode(request))
             return false;
-        }
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
     private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request) {
-        if(isNotAirExport(request))
+        if(isNonAirTransportMode(request))
             return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
@@ -905,7 +905,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addAirCargoSecurityValidationsErrorsV3(request, errors, allowDGValueChange);
         } else {
-            addNonDgValidationsErrorsV3(request, shipmentSettingsDetails, errors, allowDGValueChange);
+            addNonDgValidationsErrorsV3(request, errors, allowDGValueChange);
         }
 
         // MBL number must be unique
@@ -976,7 +976,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails,
+    private void addNonDgValidationsErrorsV3(ConsolidationDetails request,
                                              Set<String> errors, boolean allowDGValueChange) {
         // Non dg consolidation validations
         if(checkForNonDGConsoleAndAirDGFlag(request) && (!allowDGValueChange)) {
@@ -993,19 +993,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Dg consolidation validations
-        if (checkForDGConsoleAndAirDGFlag(request)) {
-
-            // Non dg user cannot save dg consolidation
-            if (! UserContext.isAirDgUser())
-                errors.add("You don't have permission to update DG Consolidation");
-
-            // Dg consolidation must have at least one dg shipment
-            if(!allowDGValueChange) {
+        if (checkForDGConsoleAndAirDGFlag(request) && !allowDGValueChange) {
                 boolean containsDgShipment = checkContainsDGShipmentV3(request);
                 if (!containsDgShipment)
                     errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
             }
-        }
     }
 
     private boolean checkContainsDGShipmentV3(ConsolidationDetails request) {

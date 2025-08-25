@@ -4688,14 +4688,14 @@ public abstract class IReport {
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
-        if(Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && DIRECTION_EXP.equals(consolidationModel.getShipmentType()) && !isAirDgUser()) {
-            throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+        if (Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser() && consolidationModel.getShipmentType().equals(Constants.DIRECTION_EXP)) {
+                throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
 
     public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentModel.getDirection().equals(Constants.DIRECTION_EXP) && !isAirDgUser()) {
-            throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+        if (Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser() && shipmentModel.getDirection().equals(Constants.DIRECTION_EXP)) {
+                throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
 

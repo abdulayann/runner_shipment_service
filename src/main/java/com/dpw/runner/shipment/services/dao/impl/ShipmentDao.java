@@ -428,10 +428,6 @@ public class ShipmentDao implements IShipmentDao {
         if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGPackage(request)) {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
-        // Non dg Shipments can not have dg containers
-        if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGContainer(request)) {
-            errors.add("The shipment contains DG container. Marking the shipment as non DG is not allowed");
-        }
     }
 
     private void addNonDgValidationErrors(ShipmentDetails request, Set<String> errors) {

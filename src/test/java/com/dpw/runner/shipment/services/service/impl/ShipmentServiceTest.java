@@ -1421,7 +1421,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void completeUpdate_efreightStausChanged() throws RunnerException {
+        // Set up user permissions to avoid NullPointerException
         UserContext.getUser().setPermissions(new HashMap<>());
+
         shipmentDetails.setId(1L);
         ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -1433,12 +1435,9 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
         // Mock
-        when(shipmentDao.findById(any()))
-            .thenReturn(
-                Optional.of(
-                    shipmentDetails
-                        .setConsolidationList(new HashSet<>())
-                        .setContainersList(new HashSet<>())));
+        doReturn(Optional.of(shipmentDetails.setConsolidationList(new HashSet<>()).setContainersList(new HashSet<>())))
+                .when(shipmentDao)
+                .findById(any());
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -6352,7 +6351,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void attachListShipmentEvents() {
+        // Set up user permissions to avoid NullPointerException
         UserContext.getUser().setPermissions(new HashMap<>());
+
         long consolidationId = 1L;
         AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
         attachListShipmentRequest.setConsolidationId(consolidationId);
@@ -6383,6 +6384,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(consolidationId); // Set ID for proper mocking
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -6560,7 +6562,7 @@ ShipmentServiceTest extends CommonMocks {
         container.setId(1L);
         container.setGuid(UUID.randomUUID());
         Set<Containers> containers = new HashSet<>();
-        containers.add(container);
+        containers.add(new Containers());
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
         shipmentDetails1.setGuid(UUID.randomUUID());
         shipmentDetails1.setContainersList(containers);
