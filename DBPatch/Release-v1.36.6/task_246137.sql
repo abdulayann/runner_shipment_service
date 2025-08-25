@@ -51,7 +51,7 @@ set
         "OrgOrganizationCode": "FRC00027912"
     }'
 where
-    id = 83586 and tenant_id = 482;
+    id = 1309294 and tenant_id = 482;
 
 update
     shipment_details
@@ -110,7 +110,7 @@ set
         "OrgOrganizationCode": "FRC00008918"
     }'
 where
-    id = 81642 and tenant_id = 482;
+    id = 1273230 and tenant_id = 482;
 
 update
     shipment_details
