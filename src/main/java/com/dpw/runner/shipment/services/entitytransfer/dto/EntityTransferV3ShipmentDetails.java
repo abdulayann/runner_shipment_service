@@ -193,6 +193,8 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private LocalDateTime brokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquipmentPickUp;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
