@@ -1508,6 +1508,10 @@ public class ReportConstants {
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";
+    public static final String S_R_P_FIRST_VESSEL = "S_R_P_FirstVessel";
+    public static final String S_R_P_FIRST_VOYAGE = "S_R_P_FirstVoyage";
+    public static final String S_R_P_LAST_VESSEL = "S_R_P_LastVessel";
+    public static final String S_R_P_LAST_VOYAGE = "S_R_P_LastVoyage";
     public static final String S_LAST_FLIGHT_NUMBER = "S_LastFlightNumber";
     public static final String S_LAST_CARRIER = "S_LastCarrier";
 
