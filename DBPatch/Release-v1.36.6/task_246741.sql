@@ -94,7 +94,7 @@ set
         "OrgOrganizationCode": "FRC00024878"
     }'
 where
-    id = 89622 and tenant_id = 676;
+    id = 1415311 and tenant_id = 676;
 
 update
     shipment_details

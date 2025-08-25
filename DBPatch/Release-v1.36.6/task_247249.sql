@@ -90,7 +90,7 @@ set
     "OrgOrganizationCode": "FRC00036694"
 }'
 where
-    id = 84112 and tenant_id = 713;
+    id = 1318684 and tenant_id = 713;
 
 update
     shipment_details
@@ -192,7 +192,7 @@ set
     "OrgOrganizationCode": "FRC00036694"
 }'
 where
-    id = 87518 and tenant_id = 713;
+    id = 1378311 and tenant_id = 713;
 
 update
     shipment_details
@@ -296,7 +296,7 @@ set
     "OrgOrganizationCode": "FRC00036697"
 }'
 where
-    id = 84114 and tenant_id = 713;
+    id = 1318722 and tenant_id = 713;
 
 update
     shipment_details
@@ -400,7 +400,7 @@ set
     "OrgOrganizationCode": "FRC00036697"
 }'
 where
-    id = 87532 and tenant_id = 713;
+    id = 1378567 and tenant_id = 713;
 
 update
     shipment_details
