@@ -194,6 +194,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String destinationSecondarySalesAgentEmail;
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
+    private String destinationParentContractId;
     private String destinationContractType;
     private String updatedBy;
     private DateBehaviorType dateType;

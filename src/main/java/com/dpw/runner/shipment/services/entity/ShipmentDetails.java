@@ -528,6 +528,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "destination_contract_id")
     private String destinationContractId;
 
+    @Column(name = "destination_parent_contract_id")
+    private String destinationParentContractId;
+
     @Column(name = "destination_contract_type")
     private String destinationContractType;
 
