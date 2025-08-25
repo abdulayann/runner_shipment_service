@@ -5647,46 +5647,47 @@ public abstract class IReport {
                 .filter(r -> r != null && r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
 
+        if (ObjectUtils.isNotEmpty(main)) {
+            Routings firstMain = main.get(0);
+            Routings lastMain = main.get(main.size() - 1);
+
+            // Add last main routing info
+            if (lastMain != null) {
+                dict.put(S_LAST_VESSEL, lastMain.getVesselName());
+                dict.put(S_LAST_VOYAGE, lastMain.getVoyage());
+                dict.put(S_LAST_CARRIER, lastMain.getCarrier());
+                dict.put(S_LAST_FLIGHT_NUMBER, lastMain.getFlightNumber());
+            }
+
+            // Add first main routing info
+            if (firstMain != null) {
+                dict.put(S_FIRST_VESSEL, firstMain.getVesselName());
+                dict.put(S_FIRST_VOYAGE, firstMain.getVoyage());
+                dict.put(S_FIRST_CARRIER, firstMain.getCarrier());
+                dict.put(S_FIRST_FLIGHT_NUMBER, firstMain.getFlightNumber());
+            }
+
+        }
+
         List<Routings> pre = routings.stream()
                 .filter(r -> r != null && r.getCarriage() == RoutingCarriage.PRE_CARRIAGE)
                 .toList();
 
-        if (main.isEmpty() && pre.isEmpty()) {
-            return;
-        }
+        if (ObjectUtils.isNotEmpty(pre)) {
+            Routings firstPre = pre.get(0);
+            Routings lastPre = pre.get(pre.size() - 1);
 
-        Routings firstMain = main.get(0);
-        Routings lastMain = main.get(main.size() - 1);
+            // Add last pre routing info
+            if (lastPre != null) {
+                dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(lastPre.getVesselName()));
+                dict.put(S_R_P_LAST_VOYAGE, StringUtility.toUpperCase(lastPre.getVoyage()));
+            }
 
-        Routings firstPre = pre.get(0);
-        Routings lastPre = pre.get(pre.size() - 1);
-
-        // Add last main routing info
-        if (lastMain != null) {
-            dict.put(S_LAST_VESSEL, lastMain.getVesselName());
-            dict.put(S_LAST_VOYAGE, lastMain.getVoyage());
-            dict.put(S_LAST_CARRIER, lastMain.getCarrier());
-            dict.put(S_LAST_FLIGHT_NUMBER, lastMain.getFlightNumber());
-        }
-
-        // Add first main routing info
-        if (firstMain != null) {
-            dict.put(S_FIRST_VESSEL, firstMain.getVesselName());
-            dict.put(S_FIRST_VOYAGE, firstMain.getVoyage());
-            dict.put(S_FIRST_CARRIER, firstMain.getCarrier());
-            dict.put(S_FIRST_FLIGHT_NUMBER, firstMain.getFlightNumber());
-        }
-
-        // Add last pre routing info
-        if (lastPre != null) {
-            dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(lastPre.getVesselName()));
-            dict.put(S_R_P_LAST_VOYAGE, StringUtility.toUpperCase(lastPre.getVoyage()));
-        }
-
-        // Add first pre routing info
-        if (firstPre != null) {
-            dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(firstPre.getVesselName()));
-            dict.put(S_R_P_FIRST_VOYAGE, StringUtility.toUpperCase(firstPre.getVoyage()));
+            // Add first pre routing info
+            if (firstPre != null) {
+                dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(firstPre.getVesselName()));
+                dict.put(S_R_P_FIRST_VOYAGE, StringUtility.toUpperCase(firstPre.getVoyage()));
+            }
         }
     }
 
