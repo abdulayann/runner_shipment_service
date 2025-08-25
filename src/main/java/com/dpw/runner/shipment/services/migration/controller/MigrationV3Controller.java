@@ -32,7 +32,7 @@ public class MigrationV3Controller {
     public ResponseEntity<IRunnerResponse> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
         log.info("Received migration request from V2 to V3 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
+        log.debug("Authentication successful for X-API-KEY : {}", xApiKey);
         return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId(), request.getCount());
     }
 
