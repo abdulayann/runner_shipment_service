@@ -2825,6 +2825,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 earliestEmptyEquipmentPickUp(customerBookingRequest.getEarliestEmptyEquipmentPickUp()).
                 latestFullEquipmentDeliveredToCarrier(customerBookingRequest.getLatestFullEquipmentDeliveredToCarrier()).
                 earliestDropOffFullEquipmentToCarrier(customerBookingRequest.getEarliestDropOffFullEquipmentToCarrier()).
+                carrierDocCutOff(customerBookingRequest.getCarrierDocCutOff()).
+                cargoReceiptWHCutOff(customerBookingRequest.getCargoReceiptWHCutOff()).
+                lastFreeDateCutOff(customerBookingRequest.getLastFreeDateCutOff()).
+                numberOfFreeDaysCutOff(customerBookingRequest.getNumberOfFreeDaysCutOff()).
                 latestArrivalTime(customerBookingRequest.getLatestArrivalTime()).
                 estimatedBrokerageAtDestinationDate(customerBookingRequest.getEstimatedBrokerageAtDestinationDate()).
                 estimatedBrokerageAtOriginDate(customerBookingRequest.getEstimatedBrokerageAtOriginDate()).

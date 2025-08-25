@@ -97,6 +97,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -4066,16 +4067,31 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             } else if (TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)) {
                 applyAirCutOffs(oldConsolidation, newConsolidation, shipmentDetails, fromAttachShipment);
             }
+
+            // Common fields for all transport modes
+            if (Boolean.TRUE.equals(fromAttachShipment)) {
+                shipmentDetails.setLastFreeDateCutOff(newConsolidation.getLastFreeDateCutOff());
+                shipmentDetails.setNumberOfFreeDaysCutOff(newConsolidation.getNumberOfFreeDaysCutOff());
+            } else {
+                updateIfChanged(oldConsolidation.getLastFreeDateCutOff(), newConsolidation.getLastFreeDateCutOff(), shipmentDetails::setLastFreeDateCutOff);
+                updateIfChanged(oldConsolidation.getNumberOfFreeDaysCutOff(), newConsolidation.getNumberOfFreeDaysCutOff(), shipmentDetails::setNumberOfFreeDaysCutOff);
+            }
         }
     }
 
     private void applyAirCutOffs(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, ShipmentDetails shipmentDetails, Boolean fromAttachShipment){
         if (Boolean.TRUE.equals(fromAttachShipment)) {
-                shipmentDetails.setLatestArrivalTime(newConsolidation.getLatDate());
+            shipmentDetails.setLatestArrivalTime(newConsolidation.getLatDate());
+            if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                shipmentDetails.setCargoReceiptWHCutOff(newConsolidation.getCargoReceiptWHCutOff());
+            }
         } else {
             updateIfChanged(oldConsolidation.getLatDate(), newConsolidation.getLatDate(),
                 shipmentDetails::setLatestArrivalTime);
+            if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                updateIfChanged(oldConsolidation.getCargoReceiptWHCutOff(), newConsolidation.getCargoReceiptWHCutOff(), shipmentDetails::setCargoReceiptWHCutOff);
+            }
         }
     }
 
@@ -4097,7 +4113,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setEarliestEmptyEquipmentPickUp(newConsolidation.getEarliestEmptyEquPickUp());
             shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(newConsolidation.getLatestFullEquDeliveredToCarrier());
             shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(newConsolidation.getEarliestDropOffFullEquToCarrier());
-
+            if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                shipmentDetails.setCarrierDocCutOff(newConsolidation.getCarrierDocCutOff());
+                shipmentDetails.setCargoReceiptWHCutOff(newConsolidation.getCargoReceiptWHCutOff());
+            }
     }
 
     private void applySeaCutoffsUpdate(ConsolidationDetails oldConsolidation, ConsolidationDetails newConsolidation,
@@ -4125,6 +4144,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         updateIfChanged(oldConsolidation.getEarliestDropOffFullEquToCarrier(), newConsolidation.getEarliestDropOffFullEquToCarrier(),
             shipmentDetails::setEarliestDropOffFullEquipmentToCarrier);
+
+        if (Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+            updateIfChanged(oldConsolidation.getCarrierDocCutOff(), newConsolidation.getCarrierDocCutOff(), shipmentDetails::setCarrierDocCutOff);
+            updateIfChanged(oldConsolidation.getCargoReceiptWHCutOff(), newConsolidation.getCargoReceiptWHCutOff(), shipmentDetails::setCargoReceiptWHCutOff);
+        }
     }
 
     private void updateIfChanged(LocalDateTime oldValue, LocalDateTime newValue, Consumer<LocalDateTime> setter) {
@@ -4133,7 +4157,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-  @Override
+    private void updateIfChanged(Integer oldValue, Integer newValue, IntConsumer setter) {
+        if (newValue != null && !Objects.equals(oldValue, newValue)) {
+            setter.accept(newValue.intValue());
+        }
+    }
+
+    @Override
   public String getBookingNumberFromConsol(Long consolidationId) {
     return consolidationDetailsDao.getBookingNumberFromConsol(consolidationId);
   }
@@ -4218,7 +4248,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getEarliestEmptyEquPickUp(), oldEntity.getEarliestEmptyEquPickUp()) ||
             !Objects.equals(consol.getLatestFullEquDeliveredToCarrier(), oldEntity.getLatestFullEquDeliveredToCarrier()) ||
             !Objects.equals(consol.getEarliestDropOffFullEquToCarrier(), oldEntity.getEarliestDropOffFullEquToCarrier()) ||
-            !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
+            !Objects.equals(consol.getLatDate(), oldEntity.getLatDate()) ||
+            !Objects.equals(consol.getCarrierDocCutOff(), oldEntity.getCarrierDocCutOff()) ||
+            !Objects.equals(consol.getCargoReceiptWHCutOff(), oldEntity.getCargoReceiptWHCutOff()) ||
+            !Objects.equals(consol.getLastFreeDateCutOff(), oldEntity.getLastFreeDateCutOff()) ||
+            !Objects.equals(consol.getNumberOfFreeDaysCutOff(), oldEntity.getNumberOfFreeDaysCutOff());
+
     }
 
     private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ShipmentDetails shipmentDetails) {

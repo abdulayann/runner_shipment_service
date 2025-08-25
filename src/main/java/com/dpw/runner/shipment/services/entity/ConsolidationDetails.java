@@ -141,6 +141,18 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "ship_instruction_cutoff")
     private LocalDateTime shipInstructionCutoff;
 
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
+
     @Column(name = "hazardous_booking_cutoff")
     private LocalDateTime hazardousBookingCutoff; // DG Cutoff
 

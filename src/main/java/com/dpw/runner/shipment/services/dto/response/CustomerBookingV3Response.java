@@ -181,4 +181,11 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private Boolean isWeightEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

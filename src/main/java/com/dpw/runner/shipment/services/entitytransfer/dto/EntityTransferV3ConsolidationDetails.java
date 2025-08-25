@@ -49,9 +49,10 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private String dgClass;
     private String dgSubstance;
     private Boolean override;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
-    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
