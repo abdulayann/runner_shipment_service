@@ -2610,77 +2610,20 @@ public class CommonUtils {
             log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
         }
     }
+    public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
+        FieldClassifier classifier = classifyFields(includeColumns);
 
-//    public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
-//        // Separate collection fields (that need partial mapping) from regular nested fields
-//        Set<String> regularFields = new HashSet<>();
-//        Map<String, Set<String>> collectionFields = new HashMap<>();
-//
-//        for (String field : includeColumns) {
-//            if (isCollectionFieldWithSubFields(field, includeColumns) && !field.contains("orgData") && !field.contains("addressData")) {
-//                String rootField = field.split("\\.")[0];
-//                collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
-//            } else {
-//                regularFields.add(field);
-//            }
-//        }
-//
-//        // Process regular nested fields (like client.orgData.FullName)
-//        regularFields.forEach(field -> {
-//            try {
-//                Object value = getNestedFieldValue(entity, field);
-//                if (value == null) {
-//                    return;
-//                }
-//
-//                // Use the enhanced mapToDTO that considers response type
-//                Object dtoValue = mapToDTO(value, response, field);
-//                setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
-//            } catch (Exception e) {
-//                log.error("No such field: {}", field, e.getMessage());
-//            }
-//        });
-//
-//        // Process collection fields with partial mapping (like packingList.id, packingList.packs)
-//        collectionFields.forEach((rootField, subFields) -> {
-//            try {
-//                Object value = getNestedFieldValue(entity, rootField);
-//                if (value == null) {
-//                    return;
-//                }
-//
-//                Object dtoValue;
-//                Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
-//
-//                if (value instanceof List<?>) {
-//                    dtoValue = mapListWithSelectedFields((List<?>) value, subFieldNames);
-//                } else if (value instanceof Set<?>) {
-//                    dtoValue = mapSetWithSelectedFields((Set<?>) value, subFieldNames);
-//                } else {
-//                    dtoValue = mapToDTO(value);
-//                }
-//
-//                setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
-//            } catch (Exception e) {
-//                log.error("No such field: {}", rootField, e.getMessage());
-//            }
-//        });
-//
-//        return response;
-//    }
-public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
-    FieldClassifier classifier = classifyFields(includeColumns);
+        processRegularFields(entity, classifier.regularFields, response);
+        processCollectionFields(entity, classifier.collectionFields, response);
 
-    processRegularFields(entity, classifier.regularFields, response);
-    processCollectionFields(entity, classifier.collectionFields, response);
-
-    return response;
-}
+        return response;
+    }
 
     private FieldClassifier classifyFields(Set<String> includeColumns) {
         FieldClassifier classifier = new FieldClassifier();
 
         for (String field : includeColumns) {
+            if(field==null || field.trim().isEmpty()) continue;
             if (isCollectionFieldRequiringPartialMapping(field, includeColumns)) {
                 classifier.addCollectionField(field);
             } else {
