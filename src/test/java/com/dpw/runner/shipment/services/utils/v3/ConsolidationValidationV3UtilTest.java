@@ -308,7 +308,7 @@ class ConsolidationValidationV3UtilTest {
 
     ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
     shipmentSettingsDetails.setAirDGFlag(true);
-    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
     assertThrows(RunnerException.class, () ->
         validationUtil.validationsBeforeAttachShipments(consolidationDetails, new ArrayList<>(),
@@ -363,7 +363,7 @@ class ConsolidationValidationV3UtilTest {
     shipment.setCargoDeliveryDate(cargoDeliveryDate);
     ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
     shipmentSettingsDetails.setAirDGFlag(true);
-    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
     assertThrows(RunnerException.class, () ->
         validationUtil.validationsBeforeAttachShipments(consolidationDetails, new ArrayList<>(),
@@ -391,7 +391,7 @@ class ConsolidationValidationV3UtilTest {
     shipment.setCargoDeliveryDate(cargoDeliveryDate);
     ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
     shipmentSettingsDetails.setAirDGFlag(true);
-    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
     assertThrows(RunnerException.class, () ->
         validationUtil.validationsBeforeAttachShipments(consolidationDetails, new ArrayList<>(),
@@ -419,7 +419,7 @@ class ConsolidationValidationV3UtilTest {
     shipment.setCargoDeliveryDate(cargoDeliveryDate);
     ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
     shipmentSettingsDetails.setAirDGFlag(true);
-    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
     assertThrows(RunnerException.class, () ->
         validationUtil.validationsBeforeAttachShipments(consolidationDetails, new ArrayList<>(),
