@@ -2055,16 +2055,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if (!checkForAirDGFlag(consolidationDetails)) {
-            return false;
-        }
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
     public boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag())) {
-            return false;
-        }
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }
 
@@ -3778,8 +3772,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
-        if(!checkForAirDGFlag(consolidationDetails))
-            return false;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
         Boolean isDgShipmentAttached = shipmentDetailsList.stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
