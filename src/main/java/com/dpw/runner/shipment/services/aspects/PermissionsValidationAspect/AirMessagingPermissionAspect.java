@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.aspectj.lang.JoinPoint;
