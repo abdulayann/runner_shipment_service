@@ -1176,15 +1176,12 @@ public class EventService implements IEventService {
             return null;
         }
         switch (shipmentType) {
-            case Constants.DIRECTION_EXP:
-            case Constants.DIRECTION_DOM:
-                return EventConstants.INGE;
             case Constants.DIRECTION_CTS:
                 return EventConstants.INGO;
             case Constants.IMP:
                 return EventConstants.INGI;
             default:
-                return null; // No event for other shipment types
+                return EventConstants.INGE;
         }
     }
 
