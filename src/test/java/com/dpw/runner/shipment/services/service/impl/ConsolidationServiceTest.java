@@ -2306,8 +2306,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2355,8 +2353,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2397,8 +2393,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -5522,8 +5516,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), true));
     }
 
@@ -5533,8 +5525,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5545,8 +5535,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(2);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5557,8 +5545,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertDoesNotThrow(() -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5569,8 +5555,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5581,8 +5565,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), true));
     }
 
