@@ -22,7 +22,7 @@ public class AirMessagingPermissionAspect {
     private String AIR_MESSAGE_STATUS_RESET_PERMISSION;
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.AwbService.airMessageStatusReset(..)) && args(commonRequestModel)")
-    public void airMessageStatusReset(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    public void airMessageStatusReset(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
         if (Objects.equals(AIR_MESSAGE_STATUS_RESET_PERMISSION, "IGNORE")) {
             return;
         }
