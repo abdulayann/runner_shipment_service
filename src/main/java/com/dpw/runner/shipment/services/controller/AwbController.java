@@ -326,7 +326,7 @@ public class AwbController {
 
 
     @ApiResponses(value = {@ApiResponse(response = IataFetchRateRequest.class, code = 200, message = AwbConstants.IATA_FETCH_RATE_SUCCESS)})
-    @GetMapping("/air-message-status-reset")
+    @GetMapping(AwbConstants.AIR_MESSAGE_STATUS_RESET)
     public ResponseEntity<IRunnerResponse> airMessageStatusReset(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id) {
         String responseMsg = "";
         try {

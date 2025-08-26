@@ -4386,12 +4386,11 @@ public class AwbService implements IAwbService {
     public ResponseEntity<IRunnerResponse> airMessageStatusReset(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            var optional = awbDao.findById(commonRequestModel.getId());
+            var awb = awbDao.findById(commonRequestModel.getId()).orElse(null);
 
-            if (optional == null || optional.isEmpty()) {
+            if (awb == null) {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            Awb awb = optional.get();
 
             if (!Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
                 throw new ValidationException("AWB is not in FSU Locked status, cannot reset the status.");
@@ -4433,11 +4432,9 @@ public class AwbService implements IAwbService {
 
             if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsIdList)) {
                 List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
-                awbList.forEach(shipmentAwb -> {
-                    shipmentAwb.setAirMessageStatus(AwbStatus.AWB_GENERATED);});
+                awbList.forEach(shipmentAwb -> shipmentAwb.setAirMessageStatus(AwbStatus.AWB_GENERATED));
                 awbDao.saveAll(awbList);
             }
-
         });
     }
 
