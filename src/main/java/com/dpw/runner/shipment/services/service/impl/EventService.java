@@ -1124,7 +1124,10 @@ public class EventService implements IEventService {
                         UserContext.setUser(user);
 
                         List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
-                        eventsRequests.forEach(this::saveEvent);
+                        // Only save events if the list is not empty (appropriate event code found)
+                        if (!eventsRequests.isEmpty()) {
+                            eventsRequests.forEach(this::saveEvent);
+                        }
                     }
                 } catch (Exception e) {
                     throw new BillingException(e.getMessage());
@@ -1145,10 +1148,15 @@ public class EventService implements IEventService {
         InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
         AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
 
+        // Determine the appropriate event code based on shipment type
+        String eventCode = determineInvoiceEventCode(shipmentDetails.getDirection());
+        if (eventCode == null) {
+            return Collections.emptyList();
+        }
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setEntityId(shipmentDetails.getId());
         eventsRequest.setEntityType(Constants.SHIPMENT);
-        eventsRequest.setEventCode(EventConstants.INGE);
+        eventsRequest.setEventCode(eventCode);
         eventsRequest.setActual(accountReceivableDto.getInvoiceDate());
         eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         eventsRequest.setStatus(accountReceivableDto.getFusionInvoiceStatus());
@@ -1162,6 +1170,21 @@ public class EventService implements IEventService {
 
         return List.of(eventsRequest);
     }
+
+    private String determineInvoiceEventCode(String shipmentType) {
+        if (shipmentType == null) {
+            return null;
+        }
+        switch (shipmentType) {
+            case Constants.DIRECTION_CTS:
+                return EventConstants.INGO;
+            case Constants.IMP:
+                return EventConstants.INGI;
+            default:
+                return EventConstants.INGE;
+        }
+    }
+
     /**
      * Persists tracking events to the database and updates the relevant shipment details.
      * <p>
