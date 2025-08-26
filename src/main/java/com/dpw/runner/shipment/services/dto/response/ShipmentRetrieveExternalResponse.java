@@ -135,6 +135,7 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private String destinationCurrentPartyForQuote;
     private String destinationSecondarySalesAgentEmail;
     private String destinationContractId;
+    private String destinationParentContractId;
     private String updatedBy;
     private String destinationContractType;
     private Integer pendingActionCount;

@@ -295,5 +295,20 @@ class ConsolidationV3ControllerTest {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     verify(consolidationV3Service).listExternal(listRequest);
   }
+
+  @Test void testGetDefaultConsolidation_shouldReturnSuccessResponse() {
+      // Arrange
+      ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+      when(consolidationV3Service.getDefaultConsolidation()).thenReturn(mockResponse);
+
+      // Act
+      ResponseEntity<IRunnerResponse> response = controller.getDefaultConsolidation();
+
+      // Assert
+      assertNotNull(response);
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      verify(consolidationV3Service).getDefaultConsolidation();
+  }
+
 }
 

@@ -9,6 +9,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -26,13 +33,23 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
@@ -56,6 +73,18 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
@@ -499,6 +528,31 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(ValidationException.class, () -> consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request));
   }
 
+    @Test
+    void create_airDrtConsolidation_shouldThrowException() {
+        // Arrange: Create a request for a new consolidation with an invalid combination (AIR/DRT)
+        ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+        request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        request.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+
+        // Arrange: Mock the jsonHelper to convert the request DTO to an entity object.
+        ConsolidationDetails consolidationDetailsEntity = new ConsolidationDetails();
+        consolidationDetailsEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetailsEntity.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetailsEntity);
+
+        // Act & Assert: Verify that calling create throws a ValidationException
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            consolidationV3Service.create(request);
+        });
+
+        // Assert: Check if the exception message is correct
+        assertEquals(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR, exception.getMessage());
+
+        // Verify that the jsonHelper's convertValue method was called as expected
+        verify(jsonHelper).convertValue(request, ConsolidationDetails.class);
+    }
+
   @Test
   void testRetrieveByIdOrGuid_IdSuccess() throws RunnerException {
     ConsolidationDetailsV3Request request = ConsolidationDetailsV3Request.builder().id(1L).build();
@@ -933,6 +987,35 @@ if (unitConversionUtilityMockedStatic != null) {
     mockTenantSettings();
 
     assertThrows(GenericException.class, () -> spyService.completeUpdate(consolidationDetailsV3Request));
+  }
+
+  @Test
+  void completeUpdate_airDrtConsolidation_shouldThrowException(){
+      // Arrange: Create a request to update a consolidation to an invalid state (AIR/DRT)
+      ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+      request.setId(1L); // An existing ID
+      request.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+      request.setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+
+      // Arrange: Mock the DAO to return an existing consolidation entity when looked up by ID.
+      ConsolidationDetails existingConsolidation = new ConsolidationDetails();
+      existingConsolidation.setId(1L);
+      existingConsolidation.setTransportMode(Constants.TRANSPORT_MODE_SEA); // Its previous state was valid
+      existingConsolidation.setConsolidationType(Constants.CONSOLIDATION_TYPE_AGT);
+
+      // Mock the behavior of the DAO to find the existing entity
+      when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(existingConsolidation));
+
+      // Act & Assert: Verify that calling completeUpdate throws a ValidationException
+      ValidationException exception = assertThrows(ValidationException.class, () -> {
+          consolidationV3Service.completeUpdate(request);
+      });
+
+      // Assert: Check if the exception message is correct
+      assertEquals(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR, exception.getMessage());
+
+      // Verify that the DAO's findById method was called as part of the update pre-check
+      verify(consolidationDetailsDao).findById(1L);
   }
 
   @Test
@@ -5945,4 +6028,191 @@ if (unitConversionUtilityMockedStatic != null) {
     verify(commonUtils, never()).setIncludedFieldsToResponse(any(), anySet(), any());
   }
 
+    @Test
+    void testGetDefaultConsolidation_shouldReturnDefaultResponse_forSeaExport() {
+        // Arrange
+        var spyService = Mockito.spy(consolidationV3Service);
+
+        // Mock the settings that will be returned from the context
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setDefaultTransportMode(TRANSPORT_MODE_SEA);
+        mockSettings.setDefaultContainerType("FCL");
+        mockSettings.setDefaultShipmentType(DIRECTION_EXP);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockSettings);
+
+        // Mock internal method calls to isolate the logic of getDefaultConsolidation
+        String mockBol = "BOL12345";
+        doReturn(mockBol).when(spyService).generateCustomBolNumber();
+        doNothing().when(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("DefaultDept");
+
+        doReturn(new HashMap<String, Object>()).when(spyService).fetchAllMasterDataByKey(any(ConsolidationDetailsV3Response.class));
+
+        // Act
+        ConsolidationDetailsV3Response response = spyService.getDefaultConsolidation();
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(TRANSPORT_MODE_SEA, response.getTransportMode());
+        assertEquals("FCL", response.getContainerCategory());
+        assertEquals(DIRECTION_EXP, response.getShipmentType());
+        assertEquals(mockBol, response.getBol());
+        assertEquals(Constants.INTTRA, response.getModeOfBooking());
+        assertEquals("user", response.getCreatedBy()); // From setUp()
+        assertNotNull(response.getCreatedAt());
+        assertEquals(1L, response.getSourceTenantId()); // From setUp()
+        assertEquals("DefaultDept", response.getDepartment());
+        assertNull(response.getConsolidationType(), "ConsolidationType should not be set for SEA mode");
+        assertNotNull(response.getMasterDataMap());
+
+        // Verify interactions
+        verify(commonUtils).getShipmentSettingFromContext();
+        verify(spyService).generateCustomBolNumber();
+        verify(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+        verify(commonUtils).getAutoPopulateDepartment(TRANSPORT_MODE_SEA, DIRECTION_EXP, MdmConstants.CONSOLIDATION_MODULE);
+    }
+
+    @Test
+    void testGetDefaultConsolidation_forAirTransport_shouldSetStdTypeAndNotGenerateBol() {
+        // Arrange
+        var spyService = Mockito.spy(consolidationV3Service);
+
+        // Mock tenant settings for AIR transport
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setDefaultTransportMode(TRANSPORT_MODE_AIR);
+        mockSettings.setDefaultContainerType("ULD");
+        mockSettings.setDefaultShipmentType(DIRECTION_IMP);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockSettings);
+
+        // Mock other dependencies
+        doNothing().when(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AirDept");
+
+        doReturn(new HashMap<String, Object>()).when(spyService).fetchAllMasterDataByKey(any(ConsolidationDetailsV3Response.class));
+
+        // Act
+        ConsolidationDetailsV3Response response = spyService.getDefaultConsolidation();
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(TRANSPORT_MODE_AIR, response.getTransportMode());
+        assertEquals(Constants.CONSOLIDATION_TYPE_STD, response.getConsolidationType());
+        assertNull(response.getBol(), "BOL should be null for AIR transport");
+        assertNull(response.getModeOfBooking(), "ModeOfBooking should be null for AIR transport");
+        assertEquals("AirDept", response.getDepartment());
+
+        // Verify that generateCustomBolNumber was NOT called
+        verify(spyService, never()).generateCustomBolNumber();
+        verify(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+    }
+
+    @Test
+    void testGetDefaultConsolidation_whenHelperMethodFails_shouldThrowGenericException() {
+        // Arrange
+        var spyService = Mockito.spy(consolidationV3Service);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+
+        String expectedErrorMessage = "Failed to set default agent";
+        doThrow(new RuntimeException(expectedErrorMessage))
+                .when(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+
+        doReturn(new HashMap<String, Object>()).when(spyService).fetchAllMasterDataByKey(any(ConsolidationDetailsV3Response.class));
+
+        // Act & Assert
+        GenericException exception = assertThrows(GenericException.class, spyService::getDefaultConsolidation);
+
+        // Assert the message from the original exception is preserved
+        assertEquals(expectedErrorMessage, exception.getMessage());
+    }
+
+    @Test
+    void testGetDefaultConsolidation_withMinimalSettings_shouldNotFail() {
+        // Arrange
+        var spyService = Mockito.spy(consolidationV3Service);
+
+        // Mock settings with null values for defaults
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setDefaultTransportMode(null);
+        mockSettings.setDefaultContainerType(null);
+        mockSettings.setDefaultShipmentType(null);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockSettings);
+
+        // Mock other dependencies
+        doReturn(null).when(spyService).generateCustomBolNumber();
+        doNothing().when(spyService).setTenantAndDefaultAgent(any(ConsolidationDetailsV3Response.class));
+        when(commonUtils.getAutoPopulateDepartment(any(), any(), any())).thenReturn(null);
+
+        doReturn(new HashMap<String, Object>()).when(spyService).fetchAllMasterDataByKey(any(ConsolidationDetailsV3Response.class));
+
+        // Act
+        ConsolidationDetailsV3Response response = spyService.getDefaultConsolidation();
+
+        // Assert
+        assertNotNull(response);
+        assertNull(response.getTransportMode());
+        assertNull(response.getContainerCategory());
+        assertNull(response.getShipmentType());
+        assertNull(response.getBol());
+        assertNull(response.getModeOfBooking());
+        assertNull(response.getDepartment());
+    }
+    @Test
+    void testSetTenantAndDefaultAgent_forExport_populatesSendingAgentAndOriginBranch() {
+        // Arrange
+        ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+        response.setShipmentType(DIRECTION_EXP);
+
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setUnloco(12345);
+        V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
+        when(v1Service.retrieveTenant()).thenReturn(mockV1Response);
+        when(mockV1Response.getEntity()).thenReturn(tenantModel);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+
+        UnlocationsResponse unlocation = new UnlocationsResponse();
+        unlocation.setLocationsReferenceGUID("TESTLOCGUID");
+        when(masterDataUtils.fetchUnlocationByOneIdentifier(anyString(), anyString())).thenReturn(List.of(unlocation));
+
+        PartiesResponse defaultAgent = new PartiesResponse();
+        defaultAgent.setOrgCode("AGENT001");
+        defaultAgent.setOrgData(Map.of("TenantId", 5));
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+
+        // Act
+        consolidationV3Service.setTenantAndDefaultAgent(response);
+
+        // Assert
+        assertNotNull(response.getSendingAgent());
+        assertEquals("AGENT001", response.getSendingAgent().getOrgCode());
+        assertEquals(5L, response.getOriginBranch());
+        assertNull(response.getReceivingAgent());
+        assertEquals("TESTLOCGUID", response.getPlaceOfIssue());
+    }
+
+    @Test
+    void testSetTenantAndDefaultAgent_forImport_populatesReceivingAgent() {
+        // Arrange
+        ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+        response.setShipmentType(DIRECTION_IMP);
+
+        TenantModel tenantModel = new TenantModel();
+        V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
+        when(v1Service.retrieveTenant()).thenReturn(mockV1Response);
+        when(mockV1Response.getEntity()).thenReturn(tenantModel);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(masterDataUtils.fetchUnlocationByOneIdentifier(anyString(), anyString())).thenReturn(Collections.emptyList());
+
+        PartiesResponse defaultAgent = new PartiesResponse();
+        defaultAgent.setOrgCode("AGENT002");
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+
+        // Act
+        consolidationV3Service.setTenantAndDefaultAgent(response);
+
+        // Assert
+        assertNotNull(response.getReceivingAgent());
+        assertEquals("AGENT002", response.getReceivingAgent().getOrgCode());
+        assertNull(response.getSendingAgent());
+        assertNull(response.getOriginBranch());
+    }
 }

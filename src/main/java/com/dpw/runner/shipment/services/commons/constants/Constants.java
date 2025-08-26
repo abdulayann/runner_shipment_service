@@ -257,7 +257,7 @@ public class Constants {
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
     public static final String CONSOLIDATION_TYPE_DRT = "DRT";
-
+    public static final String CONSOLIDATION_TYPE_STD = "STD";
     public static final String METRIC_TON = "MT";
     public static final String METRE = "M";
     public static final String CENTI = "CM";
@@ -719,6 +719,7 @@ public class Constants {
     public static final String PROPER_SHIPPING_NAME = "properShippingName";
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
+    public static final String TENANTS = "Tenants";
     private Constants() {
     }
 
