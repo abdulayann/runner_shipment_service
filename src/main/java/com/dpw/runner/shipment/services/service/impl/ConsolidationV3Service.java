@@ -8,6 +8,16 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -20,6 +30,18 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -69,6 +91,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -252,6 +275,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     @Transactional
@@ -856,8 +882,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             if (Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
-                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get("TenantId") != null)
-                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get("TenantId").toString()));
+                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get(Constants.TENANTID) != null)
+                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get(Constants.TENANTID).toString()));
             } else if (Constants.DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
                 consolidationDetails.setReceivingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
             }
@@ -3377,8 +3403,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map<String, Object> response = new HashMap<>();
         var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationPendingNotificationResponse, response)), executorService);
         tenantDataFuture.join();
-        if(response.get("Tenants") != null)
-            consolidationPendingNotificationResponse.setTenantMasterData((Map<String, Object>) response.get("Tenants"));
+        if(response.get(Constants.TENANTS) != null)
+            consolidationPendingNotificationResponse.setTenantMasterData((Map<String, Object>) response.get(Constants.TENANTS));
         return consolidationPendingNotificationResponse;
     }
 
@@ -5006,4 +5032,74 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
         }
     }
+
+    @Override
+    public ConsolidationDetailsV3Response getDefaultConsolidation(){
+        try{
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+            // Populate the shipment details data on the basis of tenant settings
+            ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+            response.setCarrierDetails(new CarrierDetailResponse());
+            response.setTransportMode(tenantSettings.getDefaultTransportMode());
+            response.setContainerCategory(tenantSettings.getDefaultContainerType());
+            response.setShipmentType(tenantSettings.getDefaultShipmentType());
+            response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
+                response.setModeOfBooking(Constants.INTTRA);
+            }
+
+            // for AIR transportMode, setting default STD consolidationType
+            if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode())){
+                response.setConsolidationType(Constants.CONSOLIDATION_TYPE_STD);
+            }
+            response.setCreatedAt(LocalDateTime.now());
+            response.setCreatedBy(UserContext.getUser().getUsername());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+            // Populate default department
+            response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+            ));
+
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
+            response.setMasterDataMap(masterDataResponse);
+            setTenantAndDefaultAgent(response);
+            return response;
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            throw new GenericException(e.getMessage());
+        }
+    }
+
+    public void setTenantAndDefaultAgent(ConsolidationDetailsV3Response response) {
+        try {
+            log.info("Fetching Tenant Model using V1");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                            EntityTransferConstants.ID,
+                            StringUtility.convertToString(tenantModel.getUnloco())
+                    ))
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0).getLocationsReferenceGUID())
+                    .ifPresent(response::setPlaceOfIssue);
+
+            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
+                response.setSendingAgent(partiesResponse);
+                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get(Constants.TENANTID)!=null)
+                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get(Constants.TENANTID).toString()));
+            } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
+                response.setReceivingAgent(partiesResponse);
+            }
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+        }
+    }
+
+    private boolean shouldGenerateBol(String transportMode) {
+        return !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode);
+    }
+
 }

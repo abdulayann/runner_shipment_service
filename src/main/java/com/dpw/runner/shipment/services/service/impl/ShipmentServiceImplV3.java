@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.*;
@@ -139,6 +140,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstan
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.*;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -225,6 +227,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private ProductIdentifierUtility productEngine;
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
@@ -2905,8 +2909,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId") != null)
-            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId").toString()));
+        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(Constants.TENANTID) != null)
+            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(Constants.TENANTID).toString()));
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -4737,5 +4741,150 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vw, result, totalWeight, weightUnit,
                 (!volumeMissingInContainers ? totalVolume : null), volumeUnit, totalVolume);
+    }
+
+    @Override
+    public ShipmentDetailsResponse getDefaultShipment() {
+        try {
+            var tenantSettings = commonUtils.getShipmentSettingFromContext();
+            ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+
+            // Populate the shipment details on the basis of tenant settings
+            response.setAdditionalDetails(new AdditionalDetailResponse());
+            response.setCarrierDetails(new CarrierDetailResponse());
+            response.setTransportMode(tenantSettings.getDefaultTransportMode());
+            response.setDirection(tenantSettings.getDefaultShipmentType());
+            response.setShipmentType(tenantSettings.getDefaultContainerType());
+
+            response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+            response.setStatus(0);
+            response.setSource(Constants.SYSTEM);
+            response.setCreatedBy(UserContext.getUser().getUsername());
+            response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+            response.setShipmentCreatedOn(LocalDateTime.now());
+            response.setAutoUpdateWtVol(true);
+            response.setDateType(ESTIMATED);
+            //Generate HBL
+            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+                response.setHouseBill(generateCustomHouseBL(null));
+
+            // Populate default department
+            response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE
+            ));
+
+            setDefaultAgentAndTenant(response);
+
+            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+                response.setHouseBill(generateCustomHouseBL(null));
+
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(null, response);
+
+            //set master data response
+            response.setMasterDataMap(masterDataResponse);
+
+            return response;
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            throw new GenericException(e.getMessage());
+        }
+    }
+
+    public String generateCustomHouseBL(ShipmentDetails shipmentDetails) {
+        final ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+
+        String result = null;
+
+        if (shipmentDetails == null && tenantSettings != null && Boolean.TRUE.equals(tenantSettings.getRestrictHblGen())) {
+            return null;
+        }
+
+        if(shipmentDetails != null) {
+            result = shipmentDetails.getHouseBill();
+        }
+
+        if (shipmentDetails != null && tenantSettings.getCustomisedSequence()) {
+            try {
+                result = productEngine.getCustomizedBLNumber(shipmentDetails);
+            }
+            catch (Exception e) {
+                log.error(e.getMessage());
+            }
+        }
+
+        if(result == null || result.isEmpty()) {
+            final String numberGeneration = tenantSettings.getHousebillNumberGeneration() ==  null ? "" : tenantSettings.getHousebillNumberGeneration();
+            result = tenantSettings.getHousebillPrefix() ==  null ? "" : tenantSettings.getHousebillPrefix();
+
+            switch(numberGeneration) {
+                case "Random" :
+                    result += StringUtility.getRandomString(10);
+                    break;
+                case "Serial" :
+                    String serialNumber = getShipmentsSerialNumber();
+                    result += serialNumber;
+                    break;
+                default : result = "";
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private String getShipmentsSerialNumber() {
+        // Moving this responsibility to v1 sequnce table to avoid syncing overhead
+        return v1Service.getShipmentSerialNumber();
+    }
+
+    public void setDefaultAgentAndTenant(ShipmentDetailsResponse response) {
+        try {
+            log.info("Fetching the Tenant Model for Default Shipment");
+
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            String currencyCode = tenantModel.currencyCode;
+            response.setFreightLocalCurrency(currencyCode);
+
+            List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
+            if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
+
+                EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+                String transpMode = response.getTransportMode();
+                if ((Constants.TRANSPORT_MODE_SEA.equals(transpMode)
+                        || Constants.TRANSPORT_MODE_RAI.equals(transpMode))
+                        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled())
+                        && entityTransferAddress != null) {
+                    response.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
+                } else {
+                    response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                }
+                // set place of supply and paid place
+                response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
+            }
+
+            final PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            String direction = response.getDirection();
+            if(Constants.DIRECTION_EXP.equals(direction)) {
+                // populate export broker and origin branch
+                response.getAdditionalDetails().setExportBroker(partiesResponse);
+                if(partiesResponse.getOrgData() != null) {
+                    var originBranch = partiesResponse.getOrgData().get(Constants.TENANTID);
+                    if (originBranch != null) {
+                        response.setOriginBranch(Long.valueOf(originBranch.toString()));
+                    }
+                }
+
+            } else if(Constants.DIRECTION_IMP.equals(direction)) {
+                // populate import broker details
+                response.getAdditionalDetails().setImportBroker(partiesResponse);
+            }
+        } catch (Exception e) {
+            log.error("Failed in fetching the tenant data from V1 with error : {}", e);
+        }
     }
 }

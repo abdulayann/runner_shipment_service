@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -289,5 +290,12 @@ public class ShipmentControllerV3 {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> getDefaultShipment() {
+        ShipmentDetailsResponse defaultShipment = shipmentService.getDefaultShipment();
+        return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
 }
