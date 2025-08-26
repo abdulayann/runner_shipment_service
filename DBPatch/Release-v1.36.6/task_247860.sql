@@ -3,5 +3,5 @@ SET air_message_status = 'AWB_GENERATED'
 WHERE shipment_id = 90729;
 
 UPDATE awb
-SET linked_hawb_air_message_status = 'AWB_GENERATED'
+SET linked_hawb_air_message_status = 'AWB_GENERATED', air_message_status = 'AWB_GENERATED'
 WHERE consolidation_id = 69741;
