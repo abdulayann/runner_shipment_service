@@ -53,4 +53,6 @@ public class AwbConstants {
     public static final String SPX = "SPX";
     public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", EXEMPTION_CARGO_SECURITY_STATUS);
 
+
+    public static final String AIR_MESSAGE_STATUS_RESET = "/air-message-status-reset";
 }
