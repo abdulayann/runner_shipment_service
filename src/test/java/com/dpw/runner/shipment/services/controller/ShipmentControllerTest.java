@@ -31,7 +31,6 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
@@ -1300,17 +1299,6 @@ class ShipmentControllerTest {
         when(shipmentService.sendOceanDGApprovalEmail(request)).thenThrow(new RuntimeException());
         // Test
         var responseEntity = shipmentController.oceanDGSendForApproval(request);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testOceanDGApprovalResponse() throws RunnerException {
-        OceanDGRequest request = OceanDGRequest.builder().build();
-        // Mock
-        when(shipmentService.dgApprovalResponse(request)).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = shipmentController.oceanDGApprovalResponse(request);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

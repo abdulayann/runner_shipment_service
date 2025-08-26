@@ -1431,8 +1431,8 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
-    public String getTaskIdHyperLink(String shipmentId, String taskId) {
-        String link = baseUrl + "/v2/shipments/tasks/" + taskId;
+    public String getTaskIdHyperLink(String shipmentId, String taskGuid) {
+        String link = baseUrl + "/v2/manage/tasks/" + taskGuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
@@ -2020,7 +2020,7 @@ public class CommonUtils {
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
         dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
-        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
     }
 
     private void populateDictionaryApprovalRequestForDGEmail(Map<String, Object> dictionary, String remarks) {

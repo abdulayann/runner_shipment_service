@@ -3318,6 +3318,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
                 .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
+        request.setShipmentGuid(shipmentDetails.getGuid().toString());
 
         if (Constants.IMP.equals(shipmentDetails.getDirection())) {
             return "DG approval not required for Import Shipment";
