@@ -47,6 +47,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NON_DG_MARKING_ERROR_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -266,20 +267,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMaxId();
     }
 
-    private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    private boolean isNotAirExport(ConsolidationDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getShipmentType()));
     }
 
-    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request) {
+        if(isNotAirExport(request)) {
             return false;
+        }
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
-    private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request) {
+        if(isNotAirExport(request))
             return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
@@ -292,7 +292,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addAirCargoSecurityValidationsErrors(request, creatingFromDgShipment, fromV1Sync, errors);
         } else {
-            addNonDgValidationsErrors(request, creatingFromDgShipment, fromV1Sync, shipmentSettingsDetails, errors);
+            addNonDgValidationsErrors(request, creatingFromDgShipment, fromV1Sync, errors);
         }
 
         // Container Number can not be repeated
@@ -421,9 +421,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrors(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationsErrors(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync, Set<String> errors) {
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if(checkForNonDGConsoleAndAirDGFlag(request)) {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
             if (isDGShipmentAttached) {
@@ -436,11 +436,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
         }
         // Dg consolidation validations
-        if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
-
-            // Non dg user cannot save dg consolidation
-            if (!UserContext.isAirDgUser())
-                errors.add("You don't have permission to update DG Consolidation");
+        if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request)) {
 
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = checkContainsDGShipment(request, creatingFromDgShipment);
@@ -909,7 +905,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addAirCargoSecurityValidationsErrorsV3(request, errors, allowDGValueChange);
         } else {
-            addNonDgValidationsErrorsV3(request, shipmentSettingsDetails, errors, allowDGValueChange);
+            addNonDgValidationsErrorsV3(request, errors, allowDGValueChange);
         }
 
         // MBL number must be unique
@@ -980,10 +976,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails,
+    private void addNonDgValidationsErrorsV3(ConsolidationDetails request,
                                              Set<String> errors, boolean allowDGValueChange) {
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails) && (!allowDGValueChange)) {
+        if(checkForNonDGConsoleAndAirDGFlag(request) && (!allowDGValueChange)) {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
             if (isDGShipmentAttached) {
@@ -997,19 +993,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Dg consolidation validations
-        if (checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
-
-            // Non dg user cannot save dg consolidation
-            if (! UserContext.isAirDgUser())
-                errors.add("You don't have permission to update DG Consolidation");
-
-            // Dg consolidation must have at least one dg shipment
-            if(!allowDGValueChange) {
+        if (checkForDGConsoleAndAirDGFlag(request) && !allowDGValueChange) {
                 boolean containsDgShipment = checkContainsDGShipmentV3(request);
                 if (!containsDgShipment)
                     errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
             }
-        }
     }
 
     private boolean checkContainsDGShipmentV3(ConsolidationDetails request) {

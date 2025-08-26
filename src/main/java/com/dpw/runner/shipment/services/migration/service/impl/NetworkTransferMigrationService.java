@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Shipm
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
+import com.dpw.runner.shipment.services.migration.repository.INetworkTransferBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
@@ -74,6 +75,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Autowired
     private MDMServiceAdapter mdmServiceAdapter;
 
+    @Autowired
+    private INetworkTransferBackupRepository networkTransferBackupRepository;
+
 
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
@@ -93,6 +97,13 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
 
     private NetworkTransfer migrateShipmentV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) throws RunnerException {
         Long shipmentId = networkTransfer.getEntityId();
+        EntityTransferV3ShipmentDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ShipmentDetails.class);
+        if (existingPayload != null) {
+            MigrationStatus status = existingPayload.getMigrationStatus();
+            if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
+                return networkTransfer;
+            }
+        }
         ShipmentDetails shipmentDetails = shipmentDao.findShipmentByIdWithQuery(shipmentId).orElse(null);
         if(shipmentDetails==null) {
             log.info("No Shipment Details present for Network Transfer with [id={}]", networkTransfer.getId());
@@ -120,6 +131,11 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, Map<String, BigDecimal> codeTeuMap) {
         Long consolidationId = networkTransfer.getEntityId();
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
+        MigrationStatus status = existingPayload.getMigrationStatus();
+        if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
+            return networkTransfer;
+        }
+
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolidationId);
         log.info("Consolidation Details present for Network Transfer with [id={}]", networkTransfer.getId());
         ConsolidationDetails v2Consol = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
@@ -184,6 +200,11 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         Map<String, Object> entityPayload = networkTransfer.getEntityPayload();
         if(Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)){
             Long shipmentId = networkTransfer.getEntityId();
+            EntityTransferV3ShipmentDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ShipmentDetails.class);
+            MigrationStatus status = existingPayload.getMigrationStatus();
+            if (status != null && !status.equals(MigrationStatus.CREATED_IN_V3) && !status.equals(MigrationStatus.MIGRATED_FROM_V2)) {
+                return networkTransfer;
+            }
             ShipmentDetails shipmentDetails = shipmentDao.findShipmentByIdWithQuery(shipmentId).orElse(null);
             if(shipmentDetails==null) {
                 log.info("No Shipment Details present for Network Transfer with [id={}]", networkTransfer.getId());
@@ -221,6 +242,10 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     private NetworkTransfer migrateConsolidationV3ToV2(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) throws RunnerException {
         Long consolidationId = networkTransfer.getEntityId();
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
+        MigrationStatus status = existingPayload.getMigrationStatus();
+        if (status != null && !status.equals(MigrationStatus.CREATED_IN_V3) && !status.equals(MigrationStatus.MIGRATED_FROM_V2)) {
+            return networkTransfer;
+        }
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolidationId);
         ConsolidationDetails v3Consol = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
         ConsolidationDetails v2Consol = consolidationMigrationV3Service.mapConsoleV3ToV2(v3Consol);
@@ -401,6 +426,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
+                    networkTransferBackupRepository.deleteBackupByTenantIdAndNetworkTransferId(nteId, tenantId);
                     migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
                     throw new IllegalArgumentException(e);
                 } finally {

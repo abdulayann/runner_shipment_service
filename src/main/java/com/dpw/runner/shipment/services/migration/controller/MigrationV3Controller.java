@@ -32,8 +32,8 @@ public class MigrationV3Controller {
     public ResponseEntity<IRunnerResponse> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
         log.info("Received migration request from V2 to V3 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId());
+        log.debug("Authentication successful for X-API-KEY : {}", xApiKey);
+        return migrationV3Service.migrateV2Tov3Async(request.getTenantId(), request.getConsolId(), request.getBookingId(), request.getCount());
     }
 
     @PostMapping(value = "/v3/v2")
@@ -41,7 +41,7 @@ public class MigrationV3Controller {
         log.info("Received migration request from V3 to V2 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId());
+        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId(), request.getCount());
     }
 
 }

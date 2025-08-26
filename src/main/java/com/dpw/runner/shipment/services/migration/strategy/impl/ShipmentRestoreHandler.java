@@ -37,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 
 import java.util.*;
@@ -87,6 +88,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final NetworkTransferDao networkTransferDao;
     private final INetworkTransferRepository networkTransferRepository;
     private final V1ServiceImpl v1Service;
+    private final TransactionTemplate transactionTemplate;
 
     @Autowired
     private HelperExecutor trxExecutor;
@@ -182,7 +184,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         if (shipmentDetails.getContainersList() != null) {
             for (Containers container : shipmentDetails.getContainersList()) {
                 Long containerId = container.getId();
-                if (containerId != null) {
+                if (null != containerId && null != containerShipmentMap) {
                     containerShipmentMap.computeIfAbsent(containerId, k -> new ArrayList<>()).add(shipmentId);
                 }
             }
@@ -327,13 +329,14 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     @Override
     public void restore(Integer tenantId) {
-
+        log.info("Executing shipment restore tasks for tenantId: {}", tenantId);
         Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
         if (allBackupShipmentIds.isEmpty()) {
             return;
         }
+        log.info("Fetched all shipment ids to restore...");
         shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
-
+        log.info("Deleted additional shipments...");
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
 
@@ -344,7 +347,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                         v1Service.setAuthContext();
                         TenantContext.setCurrentTenant(tenantId);
                         UserContext.getUser().setPermissions(new HashMap<>());
-                        return trxExecutor.runInTrx(() -> {
+                        return transactionTemplate.execute(status -> {
                             restoreShipmentTransaction(id);
                             return null;
                         });
@@ -358,9 +361,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                     }
                 }))
                 .toList();
-
+        log.info("Waiting for all shipment restore tasks to complete...");
         futureCompletion(shipmentFutures);
-        log.info("Completed shipment backup for tenant: {}", tenantId);
+        log.info("Completed shipment restore for tenant: {}", tenantId);
     }
 
 

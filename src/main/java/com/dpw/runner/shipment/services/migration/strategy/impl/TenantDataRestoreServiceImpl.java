@@ -27,13 +27,14 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     private final HelperExecutor trxExecutor;
 
     @Override
-    public ResponseEntity<String> restoreTenantDataAsync(Integer tenantId) {
+    public ResponseEntity<String> restoreTenantDataAsync(Integer tenantId, Integer count) {
 
         trxExecutor.runInAsync(() ->  {
             try {
-                restoreTenantData(tenantId);
+                long startTime = System.currentTimeMillis();
+                restoreTenantData(tenantId, count);
                 log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
-                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully", "Restore From V3 to V2",  false);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully : " + (System.currentTimeMillis()-startTime), "Restore From V3 to V2",  false);
             } catch (Exception e) {
                 log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Restore From V3 to V2", true);
@@ -46,11 +47,16 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
 
 
     @Override
-    public void restoreTenantData(Integer tenantId) {
+    public void restoreTenantData(Integer tenantId, Integer count) {
             try {
-                executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
-                executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
-                executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
+                if ((count & 2) > 0)
+                    executeHandler(getHandler(NetworkTransferRestoreHandler.class), tenantId);
+                if ((count & 4) > 0)
+                    executeHandler(getHandler(ConsolidationRestoreHandler.class), tenantId);
+                if ((count & 8) > 0)
+                    executeHandler(getHandler(ShipmentRestoreHandler.class), tenantId);
+                if ((count & 16) > 0)
+                    executeHandler(getHandler(CustomerBookingRestoreHandler.class), tenantId);
             } catch (Exception e) {
                 log.error("Restore failed for tenant: {}", tenantId, e);
                 throw new IllegalArgumentException(e);

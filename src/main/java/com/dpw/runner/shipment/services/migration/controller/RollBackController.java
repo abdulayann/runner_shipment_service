@@ -36,8 +36,8 @@ public class RollBackController {
     }
 
     @GetMapping("/rollback/createBackUpSchema")
-    public String backup(@RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+    public String backup( @RequestParam Integer tenantId, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        return String.format("New Schema has been created %s", entityLevelRollbackService.backupEntity());
+        return String.format("New Schema has been created %s", entityLevelRollbackService.backupEntity(tenantId));
     }
 }

@@ -5,6 +5,6 @@ import org.springframework.http.ResponseEntity;
 
 @Generated
 public interface TenantDataRestoreService {
-    void restoreTenantData(Integer tenantId);
-    ResponseEntity<String> restoreTenantDataAsync(Integer tenantId);
+    void restoreTenantData(Integer tenantId, Integer count);
+    ResponseEntity<String> restoreTenantDataAsync(Integer tenantId, Integer count);
 }
