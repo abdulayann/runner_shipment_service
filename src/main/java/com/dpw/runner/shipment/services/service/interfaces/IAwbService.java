@@ -33,4 +33,5 @@ public interface IAwbService {
     Awb getMawnLinkPacks(Awb awb, boolean syncGoodsDescription, List<Awb> linkedHawb);
     ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId);
     ResponseEntity<IRunnerResponse> getFetchIataRates(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> airMessageStatusReset(CommonRequestModel commonRequestModel);
 }

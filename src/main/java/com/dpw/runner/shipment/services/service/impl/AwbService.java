@@ -4381,4 +4381,64 @@ public class AwbService implements IAwbService {
             }
         }
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> airMessageStatusReset(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            var optional = awbDao.findById(commonRequestModel.getId());
+
+            if (optional == null || optional.isEmpty()) {
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            Awb awb = optional.get();
+
+            if (!Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
+                throw new ValidationException("AWB is not in FSU Locked status, cannot reset the status.");
+
+            var oldEntityJsonString = jsonHelper.convertToJson(awb);
+
+            awb.setAirMessageStatus(AwbStatus.AWB_GENERATED);
+            if (Objects.nonNull(awb.getConsolidationId()))
+                awb.setLinkedHawbAirMessageStatus(AwbStatus.AWB_GENERATED);
+
+            awbDao.save(awb);
+
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(awb)
+                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Awb.class) : null)
+                            .parent(Awb.class.getSimpleName())
+                            .parentId(awb.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
+            updateAirMessageStatusForLinkedShipments(awb);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void updateAirMessageStatusForLinkedShipments(Awb awb) {
+        consolidationDetailsDao.findById(awb.getConsolidationId()).ifPresent(consolidation -> {
+            List<Long> shipmentDetailsIdList = consolidation.getShipmentsList()
+                    .stream()
+                    .map(ShipmentDetails::getId)
+                    .toList();
+
+            if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsIdList)) {
+                List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+                awbList.forEach(shipmentAwb -> {
+                    shipmentAwb.setAirMessageStatus(AwbStatus.AWB_GENERATED);});
+                awbDao.saveAll(awbList);
+            }
+
+        });
+    }
+
 }
