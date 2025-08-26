@@ -70,6 +70,8 @@ public class EventConstants {
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
     public static final String INGE  = "INGE";
+    public static final String INGO  = "INGO";
+    public static final String INGI  = "INGI";
     public static final String SISC  = "SISC";
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";

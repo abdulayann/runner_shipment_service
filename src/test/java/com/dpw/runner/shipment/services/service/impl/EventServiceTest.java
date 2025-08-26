@@ -129,6 +129,18 @@ class EventServiceTest extends CommonMocks {
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
 
+    @Mock
+    private BillingInvoiceDto billingInvoiceDto;
+
+    @Mock
+    private InvoiceDto invoiceDto;
+
+    @Mock
+    private AccountReceivableDto accountReceivableDto;
+
+    @Mock
+    private ShipmentDetails shipmentDetails;
+
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
     private static ObjectMapper objectMapperTest;
@@ -1091,12 +1103,14 @@ class EventServiceTest extends CommonMocks {
         shipment1.setId(1L);
         shipment1.setShipmentId("S123");
         shipment1.setTenantId(1);
+        shipment1.setDirection(Constants.DIRECTION_EXP);
 
         ShipmentDetails shipment2 = new ShipmentDetails();
         shipment2.setGuid(guid2);
         shipment2.setId(2L);
         shipment2.setShipmentId("S456");
         shipment2.setTenantId(2);
+        shipment2.setDirection(Constants.IMP);
 
         EventsRequest mockRequest1 = new EventsRequest(); // Populate as needed
         EventsRequest mockRequest2 = new EventsRequest();
@@ -1270,5 +1284,131 @@ class EventServiceTest extends CommonMocks {
         // Assert
         assertNull(response.getBranchName());
     }
+
+    @Test
+    void testPrepareEvents_EXP() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        when(shipmentDetails.getId()).thenReturn(1L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INVEXP001");
+        when(accountReceivableDto.getId()).thenReturn("AREXP001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR-EXP");
+        when(accountReceivableDto.getUserEmail()).thenReturn("exp@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Export Clerk");
+
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertEquals(EventConstants.INGE, result.get(0).getEventCode());
+    }
+
+    @Test
+    void testPrepareEvents_IMP() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.IMP);
+        when(shipmentDetails.getId()).thenReturn(2L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV_IMP_001");
+        when(accountReceivableDto.getId()).thenReturn("AR_IMP_001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR-IMP");
+        when(accountReceivableDto.getUserEmail()).thenReturn("imp@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Import Clerk");
+
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertEquals(EventConstants.INGI, result.get(0).getEventCode());
+    }
+
+    // CTS → INGO
+    @Test
+    void testPrepareEvents_CTS() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_CTS);
+        when(shipmentDetails.getId()).thenReturn(3L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV_CTS_001");
+        when(accountReceivableDto.getId()).thenReturn("AR_CTS_001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR-CTS");
+        when(accountReceivableDto.getUserEmail()).thenReturn("cts@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Triangulation Clerk");
+
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertEquals(EventConstants.INGO, result.get(0).getEventCode());
+    }
+
+
+    // EXP but should not be INGI/INGO
+    @Test
+    void testPrepareEvents_EXP_WrongEventCode() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        when(shipmentDetails.getId()).thenReturn(4L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP-EXP-WRONG");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertNotEquals(EventConstants.INGI, result.get(0).getEventCode());
+        assertNotEquals(EventConstants.INGO, result.get(0).getEventCode());
+    }
+
+    // IMP but should not be INGE/INGO
+    @Test
+    void testPrepareEvents_IMP_WrongEventCode() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.IMP);
+        when(shipmentDetails.getId()).thenReturn(5L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP-IMP-WRONG");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertNotEquals(EventConstants.INGE, result.get(0).getEventCode());
+        assertNotEquals(EventConstants.INGO, result.get(0).getEventCode());
+    }
+
+    @Test
+    void testPrepareEvents_CTS_WrongEventCode() {
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_CTS);
+        when(shipmentDetails.getId()).thenReturn(6L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP-CTS-WRONG");
+
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(LocalDateTime.now());
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        assertNotEquals(EventConstants.INGE, result.get(0).getEventCode());
+        assertNotEquals(EventConstants.INGI, result.get(0).getEventCode());
+    }
+
+
 
 }
