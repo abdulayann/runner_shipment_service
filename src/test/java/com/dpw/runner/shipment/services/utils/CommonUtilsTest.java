@@ -4328,6 +4328,65 @@ class CommonUtilsTest {
     }
 
     @Test
+    void sendEmailShipmentPullWithdraw_consolidationAssignedToNotNull() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setAssignedTo("AssignedToUser");
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw_consolidationAssignedToNotNull_userEmailInMapExists() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setAssignedTo("AssignedToUser");
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        usernameEmailsMap.put("Assigned", "Email");
+        usernameEmailsMap.put("AssignedToUser", "AnotherEmail");
+
+        sendEmailDto.setUsernameEmailsMap(usernameEmailsMap);
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
     void sendEmailShipmentPushWithdraw() {
         // Arrange
         SendEmailDto sendEmailDto = new SendEmailDto();

@@ -3900,6 +3900,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
 
         // fetching other consolidations
         List<Long> otherConsoleIds = new ArrayList<>();
@@ -3917,6 +3920,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
         for (ConsolidationDetails consolidationDetails1 : consolidationDetailsPage.getContent()) {
             userNames.add(consolidationDetails1.getCreatedBy());
+            if (consolidationDetails1.getAssignedTo() != null) {
+                userNames.add(consolidationDetails1.getAssignedTo());
+            }
             tenantIds.add(consolidationDetails1.getTenantId());
             otherConsoles.add(consolidationDetails1);
         }
@@ -3940,6 +3946,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsMap.put(consolidationDetails.getId(), consolidationDetails);
             tenantIds.add(consolidationDetails.getTenantId());
             userNames.add(consolidationDetails.getCreatedBy());
+            if (consolidationDetails.getAssignedTo() != null) {
+                userNames.add(consolidationDetails.getAssignedTo());
+            }
         }
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
@@ -4002,6 +4011,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
                 tenantIds.add(consolidationDetails1.getTenantId());
                 userNames.add(consolidationDetails1.getCreatedBy());
+                if (consolidationDetails1.getAssignedTo() != null) {
+                    userNames.add(consolidationDetails1.getAssignedTo());
+                }
             }
         }
     }
@@ -4113,6 +4125,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
         tenantIds.add(consolidationDetails.getTenantId());
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
@@ -4145,6 +4160,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<String> ccEmailsList = new ArrayList<>();
         if (consolidationDetails.getCreatedBy() != null)
             toEmailList.add(consolidationDetails.getCreatedBy());
+
+        if (consolidationDetails.getAssignedTo() != null) {
+            ccEmailsList.add(consolidationDetails.getAssignedTo());
+        }
 
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
