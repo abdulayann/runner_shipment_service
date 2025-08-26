@@ -324,4 +324,19 @@ public class AwbController {
         }
     }
 
+
+    @ApiResponses(value = {@ApiResponse(response = IataFetchRateRequest.class, code = 200, message = AwbConstants.IATA_FETCH_RATE_SUCCESS)})
+    @GetMapping("/air-message-status-reset")
+    public ResponseEntity<IRunnerResponse> airMessageStatusReset(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id) {
+        String responseMsg = "";
+        try {
+            return awbService.airMessageStatusReset(CommonRequestModel.buildRequest(id));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error While Air Message Status Reset";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }
