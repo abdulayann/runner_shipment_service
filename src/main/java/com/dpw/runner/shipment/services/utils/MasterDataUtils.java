@@ -888,35 +888,43 @@ public class MasterDataUtils{
             return keyMasterDataMap;
         }
 
-        log.info("Request: {} || UnLocationsList: {}",
+        log.info("Request: {} || UnLocationsList size: {}",
                 LoggerHelper.getRequestIdFromMDC(),
-                jsonHelper.convertToJson(requests));
+                requests.size());
 
-        int batchSize = take;
+        // Use ArrayList only once, avoid repeated sublist views
         List<String> requestList = new ArrayList<>(requests);
+        int total = requestList.size();
 
-        for (int start = 0; start < requestList.size(); start += batchSize) {
-            List<String> batch = requestList.subList(start, Math.min(start + batchSize, requestList.size()));
+        for (int start = 0; start < total; start += take) {
+            int end = Math.min(start + take, total);
+            List<String> batch = requestList.subList(start, end);
 
             CommonV1ListRequest request = new CommonV1ListRequest();
             request.setCriteriaRequests(List.of(
                     List.of(onField),
                     Operators.IN.getValue(),
-                    List.of(batch)
+                    batch // no need to wrap with List.of(batch), IN already expects list
             ));
 
             V1DataResponse response = v1Service.fetchUnlocation(request);
-            List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
 
-            if (unLocationsList != null) {
+            // Avoid JSON conversions if you can directly parse into EntityTransferUnLocations in service layer
+            List<EntityTransferUnLocations> unLocationsList =
+                    jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
+
+            if (unLocationsList != null && !unLocationsList.isEmpty()) {
                 for (EntityTransferUnLocations location : unLocationsList) {
                     String key;
-                    if (EntityTransferConstants.UNLOCATION_CODE.equals(onField)) {
-                        key = location.getLocCode();
-                    } else if (EntityTransferConstants.NAME.equals(onField)) {
-                        key = location.getName();
-                    } else {
-                        key = location.getLocationsReferenceGUID();
+                    switch (onField) {
+                        case EntityTransferConstants.UNLOCATION_CODE:
+                            key = location.getLocCode();
+                            break;
+                        case EntityTransferConstants.NAME:
+                            key = location.getName();
+                            break;
+                        default:
+                            key = location.getLocationsReferenceGUID();
                     }
                     keyMasterDataMap.put(key, location);
                 }

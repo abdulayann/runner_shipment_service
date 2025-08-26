@@ -112,6 +112,7 @@ import javax.imageio.ImageIO;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -415,21 +416,33 @@ public class CommonUtils {
         return false;
     }
 
-    public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
-        ByteArrayOutputStream ms = new ByteArrayOutputStream();
+    public static byte[]  concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
+        int estimatedSize = pdfByteContent.stream().mapToInt(b -> b.length).sum();
+        ByteArrayOutputStream ms = new ByteArrayOutputStream(estimatedSize);
+
         Document doc = new Document();
-        PdfCopy copy =  new PdfCopy(doc, ms);
+        PdfCopy copy = new PdfCopy(doc, ms);
         doc.open();
-        for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = new PdfReader(dataByte);
+        // Parse PdfReaders in parallel (CPU heavy part)
+        List<PdfReader> readers = pdfByteContent.parallelStream()
+                .map(bytes -> {
+                    try {
+                        return new PdfReader(new ByteArrayInputStream(bytes));
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error reading PDF", e);
+                    }
+                })
+                .collect(Collectors.toList());
+
+        // Sequentially add documents
+        for (PdfReader reader : readers) {
             copy.addDocument(reader);
             reader.close();
         }
+
         doc.close();
         copy.close();
-        byte[] data = ms.toByteArray();
-        ms.reset();
-        return data;
+        return ms.toByteArray();
     }
 
     public static byte[] removeLastPage(byte[] bytes) throws IOException, DocumentException {
