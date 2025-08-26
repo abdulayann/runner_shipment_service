@@ -6314,6 +6314,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
                 .direction(Constants.IMP)
                 .build();
+        shipmentDetails.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
@@ -6342,6 +6343,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
+        shipmentDetails.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
 
@@ -6365,6 +6367,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
                 .packingList(List.of(packing))
                 .build();
+        shipmentDetails.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
 
