@@ -1612,7 +1612,41 @@ public class PackingV3Service implements IPackingV3Service {
         if(request.getShipmentPackIds().size() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
-        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+
+        // Adding reassignment functionality
+        return reAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
+    private ContainerResponse reAssignPackageContainers(AssignContainerRequest request, String module) throws RunnerException {
+
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        Containers container = containerV3Service.setAssignContainerParams(request, module, assignContainerParams);
+
+        if (Boolean.TRUE.equals(request.getAllowPackageReassignment())) {
+
+            // Build UnAssignPackageContainerRequest from AssignContainerRequest
+            // Unassignment flow loops over multiple containers
+            UnAssignPackageContainerRequest unAssignPackageContainerRequest = new UnAssignPackageContainerRequest();
+            List<Long> packingIds = request.getShipmentPackIds().values().stream()
+                    .filter(Objects::nonNull)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
+            if (packingIds.isEmpty()) {
+                throw new ValidationException("No packingIds found for reassignment.");
+            }
+
+            unAssignPackageContainerRequest.setPackingIds(packingIds);
+            List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
+            List<Containers> unassignedContainersToSave = new ArrayList<>();
+            List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+            unAssignPackageContainers(unAssignPackageContainerRequest, Constants.CONSOLIDATION_PACKING, unassignedContainersToSave, shipmentIdsForDetachmentList, unAssignContainerParamsList, Boolean.TRUE);
+
+            containerV3Service.saveUnAssignContainerResultsBatch(shipmentIdsForDetachmentList, unassignedContainersToSave, unAssignContainerParamsList);
+        }
+
+        return containerV3Service.calculateAndSaveAssignContainerResults(container, assignContainerParams, request, module);
     }
 
     @Override
@@ -1638,11 +1672,19 @@ public class PackingV3Service implements IPackingV3Service {
         if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
             throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
         }
-        return containerV3Service.assignContainers(request, SHIPMENT_PACKING);
+
+        // Adding reassignment functionality
+        return reAssignPackageContainers(request, SHIPMENT_PACKING);
     }
 
     @Override
-    public void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException {
+    public void unAssignPackageContainers(UnAssignPackageContainerRequest request,
+                                          String module,
+                                          List<Containers> unassignedContainersToSave,
+                                          List<List<Long>> shipmentIdsForDetachmentList,
+                                          List<UnAssignContainerParams> unAssignContainerParamsList,
+                                          Boolean allowPackageReassignment)
+            throws RunnerException {
         List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
         List<UnAssignContainerRequest> unAssignContainerRequests = new ArrayList<>();
         Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
@@ -1670,7 +1712,12 @@ public class PackingV3Service implements IPackingV3Service {
         }
         UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
-            containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
+            if (Boolean.TRUE.equals(allowPackageReassignment)) {
+                containerV3Service.unAssignContainersForReAssignment(unAssignContainerRequest, module, unAssignContainerParams,
+                        unassignedContainersToSave, shipmentIdsForDetachmentList, unAssignContainerParamsList);
+            } else {
+                containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
+            }
         }
         // update shipments and consolidations data only for FCL/FTL shipments
         updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);

@@ -52,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -82,6 +83,7 @@ import static org.mockito.Mockito.*;
 @Execution(CONCURRENT)
 class PackingV3ServiceTest extends CommonMocks {
 
+    @Spy
     @InjectMocks
     private PackingV3Service packingV3Service;
 
@@ -877,7 +879,14 @@ class PackingV3ServiceTest extends CommonMocks {
     @Test
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, null, null, null, Boolean.FALSE);
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any());
+    }
+
+    @Test
+    void testUnAssignPackageContainersWithReassignFlow() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, null, null, null, Boolean.TRUE);
         verify(containerV3Service, never()).unAssignContainers(any(), any(), any());
     }
 
@@ -889,8 +898,52 @@ class PackingV3ServiceTest extends CommonMocks {
         packing.setShipmentId(1L);
         packing.setContainerId(1L);
         when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
-        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, null, null, null, Boolean.FALSE);
         verify(containerV3Service).unAssignContainers(any(), any(), any());
+    }
+
+    @Test
+    void testUnAssignPackageContainersWithReAssignFlow() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        packing = new Packing();
+        packing.setId(1L);
+        packing.setShipmentId(1L);
+        packing.setContainerId(1L);
+        when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
+        List<Containers> unassignedContainersToSave = new ArrayList<>();
+        List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, unassignedContainersToSave,
+                shipmentIdsForDetachmentList, unAssignContainerParamsList, Boolean.TRUE);
+
+        verify(containerV3Service).unAssignContainersForReAssignment(any(UnAssignContainerRequest.class), eq(Constants.CONSOLIDATION_PACKING), any(UnAssignContainerParams.class),
+                eq(unassignedContainersToSave), eq(shipmentIdsForDetachmentList), eq(unAssignContainerParamsList)
+        );
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any());
+    }
+
+    @Test
+    void testUnAssignPackageContainersWithoutReassignFlow_CallsUnAssignContainers() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L));
+
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setShipmentId(10L);
+        packing.setContainerId(100L);
+
+        when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
+
+        List<Containers> unassignedContainersToSave = new ArrayList<>();
+        List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, unassignedContainersToSave,
+                shipmentIdsForDetachmentList, unAssignContainerParamsList, Boolean.FALSE);
+
+        verify(containerV3Service).unAssignContainers(any(UnAssignContainerRequest.class), eq(Constants.CONSOLIDATION_PACKING), any(UnAssignContainerParams.class));
+        verify(containerV3Service, never()).unAssignContainersForReAssignment(any(), any(), any(), anyList(), anyList(), anyList());
     }
 
     @Test
@@ -1115,17 +1168,29 @@ class PackingV3ServiceTest extends CommonMocks {
         assignContainerRequest.setContainerId(request.getContainerId());
         assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
 
+        Containers mockContainer = new Containers();
+        ContainerResponse expectedResponse = new ContainerResponse();
+
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
         when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
-        when(containerV3Service.assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING)))
-                .thenReturn(new ContainerResponse());
+
+        when(containerV3Service.setAssignContainerParams(
+                eq(assignContainerRequest), eq(SHIPMENT_PACKING), any(AssignContainerParams.class))
+        ).thenReturn(mockContainer);
+
+        when(containerV3Service.calculateAndSaveAssignContainerResults(
+                eq(mockContainer), any(AssignContainerParams.class), eq(assignContainerRequest), eq(SHIPMENT_PACKING))
+        ).thenReturn(expectedResponse);
 
         ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(assignContainerRequest);
 
         assertNotNull(response);
+        assertEquals(expectedResponse, response);
+
         verify(packingDao).findByIdIn(request.getPackingIds());
         verify(shipmentService).findById(10L);
-        verify(containerV3Service).assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING));
+        verify(containerV3Service).setAssignContainerParams(eq(assignContainerRequest), eq(SHIPMENT_PACKING), any(AssignContainerParams.class));
+        verify(containerV3Service).calculateAndSaveAssignContainerResults(eq(mockContainer), any(AssignContainerParams.class), eq(assignContainerRequest), eq(SHIPMENT_PACKING));
     }
 
     @Test
@@ -1205,7 +1270,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
-            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER, null, null, null, Boolean.FALSE);
         });
 
         assertEquals("Container Id is null for packing with Id: 1", exception.getMessage());
@@ -1227,7 +1292,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
-            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER, null, null, null, Boolean.FALSE);
         });
 
         assertEquals("Please select Packages of only one shipment for unAssign action", exception.getMessage());
@@ -1248,7 +1313,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
         when(packingDao.findByIdIn(unAssignedPackageContainerRequest.getPackingIds())).thenReturn(List.of(packing1, packing2));
 
-        assertDoesNotThrow(() -> packingV3Service.unAssignPackageContainers(unAssignedPackageContainerRequest, Constants.CONTAINER));
+        assertDoesNotThrow(() -> packingV3Service.unAssignPackageContainers(unAssignedPackageContainerRequest, Constants.CONTAINER, null, null, null, Boolean.FALSE));
     }
 
     @Test
@@ -1306,13 +1371,77 @@ class PackingV3ServiceTest extends CommonMocks {
     void testAssignPackagesContainers_WithSingleShipmentId_DelegatesToContainerService() throws RunnerException {
         AssignContainerRequest assignedContainerRequest = new AssignContainerRequest();
         assignedContainerRequest.setShipmentPackIds(Map.of(1L, List.of(100L)));
+
+        Containers mockContainer = new Containers();
         ContainerResponse expectedResponse = new ContainerResponse();
-        Mockito.when(containerV3Service.assignContainers(assignedContainerRequest, Constants.CONSOLIDATION_PACKING))
-                .thenReturn(expectedResponse);
-        ContainerResponse containerResponse = packingV3Service.assignPackagesContainers(assignedContainerRequest);
-        assertEquals(expectedResponse, containerResponse);
-        Mockito.verify(containerV3Service).assignContainers(assignedContainerRequest, Constants.CONSOLIDATION_PACKING);
+
+        when(containerV3Service.setAssignContainerParams(
+                eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING), any(AssignContainerParams.class))
+        ).thenReturn(mockContainer);
+
+        when(containerV3Service.calculateAndSaveAssignContainerResults(eq(mockContainer), any(AssignContainerParams.class),
+                eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING))).thenReturn(expectedResponse);
+
+        ContainerResponse actualResponse = packingV3Service.assignPackagesContainers(assignedContainerRequest);
+
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse, actualResponse);
+
+        verify(containerV3Service).setAssignContainerParams(eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING), any(AssignContainerParams.class));
+
+        verify(containerV3Service).calculateAndSaveAssignContainerResults(eq(mockContainer), any(AssignContainerParams.class),
+                eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING));
     }
+
+    @Test
+    void testReAssignPackageContainers_WhenAllowReassignmentButNoPackingIds_ThrowsValidationException() throws RunnerException {
+        AssignContainerRequest assignedContainerRequest = new AssignContainerRequest();
+        assignedContainerRequest.setShipmentPackIds(Collections.emptyMap());
+        assignedContainerRequest.setAllowPackageReassignment(true);
+
+        Mockito.when(containerV3Service.setAssignContainerParams(
+                Mockito.eq(assignedContainerRequest), Mockito.eq(Constants.CONSOLIDATION_PACKING), Mockito.any()
+        )).thenReturn(new Containers());
+
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> packingV3Service.assignPackagesContainers(assignedContainerRequest)
+        );
+
+        assertEquals("No packingIds found for reassignment.", ex.getMessage());
+    }
+
+    @Test
+    void testReAssignPackageContainers_WithValidPackingIdsReassigns_Success() throws RunnerException {
+        AssignContainerRequest assignedContainerRequest = new AssignContainerRequest();
+        assignedContainerRequest.setShipmentPackIds(Map.of(1L, List.of(100L, 200L)));
+        assignedContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+
+        Containers mockContainer = new Containers();
+        ContainerResponse expectedResponse = new ContainerResponse();
+
+        when(containerV3Service.setAssignContainerParams(
+                eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING), any(AssignContainerParams.class))).thenReturn(mockContainer);
+
+        doNothing().when(packingV3Service).unAssignPackageContainers(
+                any(UnAssignPackageContainerRequest.class), eq(Constants.CONSOLIDATION_PACKING), anyList(), anyList(), anyList(), eq(true));
+
+        doNothing().when(containerV3Service).saveUnAssignContainerResultsBatch(anyList(), anyList(), anyList());
+
+        when(containerV3Service.calculateAndSaveAssignContainerResults(eq(mockContainer), any(AssignContainerParams.class),
+                eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING))).thenReturn(expectedResponse);
+
+        ContainerResponse actualResponse = packingV3Service.assignPackagesContainers(assignedContainerRequest);
+
+        assertEquals(expectedResponse, actualResponse);
+
+        verify(packingV3Service).unAssignPackageContainers(any(UnAssignPackageContainerRequest.class), eq(Constants.CONSOLIDATION_PACKING),
+                anyList(), anyList(), anyList(), eq(true));
+        verify(containerV3Service).saveUnAssignContainerResultsBatch(anyList(), anyList(), anyList());
+        verify(containerV3Service).calculateAndSaveAssignContainerResults(
+                eq(mockContainer), any(AssignContainerParams.class), eq(assignedContainerRequest), eq(Constants.CONSOLIDATION_PACKING));
+    }
+
 
     @Test
     void testCalculateCargoSummary_FCL() throws RunnerException {

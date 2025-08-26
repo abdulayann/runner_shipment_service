@@ -10,9 +10,11 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -68,7 +70,10 @@ public interface IPackingV3Service {
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     ContainerResponse assignShipmentPackagesContainers(AssignContainerRequest request) throws RunnerException;
-    void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException;
+    void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module, List<Containers> unassignedContainersToSave,
+                                   List<List<Long>> shipmentIdsForDetachmentList,
+                                   List<UnAssignContainerParams> unAssignContainerParamsList,
+                                   Boolean allowPackageReassignment) throws RunnerException;
 
     Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
 

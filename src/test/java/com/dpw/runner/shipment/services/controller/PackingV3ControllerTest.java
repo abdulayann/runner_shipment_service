@@ -204,7 +204,7 @@ class PackingV3ControllerTest {
     @Test
     void unAssignContainersAtShipmentLevel() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.SHIPMENT_PACKING);
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.SHIPMENT_PACKING, null, null, null, Boolean.FALSE);
         var response = packingV3Controller.unAssignContainersAtShipmentLevel(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -212,7 +212,7 @@ class PackingV3ControllerTest {
     @Test
     void unAssignContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, null, null, null, Boolean.FALSE);
         var response = packingV3Controller.unAssignContainers(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

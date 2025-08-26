@@ -228,6 +228,92 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testUnAssignPackageContainers_withReassignment_successful() throws RunnerException {
+
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.TRUE);
+        self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(self, never()).unAssignContainers(any(), any(), any());
+        verify(self).assignContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
+    @Test
+    void testAssignContainers_withoutReassignment_successful() throws RunnerException {
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.FALSE);
+
+        self.assignContainers(request, Constants.SHIPMENT_PACKING);
+
+        verify(self, never()).unAssignContainers(any(), any(), any());
+        verify(self).assignContainers(request, Constants.SHIPMENT_PACKING);
+    }
+
+    @Test
+    void testUnAssignPackageContainers_withReassignment_successful1() throws RunnerException {
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+
+        self.unAssignContainersForReAssignment(
+                request, Constants.SHIPMENT_PACKING, unAssignContainerParams, List.of(), List.of(), List.of());
+
+        verify(self).unAssignContainersForReAssignment(
+                request, Constants.SHIPMENT_PACKING, unAssignContainerParams, List.of(), List.of(), List.of());
+    }
+
+
+    @Test
+    void testUnAssignContainers_calledDirectly() throws RunnerException {
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        UnAssignContainerParams params = new UnAssignContainerParams();
+
+        self.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params);
+
+        verify(self).unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params);
+    }
+
+    @Test
+    void testAssignContainers_withMissingOldContainerPackIdsThrowsException() throws RunnerException{
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(true);
+        request.setOldContainerPackIds(null);
+
+        doThrow(new RunnerException("Old container mapping is required for package reassignment."))
+                .when(self).assignContainers(any(), any());
+
+        assertThrows(RunnerException.class,
+                () -> self.assignContainers(request, Constants.SHIPMENT_PACKING));
+    }
+
+    @Test
+    void testAssignContainers_packNotInTargetContainer() throws RunnerException {
+        Long shipmentId = 10L;
+        Long packId = 100L;
+        Long targetContainerId = 500L;
+        Long oldContainerId = 400L;
+
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.TRUE);
+        request.setContainerId(targetContainerId);
+        request.setOldContainerPackIds(Map.of(oldContainerId, List.of(packId)));
+        request.setShipmentPackIds(new HashMap<>(Map.of(shipmentId, new ArrayList<>(List.of(packId)))));
+
+        Packing mockPacking = new Packing();
+        mockPacking.setId(packId);
+        mockPacking.setShipmentId(shipmentId);
+        mockPacking.setContainerId(targetContainerId);
+
+        ContainerResponse actualResponse = self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+
+        assertEquals(null, actualResponse);
+
+        assertFalse(request.getShipmentPackIds().get(shipmentId).isEmpty(),
+                "PackId should be removed from shipmentPackIds since it was already in target container");
+
+        verify(self, never()).unAssignContainers(any(), any(), any());
+    }
+
+
+    @Test
     void calculateContainerSummary() throws RunnerException {
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();

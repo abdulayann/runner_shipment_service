@@ -207,7 +207,7 @@ public class PackingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_PACKAGES)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
-        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING, null, null, null, Boolean.FALSE);
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -220,7 +220,7 @@ public class PackingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_PACKAGES_SHIPMENT)
     public ResponseEntity<IRunnerResponse> unAssignContainersAtShipmentLevel(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
-        packingV3Service.unAssignPackageContainers(request, SHIPMENT_PACKING);
+        packingV3Service.unAssignPackageContainers(request, SHIPMENT_PACKING, null, null, null, Boolean.FALSE);
         return ResponseHelper.buildSuccessResponse();
     }
 

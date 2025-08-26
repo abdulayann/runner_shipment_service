@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
@@ -18,6 +19,8 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import org.junit.runner.Runner;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +52,12 @@ public interface IContainerV3Service {
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
     ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams) throws RunnerException;
-
+    void unAssignContainersForReAssignment(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
+                                           List<Containers> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
+                                           List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException;
+    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, List<Containers> containersToSave, List<UnAssignContainerParams> globalUnAssignContainerParams);
+    Containers setAssignContainerParams(AssignContainerRequest request, String module, AssignContainerParams assignContainerParams) throws RunnerException;
+    ContainerResponse calculateAndSaveAssignContainerResults(Containers container, AssignContainerParams assignContainerParams, AssignContainerRequest request, String module) throws RunnerException;
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
