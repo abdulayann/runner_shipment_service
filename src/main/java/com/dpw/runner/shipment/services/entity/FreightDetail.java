@@ -9,9 +9,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
 
 @Entity
@@ -20,6 +24,8 @@ import javax.persistence.Table;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE freight_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class FreightDetail extends MultiTenancy {
 
     @Column(name = "charge_type")
@@ -31,6 +37,7 @@ public class FreightDetail extends MultiTenancy {
     private String paymentTerms;
 
     @Column(name = "payer_type")
+    @Enumerated(EnumType.STRING)
     private PayerType payerType;
 
     @Column(name = "payer_location")

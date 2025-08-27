@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.CascadeType;
@@ -25,6 +26,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE shipping_instruction SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "status", length = 20)
