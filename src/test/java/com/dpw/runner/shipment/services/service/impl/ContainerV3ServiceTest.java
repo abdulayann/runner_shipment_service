@@ -245,7 +245,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
         doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
-        when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
+        lenient().when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
@@ -2379,10 +2379,12 @@ class ContainerV3ServiceTest extends CommonMocks {
                 ShipmentDetails.class,
                 List.class,
                 List.class,
-                Set.class
+                Set.class,
+                Map.class,
+                Boolean.class
         );
         method.setAccessible(true);
-        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds, new HashMap<>(), Boolean.FALSE);
         assertEquals("KG", container1.getGrossWeightUnit());
         assertEquals("CBM", container1.getGrossVolumeUnit());
         assertEquals("5", container1.getPacks());
