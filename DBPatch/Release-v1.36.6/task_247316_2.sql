@@ -84,7 +84,6 @@ set
 where
    id = 72160 and tenant_id = 506;
 
-
 --BKKS25062259
 
 update
