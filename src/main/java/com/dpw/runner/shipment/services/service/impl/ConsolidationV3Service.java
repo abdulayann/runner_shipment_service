@@ -217,6 +217,7 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.kafka.common.protocol.types.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -3809,12 +3810,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(request.getConsolidationId());
         if(consol.isPresent())
-            return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks(), request.getIsFromEt(), request.getIsForcedDetach());
+            return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks(), request.getIsFromEt(), request.getIsForcedDetach(), request.getIsFCLDelete());
         return ResponseHelper.buildSuccessResponseWithWarning("Consol is null");
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt, Boolean isForcedDetach) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt, Boolean isForcedDetach, Boolean isFCLDelete) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
         Long consolidationId = consol.getId();
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
@@ -3835,6 +3836,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationId != null && shipmentIds!= null && !shipmentIds.isEmpty()) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIdList);
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
+
+            if(Boolean.TRUE.equals(isForcedDetach)){
+                // Get shipment details for the removed shipment IDs
+                List<ShipmentDetails> removedShipmentDetails = removedShipmentIds.stream()
+                        .map(shipmentDetailsMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                detachAllContainerShipmentPresent(removedShipmentDetails, isForcedDetach, isFCLDelete);
+            }
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(Boolean.FALSE.equals(isForcedDetach)) {
@@ -3850,22 +3860,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             List<ShipmentDetails> shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
-            shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
+            shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave, isForcedDetach);
             //delete routings from shipment which has isFromConsolidation as true
             routingsV3Service.deleteInheritedRoutingsFromShipment(shipmentDetailsToSave);
             shipmentDao.saveAll(shipmentDetailsToSave);
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
             }
-            if(Boolean.TRUE.equals(isForcedDetach)){
-                // Get shipment details for the removed shipment IDs
-                List<ShipmentDetails> removedShipmentDetails = removedShipmentIds.stream()
-                        .map(shipmentDetailsMap::get)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                detachAllContainerShipmentPresent(removedShipmentDetails);
-            }
-
             List<ShipmentDetails> shipmentDetailsList = getShipmentDetailsListFromConsoleMapping(consolidationDetails.getId());
             updateConsolidationCargoSummary(consolidationDetails, shipmentDetailsList, oldShipmentWtVolResponse);
 
@@ -3893,7 +3894,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Transactional
-    private void detachAllContainerShipmentPresent(List<ShipmentDetails> shipmentDetails) throws RunnerException {
+    private void detachAllContainerShipmentPresent(List<ShipmentDetails> shipmentDetails, Boolean isForcedDetach, Boolean isFCLDelete) throws RunnerException {
         if (shipmentDetails == null || shipmentDetails.isEmpty()) {
             return;
         }
@@ -3968,7 +3969,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         }
 
-        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList);
+        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isForcedDetach, isFCLDelete);
 //         add conatainerdao.deleteall
 
         updateShipmentSummary(unAssignContainerParamsList);

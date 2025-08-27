@@ -2184,8 +2184,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach) {
         for (ShipmentDetails detachedShipment : detachedShipments) {
+            if(Boolean.TRUE.equals(isForcedDetach) && detachedShipment.getContainersList() != null){
+                    detachedShipment.setContainersList(null);
+            }
             if (detachedShipment.getCarrierDetails() != null) {
                 detachedShipment.getCarrierDetails().setEta(null);
                 detachedShipment.getCarrierDetails().setEtd(null);

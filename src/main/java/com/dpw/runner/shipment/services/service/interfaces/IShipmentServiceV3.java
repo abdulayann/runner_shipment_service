@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
@@ -81,7 +82,7 @@ public interface IShipmentServiceV3 {
     ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 
     List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode);
-    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
+    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach) throws RunnerException;
 
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
     void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);
