@@ -3928,6 +3928,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .filter(packing -> packing.getContainerId() != null)
                 .map(Packing::getContainerId)
                 .collect(Collectors.toSet());
+        Set<Long> packingIds = shipmentPackings.stream()
+                .filter(packing -> packing.getId() != null)
+                .map(Packing::getId)
+                .collect(Collectors.toSet());
         containerIds.addAll(packContainerIds);
 
         // Remove duplicates
@@ -3952,17 +3956,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Create shipment pack mapping - empty list means detach all packs for all shipments
             Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
             for (Long shipmentId : shipmentIds) {
-                shipmentPackIds.put(shipmentId, new ArrayList<>());
+                if(packingIds !=  null ){
+                    shipmentPackIds.put(shipmentId, new ArrayList<>(packingIds));
+                }else{
+                    shipmentPackIds.put(shipmentId, new ArrayList<>());
+                }
+
             }
             request.setShipmentPackIds(shipmentPackIds);
-
-            // Step 1: make sure pack ids is empty (never null) - same as unAssignContainers
-            request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
-                    )));
-
             // Step 2: Create UnAssignContainerParams for this operation
             UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
             containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, true);

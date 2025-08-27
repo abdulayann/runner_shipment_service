@@ -1932,7 +1932,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 )));
         Containers container = fetchDataForUnAssignContainer(request, unAssignContainerParams);
         containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module, isForcedDetach);
-        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams, unassignedContainersToSave, false);
+        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams, unassignedContainersToSave, isForcedDetach);
         if(isForcedDetach){
             unassignedContainersToSave.computeIfAbsent("containersToSave", k -> new ArrayList<>()).add(container);
             shipmentIdsForDetachmentList.add(shipmentIdsForDetachment);
@@ -1977,24 +1977,32 @@ public class ContainerV3Service implements IContainerV3Service {
                 }
             }
         }
+        List<Containers> containersListToSave = containersToSaveMap.get("containersToSave");
+        List<Containers> FCLContainersListToRemove =  containersToSaveMap.get("FCLContainersToRemove");
+        if(isFCLDelete && isForcedDetach){
+            if (containersListToSave != null && FCLContainersListToRemove != null) {
+            List<Long> containersIdToDelete = FCLContainersListToRemove.stream().map(Containers::getId).collect(Collectors.toCollection(ArrayList::new));
 
-
-
+                for(Containers con: containersListToSave ){
+                    if( containersIdToDelete.contains(con.getId()) ){
+                        shipmentsContainersMappingList.removeIf(smp -> smp.getContainerId().equals(con.getId()));
+                        con.setShipmentsList(new HashSet<>());
+                    }
+                }
+            }
+        }
         // Batch save all containers
-        if (!listIsNullOrEmpty(containersToSaveMap.get("containersToSave")))
-            containerDao.saveAll(containersToSaveMap.get("containersToSave"));
+        if (!listIsNullOrEmpty(containersListToSave))
+            containerDao.saveAll(containersListToSave);
 
         // Batch delete shipments containers mappings
         if (!listIsNullOrEmpty(shipmentsContainersMappingList))
             shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappingList);
 
 
-        if(isFCLDelete &&  isForcedDetach){
-            List<Containers> containersList = containersToSaveMap.get("FCLContainersToRemove");
-            if (containersList != null) {
-                List<Long> containersIdToDelete = containersList.stream().map(Containers::getId).collect(Collectors.toList());
-                deleteContainerAndAssociations(containersIdToDelete, containersList);
-            }
+        if(isFCLDelete &&  isForcedDetach && !listIsNullOrEmpty(FCLContainersListToRemove)) {
+            List<Long> containersIdToDelete = FCLContainersListToRemove.stream().map(Containers::getId).collect(Collectors.toCollection(ArrayList::new));
+            containerDao.deleteByIdIn(containersIdToDelete);
         }
 
     }
