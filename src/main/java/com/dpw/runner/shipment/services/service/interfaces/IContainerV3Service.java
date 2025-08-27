@@ -51,9 +51,9 @@ public interface IContainerV3Service {
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
     ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
-                                           List<Containers> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
-                                           List<UnAssignContainerParams> unAssignContainerParamsList, Boolean allowPackageReassignment) throws RunnerException;
-    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, List<Containers> containersToSave, List<UnAssignContainerParams> globalUnAssignContainerParams);
+                                         Map<String, List<Containers>> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
+                                           List<UnAssignContainerParams> unAssignContainerParamsList, Boolean allowPackageReassignment, Boolean isForcedDetach) throws RunnerException;
+    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, Map<String, List<Containers>> containersToSaveMap, List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isFCLDelete);
     Containers setAssignContainerParams(AssignContainerRequest request, String module, AssignContainerParams assignContainerParams) throws RunnerException;
     ContainerResponse calculateAndSaveAssignContainerResults(Containers container, AssignContainerParams assignContainerParams, AssignContainerRequest request, String module) throws RunnerException;
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;

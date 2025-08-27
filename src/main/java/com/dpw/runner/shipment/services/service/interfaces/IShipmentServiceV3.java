@@ -81,7 +81,7 @@ public interface IShipmentServiceV3 {
     ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 
     List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode);
-    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
+    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach);
 
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
     void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);

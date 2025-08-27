@@ -1673,7 +1673,7 @@ public class PackingV3Service implements IPackingV3Service {
         UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
             containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams,
-                    null, null, null, Boolean.FALSE);
+                    null, null, null, Boolean.FALSE, Boolean.FALSE);
         }
         // update shipments and consolidations data only for FCL/FTL shipments
         updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);
