@@ -1,0 +1,36 @@
+package com.dpw.runner.shipment.services.dto.response.carrierbooking;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SailingInformationResponse {
+
+    private Long id;
+    private String carrierReceiptPlace;
+    private String pol;
+    private String pod;
+    private String carrierDeliveryPlace;
+    private String carrier;
+    private String vesselName;
+    private String voyageNo;
+
+    private LocalDateTime eta;
+    private LocalDateTime etd;
+    private LocalDateTime earliestDepartureDate;
+    private LocalDateTime latestDeliveryDate;
+    private LocalDateTime terminalCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
+    private LocalDateTime shipInstructionCutoff;
+    private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime reeferCutoff;
+    private LocalDateTime emptyContainerPickupCutoff;
+    private LocalDateTime loadedContainerGateInCutoff;
+}
