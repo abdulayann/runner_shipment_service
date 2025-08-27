@@ -13,7 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.dpw.runner.shipment.services.commons.constants.SectionDetailsConstant;
+import com.dpw.runner.shipment.services.commons..SectionDetailsConstant;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.section.request.SectionDetailsRequest;
 import com.dpw.runner.shipment.services.dto.section.response.SectionDetailsResponse;

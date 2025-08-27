@@ -168,7 +168,7 @@ class ContainerV3ControllerTest {
     AssignContainerRequest request = new AssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
 
-    Mockito.lenient().when(containerV3Service.assignContainers(request, Constants.CONTAINER)).thenReturn(response);
+    Mockito.lenient().when(containerV3Service.assignContainers(request, Constants.CONTAINER, Boolean.TRUE)).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.assignContainers(request);
 
@@ -180,7 +180,7 @@ class ContainerV3ControllerTest {
 
     UnAssignContainerRequest request = new UnAssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
-    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class)))
+    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class), null, null, null, Boolean.FALSE))
             .thenReturn(response);
     ResponseEntity<IRunnerResponse> result = containerV3Controller.unAssignContainers(request);
     assertEquals(HttpStatus.OK, result.getStatusCode());

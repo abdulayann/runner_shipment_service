@@ -227,14 +227,38 @@ class ContainerV3ServiceTest extends CommonMocks {
         params.setShipmentDetailsMap(shipmentDetailsMap);
     }
 
+
+    @Test
+    void testSaveUnAssignContainerResultsBatch_withData() {
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setShipmentIdsForCargoDetachment(List.of(201L));
+        unAssignContainerParams.setRemoveAllPackingIds(List.of(101L));
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(201L);
+        unAssignContainerParams.setShipmentsContainersMappings(List.of(mapping));
+
+        List<List<Long>> shipmentIds = List.of(List.of(201L));
+        List<Containers> containers = List.of(new Containers());
+        List<UnAssignContainerParams> paramsList = List.of(unAssignContainerParams);
+
+        doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
+        doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
+        when(containerDao.saveAll(anyList())).thenReturn(containers);
+        doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
+
+        assertDoesNotThrow(() ->
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList));
+    }
+
     @Test
     void testUnAssignPackageContainers_withReassignment_successful() throws RunnerException {
 
         AssignContainerRequest request = new AssignContainerRequest();
         request.setAllowPackageReassignment(Boolean.TRUE);
-        self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(self, never()).unAssignContainers(any(), any(), any());
-        verify(self).assignContainers(request, Constants.CONSOLIDATION_PACKING);
+        self.assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE);
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), any());
+        verify(self).assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE);
     }
 
     @Test
@@ -242,46 +266,32 @@ class ContainerV3ServiceTest extends CommonMocks {
         AssignContainerRequest request = new AssignContainerRequest();
         request.setAllowPackageReassignment(Boolean.FALSE);
 
-        self.assignContainers(request, Constants.SHIPMENT_PACKING);
+        self.assignContainers(request, Constants.SHIPMENT_PACKING, Boolean.TRUE);
 
-        verify(self, never()).unAssignContainers(any(), any(), any());
-        verify(self).assignContainers(request, Constants.SHIPMENT_PACKING);
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
+        verify(self).assignContainers(request, Constants.SHIPMENT_PACKING, Boolean.TRUE);
     }
-
-    @Test
-    void testUnAssignPackageContainers_withReassignment_successful1() throws RunnerException {
-        UnAssignContainerRequest request = new UnAssignContainerRequest();
-        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
-
-        self.unAssignContainersForReAssignment(
-                request, Constants.SHIPMENT_PACKING, unAssignContainerParams, List.of(), List.of(), List.of());
-
-        verify(self).unAssignContainersForReAssignment(
-                request, Constants.SHIPMENT_PACKING, unAssignContainerParams, List.of(), List.of(), List.of());
-    }
-
 
     @Test
     void testUnAssignContainers_calledDirectly() throws RunnerException {
         UnAssignContainerRequest request = new UnAssignContainerRequest();
         UnAssignContainerParams params = new UnAssignContainerParams();
 
-        self.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params);
+        self.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params, null, null, null, Boolean.FALSE);
 
-        verify(self).unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params);
+        verify(self).unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params, null, null, null, Boolean.FALSE);
     }
 
     @Test
     void testAssignContainers_withMissingOldContainerPackIdsThrowsException() throws RunnerException{
         AssignContainerRequest request = new AssignContainerRequest();
         request.setAllowPackageReassignment(true);
-        request.setOldContainerPackIds(null);
 
         doThrow(new RunnerException("Old container mapping is required for package reassignment."))
-                .when(self).assignContainers(any(), any());
+                .when(self).assignContainers(any(), any(), anyBoolean());
 
         assertThrows(RunnerException.class,
-                () -> self.assignContainers(request, Constants.SHIPMENT_PACKING));
+                () -> self.assignContainers(request, Constants.SHIPMENT_PACKING, Boolean.TRUE));
     }
 
     @Test
@@ -294,7 +304,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         AssignContainerRequest request = new AssignContainerRequest();
         request.setAllowPackageReassignment(Boolean.TRUE);
         request.setContainerId(targetContainerId);
-        request.setOldContainerPackIds(Map.of(oldContainerId, List.of(packId)));
         request.setShipmentPackIds(new HashMap<>(Map.of(shipmentId, new ArrayList<>(List.of(packId)))));
 
         Packing mockPacking = new Packing();
@@ -302,14 +311,14 @@ class ContainerV3ServiceTest extends CommonMocks {
         mockPacking.setShipmentId(shipmentId);
         mockPacking.setContainerId(targetContainerId);
 
-        ContainerResponse actualResponse = self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+        ContainerResponse actualResponse = self.assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE);
 
         assertEquals(null, actualResponse);
 
         assertFalse(request.getShipmentPackIds().get(shipmentId).isEmpty(),
                 "PackId should be removed from shipmentPackIds since it was already in target container");
 
-        verify(self, never()).unAssignContainers(any(), any(), any());
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
 
@@ -894,7 +903,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.assignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.assignContainers(request, Constants.CONTAINER, Boolean.TRUE);
         assertNotNull(response);
     }
 
@@ -914,10 +923,10 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
-        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any());
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER, Boolean.TRUE);
         assertNotNull(response);
     }
 
@@ -939,7 +948,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER, Boolean.TRUE);
         assertNotNull(response);
     }
 
@@ -959,7 +968,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -979,7 +988,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -999,7 +1008,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -1024,7 +1033,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -1050,7 +1059,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -1076,7 +1085,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
         assertNotNull(response);
     }
 

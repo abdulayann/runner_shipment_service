@@ -1682,59 +1682,104 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException {
+    public ContainerResponse assignContainers(AssignContainerRequest request, String module, Boolean isFCLorFTLShipment) throws RunnerException {
 
         // Build OldShipmentDetails before unAssignment
         AssignContainerParams assignContainerParams = new AssignContainerParams();
         Containers container = setAssignContainerParams(request, module, assignContainerParams);
 
+        // Build packingId list from request.shipmentPackIds
+        List<Packing> packingList = fetchAndValidatePackings(request);
+
         // Adding Reassignment functionality
         if (Boolean.TRUE.equals(request.getAllowPackageReassignment())) {
-
-            List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
-            List<Containers> unassignedContainersToSave = new ArrayList<>();
-            List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
-
-
-            // Supporting multiple containerIds
-            if (Objects.isNull(request.getOldContainerPackIds()) || request.getOldContainerPackIds().isEmpty()) {
-                throw new RunnerException("Old container mapping is required for package reassignment.");
-            }
-
-            //  Looping over all old containers
-            for (Map.Entry<Long, List<Long>> entry : request.getOldContainerPackIds().entrySet()) {
-                Long oldContainerId = entry.getKey();
-                List<Long> packIds = entry.getValue();
-
-                UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
-                unAssignRequest.setContainerId(oldContainerId);
-
-                // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
-                Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-                for (Long packId : packIds) {
-                    Packing packing = packingDao.findById(packId)
-                            .orElseThrow(() -> new ValidationException("Packing not found: " + packId));
-                    // If a pack is already in the target container, skip processing.
-                    if (Objects.equals(packing.getContainerId(), request.getContainerId())) {
-                        // Also remove this packId from AssignContainerRequest.shipmentPackIds
-                        removePackIdFromAssignRequest(request, packing.getShipmentId(), packId);
-                        continue;
-                    }
-
-                    shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>())
-                            .add(packId);
-
-                }
-
-                unAssignRequest.setShipmentPackIds(shipmentPackIds);
-                UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
-                unAssignContainersForReAssignment(unAssignRequest, module, unAssignContainerParams, unassignedContainersToSave, shipmentIdsForDetachmentList, unAssignContainerParamsList);
-            }
-            saveUnAssignContainerResultsBatch(shipmentIdsForDetachmentList, unassignedContainersToSave, unAssignContainerParamsList);
-
+            handleReassignment(request, module, packingList, isFCLorFTLShipment);
+        } else {
+            validateForNewAssignment(packingList);
         }
 
         return calculateAndSaveAssignContainerResults(container, assignContainerParams, request, module);
+    }
+
+    private void validateForNewAssignment(List<Packing> packingList) {
+        for (Packing packing : packingList) {
+            if (Objects.isNull(packing.getContainerId())) {
+                throw new ValidationException("Package is already assigned to another container.");
+            }
+        }
+    }
+
+    private List<Packing> fetchAndValidatePackings(AssignContainerRequest request) throws RunnerException {
+        List<Long> allPackIds = request.getShipmentPackIds().values().stream()
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+
+        if (allPackIds.isEmpty()) {
+            throw new RunnerException("At least one package is required for reassignment.");
+        }
+        return packingDao.findByIdIn(allPackIds);
+    }
+
+    private void handleReassignment(AssignContainerRequest request, String module, List<Packing> packingList, Boolean isFCLorFTLShipment) throws RunnerException {
+        List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
+        List<Containers> unassignedContainersToSave = new ArrayList<>();
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        // Supporting for multiple OldContainers in case of ReAssign Request
+        // containerIdPacksMap = Map<oldContainerId, List<Packing>>
+        Map<Long, List<Packing>> containerIdPacksMap = buildOldContainerPackMap(request, packingList);
+
+        // Looping over all old containers and trigger unassign
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        for (Map.Entry<Long, List<Packing>> entry : containerIdPacksMap.entrySet()) {
+            UnAssignContainerRequest unAssignContainerRequest = buildUnAssignRequest(entry.getKey(), entry.getValue());
+            self.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams,
+                    unassignedContainersToSave, shipmentIdsForDetachmentList, unAssignContainerParamsList, Boolean.TRUE);
+        }
+        if (Boolean.TRUE.equals(isFCLorFTLShipment)) {
+            // update shipments and consolidations data only for FCL/FTL shipments
+            packingService.updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);
+        }
+
+        // Bulk save for all unassign calls
+        self.saveUnAssignContainerResultsBatch(shipmentIdsForDetachmentList, unassignedContainersToSave, unAssignContainerParamsList);
+    }
+
+    private Map<Long, List<Packing>> buildOldContainerPackMap(AssignContainerRequest request, List<Packing> packingList) {
+        Map<Long, List<Packing>> containerIdPacksMap = new HashMap<>();
+
+        for (Packing packing : packingList) {
+            // Container Id is null for current packing, skip unassignment
+            if (Objects.isNull(packing.getContainerId())) {
+                continue;
+            }
+
+            // If a pack is already in the target container, skip processing.
+            if (Objects.equals(packing.getContainerId(), request.getContainerId())) {
+                // Remove current packId from AssignContainerRequest.shipmentPackIds
+                removePackIdFromAssignRequest(request, packing.getShipmentId(), packing.getId());
+                continue;
+            }
+
+            containerIdPacksMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
+            containerIdPacksMap.get(packing.getContainerId()).add(packing);
+        }
+        return containerIdPacksMap;
+    }
+
+    private UnAssignContainerRequest buildUnAssignRequest(Long oldContainerId, List<Packing> packings) {
+        UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
+        unAssignRequest.setContainerId(oldContainerId);
+
+        // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        for (Packing packing : packings) {
+            shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>())
+                    .add(packing.getId());
+        }
+        unAssignRequest.setShipmentPackIds(shipmentPackIds);
+        return unAssignRequest;
     }
 
     private void removePackIdFromAssignRequest(AssignContainerRequest request, Long shipmentId, Long packId) {
@@ -1935,7 +1980,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
                     unAssignContainerRequest.setContainerId(shipmentDetails.getContainerAssignedToShipmentCargo());
                     unAssignContainerRequest.setShipmentPackIds(Map.of(shipmentDetails.getId(), new ArrayList<>()));
-                    self.unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL, new UnAssignContainerParams());
+                    self.unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL, new UnAssignContainerParams(), null, null, null, Boolean.FALSE);
                 }
             }
         }
@@ -2002,7 +2047,13 @@ public class ContainerV3Service implements IContainerV3Service {
     }
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+    public ContainerResponse unAssignContainers(UnAssignContainerRequest request,
+                                                String module,
+                                                UnAssignContainerParams unAssignContainerParams,
+                                                List<Containers> unassignedContainersToSave,
+                                                List<List<Long>> shipmentIdsForDetachmentList,
+                                                List<UnAssignContainerParams> unAssignContainerParamsList,
+                                                Boolean allowPackageReassignment) throws RunnerException {
         // make sure pack ids is empty (never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
@@ -2012,29 +2063,15 @@ public class ContainerV3Service implements IContainerV3Service {
         Containers container = fetchDataForUnAssignContainer(request, unAssignContainerParams);
         containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module);
         List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams);
-        container = saveUnAssignContainerResults(shipmentIdsForDetachment, container, unAssignContainerParams);
-        return jsonHelper.convertValue(container, ContainerResponse.class);
-    }
-
-    public void unAssignContainersForReAssignment(UnAssignContainerRequest request,
-                                                                String module,
-                                                                UnAssignContainerParams unAssignContainerParams,
-                                                                List<Containers> unassignedContainersToSave,
-                                                                List<List<Long>> shipmentIdsForDetachmentList,
-                                                                List<UnAssignContainerParams> unAssignContainerParamsList)
-            throws RunnerException {
-        // make sure pack ids is empty (never null)
-        request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
-                )));
-        Containers container = fetchDataForUnAssignContainer(request, unAssignContainerParams);
-        containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module);
-        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams);
-        unassignedContainersToSave.add(container);
-        shipmentIdsForDetachmentList.add(shipmentIdsForDetachment);
-        unAssignContainerParamsList.add(unAssignContainerParams);
+        if (Boolean.TRUE.equals(allowPackageReassignment)) {
+            unassignedContainersToSave.add(container);
+            shipmentIdsForDetachmentList.add(shipmentIdsForDetachment);
+            unAssignContainerParamsList.add(unAssignContainerParams);
+            return null;
+        } else {
+            container = saveUnAssignContainerResults(shipmentIdsForDetachment, container, unAssignContainerParams);
+            return jsonHelper.convertValue(container, ContainerResponse.class);
+        }
     }
 
     private Containers fetchDataForUnAssignContainer(UnAssignContainerRequest request, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
@@ -2207,12 +2244,22 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // Batch save all containers
-        if (!listIsNullOrEmpty(containersToSave))
-            containerDao.saveAll(containersToSave);
+        saveContainers(containersToSave);
 
         // Batch delete shipments containers mappings
-        if (!listIsNullOrEmpty(shipmentsContainersMappingList))
-            shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappingList);
+        deleteMappings(shipmentsContainersMappingList);
+    }
+
+    private void saveContainers(List<Containers> containersToSave) {
+        if (!listIsNullOrEmpty(containersToSave)) {
+            containerDao.saveAll(containersToSave);
+        }
+    }
+
+    private void deleteMappings(List<ShipmentsContainersMapping> mappings) {
+        if (!listIsNullOrEmpty(mappings)) {
+            shipmentsContainersMappingDao.deleteAll(mappings);
+        }
     }
 
     @Override
