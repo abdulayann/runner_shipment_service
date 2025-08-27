@@ -940,7 +940,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     // Method to handle the deletion of containers and their associated entities
-    private void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
+    public void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
         log.info("Starting deleteContainerAndAssociations with containerIds: {}", containerIds);
         for(Containers containers : containersToDelete) containers.setShipmentsList(new HashSet<>());
         containerDao.saveAll(containersToDelete);
@@ -1853,7 +1853,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
                     unAssignContainerRequest.setContainerId(shipmentDetails.getContainerAssignedToShipmentCargo());
                     unAssignContainerRequest.setShipmentPackIds(Map.of(shipmentDetails.getId(), new ArrayList<>()));
-                    self.unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL, new UnAssignContainerParams());
+                    self.unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false);
                 }
             }
         }
@@ -1920,7 +1920,10 @@ public class ContainerV3Service implements IContainerV3Service {
     }
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+    public ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
+                                                Map<String, List<Containers>> unassignedContainersToSave,
+                                                List<List<Long>> shipmentIdsForDetachmentList,
+                                                List<UnAssignContainerParams> unAssignContainerParamsList, boolean isForcedDetach) throws RunnerException {
         // make sure pack ids is empty (never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
@@ -1928,10 +1931,71 @@ public class ContainerV3Service implements IContainerV3Service {
                         e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
                 )));
         Containers container = fetchDataForUnAssignContainer(request, unAssignContainerParams);
-        containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module);
-        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams);
-        container = saveUnAssignContainerResults(shipmentIdsForDetachment, container, unAssignContainerParams);
+        containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module, isForcedDetach);
+        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams, unassignedContainersToSave, false);
+        if(isForcedDetach){
+            unassignedContainersToSave.computeIfAbsent("containersToSave", k -> new ArrayList<>()).add(container);
+            shipmentIdsForDetachmentList.add(shipmentIdsForDetachment);
+            unAssignContainerParamsList.add(unAssignContainerParams);
+        }else{
+            container = saveUnAssignContainerResults(shipmentIdsForDetachment, container, unAssignContainerParams);
+        }
         return jsonHelper.convertValue(container, ContainerResponse.class);
+    }
+    public void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment,
+                                                   Map<String, List<Containers>> containersToSaveMap,
+                                                   List<UnAssignContainerParams> globalUnAssignContainerParams) {
+
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+
+        for (int currUnAssignContainerParams = 0; currUnAssignContainerParams < globalUnAssignContainerParams.size(); currUnAssignContainerParams++) {
+
+            // Batch update shipment IDs to container - same as ContainerV3Service
+            if (!listIsNullOrEmpty(globalUnAssignContainerParams
+                    .get(currUnAssignContainerParams)
+                    .getShipmentIdsForCargoDetachment()))
+                shipmentDao.setShipmentIdsToContainer(globalUnAssignContainerParams
+                        .get(currUnAssignContainerParams)
+                        .getShipmentIdsForCargoDetachment(), null);
+
+            // Batch update packing IDs to container - same as ContainerV3Service
+            if (!listIsNullOrEmpty(globalUnAssignContainerParams
+                    .get(currUnAssignContainerParams)
+                    .getRemoveAllPackingIds()))
+                packingDao.setPackingIdsToContainer(globalUnAssignContainerParams
+                        .get(currUnAssignContainerParams)
+                        .getRemoveAllPackingIds(), null);
+
+
+            // Collect shipments containers mappings for deletion
+            if (!listIsNullOrEmpty(globalUnAssignContainerParams.get(currUnAssignContainerParams).getShipmentsContainersMappings())) {
+                for (ShipmentsContainersMapping shipmentsContainersMapping :
+                        globalUnAssignContainerParams.get(currUnAssignContainerParams).getShipmentsContainersMappings()) {
+                    if (allShipmentIdsForDetachment.get(currUnAssignContainerParams).contains(shipmentsContainersMapping.getShipmentId())) {
+                        shipmentsContainersMappingList.add(shipmentsContainersMapping);
+                    }
+                }
+            }
+        }
+
+
+
+        // Batch save all containers
+        if (!listIsNullOrEmpty(containersToSaveMap.get("containersToSave")))
+            containerDao.saveAll(containersToSaveMap.get("containersToSave"));
+
+        List<Containers> containersList = containersToSaveMap.get("FCLContainersToRemove");
+        if(containersList != null){
+            List<Long> containersIdToDelete =  containersList.stream().map(Containers::getId).collect(Collectors.toList());
+            if(!containersIdToDelete.isEmpty()) {
+                containerDao.deleteByIdIn(containersIdToDelete);
+            }
+        }
+
+        // Batch delete shipments containers mappings
+//        if (!listIsNullOrEmpty(shipmentsContainersMappingList))
+//            shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappingList);
+
     }
     public Containers fetchDataForUnAssignContainer(UnAssignContainerRequest request, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
         Long containerId = request.getContainerId();
@@ -1975,7 +2039,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, UnAssignContainerParams unAssignContainerParams, Map<String, List<Containers>> unassignedContainersToSave, boolean isForcedDetach) throws RunnerException {
         List<Long> shipmentIdsForDetachment = new ArrayList<>();
 
         for (Map.Entry<Long, ShipmentDetails> entry : unAssignContainerParams.getShipmentDetailsMap().entrySet()) {
@@ -1983,7 +2047,7 @@ public class ContainerV3Service implements IContainerV3Service {
             ShipmentDetails shipmentDetails = entry.getValue();
             List<Packing> packingList = unAssignContainerParams.getShipmentPackingMap().get(shipmentId);
             if (request.getShipmentPackIds().containsKey(shipmentId)) { // Shipment came for some/all packs detachment
-                detachPacksAndShipmentFromContainer(request, container, packingList, shipmentIdsForDetachment, shipmentDetails, unAssignContainerParams);
+                detachPacksAndShipmentFromContainer(request, container, packingList, shipmentIdsForDetachment, shipmentDetails, unAssignContainerParams, unassignedContainersToSave, isForcedDetach);
             } else { // Shipment and its packages remains intact i.e. not being detached
                 addExistingShipmentAndPackagesToContainer(shipmentDetails, container, packingList);
             }
@@ -1992,25 +2056,35 @@ public class ContainerV3Service implements IContainerV3Service {
         return shipmentIdsForDetachment;
     }
     public void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container, List<Packing> packingList, List<Long> shipmentIdsForDetachment,
-                                                     ShipmentDetails shipmentDetails, UnAssignContainerParams unAssignContainerParams) throws RunnerException {
+                                                     ShipmentDetails shipmentDetails, UnAssignContainerParams unAssignContainerParams, Map<String, List<Containers>> unassignedContainersToSave, boolean isForcedDetach) throws RunnerException {
         Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentDetails.getId()));
         // we are removing all the packages from this shipment, hence container will be detached from shipment (but not for FCL/FTL shipment)
         if (Objects.equals(removePackIds.size(), packingList.size())) {
-            handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+            handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds, unassignedContainersToSave, isForcedDetach);
         } else { // only some packages are being removed from container
             handleUnAssignmentLogicWhenOnlyFewPacksAreRemoved(unAssignContainerParams, container, packingList, removePackIds);
         }
     }
     public void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container, ShipmentDetails shipmentDetails,
-                                                               List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds) {
+                                                               List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds, Map<String, List<Containers>> unassignedContainersToSave, boolean isForcedDetach) {
         Long shipmentId = shipmentDetails.getId();
-        if(commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType())) {
-            container.setGrossWeight(unAssignContainerParams.getOldContainersEntity().getGrossWeight());
-            container.setGrossWeightUnit(unAssignContainerParams.getOldContainersEntity().getGrossWeightUnit());
-            container.setGrossVolume(unAssignContainerParams.getOldContainersEntity().getGrossVolume());
-            container.setGrossVolumeUnit(unAssignContainerParams.getOldContainersEntity().getGrossVolumeUnit());
-            container.setPacks(unAssignContainerParams.getOldContainersEntity().getPacks());
-            container.setPacksType(unAssignContainerParams.getOldContainersEntity().getPacksType());
+        //add isForceDetach flag
+        if(commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()) ) {
+            if(isForcedDetach){
+                shipmentIdsForDetachment.add(shipmentId);
+            }else {
+
+
+                container.setGrossWeight(unAssignContainerParams.getOldContainersEntity().getGrossWeight());
+                container.setGrossWeightUnit(unAssignContainerParams.getOldContainersEntity().getGrossWeightUnit());
+                container.setGrossVolume(unAssignContainerParams.getOldContainersEntity().getGrossVolume());
+                container.setGrossVolumeUnit(unAssignContainerParams.getOldContainersEntity().getGrossVolumeUnit());
+                container.setPacks(unAssignContainerParams.getOldContainersEntity().getPacks());
+                container.setPacksType(unAssignContainerParams.getOldContainersEntity().getPacksType());
+                // to remove FCL container in case of force detach
+
+            }
+            unassignedContainersToSave.computeIfAbsent("FCLContainersToRemove", k -> new ArrayList<>()).add(container);
         }
         else {
             shipmentIdsForDetachment.add(shipmentId);

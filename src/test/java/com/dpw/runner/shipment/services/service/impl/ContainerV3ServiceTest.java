@@ -828,7 +828,10 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
-        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any());
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any(), Mockito.anyMap(), // for Map<String, List<String>> unassignedContainersToSave
+                Mockito.anyList(), // for List<Map<String, String>> shipmentIdsForDetachmentList
+                Mockito.anyList(), // for List<UnAssignContainerParams> unAssignContainerParamsList
+                Mockito.anyBoolean() );
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
@@ -873,7 +876,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false );
         assertNotNull(response);
     }
 
@@ -893,7 +896,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false );
         assertNotNull(response);
     }
 
@@ -913,7 +916,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false);
         assertNotNull(response);
     }
 
@@ -938,7 +941,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false );
         assertNotNull(response);
     }
 
@@ -964,7 +967,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(),new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false );
         assertNotNull(response);
     }
 
@@ -990,7 +993,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), false );
         assertNotNull(response);
     }
 
@@ -2282,10 +2285,12 @@ class ContainerV3ServiceTest extends CommonMocks {
                 ShipmentDetails.class,
                 List.class,
                 List.class,
-                Set.class
+                Set.class,
+                Map.class,
+                boolean.class
         );
         method.setAccessible(true);
-        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds, new HashMap<>(), false);
         assertEquals("KG", container1.getGrossWeightUnit());
         assertEquals("CBM", container1.getGrossVolumeUnit());
         assertEquals("5", container1.getPacks());

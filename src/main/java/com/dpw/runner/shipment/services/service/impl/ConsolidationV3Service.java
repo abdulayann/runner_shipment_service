@@ -3813,6 +3813,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponseWithWarning("Consol is null");
     }
 
+    @Transactional
     public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt, Boolean isForcedDetach) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
         Long consolidationId = consol.getId();
@@ -3834,14 +3835,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationId != null && shipmentIds!= null && !shipmentIds.isEmpty()) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIdList);
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
-            if(Boolean.TRUE.equals(isForcedDetach)){
-                // Get shipment details for the removed shipment IDs
-                List<ShipmentDetails> removedShipmentDetails = removedShipmentIds.stream()
-                    .map(shipmentDetailsMap::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-                detachAllContainerShipmentPresent(removedShipmentDetails);
-            }
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(Boolean.FALSE.equals(isForcedDetach)) {
@@ -3863,6 +3856,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDao.saveAll(shipmentDetailsToSave);
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
+            }
+            if(Boolean.TRUE.equals(isForcedDetach)){
+                // Get shipment details for the removed shipment IDs
+                List<ShipmentDetails> removedShipmentDetails = removedShipmentIds.stream()
+                        .map(shipmentDetailsMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                detachAllContainerShipmentPresent(removedShipmentDetails);
             }
 
             List<ShipmentDetails> shipmentDetailsList = getShipmentDetailsListFromConsoleMapping(consolidationDetails.getId());
@@ -3891,6 +3892,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             validateDetachedShipment(shipmentDetail);
     }
 
+    @Transactional
     private void detachAllContainerShipmentPresent(List<ShipmentDetails> shipmentDetails) throws RunnerException {
         if (shipmentDetails == null || shipmentDetails.isEmpty()) {
             return;
@@ -3906,8 +3908,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             // Collect container IDs
-            if (shipmentDetail.getContainerAssignedToShipmentCargo() != null) {
-                containerIds.add(shipmentDetail.getContainerAssignedToShipmentCargo());
+            if (shipmentDetail.getContainersList()!= null) {
+                Set<Containers> containers = shipmentDetail.getContainersList();
+                for (Containers container : containers) {
+                    if (container != null && container.getId() != null) {
+                        containerIds.add(container.getId());
+                    }
+                }
             }
 
             // Collect shipment IDs for batch processing
@@ -3915,7 +3922,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Get all containers that have packs from these shipments (batch query)
-        List<Packing> shipmentPackings = packingDao.findByShipmentIdIn(shipmentIds);
+        List<Packing> shipmentPackings = packingDao.findByContainerIdIn(containerIds);
         Set<Long> packContainerIds = shipmentPackings.stream()
                 .filter(packing -> packing.getContainerId() != null)
                 .map(Packing::getContainerId)
@@ -3931,9 +3938,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Process each container using the internal methods of unAssignContainers one by one
         // Collect all results for batch processing
-        List<Containers> containersToSave = new ArrayList<>();
-        List<Long> allShipmentIdsForDetachment = new ArrayList<>();
+        Map<String, List<Containers>> containersToSaveMap = new HashMap<>();
+        List<List<Long>> allShipmentIdsForDetachment = new ArrayList<>();
         UnAssignContainerParams globalUnAssignContainerParams = new UnAssignContainerParams();
+        List<UnAssignContainerParams> unAssignContainerParamsList =  new ArrayList<>();
 
         for (Long containerId : containerIds) {
             // Create UnAssignContainerRequest for this container
@@ -3956,28 +3964,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             // Step 2: Create UnAssignContainerParams for this operation
             UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+            containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, true);
 
-            // Step 3: Use the same fetchDataForUnAssignContainer logic as ContainerV3Service
-            Containers container = containerV3Service.fetchDataForUnAssignContainer(request, unAssignContainerParams);
-
-            // Step 4: Skip validation for force detach (we're bypassing validations)
-             containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, Constants.CONSOLIDATION_PACKING);
-
-            // Step 5: Use the same unAssignContainerCalculationsAndLogic as ContainerV3Service
-            List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogicForForceDetach(request, container, unAssignContainerParams);
-
-            // Collect results for batch processing
-            containersToSave.add(container);
-            allShipmentIdsForDetachment.addAll(shipmentIdsForDetachment);
-
-            // Merge container params for batch operations
-            globalUnAssignContainerParams.getShipmentIdsForCargoDetachment().addAll(unAssignContainerParams.getShipmentIdsForCargoDetachment());
-            globalUnAssignContainerParams.getRemoveAllPackingIds().addAll(unAssignContainerParams.getRemoveAllPackingIds());
-            globalUnAssignContainerParams.getShipmentsContainersMappings().addAll(unAssignContainerParams.getShipmentsContainersMappings());
         }
 
-        // Step 6: Batch save all results using the same method as ContainerV3Service
-        saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSave, globalUnAssignContainerParams);
+        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList);
+//         add conatainerdao.deleteall
+
+        updateShipmentSummary(unAssignContainerParamsList);
+
+
+    }
+
+    private void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
+        if (unAssignContainerParamsList == null || unAssignContainerParamsList.isEmpty()) {
+            return;
+        }
+        for(UnAssignContainerParams unAssignContainerParams: unAssignContainerParamsList) {
+            Set<Long> shipmentIds = unAssignContainerParams.getFclOrFtlShipmentIds();
+            Map<Long, ShipmentDetails> shipmentDetailsMap = unAssignContainerParams.getShipmentDetailsMap();
+
+            if (shipmentIds == null || shipmentIds.isEmpty() ||
+                    shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
+                continue;
+            }
+
+            for (Long shipmentId : shipmentIds) {
+                if (shipmentId == null) continue;
+
+                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
+                if (shipmentDetails != null) {
+                    shipmentV3Service.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+                }
+            }
+        }
     }
 
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
@@ -4021,7 +4041,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             ShipmentDetails shipmentDetails = entry.getValue();
             List<Packing> packingList = unAssignContainerParams.getShipmentPackingMap().get(shipmentId); // Shipment came for some/all packs detachment
             Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentDetails.getId()));
-            containerV3Service.handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+//            containerV3Service.handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
 
         }
         containerV3Util.setContainerNetWeight(container); // set container net weight from gross weight and tare weight

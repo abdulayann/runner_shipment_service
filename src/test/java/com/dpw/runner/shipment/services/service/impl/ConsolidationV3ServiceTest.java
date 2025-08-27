@@ -333,7 +333,10 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Mock
   private IEventService eventService;
 
-  @Mock
+    @Mock
+    private ContainerV3Service containerV3ServiceImpl;
+
+    @Mock
   private V1ServiceUtil v1ServiceUtil;
 
   @Mock
@@ -4595,7 +4598,7 @@ if (unitConversionUtilityMockedStatic != null) {
     // Mock dependent methods
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
     when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-    when(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
+    lenient().when(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
     when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
     when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
@@ -4661,7 +4664,7 @@ if (unitConversionUtilityMockedStatic != null) {
     // Mock dependent methods
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
     when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-    when(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
+    when(containerV3ServiceImpl.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
     when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
     when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));

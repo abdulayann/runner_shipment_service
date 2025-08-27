@@ -180,7 +180,10 @@ class ContainerV3ControllerTest {
 
     UnAssignContainerRequest request = new UnAssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
-    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class)))
+    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class), Mockito.anyMap(), // for Map<String, List<String>> unassignedContainersToSave
+                    Mockito.anyList(), // for List<Map<String, String>> shipmentIdsForDetachmentList
+                    Mockito.anyList(), // for List<UnAssignContainerParams> unAssignContainerParamsList
+                    Mockito.anyBoolean() ))
             .thenReturn(response);
     ResponseEntity<IRunnerResponse> result = containerV3Controller.unAssignContainers(request);
     assertEquals(HttpStatus.OK, result.getStatusCode());

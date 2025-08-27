@@ -611,7 +611,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         Mockito.when(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL")).thenReturn(true);
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module, false)
         );
         assertEquals("Use Shipment screen to unassign value to FCL container.", exception.getMessage());
     }
@@ -633,7 +633,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         String module = "OTHER_MODULE";
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module)
+                () -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module, false)
         );
         assertEquals("Allow Shipment Attachment is Off, Please enable to proceed further.", exception.getMessage());
     }
@@ -654,7 +654,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         params.setConsolidationDetails(consolidationDetails);
         String module = "OTHER_MODULE";
         Mockito.when(consolidationDetailsDao.getAllowAttachMentFromConsol(999L)).thenReturn(true);
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module, false));
     }
 
     @Test
@@ -670,7 +670,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         params.setConsolidationId(null);
         params.setConsolidationDetails(null);
         String module = "OTHER_MODULE";
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module));
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeUnAssignContainer(params, request, module, false));
     }
 
     @Test

@@ -553,4 +553,9 @@ public class ContainerDao implements IContainerDao {
         containerRepository.revertSoftDeleteByContainersIdsAndBookingId(containersIds, consolidationId);
     }
 
+    @Override
+    public void deleteAll(List<Containers> containers) {
+        containerRepository.deleteAll(containers);
+    }
+
 }

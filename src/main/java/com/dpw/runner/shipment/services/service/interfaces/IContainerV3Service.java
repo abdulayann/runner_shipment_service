@@ -48,7 +48,10 @@ public interface IContainerV3Service {
             Set<Long> interBranchRequestedShipIds);
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
-    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
+                                         Map<String, List<Containers>> unassignedContainersToSave,
+                                         List<List<Long>> shipmentIdsForDetachmentList,
+                                         List<UnAssignContainerParams> unAssignContainerParamsList, boolean isForcedDetach) throws RunnerException;
 
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 
