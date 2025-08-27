@@ -11,9 +11,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
@@ -24,6 +28,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE carrier_routings SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class CarrierRouting extends MultiTenancy {
 
     @Column(name = "sequence")
@@ -34,6 +40,7 @@ public class CarrierRouting extends MultiTenancy {
     private String transportMode;
 
     @Column(name = "carriage_type", length = 50)
+    @Enumerated(EnumType.STRING)
     private RoutingCarriage carriageType;
 
     @Column(name = "pol")   // Port of Loading
