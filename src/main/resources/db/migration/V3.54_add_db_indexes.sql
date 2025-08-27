@@ -23,3 +23,4 @@ CREATE INDEX IF NOT EXISTS idx_ti_containers_ti_leg_id ON ti_containers (ti_leg_
 CREATE INDEX IF NOT exists idx_tenant_products_tenant_id ON tenant_products (tenant_id) INCLUDE (is_deleted);
 CREATE INDEX IF NOT EXISTS idx_reference_numbers_tenant_id ON reference_numbers (tenant_id) INCLUDE (is_deleted);
 CREATE INDEX IF NOT EXISTS idx_shipment_setting_id ON hbl_terms_condition_template (shipment_settings_id) INCLUDE (is_deleted);
+create INDEX IF NOT EXISTS idx_events_tenant_deleted on events(tenant_id) include (is_deleted);
