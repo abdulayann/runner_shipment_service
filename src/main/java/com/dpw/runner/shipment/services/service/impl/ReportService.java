@@ -322,8 +322,8 @@ public class ReportService implements IReportService {
             generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
             var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
             var documentMasterResponse = pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
-            return ReportResponse.builder().content(byteContent).documentServiceMap(documentMasterResponse).build() ;
-        } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+            return ReportResponse.builder().content(byteContent).documentServiceMap(documentMasterResponse).build();
+        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
             return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
             return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);
@@ -458,13 +458,13 @@ public class ReportService implements IReportService {
         dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
         Optional<PickupDeliveryDetails> pickupDeliveryDetailsEntity = pickupDeliveryDetailsService.findById(Long.valueOf(reportRequest.getTransportInstructionId()));
-       if (pickupDeliveryDetailsEntity.isPresent()) {
-           PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
-           setTiReferenceTag(pickupDeliveryDetails, dictionary);
-           setTransporterPartyTags(pickupDeliveryDetails, dictionary);
-           setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
-           setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
-       }
+        if (pickupDeliveryDetailsEntity.isPresent()) {
+            PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
+            setTiReferenceTag(pickupDeliveryDetails, dictionary);
+            setTransporterPartyTags(pickupDeliveryDetails, dictionary);
+            setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
+            setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
+        }
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
@@ -517,13 +517,14 @@ public class ReportService implements IReportService {
             }
         }
     }
+
     private void setImportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
         List<Parties> parties = pickupDeliveryDetails.getPartiesList();
         if (!CommonUtils.listIsNullOrEmpty(parties)) {
             Optional<Parties> importAgent = parties.stream()
                     .filter(party -> ReportConstants.IMA_TYPE.equals(party.getType()))
                     .findFirst();
-            if(importAgent.isPresent()) {
+            if (importAgent.isPresent()) {
                 Map<String, Object> orgData = importAgent.get().getOrgData();
                 if (orgData != null) {
                     dictionary.put(ReportConstants.TI_IMPORT_AGENT_NAME, orgData.get(FULL_NAME));
@@ -538,6 +539,7 @@ public class ReportService implements IReportService {
             }
         }
     }
+
     private void setExportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
         List<Parties> parties = pickupDeliveryDetails.getPartiesList();
         if (!CommonUtils.listIsNullOrEmpty(parties)) {
@@ -553,7 +555,7 @@ public class ReportService implements IReportService {
                 Map<String, Object> addressData = exportAgent.get().getAddressData();
                 if (addressData != null) {
                     dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
-                    String address =  String.join(", ", ReportHelper.getCompleteAddress(addressData));
+                    String address = String.join(", ", ReportHelper.getCompleteAddress(addressData));
                     dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, address);
                 }
             }
@@ -570,8 +572,9 @@ public class ReportService implements IReportService {
             }
         }
     }
+
     private void setFromConsoleOrShipment(ReportRequest reportRequest) {
-        if(reportRequest.getEntityName() != null && Boolean.TRUE.equals(reportRequest.isSetParentEntityFlag())) {
+        if (reportRequest.getEntityName() != null && Boolean.TRUE.equals(reportRequest.isSetParentEntityFlag())) {
             reportRequest.setFromConsolidation(Objects.equals(reportRequest.getEntityName(), Constants.CONSOLIDATION));
             reportRequest.setFromShipment(Objects.equals(reportRequest.getEntityName(), Constants.SHIPMENT));
         }
@@ -990,7 +993,7 @@ public class ReportService implements IReportService {
     }
 
     private void handleSeawayBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
-            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+                                            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
         if (!SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
@@ -1006,7 +1009,7 @@ public class ReportService implements IReportService {
     }
 
     private void handleHouseBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
-            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+                                           ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
         String printType = reportRequest.getPrintType();
         List<String> validPrintTypes = List.of(ORIGINAL, DRAFT);
         boolean isOriginalBill = HOUSE_BILL_RELEASE_TYPE.equals(releaseType);
@@ -1040,14 +1043,14 @@ public class ReportService implements IReportService {
 
     private ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
+        if (shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
                 || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) || !List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo))
             return null;
         ShipmentDetails shipment = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))
                 .orElseThrow(() -> new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE));
         AdditionalDetails details = shipment.getAdditionalDetails();
 
-        if(details == null || (details.getReleaseType() == null || details.getReleaseType().trim().isEmpty())) {
+        if (details == null || (details.getReleaseType() == null || details.getReleaseType().trim().isEmpty())) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
         return shipment;
@@ -1420,7 +1423,7 @@ public class ReportService implements IReportService {
     }
 
     private void processCopies(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes, int copies, Integer noOfPacks, boolean isCombi, List<Pair<String, Integer>> hawbPacksMap) {
-        for(int i = 1; i <= copies; i++) {
+        for (int i = 1; i <= copies; i++) {
             int ind = 0;
             int prevPacks = 0;
             List<Future<byte[]>> futures = new ArrayList<>();
@@ -1429,17 +1432,17 @@ public class ReportService implements IReportService {
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
                 String hawbPacksCountForCombi;
-                if(isCombi) {
+                if (isCombi) {
                     threadSafeData.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
                     packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
                     hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
                     threadSafeData.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
-                    if((packs-prevPacks)% hawbPacksMap.get(ind).getValue() == 0) {
+                    if ((packs - prevPacks) % hawbPacksMap.get(ind).getValue() == 0) {
                         prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
                         ind++;
                     }
                 } else {
-                  hawbPacksCountForCombi = "";
+                    hawbPacksCountForCombi = "";
                 }
                 populateMap(threadSafeData, packsCount, packsOfTotal, packs);
 
@@ -1461,7 +1464,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void populatePdfBytes(List<Future<byte[]>> futures, List<byte[]> pdfBytes){
+    private void populatePdfBytes(List<Future<byte[]>> futures, List<byte[]> pdfBytes) {
         for (Future<byte[]> future : futures) {
             try {
                 pdfBytes.add(future.get());
@@ -1472,13 +1475,12 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void populateMap(Map<String, Object> threadSafeData, String packsCount, String packsOfTotal, int packs){
+    private void populateMap(Map<String, Object> threadSafeData, String packsCount, String packsOfTotal, int packs) {
         if (threadSafeData.get(ReportConstants.MAWB_NUMBER) != null || threadSafeData.get(ReportConstants.HAWB_NUMBER) != null) {
             threadSafeData.put(ReportConstants.COUNT, packsCount);
             threadSafeData.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
             threadSafeData.put(ReportConstants.PACK_NUMBER, packs);
-        }
-        else {
+        } else {
             threadSafeData.put(ReportConstants.COUNT, null);
         }
     }
@@ -1537,7 +1539,7 @@ public class ReportService implements IReportService {
         if (isCombi) {
             docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
         }
-       return docBytes;
+        return docBytes;
     }
 
     private Integer getNoOfPacks(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
@@ -1789,23 +1791,23 @@ public class ReportService implements IReportService {
     }
 
     private DocPages setDocPagesForPreAlert(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null, getMainOrLastPageId(row.getPreAlertAir(), adminRow.getPreAlertAir()), null, getIsLogoFixed(row.getPreAlertAir()), null, null, null);
-        }else{
+        } else {
             return setDocPages(null, getMainOrLastPageId(row.getPreAlertDoc(), adminRow.getPreAlertDoc()), null, getIsLogoFixed(row.getPreAlertDoc()), null, null, null);
         }
     }
 
     private DocPages setDocPagesForFreightCertification(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null, getMainOrLastPageId(row.getFreightCertificationAir(), adminRow.getFreightCertificationAir()), null, true, null, null, null);
-        }else{
+        } else {
             return setDocPages(null, getMainOrLastPageId(row.getFreightCertification(), adminRow.getFreightCertification()), null, true, null, null, null);
         }
     }
 
     private DocPages setDocPagesForArrivalNotice(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null, getMainOrLastPageId(row.getArrivalNoticeAir(), adminRow.getArrivalNoticeAir()), null, getIsLogoFixed(row.getArrivalNoticeAir()), null, null, null);
         } else {
             return setDocPages(null, getMainOrLastPageId(row.getArrivalNotice(), adminRow.getArrivalNotice()), null, getIsLogoFixed(row.getArrivalNotice()), null, null, null);
@@ -1813,17 +1815,17 @@ public class ReportService implements IReportService {
     }
 
     private DocPages setDocPagesForCustomsInstruction(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null, getMainOrLastPageId(row.getCustomsInsMainPageAir(), adminRow.getCustomsInsMainPageAir()), null, getIsLogoFixed(row.getCustomsInsMainPageAir()), null, null, null);
-        }else{
+        } else {
             return setDocPages(null, getMainOrLastPageId(row.getCustomsInsMainPage(), adminRow.getCustomsInsMainPage()), null, getIsLogoFixed(row.getCustomsInsMainPage()), null, null, null);
         }
     }
 
     private DocPages setDocPagesForPackingList(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null, getMainOrLastPageId(row.getPackingListMainPageAir(), adminRow.getPackingListMainPageAir()), null, getIsLogoFixed(row.getPackingListMainPageAir()), null, null, null);
-        }else{
+        } else {
             return setDocPages(null, getMainOrLastPageId(row.getPackingListMainPage(), adminRow.getPackingListMainPage()), null, getIsLogoFixed(row.getPackingListMainPage()), null, null, null);
         }
     }
@@ -1878,69 +1880,62 @@ public class ReportService implements IReportService {
     }
 
     private DocPages setDocPagesForBookingOrder(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String transportMode) {
-        if (transportMode.equalsIgnoreCase(ReportConstants.AIR)){
+        if (transportMode.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getBookingOrderAir() == null ? adminRow.getBookingOrderAir() : row.getBookingOrderAir(), null, row.getBookingOrderAir() != null, null, null, null);
-        }else{
+        } else {
             return setDocPages(null,
                     row.getBookingOrder() == null ? adminRow.getBookingOrder() : row.getBookingOrder(), null, row.getBookingOrder() != null, null, null, null);
         }
     }
 
     private DocPages setDocPagesForBookingConfirmation(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getBookingConfirmationAir() == null ? adminRow.getBookingConfirmationAir() : row.getBookingConfirmationAir(), null, row.getBookingConfirmationAir() != null, null, null, null);
-        }else{
+        } else {
             return setDocPages(null,
                     row.getBookingConfirmation() == null ? adminRow.getBookingConfirmation() : row.getBookingConfirmation(), null, row.getBookingConfirmation() != null, null, null, null);
         }
     }
 
     private DocPages setDocPagesForDeliveryOrder(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType, boolean istransportInstruction) {
-        if(istransportInstruction){
+        if (istransportInstruction) {
             return setDocPages(null,
                     row.getTransportInstructionDeliveryOrder() == null ? adminRow.getTransportInstructionDeliveryOrder() : row.getTransportInstructionDeliveryOrder(), null, row.getTransportInstructionDeliveryOrder() != null, null, null, null);
-        }
-        else if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        } else if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getDeliveryOrderAir() == null ? adminRow.getDeliveryOrderAir() : row.getDeliveryOrderAir(), null, row.getDeliveryOrderAir() != null, null, null, null);
-        }else{
+        } else {
             return setDocPages(null,
                     row.getDeliveryOrder() == null ? adminRow.getDeliveryOrder() : row.getDeliveryOrder(), null, row.getDeliveryOrder() != null, null, null, null);
         }
     }
 
     private DocPages setDocPagesForPickupOrder(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType, boolean istransportInstruction) {
-        if(istransportInstruction){
+        if (istransportInstruction) {
             return setDocPages(null,
                     row.getTransportInstructionPickupOrder() == null ? adminRow.getTransportInstructionPickupOrder() : row.getTransportInstructionPickupOrder(), null, row.getTransportInstructionPickupOrder() != null, null, null, null);
-        }
-        else if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        } else if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getPickupOrderAir() == null ? adminRow.getPickupOrderAir() : row.getPickupOrderAir(), null, row.getPickupOrderAir() != null, null, null, null);
-        }else{
+        } else {
             return setDocPages(null,
                     row.getPickupOrder() == null ? adminRow.getPickupOrder() : row.getPickupOrder(), null, row.getPickupOrder() != null, null, null, null);
         }
     }
 
     private DocPages setDocPagesForHouseBill(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String printType, String frontTemplateCode, String backTemplateCode) {
-        try
-        {
-            if (frontTemplateCode != null || backTemplateCode != null)
-            {
-                String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, true , printType).getTemplateFileName();
+        try {
+            if (frontTemplateCode != null || backTemplateCode != null) {
+                String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, true, printType).getTemplateFileName();
                 String back = null;
-                if (StringUtility.isNotEmpty(backTemplateCode))
-                {
-                    back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, false , printType).getTemplateFileName();
+                if (StringUtility.isNotEmpty(backTemplateCode)) {
+                    back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, false, printType).getTemplateFileName();
                 }
                 return setDocPages(null, front, back, true, null, null, row);
             }
-        }
-        catch (ValidationException ex)
-        {
+        } catch (ValidationException ex) {
             return setDocPages(null,
                     row.getHouseMainPage() == null ? adminRow.getHouseMainPage() : row.getHouseMainPage(),
                     row.getHblFooter() == null ? adminRow.getHblFooter() : row.getHblFooter(), row.getHouseMainPage() != null, null, null, row);
@@ -1951,18 +1946,17 @@ public class ReportService implements IReportService {
     }
 
     private DocPages setDocPagesForCanMainPageAir(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
-        if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
+        if (objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getCanMainPageAir() == null ? adminRow.getCanMainPageAir() : row.getCanMainPageAir(), row.getCanBackPrintAir() == null ? adminRow.getCanBackPrintAir() : row.getCanMainPageAir(), row.getCanMainPageAir() != null, null, null, null);
-        }else{
+        } else {
             return setDocPages(null,
                     row.getCanMainPage() == null ? adminRow.getCanMainPage() : row.getCanMainPage(), row.getCanBackPrint() == null ? adminRow.getCanBackPrint() : row.getCanBackPrint(), row.getCanMainPage() != null, null, null, null);
         }
     }
 
     public static DocPages setDocPages(String firstPageId, String mainPageId, String lastPageId, boolean isLogoFixed,
-                                       String multiTemplateCode, String entityType, ShipmentSettingsDetails tenantRow)
-    {
+                                       String multiTemplateCode, String entityType, ShipmentSettingsDetails tenantRow) {
         DocPages docPages = new DocPages();
         if (StringUtility.isNotEmpty(multiTemplateCode) && StringUtility.isNotEmpty(entityType)) {
             log.info("Continue the process.");
@@ -1981,30 +1975,28 @@ public class ReportService implements IReportService {
         return docPages;
     }
 
-    public DocPages getShippingInstructionDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType)
-    {
-        if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.AIR)){
+    public DocPages getShippingInstructionDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
+        if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.AIR)) {
             return setDocPages(null,
                     row.getShippingInstruction() == null ? adminRow.getShippingInstruction() : row.getShippingInstruction(), null, row.getShippingInstruction() != null, null, null, null);
-        }
-        else {
+        } else {
             return setDocPages(null,
                     row.getSeaShippingInstructionMainPage() == null ? adminRow.getSeaShippingInstructionMainPage() : row.getSeaShippingInstructionMainPage(), null, row.getSeaShippingInstructionMainPage() != null, null, null, null);
         }
     }
 
-    public String getSerialCount(int copyNumber, int totalCopies){
+    public String getSerialCount(int copyNumber, int totalCopies) {
         String copyCount = Integer.toString(copyNumber);
         String totalCopiesStr = Integer.toString(totalCopies);
         StringBuilder ans = new StringBuilder(copyCount);
         int size = copyCount.length();
-        if(copyCount.length() < 5 && totalCopiesStr.length() < 5){
-            for(int i = 0; i < (5 - size); i++){
+        if (copyCount.length() < 5 && totalCopiesStr.length() < 5) {
+            for (int i = 0; i < (5 - size); i++) {
                 ans = new StringBuilder("0" + ans);
             }
-        }else if(copyCount.length() < 5){
+        } else if (copyCount.length() < 5) {
             int totalCopiesSize = totalCopiesStr.length();
-            for(int i = 0; i< (totalCopiesSize - size); i++){
+            for (int i = 0; i < (totalCopiesSize - size); i++) {
                 ans = new StringBuilder("0" + ans);
             }
         }
@@ -2335,7 +2327,7 @@ public class ReportService implements IReportService {
                     () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByteContent), filename,
                             docUploadRequest, finalGuid)), executorService);
 
-            if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
+            if (reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())) {
                 addCSDDocumentToDocumentMaster(reportRequest, docUploadRequest, guid);
 
             }
@@ -2349,11 +2341,11 @@ public class ReportService implements IReportService {
         reportRequest.setReportId(parentRequest.getReportId());
         reportRequest.setReportInfo(CSD_REPORT);
         reportRequest.setEntityName(parentRequest.getEntityName());
-        if(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())){
+        if (Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())) {
             reportRequest.setFromConsolidation(true);
         }
-        try{
-            CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
+        try {
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
             DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
             csdDocumentUploadRequest.setDocType(CSD_REPORT);
             String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
@@ -2471,24 +2463,22 @@ public class ReportService implements IReportService {
         } else if (StringUtility.isNotEmpty(reportRequest.getPrintingFor_str())) {
             printingForParties = reportRequest.getPrintingFor_str().split(",");
         }
-        List<Future<byte[]>> futures = new ArrayList<>();
 
+        List<Future<byte[]>> futures = new ArrayList<>();
         for (String party : printingForParties) {
             futures.add(executorService.submit(() -> {
-                Map<String, Object> threadSafeData = new HashMap<>(dataRetrived); // avoid shared mutation
+                Map<String, Object> threadSafeData = new HashMap<>(dataRetrived);
                 MawbPrintFor printForParty = MawbPrintFor.getById(Integer.parseInt(party));
                 threadSafeData.put(ReportConstants.PRINTING_FOR, printForParty.getDesc());
-
                 byte[] mainDocPage = getFromDocumentService(threadSafeData, pages.getMainPageId());
                 if (mainDocPage == null) {
                     throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                 }
-
                 mainDocPage = getMainDocPage(reportRequest, number, printForParty, mainDocPage);
-
                 return mainDocPage;
             }));
         }
+
         getAllPdfData(futures, pdfBytes);
         return CommonUtils.concatAndAddContent(pdfBytes);
     }
@@ -2557,10 +2547,10 @@ public class ReportService implements IReportService {
         return shipmentDetails;
     }
 
-    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
-        if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())){
-            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
-                if (consolidationDetails!=null  &&
+    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled) {
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            for (ConsolidationDetails consolidationDetails : shipmentDetails.getConsolidationList()) {
+                if (consolidationDetails != null &&
                         (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
                                 !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType()))) {
                     triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
@@ -2570,16 +2560,16 @@ public class ReportService implements IReportService {
     }
 
     private void triggerConsoleAutomaticTransfer(Boolean isRunnerV3Enabled, ConsolidationDetails consolidationDetails) {
-        if(Boolean.TRUE.equals(isRunnerV3Enabled))
+        if (Boolean.TRUE.equals(isRunnerV3Enabled))
             networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
         else
             consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
     }
 
-    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
-        if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
-            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
-                if (consolidationDetails!=null &&
+    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled) {
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+            for (ConsolidationDetails consolidationDetails : shipmentDetails.getConsolidationList()) {
+                if (consolidationDetails != null &&
                         (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                                 Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType()))) {
                     triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
@@ -2588,20 +2578,20 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void triggerConsoleMAWBAutomaticTransfer(Long consolidationId, Boolean isRunnerV3Enabled){
+    public void triggerConsoleMAWBAutomaticTransfer(Long consolidationId, Boolean isRunnerV3Enabled) {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).orElse(null);
-        if(consolidationDetails==null)
+        if (consolidationDetails == null)
             return;
-        if(Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
+        if (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType())) {
             triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
         }
     }
 
-    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
-        if(Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
+    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled) {
+        if (Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
-            if(Boolean.TRUE.equals(isRunnerV3Enabled))
+            if (Boolean.TRUE.equals(isRunnerV3Enabled))
                 networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true);
             else
                 shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
@@ -2617,7 +2607,7 @@ public class ReportService implements IReportService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
                 .orElseThrow(() -> new DataRetrievalFailureException("No Shipment found with Id: " + shipmentId));
         populateTagsAndEmailTemplate(shipmentDetails, map, emailTemplateId, emailTemplatesRequests, toEmailIds, ccEmailIds);
-        if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
+        if (CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
             throw new RunnerException("No Template Found!");
 
         response.setSubject(commonUtils.replaceTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
@@ -2634,7 +2624,7 @@ public class ReportService implements IReportService {
 
     public void getEmailTemplate(Long emailTemplateId, List<EmailTemplatesRequest> emailTemplatesRequests) {
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List <Object> criteria1 = Arrays.asList(List.of(EntityTransferConstants.ID), "=", emailTemplateId);
+        List<Object> criteria1 = Arrays.asList(List.of(EntityTransferConstants.ID), "=", emailTemplateId);
         List<Object> criteria2 = new ArrayList<>(List.of(List.of(TENANTID), "=", TenantContext.getCurrentTenant()));
         request.setCriteriaRequests(List.of(criteria1, "and", criteria2));
         V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
@@ -2836,6 +2826,7 @@ public class ReportService implements IReportService {
         }
         return customFileName;
     }
+
     private int getExistingDocumentCount(String entityGuid, String docType, String childType) {
         try {
             DocumentManagerEntityFileRequest request = DocumentManagerEntityFileRequest.builder()
@@ -2915,6 +2906,7 @@ public class ReportService implements IReportService {
         result.put("fileName", docUploadRequest.getFileName());
         return result;
     }
+
     // Main orchestrator method that populates the data dump dictionary with all required details
     public void populateConsolidationReportData(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
         if (consolidationDetails == null) {

@@ -40,6 +40,7 @@ import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -674,36 +675,38 @@ public class MasterDataUtils{
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
 
-        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
-            log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+        List<MasterListRequest> masterListRequests = requests.getMasterListRequests();
+        if (masterListRequests == null || masterListRequests.isEmpty()) {
+            return keyMasterDataMap;
+        }
 
-            List<MasterListRequest> masterListRequests = requests.getMasterListRequests();
-            int batchSize = take;
-            int totalBatches = (int) Math.ceil((double) masterListRequests.size() / batchSize);
+        log.info("Request: {} || MasterListsList: {}",
+                LoggerHelper.getRequestIdFromMDC(),
+                jsonHelper.convertToJson(requests));
 
+        int batchSize = take;
+        int totalRequests = masterListRequests.size();
 
-            for (int i = 0; i < totalBatches; i++) {
+        for (int start = 0; start < totalRequests; start += batchSize) {
+            int end = Math.min(start + batchSize, totalRequests);
+            List<MasterListRequest> batch = masterListRequests.subList(start, end);
 
-                List<MasterListRequest> batch = masterListRequests.stream()
-                    .skip((long) i * batchSize)
-                    .limit(batchSize)
-                    .toList();
+            MasterListRequestV2 batchRequest = new MasterListRequestV2();
+            batchRequest.setMasterListRequests(batch);
+            batchRequest.setIncludeCols(requests.getIncludeCols());
 
-                MasterListRequestV2 batchRequest = new MasterListRequestV2();
-                batchRequest.setMasterListRequests(batch);
-                batchRequest.setIncludeCols(requests.getIncludeCols());
-
-                List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(batchRequest);
-
-                masterLists.forEach(masterData -> {
-                    String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? Constants.EMPTY_STRING : MasterDataType.masterData(masterData.ItemType).name());
-                    keyMasterDataMap.put(key, masterData);
-                });
+            List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(batchRequest);
+            for (EntityTransferMasterLists masterData : masterLists) {
+                MasterDataType type = MasterDataType.masterData(masterData.ItemType);
+                String typeName = (type != null) ? type.name() : Constants.EMPTY_STRING;
+                String key = masterData.ItemValue + '#' + typeName;
+                keyMasterDataMap.put(key, masterData);
             }
         }
 
         return keyMasterDataMap;
     }
+
 
     public Map<String, String> consolidationAddressCountryMasterData(ConsolidationDetails consolidationDetails) {
         List<String> alpha3CountriesList = new ArrayList<>();
@@ -1045,6 +1048,7 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return itemValueList;
     }
+
     public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(Set<String> requests) {
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         if(!requests.isEmpty()) {
@@ -1114,28 +1118,35 @@ public class MasterDataUtils{
         if (Objects.isNull(entityPayload))
             return null;
 
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new ConcurrentHashMap<>();
         List<String> itemValueList = new ArrayList<>();
         log.info("vesselsMasterData");
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
         List<String> fields = fetchFieldsMap(mainClass, Constants.VESSEL_MASTER_DATA);
-        for (String field: fields){
+        fields.parallelStream().forEach(fieldName -> {
             try {
-                log.info("VesselField: "+field);
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
-                field1.setAccessible(true);
-                String itemValue = (String) field1.get(entityPayload);
-                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
-                if(itemValue != null && !itemValue.isEmpty()) {
-                    if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
-                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
-                    fieldNameKeyMap.put(field, itemValue);
+                log.info("VesselField: {}", fieldName);
+                Field field = entityPayload.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+
+                String itemValue = (String) field.get(entityPayload);
+                if (itemValue != null && !itemValue.isEmpty()) {
+                    Cache.ValueWrapper cacheValue =
+                            cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
+
+                    if (Objects.isNull(cacheValue)) {
+                        itemValueList.add(itemValue);
+                    } else if (cacheMap != null) {
+                        cacheMap.put(itemValue, cacheValue.get());
+                    }
+
+                    fieldNameKeyMap.put(fieldName, itemValue);
                 }
             } catch (Exception e) {
-                log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
+                log.error("Error in createInBulkVesselsRequest : {}", e.getMessage(), e);
                 throw new GenericException(e);
             }
-        }
+        });
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return itemValueList;
     }
@@ -1331,18 +1342,21 @@ public class MasterDataUtils{
             return result;
         }
 
-        // Filter out null or empty codes before querying
-        List<String> validCodes = scacCodes.stream()
+        // Collect valid SCAC codes in one pass, eliminating duplicates
+        Set<String> validCodes = scacCodes.stream()
                 .filter(code -> code != null && !code.trim().isEmpty())
-                .distinct().toList();
+                .collect(Collectors.toSet());
 
         if (validCodes.isEmpty()) {
             return result;
         }
 
         // Fetch bulk carrier data
-        Map<String, EntityTransferCarrier> carrierMap = fetchInBulkCarriersBySCACCode(validCodes);
+        Map<String, EntityTransferCarrier> carrierMap = fetchInBulkCarriersBySCACCode(new ArrayList<>(validCodes));
 
+        if (carrierMap.isEmpty()) {
+            return result;
+        }
         for (String scac : validCodes) {
             EntityTransferCarrier carrier = carrierMap.get(scac);
             if (carrier != null && carrier.ItemValue != null) {
@@ -2034,38 +2048,46 @@ public class MasterDataUtils{
     }
 
     public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
-        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-        if (Objects.isNull(locCodes))
+        Map<String, UnlocationsResponse> locationMap = new ConcurrentHashMap<>();
+        if (locCodes == null || locCodes.isEmpty()) {
             return locationMap;
+        }
 
+        List<String> locCodeList = new ArrayList<>(locCodes);
         int batchSize = take;
-        if (!locCodes.isEmpty()) {
-            List<String> locCodeList = new ArrayList<>(locCodes);
-            int totalBatches = (int) Math.ceil((double) locCodeList.size() / batchSize);
 
-            for (int i = 0; i < totalBatches; i++) {
+        // Partition the list into batches (efficient, avoids skip/limit overhead)
+        List<List<String>> batches = new ArrayList<>();
+        for (int i = 0; i < locCodeList.size(); i += batchSize) {
+            batches.add(locCodeList.subList(i, Math.min(i + batchSize, locCodeList.size())));
+        }
 
-                List<String> batch = locCodeList.stream()
-                    .skip((long) i * batchSize)
-                    .limit(batchSize)
-                    .toList();
-
-                List<Object> criteria = Arrays.asList(
+        // Fetch batches in parallel (parallelStream or ExecutorService)
+        batches.parallelStream().forEach(batch -> {
+            List<Object> criteria = Arrays.asList(
                     List.of(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "In",
-                    List.of(batch)
-                );
+                    new ArrayList<>(batch)
+            );
 
-                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-                V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-                List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-                if (!Objects.isNull(unlocationsResponse))
-                    unlocationsResponse.forEach(
-                        location -> locationMap.put(location.getLocationsReferenceGUID(), location));
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder()
+                    .skip(0)
+                    .criteriaRequests(criteria)
+                    .build();
+
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse =
+                    jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+
+            if (unlocationsResponse != null) {
+                unlocationsResponse.forEach(location ->
+                        locationMap.put(location.getLocationsReferenceGUID(), location));
             }
-        }
+        });
+
         return locationMap;
     }
+
 
     public Map<String, CarrierMasterData> getCarriersData(Set<String> carrierCodes) {
         Map<String, CarrierMasterData> carrierMap = new HashMap<>();

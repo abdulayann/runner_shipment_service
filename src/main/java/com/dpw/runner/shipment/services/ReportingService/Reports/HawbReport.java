@@ -273,11 +273,14 @@ public class HawbReport extends IReport{
 
         ConsolidationModel consolRow = hawbModel.getConsolidationDetails();
         String awbNumber = getAwbNumberAndAddTags(shipmentInfo, dictionary, hawbModel, consolRow, masterDataQuery);
-        if(StringUtility.isNotEmpty(awbNumber)){
-            awbNumber = awbNumber.replace("-", "");
-            dictionary.put(ReportConstants.MAWB_NO3 , awbNumber.substring(0, Math.min(3, awbNumber.length())));
-            if(awbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, awbNumber.substring(3));
+
+        if (StringUtility.isNotEmpty(awbNumber)) {
+            String prefix = awbNumber.length() > 3 ? awbNumber.substring(0,3) : awbNumber;
+            String remaining = awbNumber.length() > 3 ? awbNumber.substring(3) : null;
+            dictionary.put(ReportConstants.MAWB_NO3, prefix);
+            if (remaining != null) dictionary.put(ReportConstants.MAWB_REMAINING, remaining);
         }
+
         var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
         dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
         dictionary.put(AWB_ISSUING_AGENT_ADDRESS, getAwbFormattedDetails(shipInfo.getIssuingAgentName(),shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentContactName(), shipInfo.getIssuingAgentPhone(), shipInfo.getIssuingAgentTaxRegistrationNumber()));
@@ -680,16 +683,17 @@ public class HawbReport extends IReport{
                 .toList();
             Map<String, List<Map<String, Object>>> commodityMap = new HashMap<>();
             Set<String> commodityGrpCodes = new HashSet<>();
-            values.forEach(v -> {
-                if(v.containsKey(COMMODITY_GROUP) && v.get(COMMODITY_GROUP) != null){
-                    String key = v.get(COMMODITY_GROUP).toString() + "#" + MasterDataType.COMMODITY_GROUP;
-                    if(!commodityMap.containsKey(key)) {
-                        commodityMap.put(key, new ArrayList<>());
-                    }
-                    commodityMap.get(key).add(v);
-                    commodityGrpCodes.add(v.get(COMMODITY_GROUP).toString());
+            for (Map<String, Object> v : values) {
+                Object groupObj = v.get(COMMODITY_GROUP);
+                if (groupObj != null) {
+                    String groupCode = groupObj.toString();
+                    String key = groupCode + "#" + MasterDataType.COMMODITY_GROUP;
+
+                    // single lookup instead of containsKey + get
+                    commodityMap.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
+                    commodityGrpCodes.add(groupCode);
                 }
-            });
+            }
             addShipmentPacksTagInDictionary(dictionary, commodityGrpCodes, commodityMap, values);
         }
     }
