@@ -1125,7 +1125,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
         when(packingDao.findByIdIn(List.of(1L, 2L))).thenReturn(List.of(packing1, packing2));
         when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
-        when(containerV3Service.assignContainers(request, SHIPMENT_PACKING, Boolean.TRUE))
+        when(containerV3Service.assignContainers(request, SHIPMENT_PACKING))
                 .thenReturn(expectedResponse);
 
         ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(request);
@@ -1135,7 +1135,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
         verify(packingDao).findByIdIn(List.of(1L, 2L));
         verify(shipmentService).findById(10L);
-        verify(containerV3Service).assignContainers(request, SHIPMENT_PACKING, Boolean.TRUE);
+        verify(containerV3Service).assignContainers(request, SHIPMENT_PACKING);
     }
 
     @Test
@@ -1334,13 +1334,12 @@ class PackingV3ServiceTest extends CommonMocks {
         ContainerResponse expectedResponse = new ContainerResponse();
         expectedResponse.setContainerCode("C123");
 
-        when(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE))
-                .thenReturn(expectedResponse);
+        when(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING)).thenReturn(expectedResponse);
 
         ContainerResponse actualResponse = packingV3Service.assignPackagesContainers(request);
 
         assertEquals(expectedResponse, actualResponse);
-        verify(containerV3Service).assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE);
+        verify(containerV3Service).assignContainers(request, Constants.CONSOLIDATION_PACKING);
     }
 
 

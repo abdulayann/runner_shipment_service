@@ -49,7 +49,7 @@ public interface IContainerV3Service {
             Set<Long> attachedShipmentIds,
             Set<Long> interBranchRequestedShipIds);
 
-    ContainerResponse assignContainers(AssignContainerRequest request, String module, Boolean isFCLorFTLShipment) throws RunnerException;
+    ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
     ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
                                            List<Containers> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
                                            List<UnAssignContainerParams> unAssignContainerParamsList, Boolean allowPackageReassignment) throws RunnerException;

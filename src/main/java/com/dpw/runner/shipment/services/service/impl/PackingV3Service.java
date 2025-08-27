@@ -1613,7 +1613,7 @@ public class PackingV3Service implements IPackingV3Service {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
 
-        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING, Boolean.TRUE);
+        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
     }
 
     @Override
@@ -1640,7 +1640,7 @@ public class PackingV3Service implements IPackingV3Service {
             throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
         }
 
-        return containerV3Service.assignContainers(request, SHIPMENT_PACKING, Boolean.TRUE);
+        return containerV3Service.assignContainers(request, SHIPMENT_PACKING);
     }
 
     @Override

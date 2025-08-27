@@ -1681,7 +1681,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ContainerResponse assignContainers(AssignContainerRequest request, String module, Boolean isFCLorFTLShipment) throws RunnerException {
+    public ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException {
 
         // Build OldShipmentDetails before unAssignment
         AssignContainerParams assignContainerParams = new AssignContainerParams();
@@ -1692,7 +1692,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Adding Reassignment functionality
         if (Boolean.TRUE.equals(request.getAllowPackageReassignment())) {
-            handleReassignment(request, module, packingList, isFCLorFTLShipment);
+            handleReassignment(request, module, packingList);
         } else {
             validateForNewAssignment(packingList);
         }
@@ -1702,7 +1702,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void validateForNewAssignment(List<Packing> packingList) {
         for (Packing packing : packingList) {
-            if (Objects.isNull(packing.getContainerId())) {
+            if (Objects.nonNull(packing.getContainerId())) {
                 throw new ValidationException("Package is already assigned to another container.");
             }
         }
@@ -1714,13 +1714,13 @@ public class ContainerV3Service implements IContainerV3Service {
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
 
-        if (allPackIds.isEmpty()) {
+        if (allPackIds.isEmpty() && Boolean.TRUE.equals(request.getAllowPackageReassignment())) {
             throw new RunnerException("At least one package is required for reassignment.");
         }
         return packingDao.findByIdIn(allPackIds);
     }
 
-    private void handleReassignment(AssignContainerRequest request, String module, List<Packing> packingList, Boolean isFCLorFTLShipment) throws RunnerException {
+    private void handleReassignment(AssignContainerRequest request, String module, List<Packing> packingList) throws RunnerException {
         List<List<Long>> shipmentIdsForDetachmentList = new ArrayList<>();
         List<Containers> unassignedContainersToSave = new ArrayList<>();
         List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
@@ -1735,10 +1735,6 @@ public class ContainerV3Service implements IContainerV3Service {
             UnAssignContainerRequest unAssignContainerRequest = buildUnAssignRequest(entry.getKey(), entry.getValue());
             self.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams,
                     unassignedContainersToSave, shipmentIdsForDetachmentList, unAssignContainerParamsList, Boolean.TRUE);
-        }
-        if (Boolean.TRUE.equals(isFCLorFTLShipment)) {
-            // update shipments and consolidations data only for FCL/FTL shipments
-            packingService.updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);
         }
 
         // Bulk save for all unassign calls
@@ -1758,11 +1754,10 @@ public class ContainerV3Service implements IContainerV3Service {
             if (Objects.equals(packing.getContainerId(), request.getContainerId())) {
                 // Remove current packId from AssignContainerRequest.shipmentPackIds
                 removePackIdFromAssignRequest(request, packing.getShipmentId(), packing.getId());
-                continue;
+            } else {
+                containerIdPacksMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
+                containerIdPacksMap.get(packing.getContainerId()).add(packing);
             }
-
-            containerIdPacksMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
-            containerIdPacksMap.get(packing.getContainerId()).add(packing);
         }
         return containerIdPacksMap;
     }
