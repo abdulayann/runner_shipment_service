@@ -176,7 +176,7 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})

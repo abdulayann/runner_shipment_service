@@ -880,14 +880,14 @@ class PackingV3ServiceTest extends CommonMocks {
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
     void testUnAssignPackageContainersWithReassignFlow() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -899,7 +899,7 @@ class PackingV3ServiceTest extends CommonMocks {
         packing.setContainerId(1L);
         when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(containerV3Service).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean());
+        verify(containerV3Service).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
