@@ -291,6 +291,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").enableRouteMaster(true).build());
     TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
     testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+    testConsol.setAssignedTo("AssignedToUser");
     testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
     consolidationDetailsV3Request = objectMapperTest.convertValue(testConsol , ConsolidationDetailsV3Request.class);
     consolidationEtV3Request = objectMapperTest.convertValue(testConsol ,ConsolidationEtV3Request.class);
@@ -299,6 +300,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     shipmentDetails = jsonTestUtility.getCompleteShipment();
     consolidationDetails = new ConsolidationDetails();
     consolidationDetails.setConsolidationType(CONSOLIDATION_TYPE_CLD);
+    consolidationDetails.setAssignedTo("assignedToUser");
     shipmentSettingsDetails = new ShipmentSettingsDetails();
     customerBookingV3Request = new CustomerBookingV3Request();
     testShipment = jsonTestUtility.getTestShipment();
@@ -4291,6 +4293,7 @@ if (unitConversionUtilityMockedStatic != null) {
     // setup
     shipmentDetails = ShipmentDetails.builder().build();
     consolidationDetails = ConsolidationDetails.builder().build();
+    consolidationDetails.setAssignedTo("assignedToUser");
     List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
@@ -4920,6 +4923,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendEmailFOrPullRequestWithdraw() {
       consolidationDetails = new ConsolidationDetails();
       consolidationDetails.setId(1L);
+      consolidationDetails.setAssignedTo("assignedToUser");
       boolean isSuccess = true;
       when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
       when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
