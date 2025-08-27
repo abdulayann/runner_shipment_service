@@ -1294,6 +1294,28 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertNull(shipment.getMasterBill());
         assertNull(shipment.getBookingNumber());
     }
+    @Test
+    void testUpdateShipmentFieldsAfterDetach_shouldClearContainersOnForcedDetach() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        CarrierDetails carrier = new CarrierDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setMasterBill("MBL123");
+        shipment.setBookingNumber("BK456");
+
+        shipment.setContainersList(new HashSet<>(Set.of(new Containers())));
+        shipmentServiceImplV3.updateShipmentFieldsAfterDetach(List.of(shipment), Boolean.TRUE);
+
+        assertNotNull(shipment.getContainersList());
+        assertTrue(shipment.getContainersList().isEmpty());
+
+        assertNull(carrier.getEta());
+        assertNull(carrier.getEtd());
+        assertNull(carrier.getAta());
+        assertNull(carrier.getAtd());
+
+        assertNull(shipment.getMasterBill());
+        assertNull(shipment.getBookingNumber());
+    }
 
     @Test
     void testUpdateSailingScheduleDataToShipment_forSeaMode_shouldCallSeaUpdate() throws RunnerException {

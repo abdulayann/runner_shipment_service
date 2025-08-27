@@ -3845,7 +3845,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             for (Long shipmentId : shipmentIds) {
-                if (shipmentId == null) continue;
 
                 ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
                 if (shipmentDetails != null) {
