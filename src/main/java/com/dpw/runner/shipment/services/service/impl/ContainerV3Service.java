@@ -1742,7 +1742,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // Bulk save for all unassign calls
-        self.saveUnAssignContainerResultsBatch(shipmentIdsForDetachmentList, unassignedContainersToSave, unAssignContainerParamsList, Boolean.FALSE, Boolean.FALSE);
+        self.saveUnAssignContainerResultsBatch(shipmentIdsForDetachmentList, unassignedContainersToSave, unAssignContainerParamsList, Boolean.FALSE);
     }
 
     private Map<Long, List<Packing>> buildOldContainerPackMap(AssignContainerRequest request, List<Packing> packingList) {
@@ -2218,7 +2218,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment,
                                                   Map<String, List<Containers>> containersToSaveMap,
-                                                  List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isForcedDetach, Boolean isFCLDelete) {
+                                                  List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isFCLDelete) {
 
         List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
 
@@ -2247,7 +2247,7 @@ public class ContainerV3Service implements IContainerV3Service {
         List<Containers> containersListToSave = containersToSaveMap.get("containersToSave");
         List<Containers> fclContainersListToRemove =  containersToSaveMap.get("FCLContainersToRemove");
         // early removing the fcl container from ship-container to avoid JPA issue in deleting containers
-        removeFclContainersFromShipContainerMapping(isForcedDetach, isFCLDelete, containersListToSave, fclContainersListToRemove, shipmentsContainersMappingList);
+        removeFclContainersFromShipContainerMapping(isFCLDelete, containersListToSave, fclContainersListToRemove, shipmentsContainersMappingList);
 
 
         // Batch save all containers
@@ -2256,7 +2256,7 @@ public class ContainerV3Service implements IContainerV3Service {
         // Batch delete shipments containers mappings
         deleteMappings(shipmentsContainersMappingList);
 
-        if(isFCLDelete &&  isForcedDetach && fclContainersListToRemove != null && !fclContainersListToRemove.isEmpty()) {
+        if(Boolean.TRUE.equals(isFCLDelete) && fclContainersListToRemove != null && !fclContainersListToRemove.isEmpty()) {
             List<Long> containersIdToDelete = fclContainersListToRemove.stream().map(Containers::getId).collect(Collectors.toCollection(ArrayList::new));
             containerDao.deleteByIdIn(containersIdToDelete);
         }
@@ -2273,8 +2273,8 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private static void removeFclContainersFromShipContainerMapping(Boolean isForcedDetach, Boolean isFCLDelete, List<Containers> containersListToSave, List<Containers> fclContainersListToRemove, List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
-        if(isFCLDelete && isForcedDetach && containersListToSave != null && fclContainersListToRemove != null) {
+    private static void removeFclContainersFromShipContainerMapping(Boolean isFCLDelete, List<Containers> containersListToSave, List<Containers> fclContainersListToRemove, List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
+        if(Boolean.TRUE.equals(isFCLDelete) && containersListToSave != null && fclContainersListToRemove != null) {
                 List<Long> containersIdToDelete = fclContainersListToRemove.stream().map(Containers::getId).collect(Collectors.toCollection(ArrayList::new));
 
                 for(Containers con: containersListToSave){

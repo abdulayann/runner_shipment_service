@@ -164,7 +164,7 @@ public class ContainerValidationUtil {
     }
 
     public void validateBeforeUnAssignContainer(UnAssignContainerParams unAssignContainerParams, UnAssignContainerRequest request, String module, Boolean isForcedDetach) {
-        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module) && Boolean.FALSE.equals(isForcedDetach))
+        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module) && !Boolean.TRUE.equals(isForcedDetach))
             throw new ValidationException("Use Shipment screen to unassign value to FCL container.");
         validateOpenForAttachment(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
     }

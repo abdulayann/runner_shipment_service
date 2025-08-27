@@ -3804,7 +3804,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
             containerV3Service.unAssignContainers(unAssignRequest, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
         }
-        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isForcedDetach, isFCLDelete);
+        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isFCLDelete);
         updateShipmentSummary(unAssignContainerParamsList);
 
 
