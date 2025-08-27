@@ -1,0 +1,2 @@
+update account_receivables SET e_invoice_number = '3123', e_invoicing_status = 'SUCCESS', e_invoicing_failure_reason = NULL, updated_at = NOW()
+where invoice_number ='CLINV002057' and branch_id = '523';
