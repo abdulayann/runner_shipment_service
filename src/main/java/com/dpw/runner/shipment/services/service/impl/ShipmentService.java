@@ -1919,6 +1919,8 @@ public class ShipmentService implements IShipmentService {
         if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType())) {
             shipmentDetails.setConsolidationList(new HashSet<>());
             shipmentDetails.setConsolRef(null);
+            shipmentRequest.setConsolidationList(new HashSet<>());
+            shipmentRequest.setConsolRef(null);
         }
 
         processVoyageAndFlightNumber(shipmentDetails);
