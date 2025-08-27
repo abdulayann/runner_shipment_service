@@ -3679,7 +3679,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponseWithWarning("Consol is null");
     }
 
-    @Transactional
     public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt, Boolean isForcedDetach, Boolean isFCLDelete) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
         Long consolidationId = consol.getId();
@@ -3786,15 +3785,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Get all containers that have packs from these shipments (batch query)
         List<Packing> shipmentPackings = packingDao.findByContainerIdIn(containerIds);
-        Set<Long> packContainerIds = shipmentPackings.stream()
-                .filter(packing -> packing.getContainerId() != null)
-                .map(Packing::getContainerId)
-                .collect(Collectors.toSet());
-        Set<Long> packingIds = shipmentPackings.stream()
-                .filter(packing -> packing.getId() != null)
-                .map(Packing::getId)
-                .collect(Collectors.toSet());
-        containerIds.addAll(packContainerIds);
 
         // Remove duplicates
         containerIds = containerIds.stream().distinct().collect(Collectors.toList());
@@ -3807,34 +3797,28 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         // Collect all results for batch processing
         Map<String, List<Containers>> containersToSaveMap = new HashMap<>();
         List<List<Long>> allShipmentIdsForDetachment = new ArrayList<>();
-        UnAssignContainerParams globalUnAssignContainerParams = new UnAssignContainerParams();
         List<UnAssignContainerParams> unAssignContainerParamsList =  new ArrayList<>();
 
         for (Long containerId : containerIds) {
             // Create UnAssignContainerRequest for this container
-            UnAssignContainerRequest request = new UnAssignContainerRequest();
-            request.setContainerId(containerId);
+            UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
+            unAssignRequest.setContainerId(containerId);
 
-            // Create shipment pack mapping - empty list means detach all packs for all shipments
+            // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
             Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-            for (Long shipmentId : shipmentIds) {
-                if(packingIds !=  null ){
-                    shipmentPackIds.put(shipmentId, new ArrayList<>(packingIds));
-                }else{
-                    shipmentPackIds.put(shipmentId, new ArrayList<>());
+            for (Packing packing : shipmentPackings) {
+                if(packing.getContainerId().equals(containerId)){
+                    shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>())
+                            .add(packing.getId());
                 }
 
             }
-            request.setShipmentPackIds(shipmentPackIds);
+            unAssignRequest.setShipmentPackIds(shipmentPackIds);
             // Step 2: Create UnAssignContainerParams for this operation
             UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
-            containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
-
+            containerV3Service.unAssignContainers(unAssignRequest, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
         }
-
         containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isForcedDetach, isFCLDelete);
-//         add conatainerdao.deleteall
-
         updateShipmentSummary(unAssignContainerParamsList);
 
 
