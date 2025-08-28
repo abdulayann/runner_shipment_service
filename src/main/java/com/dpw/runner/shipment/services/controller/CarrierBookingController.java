@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -77,9 +79,9 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerListResponse.class)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid CarrierBookingListRequest request) {
-        log.info("Received Carrier Booking LIST request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        CarrierBookingListResponse response = carrierBookingService.list(request);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        CarrierBookingListResponse response = carrierBookingService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
         log.info("Carrier Booking LIST successful with RequestId: {} and totalRecords: {}, totalPages: {}", LoggerHelper.getRequestIdFromMDC(), response.getNumberOfRecords(), response.getTotalPages());
         return ResponseHelper.buildListSuccessCarrierBookingResponse(
                 response.getCarrierBookingResponseList(),
