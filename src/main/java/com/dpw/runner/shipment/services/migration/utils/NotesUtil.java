@@ -85,7 +85,7 @@ public class NotesUtil {
         text.append("\n");
 
         appendContainerDataInText(containersList, text);
-        appendPackingDataInText(packingList, text);
+        appendPackingDataInText(packingList, containersList, text);
         return text;
     }
 
@@ -104,11 +104,13 @@ public class NotesUtil {
         if (containersList == null || containersList.isEmpty()) {
             return;
         }
+        Integer i =1;
         log.info("containerList: {}", containersList);
         for (Containers container : containersList) {
-            text.append("Container Summary\n");
+            text.append("Container Details #").append(i).append("\n");
             text.append(nullSafe(container.getContainerNumber())).append("\n");
             text.append("Container Type: ").append(container.getContainerCode()).append("\n");
+            text.append("Container Count: ").append(nullSafe(container.getContainerCount())).append("\n");
             text.append("Container Number: ").append(nullSafe(container.getContainerNumber())).append("\n");
             text.append("No Of packages: ").append(nullSafe(container.getPacks())).append("\n");
             text.append("Package Type: ").append(container.getPacksType()).append("\n");
@@ -116,19 +118,36 @@ public class NotesUtil {
             text.append(netWeight).append(nullSafe(container.getNetWeight())).append(" ").append(nullSafe(container.getNetWeightUnit())).append("\n");
             text.append("Tare Weight: ").append(nullSafe(container.getTareWeight())).append(" ").append(nullSafe(container.getTareWeightUnit())).append("\n");
             text.append("Gross Volume: ").append(nullSafe(container.getGrossVolume())).append(" ").append(nullSafe(container.getGrossVolumeUnit())).append("\n");
+            i+=1;
             text.append("\n");
         }
     }
 
-    private void appendPackingDataInText(List<Packing> packingList, StringBuilder text) {
+    private void appendPackingDataInText(List<Packing> packingList, Set<Containers> containersSet, StringBuilder text) {
         if (packingList == null || packingList.isEmpty()) {
             return;
         }
         log.info("packingList: {}", packingList);
+
+        Map<Long, Containers> containerIdMap = new HashMap<>();
+        if(containersSet!=null && !containersSet.isEmpty()) {
+            for (Containers container : containersSet) {
+                containerIdMap.put(container.getId(), container);
+            }
+        }
+
         text.append("Packages# ").append("\n");
         for(Packing packing: packingList){
             text.append("No Of Package: ").append(nullSafe(packing.getPacks())).append(" ").append(nullSafe(packing.getPacksType())).append("\n");
             text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
+            String containerNumber = "";
+            if (packing.getContainerId() != null) {
+                Containers matchedContainer = containerIdMap.get(packing.getContainerId());
+                if (matchedContainer != null) {
+                    containerNumber = matchedContainer.getContainerNumber();
+                }
+            }
+            text.append("Container Number: ").append(nullSafe(containerNumber)).append("\n");
             text.append("Height: ").append(nullSafe(packing.getHeight())).append(" ").append(nullSafe(packing.getHeightUnit())).append("\n");
             text.append("Gross Weight: ").append(nullSafe(packing.getWeight())).append(" ").append(nullSafe(packing.getWeightUnit())).append("\n");
             text.append(netWeight).append(nullSafe(packing.getNetWeight())).append(" ").append(nullSafe(packing.getNetWeightUnit())).append("\n");
@@ -159,7 +178,7 @@ public class NotesUtil {
         text.append(nullSafe(consolidationDetails.getConsolidationNumber())).append("\n");
 
         appendContainerDataInText(containersSet, text);
-        appendPackingDataInText(packingList, text);
+        appendPackingDataInText(packingList, containersSet, text);
         return text;
     }
 
