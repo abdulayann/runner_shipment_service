@@ -26,6 +26,10 @@ public interface IEventDao {
 
     Optional<Events> findById(Long id);
 
+    Optional<Events> findByIdWithoutTenant(Long id);
+
+    void deleteByIdWithoutTenant(Long id);
+
     Optional<Events> findByEntityIdAndEntityType(Long id, String entityType);
 
     void delete(Events events);

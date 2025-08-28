@@ -139,60 +139,7 @@ public class EventV3Service implements IEventsV3Service {
 
     @Override
     public List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source) {
-
-        String shipmentNumber = request.getShipmentNumber();
-        Long consolidationId = request.getConsolidationId();
-
-        List<EventsResponse> allEventResponses = new ArrayList<>();
-        ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
-
-        if (shipmentNumber != null) {
-            List<Events> shipmentEvents = fetchEventsWithoutTenantFilter(shipmentNumber, null, listRequest);
-            allEventResponses = jsonHelper.convertValueToList(shipmentEvents, EventsResponse.class);
-        } else if (consolidationId != null) {
-            List<Events> consolEvents = fetchEventsWithoutTenantFilter(null, consolidationId, listRequest);
-            allEventResponses = jsonHelper.convertValueToList(consolEvents, EventsResponse.class);
-        }
-
-        // set Branch name for every event response
-        populateBranchNames(allEventResponses);
-
-        // set MasterData
-        setEventCodesMasterData(
-                allEventResponses,
-                EventsResponse::getEventCode,
-                EventsResponse::setDescription
-        );
-
-        List<EventsResponse> groupedEvents = allEventResponses;
-
-        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
-            return groupedEvents;
-        }
-
-        // Events grouping logic if events revamp feature flag is enabled
-        if (Objects.isNull(request.getSortRequest())) {
-            groupedEvents = allEventResponses.stream()
-                    // Group by eventCode and sort each group by `actual` in descending order
-                    .collect(Collectors.groupingBy(EventsResponse::getEventCode))
-                    .values().stream()
-                    // Sort each group by `actual` in descending order
-                    .map(group -> {
-                        group.sort(
-                                Comparator.comparing(EventsResponse::getShipmentNumber, Comparator.nullsLast(Comparator.naturalOrder()))
-                                        .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
-                        );
-                        return group;
-                    })
-//                     Sort groups by the latest actual date in descending order
-                    .sorted(Comparator.comparing(
-                            group -> group.get(0).getActual(), Comparator.nullsLast(Comparator.reverseOrder())
-                    ))
-                    .flatMap(List::stream)
-                    .toList();
-        }
-
-        return groupedEvents;
+        return eventV2Service.listWithoutTenantFilter(request, source);
     }
 
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest, String source) {
@@ -210,19 +157,6 @@ public class EventV3Service implements IEventsV3Service {
             allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
         }
         log.info("EventsList - fetched {} events", allEvents.size());
-        return allEvents;
-    }
-
-    private List<Events> fetchEventsWithoutTenantFilter(String shipmentNumber, Long consolidationId, ListCommonRequest listRequest) {
-        if (ObjectUtils.isNotEmpty(shipmentNumber)) {
-            listRequest = CommonUtils.andCriteria(EventConstants.SHIPMENT_NUMBER, shipmentNumber, "=", listRequest);
-            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
-        } else if (ObjectUtils.isNotEmpty(consolidationId)) {
-            listRequest = CommonUtils.andCriteria("consolidationId", consolidationId, "=", listRequest);
-        }
-        Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
-        List<Events> allEvents = eventDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()).getContent();
-        log.info("fetchEventsWithoutTenantFilter - fetched {} events", allEvents.size());
         return allEvents;
     }
 

@@ -129,6 +129,16 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Optional<Events> findByIdWithoutTenant(Long id) {
+        return eventRepository.findByIdWithoutTenant(id);
+    }
+
+    @Override
+    public void deleteByIdWithoutTenant(Long events) {
+        eventRepository.deleteByIdWithoutTenant(events);
+    }
+
+    @Override
     public Optional<Events> findByEntityIdAndEntityType(Long id, String entityType) {
         return eventRepository.findByEntityIdAndEntityType(id, entityType);
     }
