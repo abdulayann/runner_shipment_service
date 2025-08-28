@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_INSTRUCTIONS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
@@ -467,13 +466,13 @@ public class ReportService implements IReportService {
         dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
         Optional<PickupDeliveryDetails> pickupDeliveryDetailsEntity = pickupDeliveryDetailsService.findById(Long.valueOf(reportRequest.getTransportInstructionId()));
-        if (pickupDeliveryDetailsEntity.isPresent()) {
-            PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
-            setTiReferenceTag(pickupDeliveryDetails, dictionary);
-            setTransporterPartyTags(pickupDeliveryDetails, dictionary);
-            setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
-            setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
-        }
+       if (pickupDeliveryDetailsEntity.isPresent()) {
+           PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
+           setTiReferenceTag(pickupDeliveryDetails, dictionary);
+           setTransporterPartyTags(pickupDeliveryDetails, dictionary);
+           setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
+           setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
+       }
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
@@ -1003,14 +1002,14 @@ public class ReportService implements IReportService {
     }
 
     private void handleSeawayBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
-                                            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
         if (!SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
     }
 
     private void handleHouseBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
-                                           ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
         String printType = reportRequest.getPrintType();
         List<String> validPrintTypes = List.of(ORIGINAL, DRAFT);
         boolean isOriginalBill = HOUSE_BILL_RELEASE_TYPE.equals(releaseType);
@@ -1430,7 +1429,7 @@ public class ReportService implements IReportService {
                         ind++;
                     }
                 } else {
-                    hawbPacksCountForCombi = "";
+                  hawbPacksCountForCombi = "";
                 }
                 populateMap(threadSafeData, packsCount, packsOfTotal, packs);
 
@@ -1528,7 +1527,7 @@ public class ReportService implements IReportService {
         if (isCombi) {
             docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
         }
-        return docBytes;
+       return docBytes;
     }
 
     private Integer getNoOfPacks(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
