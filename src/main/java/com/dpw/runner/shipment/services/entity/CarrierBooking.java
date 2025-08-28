@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.CascadeType;
@@ -23,6 +24,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "carrier_booking")
@@ -127,6 +129,14 @@ public class CarrierBooking extends MultiTenancy {
     @JoinColumn(name = "deliver_to_id", referencedColumnName = "id")
     @OrganizationData
     private Parties deliveryTo;
+
+    @Type(type = "jsonb")
+    @Column(name = "loaded_container_drop_off_details", columnDefinition = "jsonb")
+    private Map<String, Object> loadedContainerDropOffDetails;
+
+    @Type(type = "jsonb")
+    @Column(name = "empty_container_pickup_details", columnDefinition = "jsonb")
+    private Map<String, Object> emptyContainerPickupDetails;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "shipping_instruction_id", referencedColumnName = "id")
