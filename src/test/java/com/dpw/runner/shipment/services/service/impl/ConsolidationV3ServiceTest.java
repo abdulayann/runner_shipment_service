@@ -2883,6 +2883,7 @@ if (unitConversionUtilityMockedStatic != null) {
         var spyService = Mockito.spy(consolidationV3Service);
         Packing packing = new Packing();
         packing.setContainerId(1L);
+        packing.setShipmentId(1L);
         List<Packing> packingList = List.of(packing);
 
 

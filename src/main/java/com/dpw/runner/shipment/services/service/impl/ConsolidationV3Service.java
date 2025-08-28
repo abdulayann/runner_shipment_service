@@ -3791,24 +3791,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             unAssignRequest.setContainerId(containerId);
 
             // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
-            Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-            for (ShipmentDetails ship : shipmentDetails) {
-                List<Long> shipContIds =  ship.getContainersList().stream()
-                        .filter(container -> container != null && container.getId() != null)
-                        .map(Containers::getId)
-                        .collect(Collectors.toList());
-                if (shipContIds.contains(containerId)) {
-                    shipmentPackIds.put(ship.getId(), new ArrayList<>());
-                }
-            }
-            for (Packing packing : shipmentPackings) {
-                if (packing.getContainerId().equals(containerId)) {
-                    Long shipmentId = packing.getShipmentId();
-                    if (shipmentPackIds.containsKey(shipmentId)) {
-                        shipmentPackIds.get(shipmentId).add(packing.getId());
-                    }
-                }
-            }
+            Map<Long, List<Long>> shipmentPackIds = getShipmentPackIds(shipmentDetails, containerId, shipmentPackings);
 
             unAssignRequest.setShipmentPackIds(shipmentPackIds);
             // Step 2: Create UnAssignContainerParams for this operation
@@ -3819,6 +3802,28 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         updateShipmentSummary(unAssignContainerParamsList);
 
 
+    }
+
+    private static Map<Long, List<Long>> getShipmentPackIds(List<ShipmentDetails> shipmentDetails, Long containerId, List<Packing> shipmentPackings) {
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        for (ShipmentDetails ship : shipmentDetails) {
+            List<Long> shipContIds =  ship.getContainersList().stream()
+                    .filter(container -> container != null && container.getId() != null)
+                    .map(Containers::getId)
+                    .collect(Collectors.toList());
+            if (shipContIds.contains(containerId)) {
+                shipmentPackIds.put(ship.getId(), new ArrayList<>());
+            }
+        }
+        for (Packing packing : shipmentPackings) {
+            if (packing.getContainerId().equals(containerId)) {
+                Long shipmentId = packing.getShipmentId();
+                if (shipmentPackIds.containsKey(shipmentId)) {
+                    shipmentPackIds.get(shipmentId).add(packing.getId());
+                }
+            }
+        }
+        return shipmentPackIds;
     }
 
     private static void extractContainerAndShipmentIds(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Long> shipmentIds) {
