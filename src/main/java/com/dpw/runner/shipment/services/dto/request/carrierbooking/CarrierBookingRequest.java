@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +20,6 @@ public class CarrierBookingRequest {
     private String mblNo;
     private String consolidationNo;
     private String serviceType;
-
-    @UnlocationData
     private String bookingOffice;
 
     private String bookingComment;
@@ -43,7 +40,6 @@ public class CarrierBookingRequest {
     private Long shippingInstructionId;
     private Long sailingInformationId;
 
-    // Children (optional full details)
     private List<CommonContainerRequest> containersList;
     private List<CarrierRoutingRequest> carrierRoutingList;
     private List<ReferenceNumberRequest> referenceNumbersList;

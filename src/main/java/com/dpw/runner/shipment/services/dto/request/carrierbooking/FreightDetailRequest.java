@@ -14,17 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FreightDetailRequest {
-
-    @MasterData(type = MasterDataType.BOOKING_CHARGES)
     private String chargeType;
-
-    @MasterData(type = MasterDataType.PAYMENT)
     private String paymentTerms;
-
     private PayerType payerType;
-
-    @UnlocationData
     private String payerLocation;
-
     private Long shippingInstructionId;
 }
