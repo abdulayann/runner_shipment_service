@@ -176,6 +176,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.setIsLocked(false);
         migrateServiceTypes(shipmentDetails);
 
+        setCountryFilterInParties(shipmentDetails);
 
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
@@ -195,6 +196,21 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
         }
+    }
+
+    private void setCountryFilterInParties(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getClient() != null)
+            shipmentDetails.getClient().setCountryCode(shipmentDetails.getClientCountry());
+        if(shipmentDetails.getConsigner() != null)
+            shipmentDetails.getConsigner().setCountryCode(shipmentDetails.getConsignorCountry());
+        if(shipmentDetails.getConsignee() != null)
+            shipmentDetails.getConsignee().setCountryCode(shipmentDetails.getConsigneeCountry());
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null)
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(shipmentDetails.getNotifyPartyCountry());
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null)
+            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
+            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
     }
 
     private void saveReferenceData(ShipmentDetails shipmentDetails, String referenceNumber, String referenceType) {
