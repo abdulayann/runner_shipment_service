@@ -135,22 +135,14 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -5862,9 +5854,11 @@ class CommonUtilsTest {
         List<String> includeColumns = Arrays.asList(
                 "pickupDetails.address",
                 "pickupDetails.address", // Duplicate
-                "pickupDetails.contactName"
+                "pickupDetails.contactName",
+                "consignee.orgData.FullName"
         );
         String mainEntityKey = "shipment";
+        Map<String, Object> mockMap = new HashMap<>();
 
         // Act
         Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
@@ -6297,6 +6291,136 @@ class CommonUtilsTest {
         assertTrue(selections.isEmpty());
         assertTrue(columnOrder.isEmpty());
         assertTrue(joinCache.isEmpty());
+    }
+
+    private Map<String, Object> createNestedMapExample() {
+
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("consigner", Arrays.asList("id",
+                "entityId",
+                "entityType",
+                "type" ));
+        nestedMap.put("additionalDetails",Arrays.asList(
+                "id",
+                "customsNoIssueDate",
+                "expiryDate",
+                "inspection",
+                "airwayBillDims",
+                "shipperCOD"
+        ));
+        nestedMap.put("carrierDetails", Arrays.asList(
+                "id",
+                "shippingLine",
+                "vessel",
+                "voyage"
+        ));
+        nestedMap.put("client",  Arrays.asList(
+                "orgData"
+        ));
+
+        return nestedMap;
+    }
+
+
+
+    @Test
+    void testDetectCollectionRelationships_WithCollectionFields() throws NoSuchFieldException {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testDetectCollectionRelationships_WithMapField() {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testDetectCollectionRelationships_WithNonCollectionFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testDetectCollectionRelationships_WithNonExistentFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testDetectCollectionRelationships_MixedExistentAndNonExistentFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testDetectCollectionRelationships_EmptyRequestedColumns() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+
+    @Test
+    void testDetectCollectionRelationships_AllFieldTypes() {
+        // Arrange - test all fields in TestEntity
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testBuildFlatList_ReturnsCorrectFlatList() {
+        List<Object[]> results = new ArrayList<>();
+        results.add(new Object[] {"TQAA25070016", "AIR", "EXP", "STD" , "LSE"});
+        results.add(new Object[] {"TQAA25077657", "SEA", "IMP", "STD" , "LSE"});
+        List<String> columnOrder = Arrays.asList("shipmentDetails.shipmentId", "shipmentDetails.transportMode", "shipmentDetails.fileStatus", "shipmentDetails.direction", "shipmentDetails.jobType" );
+
+        List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
+
+        assertEquals(2, flatList.size());
+        assertEquals("TQAA25070016", flatList.get(0).get("shipmentDetails.shipmentId"));
+        assertEquals("AIR", flatList.get(0).get("shipmentDetails.transportMode"));
+        assertEquals("EXP", flatList.get(0).get("shipmentDetails.fileStatus"));
     }
 
 

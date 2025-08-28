@@ -8020,6 +8020,29 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(typedQuery).setFirstResult(0); // (1-1) * 25
         verify(typedQuery).setMaxResults(25);
     }
+    @Test
+    void testFetchShipments_SuccessWithDefaultPageSize2() {
+        // Arrange
+        ListCommonRequest request = new ListCommonRequest();
+        List<String> includeColumns = new ArrayList<>(Arrays.asList("pickupDetails.transporterDetail.orgData.FullName","consignee.orgData.FullName"));
+        request.setIncludeColumns(includeColumns);
+        request.setPageNo(1);
+        request.setPageSize(null); // Should default to 25
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        when(mockFilterCriteria.toString()).thenReturn("mockFilterCriteria");
+        request.setFilterCriteria(List.of(mockFilterCriteria));
+
+        setupMocksForSuccessfulExecution();
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentServiceImplV3.fetchShipments(request);
+
+        // Assert
+        assertNotNull(response);
+        verify(typedQuery).setFirstResult(0); // (1-1) * 25
+        verify(typedQuery).setMaxResults(25);
+    }
+
 
 
     private void setupMocksForSuccessfulExecution() {
@@ -8034,17 +8057,29 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
         lenient().when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
         lenient().when(criteriaQuery.orderBy(any(Order.class))).thenReturn(criteriaQuery);
+        try (MockedStatic<DbAccessHelper> mockedHelper = mockStatic(DbAccessHelper.class)) {
+            // Arrange
+            Order mockOrder = mock(Order.class);
+            ListCommonRequest request = new ListCommonRequest();
+            Root<?> root = mock(Root.class);
+            CriteriaBuilder cb = mock(CriteriaBuilder.class);
+
+            // Mock the static method
+            mockedHelper.when(() -> DbAccessHelper.buildSortOrder(any(CriteriaBuilder.class), any(Root.class), any(ListCommonRequest.class)))
+                    .thenReturn(mockOrder);
+        }
 
         lenient().when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
         lenient().when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         lenient().when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
+        Predicate predicate = mock(Predicate.class, withSettings().lenient());
 
         // Use any() matcher instead of eq(request) since request is modified
         lenient().when(commonUtils.fetchTotalCount(any(ListCommonRequest.class), eq(ShipmentDetails.class))).thenReturn(100L);
         lenient().when(commonUtils.refineIncludeColumns(anyList())).thenReturn(new ArrayList<>(Arrays.asList("column1", "column2", "id")));
         lenient().when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(new HashMap<>());
-        lenient().when(commonUtils.detectCollectionRelationships(any(), eq(ShipmentDetails.class))).thenReturn(new HashSet<>());
-        lenient().when(commonUtils.buildPredicatesFromFilters(any(), any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(commonUtils.detectCollectionRelationships(any(), any())).thenReturn(new HashSet<>());
+        lenient().when(commonUtils.buildPredicatesFromFilters(any(), any(), any())).thenReturn(new ArrayList<>(List.of(predicate)));
         lenient().when(commonUtils.extractSortFieldFromPayload(any(ListCommonRequest.class))).thenReturn("defaultSortField");
 
         // Create real List objects for the test
