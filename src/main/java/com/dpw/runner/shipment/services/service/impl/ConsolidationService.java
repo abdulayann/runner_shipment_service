@@ -1115,8 +1115,6 @@ public class ConsolidationService implements IConsolidationService {
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
         }
-        if (!Objects.isNull(consolidationId))
-            awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         boolean isConsolePullCall = false;
         if(shipmentRequestedType == null && !shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection())) {
