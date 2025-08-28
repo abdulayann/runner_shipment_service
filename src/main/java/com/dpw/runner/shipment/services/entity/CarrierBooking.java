@@ -53,10 +53,10 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "booking_office", length = 100)
     private String bookingOffice;
 
-    @Column(name = "booking_comment", columnDefinition = "TEXT")
+    @Column(name = "booking_comment", length = 10000)
     private String bookingComment;
 
-    @Column(name = "carrier_comment", columnDefinition = "TEXT")
+    @Column(name = "carrier_comment", length = 10000)
     private String carrierComment;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)

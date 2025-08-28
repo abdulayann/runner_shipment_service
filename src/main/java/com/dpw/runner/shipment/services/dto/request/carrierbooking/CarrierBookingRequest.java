@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Data
@@ -22,7 +23,9 @@ public class CarrierBookingRequest {
     private String serviceType;
     private String bookingOffice;
 
+    @Size(max = 10000, message = "Booking Comment cannot exceed 10,000 characters")
     private String bookingComment;
+    @Size(max = 10000, message = "Carrier Comment cannot exceed 10,000 characters")
     private String carrierComment;
 
     private PartiesRequest requester;
