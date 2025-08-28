@@ -242,6 +242,8 @@ public class Constants {
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
+    public static final String DATE_TIME_FORMAT_DDMMMYYYY_HHMM = "ddMMMyyyy HH:mm";
+
     public static final String AGENT_PREFIX = "A";
     public static final String CARRIER_PREFIX = "C";
 
