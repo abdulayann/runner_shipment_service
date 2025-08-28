@@ -201,7 +201,7 @@ public class EventService implements IEventService {
             throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
         }
         long id = request.getId();
-        Optional<Events> oldEntity = eventDao.findById(id);
+        Optional<Events> oldEntity = eventDao.findByIdWithoutTenant(id);
         if (oldEntity.isEmpty()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -215,7 +215,7 @@ public class EventService implements IEventService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            saveEventUtil(request);
+            saveEventUtilWithoutTenant(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1586,6 +1586,19 @@ public class EventService implements IEventService {
         // auto generate runner events | will remain as it is inside shipment and consolidation
     }
 
+    public void saveEventUtilWithoutTenant(EventsRequest eventsRequest) {
+        Events entity = convertRequestToEntity(eventsRequest);
+
+        // event code and master-data description
+        commonUtils.updateEventWithMasterData(List.of(entity));
+        eventDao.updateEventDetails(entity);
+
+        handleDuplicationForExistingEvents(entity);
+
+        eventDao.saveWithoutTenant(entity);
+        // auto generate runner events | will remain as it is inside shipment and consolidation
+    }
+
     @Override
     @Transactional
     public void saveAllEvent(List<EventsRequest> eventsRequests) {
@@ -1633,7 +1646,9 @@ public class EventService implements IEventService {
 
             predicate = getPredicateForPlaceName(event, root, cb, predicate);
 
-            predicate = getPredicateForEntityId(event, root, cb, predicate);
+            if(Constants.CONSOLIDATION.equalsIgnoreCase(event.getEntityType())) {
+                predicate = getPredicateForEntityId(event, root, cb, predicate);
+            }
 
             predicate = getPredicateForEventType(event, root, cb, predicate);
 
@@ -1673,7 +1688,7 @@ public class EventService implements IEventService {
     private void handleDuplicationForExistingEvents(Events event) {
 
         Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
-        Page<Events> duplicateEventPage = eventDao.findAll(duplicateEventSpecification, Pageable.unpaged());
+        Page<Events> duplicateEventPage = eventDao.findAllWithoutTenantFilter(duplicateEventSpecification, Pageable.unpaged());
 
         if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
             // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this

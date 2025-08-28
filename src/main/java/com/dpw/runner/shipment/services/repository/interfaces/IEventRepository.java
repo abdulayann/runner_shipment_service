@@ -47,6 +47,13 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     @Query(value = "UPDATE events SET is_deleted = true WHERE id = ?1", nativeQuery = true)
     void deleteByIdWithoutTenant(Long id);
 
+    @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    default Events saveWithoutTenant(Events event) {
+        return save(event);
+    }
+
     default Optional<Events> findByGuid(UUID id) {
         Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);

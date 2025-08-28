@@ -4,11 +4,10 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.utils.Generated;
-import org.apache.http.auth.AuthenticationException;
-
 import java.util.Map;
 import java.util.Objects;
 import javax.persistence.EntityNotFoundException;
@@ -16,6 +15,7 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
 import javax.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthenticationException;
 
 @Generated
 @Slf4j
@@ -152,6 +152,8 @@ public class TenantEntityListener {
         if(object instanceof NetworkTransfer)
             return Boolean.TRUE;
         if(object instanceof Notification)
+            return Boolean.TRUE;
+        if(object instanceof Events)
             return Boolean.TRUE;
         return Boolean.FALSE;
     }

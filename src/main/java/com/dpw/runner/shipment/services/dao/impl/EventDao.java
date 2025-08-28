@@ -104,6 +104,15 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Events saveWithoutTenant(Events events) {
+        updateUserFieldsInEvent(events, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
+        return eventRepository.saveWithoutTenant(events);
+    }
+
+    @Override
     public List<Events> saveAll(List<Events> eventsList) {
         for (var events: eventsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);

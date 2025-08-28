@@ -16,6 +16,8 @@ import org.springframework.data.jpa.domain.Specification;
 public interface IEventDao {
     Events save(Events events);
 
+    Events saveWithoutTenant(Events events);
+
     List<Events> saveAll(List<Events> eventsList);
 
     Optional<Events> findByGuid(UUID id);
