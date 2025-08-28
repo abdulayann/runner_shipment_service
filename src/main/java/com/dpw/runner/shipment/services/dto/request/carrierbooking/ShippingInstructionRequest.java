@@ -15,14 +15,6 @@ import java.util.List;
 public class ShippingInstructionRequest {
 
     private String status;
-
-    private PartiesRequest contract;
-    private PartiesRequest shipper;
-    private PartiesRequest consignee;
-    private PartiesRequest forwardingAgent;
-
-    private List<PartiesRequest> additionalParties;
-
     private String mblNo;
     private String carrierBookingNo;
     private String entityType;
@@ -30,6 +22,12 @@ public class ShippingInstructionRequest {
     private String entityNumber;
     private String blComments;
 
+    private PartiesRequest contract;
+    private PartiesRequest shipper;
+    private PartiesRequest consignee;
+    private PartiesRequest forwardingAgent;
+
+    private List<PartiesRequest> additionalParties;
     private List<FreightDetailRequest> freightDetails;
     private List<CommonPackageRequest> commonPackages;
     private List<CommonContainerRequest> commonContainers;
