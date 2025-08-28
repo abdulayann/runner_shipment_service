@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 
-import java.util.List;
-
 public interface ICarrierBookingService {
 
     /**
@@ -23,7 +21,7 @@ public interface ICarrierBookingService {
      * @param id booking id
      * @return CarrierBookingResponse
      */
-    CarrierBookingResponse getById(Long id);
+    CarrierBookingResponse findById(Long id);
 
     /**
      * Retrieve a list of Carrier Bookings with pagination/filter criteria.
