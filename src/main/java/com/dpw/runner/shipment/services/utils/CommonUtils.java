@@ -13,13 +13,11 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
@@ -109,6 +107,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.*;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
@@ -118,6 +119,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -125,18 +127,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -222,6 +213,9 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -846,7 +840,7 @@ public class CommonUtils {
     }
 
     public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
-        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+                                                 OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
 
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -856,7 +850,7 @@ public class CommonUtils {
 
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+                template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -1821,7 +1815,7 @@ public class CommonUtils {
     public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
-            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
+                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null && !auditLogList.isEmpty()){
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
             populateDGSenderDetailsFromAudit(changesMap, dictionary);
@@ -1922,27 +1916,27 @@ public class CommonUtils {
 
     public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
         MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
-            .builder()
-            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
-            .entityUuid(shipmentDetails.getGuid().toString())
-            .roleId(roleId)
-            .taskType(DG_OCEAN_APPROVAL)
-            .status(PENDING_ACTION_TASK)
-            .userId(UserContext.getUser().getUserId())
-            .isCreatedFromV2(true)
-            .sendEmail(false)
-            .build();
+                .builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityUuid(shipmentDetails.getGuid().toString())
+                .roleId(roleId)
+                .taskType(DG_OCEAN_APPROVAL)
+                .status(PENDING_ACTION_TASK)
+                .userId(UserContext.getUser().getUserId())
+                .isCreatedFromV2(true)
+                .sendEmail(false)
+                .build();
 
         try {
             MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
             return TaskCreateResponse
-                .builder()
-                .tasksId(mdmTaskCreateResponse.getId().toString())
-                .taskGuid(mdmTaskCreateResponse.getUuid())
-                .build();
+                    .builder()
+                    .tasksId(mdmTaskCreateResponse.getId().toString())
+                    .taskGuid(mdmTaskCreateResponse.getUuid())
+                    .build();
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
-                shipmentDetails.getId(), e.getMessage()));
+                    shipmentDetails.getId(), e.getMessage()));
         }
     }
 
@@ -2616,23 +2610,174 @@ public class CommonUtils {
             log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
         }
     }
-
     public Object setIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object response) {
-        includeColumns.forEach(field -> {
-            try {
-                Object value = getNestedFieldValue(entity, field); // Get nested field value
-                if (value == null) {
-                    return;
-                }
+        FieldClassifier classifier = classifyFields(includeColumns);
 
-                Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
-                setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
-            } catch (Exception e) {
-                log.error("No such field: {}", field, e.getMessage());
-            }
-        });
+        processRegularFields(entity, classifier.regularFields, response);
+        processCollectionFields(entity, classifier.collectionFields, response);
 
         return response;
+    }
+
+    private FieldClassifier classifyFields(Set<String> includeColumns) {
+        FieldClassifier classifier = new FieldClassifier();
+
+        for (String field : includeColumns) {
+            if(field==null || field.trim().isEmpty()) continue;
+            if (isCollectionFieldRequiringPartialMapping(field, includeColumns)) {
+                classifier.addCollectionField(field);
+            } else {
+                classifier.addRegularField(field);
+            }
+        }
+
+        return classifier;
+    }
+
+    private boolean isCollectionFieldRequiringPartialMapping(String field, Set<String> allFields) {
+        return isCollectionFieldWithSubFields(field, allFields)
+                && !field.contains("orgData")
+                && !field.contains("addressData");
+    }
+
+    private void processRegularFields(Object entity, Set<String> regularFields, Object response) {
+        regularFields.forEach(field -> processRegularField(entity, field, response));
+    }
+
+    private void processRegularField(Object entity, String field, Object response) {
+        try {
+            Object value = getNestedFieldValue(entity, field);
+            if (value == null) return;
+
+            Object dtoValue = mapToDTO(value, response, field);
+            setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
+        } catch (Exception e) {
+            log.error("Failed to process regular field: {}", field, e);
+        }
+    }
+
+    private void processCollectionFields(Object entity, Map<String, Set<String>> collectionFields, Object response) {
+        collectionFields.forEach((rootField, subFields) ->
+                processCollectionField(entity, rootField, subFields, response));
+    }
+
+    private void processCollectionField(Object entity, String rootField, Set<String> subFields, Object response) {
+        try {
+            Object value = getNestedFieldValue(entity, rootField);
+            if (value == null) return;
+
+            Object dtoValue = createCollectionDTO(value, rootField, subFields);
+            setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
+        } catch (Exception e) {
+            log.error("Failed to process collection field: {}", rootField, e);
+        }
+    }
+
+    private Object createCollectionDTO(Object value, String rootField, Set<String> subFields) {
+        Set<String> subFieldNames = getSubFieldsForRoot(rootField, subFields);
+
+        if (value instanceof List<?>) {
+            return mapListWithSelectedFields((List<?>) value, subFieldNames);
+        } else if (value instanceof Set<?>) {
+            return mapSetWithSelectedFields((Set<?>) value, subFieldNames);
+        } else {
+            return mapToDTO(value);
+        }
+    }
+
+    // Helper class to organize field classification
+    private static class FieldClassifier {
+        final Set<String> regularFields = new HashSet<>();
+        final Map<String, Set<String>> collectionFields = new HashMap<>();
+
+        void addRegularField(String field) {
+            regularFields.add(field);
+        }
+
+        void addCollectionField(String field) {
+            String rootField = field.split("\\.")[0];
+            collectionFields.computeIfAbsent(rootField, k -> new HashSet<>()).add(field);
+        }
+    }
+    // Helper method to identify if a field is a collection field that needs partial mapping
+    private boolean isCollectionFieldWithSubFields(String field, Set<String> includeColumns) {
+        if (!field.contains(".")) {
+            return false; // Not a nested field
+        }
+
+        String rootField = field.split("\\.")[0];
+
+        // Check if this root field appears multiple times with different sub-fields
+        // This indicates it's likely a collection that needs partial mapping
+        long subFieldCount = includeColumns.stream()
+                .filter(f -> f.startsWith(rootField + "."))
+                .count();
+
+        // If there are multiple sub-fields for the same root, it's likely a collection
+        // Also check if the root field alone is NOT in the includeColumns (indicating partial selection)
+        return subFieldCount > 0 && !includeColumns.contains(rootField);
+    }
+
+    // Helper method to get sub-fields for a root field
+    private Set<String> getSubFieldsForRoot(String rootField, Set<String> includeColumns) {
+        return includeColumns.stream()
+                .filter(field -> field.startsWith(rootField + "."))
+                .map(field -> field.substring(rootField.length() + 1))
+                .collect(Collectors.toSet());
+    }
+
+    // Method to map list with only selected fields
+    private Object mapListWithSelectedFields(List<?> list, Set<String> selectedFields) {
+        if (list.isEmpty()) return list;
+
+        List<Object> mappedList = new ArrayList<>();
+        for (Object item : list) {
+            Object mappedItem = mapToDTO(item); // First convert to DTO
+            if (mappedItem != null) {
+                Object partialItem = createPartialObject(mappedItem, selectedFields);
+                mappedList.add(partialItem);
+            }
+        }
+        return mappedList;
+    }
+
+    // Method to map set with only selected fields
+    private Object mapSetWithSelectedFields(Set<?> set, Set<String> selectedFields) {
+        if (set.isEmpty()) return set;
+
+        Set<Object> mappedSet = new HashSet<>();
+        for (Object item : set) {
+            Object mappedItem = mapToDTO(item); // First convert to DTO
+            if (mappedItem != null) {
+                Object partialItem = createPartialObject(mappedItem, selectedFields);
+                mappedSet.add(partialItem);
+            }
+        }
+        return mappedSet;
+    }
+
+    // Method to create partial object with only selected fields
+    private Object createPartialObject(Object source, Set<String> selectedFields) {
+        try {
+            // Create a Map to hold only the selected fields
+            Map<String, Object> partialObject = new HashMap<>();
+
+            for (String field : selectedFields) {
+                try {
+                    Object fieldValue = getNestedFieldValue(source, field);
+                    if (fieldValue != null) {
+                        partialObject.put(field, fieldValue);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not extract field {} from object: {}", field, e.getMessage());
+                }
+            }
+
+            return partialObject;
+        } catch (Exception e) {
+            log.error("Error creating partial object: {}", e.getMessage());
+            return source; // Return original object if partial creation fails
+        }
     }
 
     public Object mapToDTO(Object value) {
@@ -2646,12 +2791,79 @@ public class CommonUtils {
             return modelMapper.map(value, PartiesResponse.class);
         } else if (value instanceof ArrivalDepartureDetails) {
             return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+        } else if (value instanceof Packing) {
+            // Handle single Packing object
+            return modelMapper.map(value, PackingResponse.class);
         } else if (value instanceof List<?>) {
             return mapListToDTO(value);
         } else if (value instanceof Set) {
             return mapListToDTOSet(value);
         }
         return value; // Return as is if not mappable
+    }
+
+    // New overloaded method that considers the target response type
+    public Object mapToDTO(Object value, Object response, String fieldPath) {
+        if (value instanceof CarrierDetails) {
+            return modelMapper.map(value, CarrierDetailResponse.class);
+        } else if (value instanceof AdditionalDetails) {
+            // Check what type the response expects for this field
+            Class<?> expectedType = getExpectedFieldType(response, fieldPath);
+            if (expectedType != null && AdditionalDetailsListResponse.class.isAssignableFrom(expectedType)) {
+                return modelMapper.map(value, AdditionalDetailsListResponse.class);
+            } else {
+                return modelMapper.map(value, AdditionalDetailResponse.class);
+            }
+        } else if (value instanceof PickupDeliveryDetails) {
+            return modelMapper.map(value, PickupDeliveryDetailsResponse.class);
+        } else if (value instanceof Parties) {
+            return modelMapper.map(value, PartiesResponse.class);
+        } else if (value instanceof ArrivalDepartureDetails) {
+            return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+        } else if (value instanceof Packing) {
+            return modelMapper.map(value, PackingResponse.class);
+        } else if (value instanceof List<?>) {
+            return mapListToDTO(value);
+        } else if (value instanceof Set) {
+            return mapListToDTOSet(value);
+        }
+        return value; // Return as is if not mappable
+    }
+
+    // Helper method to get the expected field type from the response object
+    private Class<?> getExpectedFieldType(Object response, String fieldPath) {
+        try {
+            String[] fields = fieldPath.split("\\.");
+            Class<?> currentClass = response.getClass();
+
+            for (int i = 0; i < fields.length - 1; i++) {
+                Method getter = currentClass.getMethod("get" + capitalizeV3(fields[i]));
+                currentClass = getter.getReturnType();
+                if (currentClass == null) {
+                    return null;
+                }
+            }
+
+            String lastField = fields[fields.length - 1];
+            Method setter = findSetterMethod(currentClass, lastField);
+            if (setter != null && setter.getParameterCount() > 0) {
+                return setter.getParameterTypes()[0];
+            }
+        } catch (Exception e) {
+            log.debug("Could not determine expected field type for path: {}", fieldPath);
+        }
+        return null;
+    }
+
+    // Helper method to find setter method
+    private Method findSetterMethod(Class<?> clazz, String fieldName) {
+        String setterName = "set" + capitalizeV3(fieldName);
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                return method;
+            }
+        }
+        return null;
     }
 
     public Object mapListToDTOSet(Object value) {
@@ -2664,6 +2876,10 @@ public class CommonUtils {
         } else if (obj instanceof ConsolidationDetails) {
             return modelMapper.map(value, new TypeToken<Set<ConsolidationListResponse>>() {
             }.getType());
+        } else if (obj instanceof Packing) {
+            // Handle Set of Packing objects
+            return modelMapper.map(value, new TypeToken<Set<PackingResponse>>() {
+            }.getType());
         }
         return value;
     }
@@ -2672,46 +2888,49 @@ public class CommonUtils {
         List<?> list = (List<?>) value;
         if (list.isEmpty()) return value;
 
-        if (list.get(0) instanceof Containers) {
+        Object firstElement = list.get(0);
+
+        if (firstElement instanceof Containers) {
             return modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof BookingCarriage) {
+        } else if (firstElement instanceof BookingCarriage) {
             return modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ELDetails) {
+        } else if (firstElement instanceof ELDetails) {
             return modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Events) {
+        } else if (firstElement instanceof Events) {
             return modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Packing) {
+        } else if (firstElement instanceof Packing) {
+            // Handle List of Packing objects (this should cover packingList)
             return modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ReferenceNumbers) {
+        } else if (firstElement instanceof ReferenceNumbers) {
             return modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Routings) {
+        } else if (firstElement instanceof Routings) {
             return modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ServiceDetails) {
+        } else if (firstElement instanceof ServiceDetails) {
             return modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof TruckDriverDetails) {
+        } else if (firstElement instanceof TruckDriverDetails) {
             return modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Notes) {
+        } else if (firstElement instanceof Notes) {
             return modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Jobs) {
+        } else if (firstElement instanceof Jobs) {
             return modelMapper.map(value, new TypeToken<List<JobResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ConsolidationDetails) {
+        } else if (firstElement instanceof ConsolidationDetails) {
             return modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof Parties) {
+        } else if (firstElement instanceof Parties) {
             return modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
             }.getType());
-        } else if (list.get(0) instanceof ShipmentOrder) {
+        } else if (firstElement instanceof ShipmentOrder) {
             return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
             }.getType());
         }
@@ -2719,27 +2938,126 @@ public class CommonUtils {
     }
 
     private Object checkForTriangulationPartnerList(Object value, List<?> list) {
-        if (list.get(0) instanceof TriangulationPartner) {
+        if (!list.isEmpty() && list.get(0) instanceof TriangulationPartner) {
             return modelMapper.map(value, new TypeToken<List<TriangulationPartnerResponse>>() {
             }.getType());
         }
         return value;
     }
 
+    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
+        String[] fields = fieldPath.split("\\.");
+        Object currentValue = object;
+
+        for (int i = 0; i < fields.length; i++) {
+            currentValue = getFieldValue(currentValue, fields[i], fieldPath, i == fields.length - 1);
+            if (currentValue == null) {
+                return null;
+            }
+        }
+        return currentValue;
+    }
+
+    private Object getFieldValue(Object value, String field, String fullPath, boolean isLastField) throws NoSuchMethodException {
+        if (value == null) {
+            log.debug("Null value encountered at field: {} in path: {}", field, fullPath);
+            return null;
+        }
+
+        try {
+            if (value instanceof List<?>) {
+                return handleListAccess((List<?>) value, field, fullPath, isLastField);
+            } else if (value instanceof Map) {
+                return handleMapAccess((Map<?, ?>) value, field);
+            } else {
+                return handleObjectAccess(value, field);
+            }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            log.error("Error accessing field: {} in path: {}", field, fullPath, e);
+            throw new RuntimeException("Error accessing field: " + field, e);
+        }
+    }
+
+    private Object handleListAccess(List<?> list, String field, String fullPath, boolean isLastField) {
+        if (isNumeric(field)) {
+            return getListElementByIndex(list, field, fullPath);
+        } else if (isLastField) {
+            return list; // Return entire list for final field
+        } else {
+            log.debug("Unexpected nested access on List at field: {} in path: {}", field, fullPath);
+            return null;
+        }
+    }
+
+    private Object getListElementByIndex(List<?> list, String field, String fullPath) {
+        int index = Integer.parseInt(field);
+        if (index >= 0 && index < list.size()) {
+            return list.get(index);
+        } else {
+            log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), fullPath);
+            return null;
+        }
+    }
+
+    private Object handleMapAccess(Map<?, ?> map, String field) {
+        return map.get(field);
+    }
+
+    private Object handleObjectAccess(Object value, String field) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Method getter = findGetter(value.getClass(), field);
+        if (getter != null) {
+            return getter.invoke(value);
+        } else {
+            throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+        }
+    }
+    // Helper method to find getter with multiple naming conventions
+    private Method findGetter(Class<?> clazz, String fieldName) {
+        String capitalizedField = capitalizeV3(fieldName);
+
+        // Try standard getter patterns
+        String[] getterNames = {
+                "get" + capitalizedField,
+                "is" + capitalizedField,
+                fieldName // Direct field name for some cases
+        };
+
+        for (String getterName : getterNames) {
+            try {
+                return clazz.getMethod(getterName);
+            } catch (NoSuchMethodException e) {
+                // Continue trying other patterns
+            }
+        }
+        return null;
+    }
+
+    // Helper method to check if string is numeric
+    private boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // Enhanced setNestedFieldValue with better error handling
     public void setNestedFieldValue(Object object, String fieldPath, Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         String[] fields = fieldPath.split("\\.");
         Object target = object;
 
         for (int i = 0; i < fields.length - 1; i++) {
+            String field = fields[i];
             Method getter;
             try {
-                getter = target.getClass().getMethod("get" + capitalizeV3(fields[i]));
+                getter = target.getClass().getMethod("get" + capitalizeV3(field));
             } catch (NoSuchMethodException e) {
                 // If no getter exists, assume it's a Map field
                 if (target instanceof Map) {
                     Map<String, Object> mapTarget = (Map<String, Object>) target;
-                    mapTarget.putIfAbsent(fields[i], new HashMap<>());
-                    target = mapTarget.get(fields[i]);
+                    mapTarget.putIfAbsent(field, new HashMap<>());
+                    target = mapTarget.get(field);
                     continue;
                 } else {
                     throw e; // Rethrow exception if it's not a map
@@ -2748,9 +3066,13 @@ public class CommonUtils {
             Object nextTarget = getter.invoke(target);
 
             if (nextTarget == null) {
-                Method setter = target.getClass().getMethod("set" + capitalizeV3(fields[i]), getter.getReturnType());
+                Method setter = target.getClass().getMethod("set" + capitalizeV3(field), getter.getReturnType());
                 if (Map.class.isAssignableFrom(getter.getReturnType())) {
                     nextTarget = new HashMap<>(); // Initialize Map
+                } else if (List.class.isAssignableFrom(getter.getReturnType())) {
+                    nextTarget = new ArrayList<>(); // Initialize List
+                } else if (Set.class.isAssignableFrom(getter.getReturnType())) {
+                    nextTarget = new HashSet<>(); // Initialize Set
                 } else {
                     nextTarget = getter.getReturnType().getDeclaredConstructor().newInstance();
                 }
@@ -2760,7 +3082,6 @@ public class CommonUtils {
         }
 
         String lastField = fields[fields.length - 1];
-
         setTargetValue(value, target, lastField);
     }
 
@@ -2768,56 +3089,57 @@ public class CommonUtils {
         if (target instanceof Map) {
             ((Map<String, Object>) target).put(lastField, value);
         } else {
-            Method setter;
-            try {
-                // Use Map.class for flexibility in map types
-                if (value instanceof Map) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), Map.class);
-                } else if (value instanceof List) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), List.class);
-                } else if (value instanceof Set) {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), Set.class);
-                } else {
-                    setter = target.getClass().getMethod("set" + capitalize(lastField), value.getClass());
-                }
+            Method setter = findSetter(target.getClass(), lastField, value);
+            if (setter != null) {
                 setter.invoke(target, value);
-            } catch (NoSuchMethodException e) {
+            } else {
                 throw new NoSuchMethodException("No setter found for field: " + lastField + " in " + target.getClass().getSimpleName());
             }
         }
     }
 
-    /**
-     * Recursively gets a nested field value using reflection.
-     */
-    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
-        String[] fields = fieldPath.split("\\.");
-        Object value = object;
+    // Enhanced setter finder
+    private Method findSetter(Class<?> clazz, String fieldName, Object value) {
+        String capitalizedField = capitalizeV3(fieldName);
+        String setterName = "set" + capitalizedField;
 
-        for (String field : fields) {
-            if (value == null) {
-                return null;
-            }
+        // Try different parameter types
+        Class<?>[] paramTypes = {
+                value != null ? value.getClass() : Object.class,
+                Object.class,
+                Map.class,
+                List.class,
+                Set.class
+        };
+
+        for (Class<?> paramType : paramTypes) {
             try {
-                // Attempt to get value using getter method
-                Method getter = value.getClass().getMethod("get" + capitalizeV3(field));
-                value = getter.invoke(value);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                // If no getter exists, check if it's a Map and retrieve value by key
-                if (value instanceof Map) {
-                    value = ((Map<?, ?>) value).get(field);
-                } else {
-                    throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+                return clazz.getMethod(setterName, paramType);
+            } catch (NoSuchMethodException e) {
+                // Continue trying other parameter types
+            }
+        }
+
+        // Try to find any setter with the right name
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                Class<?> paramType = method.getParameterTypes()[0];
+                if (value == null || paramType.isAssignableFrom(value.getClass())) {
+                    return method;
                 }
             }
         }
-        return value;
+
+        return null;
     }
 
     /**
      * Capitalizes the first letter of a string.
      */
     public String capitalizeV3(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
@@ -2835,7 +3157,6 @@ public class CommonUtils {
         includeColumns.add("id");
         includeColumns.add("guid");
     }
-
     public static BigDecimal roundBigDecimal(BigDecimal number, int decimalPlaces, RoundingMode roundingMode) {
         return number.setScale(decimalPlaces, roundingMode);
     }
@@ -3106,4 +3427,648 @@ public class CommonUtils {
         }
         return null;
     }
+    public List<Map<String, Object>> buildFlatList(
+            List<Object[]> results,
+            List<String> columnOrder
+    ) {
+        List<Map<String, Object>> flatList = new ArrayList<>();
+
+        for (Object[] row : results) {
+            Map<String, Object> rowMap = new LinkedHashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowMap.put(columnOrder.get(i), row[i]);
+            }
+            flatList.add(rowMap);
+        }
+
+        return flatList;
+    }
+    public List<String> getAllSimpleFieldNames(Class<?> entityClass) {
+        List<String> fields = Arrays.stream(entityClass.getDeclaredFields())
+                .filter(f -> !Modifier.isStatic(f.getModifiers()))
+                .filter(f -> !Modifier.isTransient(f.getModifiers()))
+                .filter(f -> !"serialVersionUID".equals(f.getName()))
+                .filter(f -> !Collection.class.isAssignableFrom(f.getType()))
+                .filter(f -> !f.getType().isAnnotationPresent(Entity.class))
+                .map(Field::getName)
+                .collect(Collectors.toList());
+
+        if (!fields.contains("id")) {
+            fields.add(0, "id");
+        } else {
+            // Move id to first position if it exists
+            fields.remove("id");
+            fields.add(0, "id");
+        }
+        return  fields;
+    }
+    public Set<String> detectCollectionRelationships(Map<String, Object> requestedColumns, Class<?> entityClass) {
+        Set<String> collections = new HashSet<>();
+
+        for (String key : requestedColumns.keySet()) {
+            try {
+                Field field = entityClass.getDeclaredField(key);
+                if (Collection.class.isAssignableFrom(field.getType())) {
+                    collections.add(key);
+                }
+            } catch (NoSuchFieldException e) {
+                // Not a direct field in ShipmentDetails (could be a joined OneToOne etc.), skip
+            }
+        }
+
+        return collections;
+    }
+    public Map<String, Object> extractRequestedColumns(List<String> includeColumns, String mainEntityKey) {
+        if (includeColumns.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Set<String> validEntityKeys = ShipmentConstants.ENTITY_MAPPINGS.keySet();
+        Map<String, Object> entityColumnsMap = new HashMap<>();
+
+        for (String column : includeColumns) {
+            String[] parts = column.split("\\.");
+
+            if (parts.length == 1) {
+                extractCoulmnMap(mainEntityKey, validEntityKeys, parts, entityColumnsMap);
+            } else {
+                // Nested field
+                String topLevelEntity = parts[0];
+
+                if (!validEntityKeys.contains(topLevelEntity)) {
+                    continue; // Skip unknown entities
+                }
+
+                // If it's two levels deep, store as List<String>
+                if (parts.length == 2) {
+                    entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<String>());
+                    List<String> fields = (List<String>) entityColumnsMap.get(topLevelEntity);
+                    fields.add(parts[1]);
+                } else {
+                    // Deep nesting (3 or more parts)
+                    // We assume structure like pickupDetails.transporterDetail.orgData.FullName
+                    Map<String, Object> nested = (Map<String, Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new HashMap<String, Object>());
+                    buildNestedMap(nested, parts, 1);
+                }
+            }
+        }
+
+        return entityColumnsMap;
+    }
+
+    private static void extractCoulmnMap(String mainEntityKey, Set<String> validEntityKeys, String[] parts, Map<String, Object> entityColumnsMap) {
+        if (validEntityKeys.contains(parts[0])) {
+            entityColumnsMap.computeIfAbsent(parts[0], k -> new ArrayList<String>());
+            // For child entities, empty list means "include all fields"
+        }
+        // Root-level field: belongs to shipmentDetails or mainEntityKey
+        else if (validEntityKeys.contains(mainEntityKey)) {
+            entityColumnsMap.computeIfAbsent(mainEntityKey, k -> new ArrayList<String>());
+            List<String> fields = (List<String>) entityColumnsMap.get(mainEntityKey);
+            fields.add(parts[0]);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void buildNestedMap(Map<String, Object> currentMap, String[] parts, int index) {
+        String current = parts[index];
+
+        // Stop condition — add this part to the parent as a field
+        if (ShipmentConstants.JSON_FIELDS.contains(current) || index == parts.length - 1) {
+            currentMap.computeIfAbsent(current, k -> new ArrayList<>());
+            return;
+        }
+
+        Object next = currentMap.get(current);
+
+        // If next level exists and is a map, go deeper
+        if (next instanceof Map) {
+            buildNestedMap((Map<String, Object>) next, parts, index + 1);
+        } else if (next instanceof List) {
+            // Already a list, just add the new field if stop condition hit
+            String stopField = parts[index + 1];
+            List<String> list = (List<String>) next;
+            if (!list.contains(stopField)) {
+                list.add(stopField);
+            }
+        } else {
+            // Create a map for the next level
+            if (index + 2 < parts.length && !ShipmentConstants.JSON_FIELDS.contains(parts[index + 1])) {
+                Map<String, Object> nextMap = new HashMap<>();
+                currentMap.put(current, nextMap);
+                buildNestedMap(nextMap, parts, index + 1);
+            } else {
+                // Next part is a terminal field, collect in list
+                List<String> fieldList = new ArrayList<>();
+                fieldList.add(parts[index + 1]);
+                currentMap.put(current, fieldList);
+            }
+        }
+    }
+
+
+
+    public void fillEmptyColumnLists(Map<String, Object> requestedColumns) {
+        Map<String, Class<?>> entityMappings = ShipmentConstants.ENTITY_MAPPINGS; // from our fixed Map.ofEntries(...)
+        for (Map.Entry<String, Class<?>> e : entityMappings.entrySet()) {
+            String key = e.getKey();
+            Object value = ensureIdInCollection(requestedColumns.get(key));
+            if (requestedColumns.containsKey(key)  && isEmptyOrNull(value)) {
+                requestedColumns.put(key, getAllSimpleFieldNames(e.getValue()));
+            }
+        }
+    }
+    private boolean isEmptyOrNull(Object value) {
+        if (value == null) return true;
+        if (value instanceof List) return ((List<?>) value).isEmpty();
+        if (value instanceof Map) return ((Map<?, ?>) value).isEmpty();
+        if (value instanceof Set<?>) return ((Set<?>) value).isEmpty();
+        return false;
+    }
+    public Object ensureIdInCollection(Object value) {
+        if (value instanceof List) {
+            List<String> list = (List<String>) value;
+            if (!list.isEmpty() && !list.contains(ID)) {
+                list.add(ID);
+            }
+            return list;
+        } else if (value instanceof Set) {
+            Set<String> set = (Set<String>) value;
+            if(!set.isEmpty() && !set.contains(ID)) {
+                set.add(ID);
+            }
+            return set;
+        }
+        return value;
+    }
+    // Helper method to convert flat map -> nested map
+    public List<Map<String, Object>> convertToNestedMapWithCollections(
+            List<Map<String, Object>> flatList,
+            Set<String> collectionRelationships,
+            String rootKey) {
+        Map<Object, Map<String, Object>> parentMapById = new LinkedHashMap<>();
+        String rootKeyValue = rootKey+Constants.DOT;
+        for (Map<String, Object> flatRow : flatList) {
+            Object parentId = flatRow.get(rootKeyValue+ID);
+
+            Map<String, Object> entityMap =
+                    parentMapById.computeIfAbsent(parentId, k -> new LinkedHashMap<>());
+
+            // Initialize collection arrays
+            for (String collKey : collectionRelationships) {
+                entityMap.putIfAbsent(collKey, new ArrayList<>());
+            }
+
+            // Process each field
+            for (Map.Entry<String, Object> entry : flatRow.entrySet()) {
+                ProcessFields(collectionRelationships, flatRow, entry, rootKeyValue, entityMap);
+            }
+        }
+
+        // Convert to final format
+        List<Map<String, Object>> finalList = new ArrayList<>();
+        MapFinalList(rootKey, parentMapById, finalList);
+
+        return finalList;
+    }
+
+    private static void ProcessFields(Set<String> collectionRelationships, Map<String, Object> flatRow, Map.Entry<String, Object> entry, String rootKeyValue, Map<String, Object> entityMap) {
+        String key = entry.getKey();
+        Object value = entry.getValue();
+
+        if (!key.startsWith(rootKeyValue) || value == null) {
+            return;
+        }
+
+        String[] parts = key.substring(rootKeyValue.length()).split("\\.");
+
+        if (parts.length == 1) {
+            // Direct field on shipment
+            entityMap.put(parts[0], value);
+        } else if (parts.length == 2 && collectionRelationships.contains(parts[0])) {
+            // Collection field like consolidationList.id
+            HandleNonNestedFields(flatRow, parts, entityMap, value, rootKeyValue);
+        } else if (parts.length > 2 && collectionRelationships.contains(parts[0])) {
+            // Nested fields within collections (e.g., consolidationList.address.city)
+            HandleNestedFields(flatRow, parts, entityMap, rootKeyValue, value);
+        } else if (parts.length > 1) {
+            // Regular nested objects (non-collection)
+            HandlerNestedNonCollectionObject(entityMap, parts, value);
+        }
+    }
+
+    private static void MapFinalList(String rootKey, Map<Object, Map<String, Object>> parentMapById, List<Map<String, Object>> finalList) {
+        for (Map<String, Object> data : parentMapById.values()) {
+            finalList.add(Collections.singletonMap(rootKey, data));
+        }
+    }
+
+    private static void HandlerNestedNonCollectionObject(Map<String, Object> entityMap, String[] parts, Object value) {
+        Map<String, Object> current = entityMap;
+        for (int i = 0; i < parts.length - 1; i++) {
+            current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
+        }
+        current.put(parts[parts.length - 1], value);
+    }
+
+    private static void HandleNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, String rootKeyValue, Object value) {
+        String collectionName = parts[0];
+
+        List<Map<String, Object>> collection =
+                (List<Map<String, Object>>) entityMap.get(collectionName);
+
+        String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
+        Object childId = flatRow.get(idKey);
+
+        if (childId != null) {
+            Map<String, Object> childObj = collection.stream()
+                    .filter(obj -> Objects.equals(obj.get(ID), childId))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Map<String, Object> newObj = new LinkedHashMap<>();
+                        newObj.put(ID, childId);
+                        collection.add(newObj);
+                        return newObj;
+                    });
+
+            // Build nested structure within child object
+            Map<String, Object> current = childObj;
+            for (int i = 1; i < parts.length - 1; i++) {
+                current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
+            }
+            current.put(parts[parts.length - 1], value);
+        }
+    }
+
+    private static void HandleNonNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, Object value, String rootKeyValue) {
+        String collectionName = parts[0];
+        String fieldName = parts[1];
+
+        List<Map<String, Object>> collection =
+                (List<Map<String, Object>>) entityMap.get(collectionName);
+
+        if (ID.equals(fieldName)) {
+            // Find or create object with this ID
+            boolean exists = collection.stream()
+                    .anyMatch(obj -> Objects.equals(obj.get(ID), value));
+
+            if (!exists) {
+                Map<String, Object> newObj = new LinkedHashMap<>();
+                newObj.put(ID, value);
+                collection.add(newObj);
+            }
+        } else {
+            // Find object by ID and set the field
+            String idKey = rootKeyValue + collectionName + Constants.DOT+ID;
+            Object childId = flatRow.get(idKey);
+
+            if (childId != null) {
+                Map<String, Object> childObj = collection.stream()
+                        .filter(obj -> Objects.equals(obj.get(ID), childId))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            Map<String, Object> newObj = new LinkedHashMap<>();
+                            newObj.put(ID, childId);
+                            collection.add(newObj);
+                            return newObj;
+                        });
+                childObj.put(fieldName, value);
+            }
+        }
+    }
+
+    public List<String> refineIncludeColumns(List<String> includeColumns) {
+        return includeColumns.stream()
+                .map(column -> {
+                    if (column.contains(Constants.ORG_DATA)) {
+                        return column.substring(0, column.indexOf(Constants.ORG_DATA) + Constants.ORG_DATA.length());
+                    } else if (column.contains(Constants.ADDRESS_DATA)) {
+                        return column.substring(0, column.indexOf(Constants.ADDRESS_DATA) + Constants.ADDRESS_DATA.length());
+                    } else {
+                        return column;
+                    }
+                })
+                .distinct() // remove duplicates if any
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends MultiTenancy> void buildJoinsAndSelections(
+            Map<String, Object> requestedColumns,
+            Root<T> root,
+            List<Selection<?>> selections,
+            List<String> columnOrder,
+            String rootEntityKey,
+            String sortField
+    ) {
+
+        Set<String> rootEntityColumns = new HashSet<String>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
+
+        // If there's a sort field and it's not already in the root entity columns, validate and add it
+        if (sortField != null && !rootEntityColumns.contains(sortField)) {
+            if (isValidFieldForEntity(root, sortField)) {
+                rootEntityColumns.add(sortField);
+                Map<String, Object> updatedRequestedColumns = new HashMap<>(requestedColumns);
+                updatedRequestedColumns.put(rootEntityKey, new ArrayList<>(rootEntityColumns));
+                requestedColumns = updatedRequestedColumns;
+                log.debug("Auto-included sort field '{}' for entity '{}'", sortField, rootEntityKey);
+            } else {
+                log.warn("Invalid sort field '{}' for entity type '{}'. Field does not exist in entity.", sortField, rootEntityKey);
+                throw new IllegalArgumentException(getValidFieldSuggestions(rootEntityKey, sortField));
+            }
+        }
+
+        // Use a map to cache joins to avoid duplicate joins
+        Map<String, Join<?, ?>> joinCache = new HashMap<>();
+
+        for (Map.Entry<String, Object> entry : requestedColumns.entrySet()) {
+            String entityKey = entry.getKey();
+            Object value = entry.getValue();
+
+            processEntity(value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
+        }
+    }
+
+    private void processEntity(Object value, String rootEntityKey, Root<?> root,
+                               List<Selection<?>> selections, List<String> columnOrder,
+                               String entityKey, Map<String, Join<?, ?>> joinCache) {
+        if (value instanceof List) {
+            processList(value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
+        } else if (value instanceof Map) {
+            processNestedMap((Map<String, Object>) value, rootEntityKey, root, selections, columnOrder, entityKey, joinCache);
+        }
+    }
+
+    public void processNestedMap(Map<String, Object> nestedMap, String rootEntityKey, Root<?> root,
+                                 List<Selection<?>> selections, List<String> columnOrder,
+                                 String parentEntityKey, Map<String, Join<?, ?>> joinCache) {
+
+        for (Map.Entry<String, Object> entry : nestedMap.entrySet()) {
+            String childEntityKey = entry.getKey();
+            Object childValue = entry.getValue();
+
+            // Build the full path for this nested entity
+            String fullPath = parentEntityKey + "." + childEntityKey;
+            processEntity(childValue, rootEntityKey, root, selections, columnOrder, fullPath, joinCache);
+        }
+    }
+
+    public void processList(Object value, String rootEntityKey, Root<?> root,
+                            List<Selection<?>> selections, List<String> columnOrder,
+                            String entityPath, Map<String, Join<?, ?>> joinCache) {
+        List<String> cols = (List<String>) value;
+
+        if (cols == null || cols.isEmpty()) {
+            return;
+        }
+
+        if (rootEntityKey.equals(entityPath)) {
+            // Root entity: add columns directly from the root
+            for (String col : cols) {
+                selections.add(root.get(col));
+                columnOrder.add(rootEntityKey + "." + col);
+            }
+        } else {
+            // Handle nested joins
+            Path<?> joinPath = buildJoinPath(root, entityPath, joinCache);
+
+            for (String col : cols) {
+                selections.add(joinPath.get(col));
+                columnOrder.add(rootEntityKey + "." + entityPath + "." + col);
+            }
+        }
+    }
+
+    private Path<?> buildJoinPath(Root<?> root, String entityPath, Map<String, Join<?, ?>> joinCache) {
+        // Check if we already have this join cached
+        if (joinCache.containsKey(entityPath)) {
+            return joinCache.get(entityPath);
+        }
+
+        String[] pathParts = entityPath.split("\\.");
+        Path<?> currentPath = root;
+        // Build the join path step by step
+        StringBuilder currentPathBuilder = new StringBuilder();
+        for (String part : pathParts) {
+            if (currentPathBuilder.length() > 0) {
+                currentPathBuilder.append(".");
+            }
+            currentPathBuilder.append(part);
+            String currentFullPath = currentPathBuilder.toString();
+
+            if (joinCache.containsKey(currentFullPath)) {
+                currentPath = joinCache.get(currentFullPath);
+            } else {
+                // Create new join
+                Join<?, ?> join;
+                if (currentPath instanceof Root) {
+                    join = ((Root<?>) currentPath).join(part, JoinType.LEFT);
+                } else {
+                    join = ((Join<?, ?>) currentPath).join(part, JoinType.LEFT);
+                }
+                joinCache.put(currentFullPath, join);
+                currentPath = join;
+            }
+        }
+
+        return currentPath;
+    }
+
+    public <T extends MultiTenancy> long fetchTotalCount(ListCommonRequest listCommonRequest, Class<T> entityClass) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<T> root = countQuery.from(entityClass);
+
+        // Build predicates same way as main query
+        List<Predicate> predicates = buildPredicatesFromFilters(cb, root, listCommonRequest);
+
+        countQuery.select(cb.countDistinct(root)); // count distinct root entities
+        if (!predicates.isEmpty()) {
+            countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        return entityManager.createQuery(countQuery).getSingleResult();
+    }
+    public String extractSortFieldFromPayload(ListCommonRequest requestPayload) {
+        if (requestPayload == null || requestPayload.getSortRequest() == null) {
+            return null;
+        }
+
+        SortRequest sortRequest = requestPayload.getSortRequest();
+        return sortRequest.getFieldName();
+    }
+
+    private <T extends MultiTenancy> boolean isValidFieldForEntity(Root<T> root, String fieldName) {
+        try {
+            // Try to access the field using JPA metamodel - this will throw exception if field doesn't exist
+            root.get(fieldName);
+            return true;
+        } catch (IllegalArgumentException e) {
+            // Field doesn't exist in the entity
+            log.debug("Field '{}' does not exist in entity type '{}'", fieldName, root.getJavaType().getSimpleName());
+            return false;
+        }
+    }
+    private String getValidFieldSuggestions(String entityType, String invalidField) {
+        StringBuilder message = new StringBuilder();
+        message.append("Invalid sort field '").append(invalidField).append("' for entity type '").append(entityType).append("'. ");
+
+        if ("consolidationDetails".equals(entityType)) {
+            message.append("Valid fields include: id, consolidationNumber, consolidationType, transportMode, mawb, createdAt, updatedAt, etc.");
+        } else if ("shipmentDetails".equals(entityType)) {
+            message.append("Valid fields include: id, shipmentNumber, direction, transportMode, mawb, createdAt, updatedAt, etc.");
+        } else {
+            message.append("Please use a valid field name that exists in the ").append(entityType).append(" entity.");
+        }
+
+        return message.toString();
+    }
+
+    public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(
+            CriteriaBuilder cb,
+            Root<T> root,
+            ListCommonRequest listCommonRequest) {
+        List<Predicate> predicates = new ArrayList<>();
+        predicates.add(cb.equal(root.get("tenantId"), UserContext.getUser().getTenantId()));
+        List<FilterCriteria> filterCriteria = listCommonRequest.getFilterCriteria();
+
+        for (FilterCriteria group : filterCriteria) {
+            Predicate innerPredicate = buildInnerPredicate(cb, root, group.getInnerFilter());
+            if (innerPredicate != null) {
+                predicates.add(innerPredicate);
+            }
+        }
+        return predicates;
+    }
+
+    private Predicate buildInnerPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            List<FilterCriteria> innerFilterObj) {
+        Predicate innerPredicate = null;
+        for (FilterCriteria inner : innerFilterObj) {
+            Criteria critMap = inner.getCriteria();
+            String fieldName = critMap.getFieldName();
+            String operator = critMap.getOperator();
+            Object value = critMap.getValue();
+
+            Predicate p = buildPredicateForOperator(cb, root, fieldName, operator, value);
+            innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
+        }
+        return innerPredicate;
+    }
+
+    private Predicate buildPredicateForOperator(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            String operator,
+            Object value) {
+        return switch (operator.trim().toLowerCase()) {
+            case "=" -> cb.equal(root.get(fieldName), value);
+            case "!=" -> cb.notEqual(root.get(fieldName), value);
+            case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
+            case ">" -> buildGreaterThanPredicate(cb, root, fieldName, value);
+            case "<" -> buildLessThanPredicate(cb, root, fieldName, value);
+            case ">=" -> buildGreaterThanOrEqualPredicate(cb, root, fieldName, value);
+            case "<=" -> buildLessThanOrEqualPredicate(cb, root, fieldName, value);
+            case "contains" -> cb.isMember(value, root.get(fieldName));
+            case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
+            case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
+            case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
+            case "in" -> root.get(fieldName).in((Collection<?>) value);
+            case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
+            case "isnull" -> cb.isNull(root.get(fieldName));
+            case "isnotnull" -> cb.isNotNull(root.get(fieldName));
+            default -> null;
+        };
+    }
+
+    private Predicate buildGreaterThanPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.greaterThan(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.gt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.greaterThan(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.greaterThan(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildLessThanPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.lessThan(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.lt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.lessThan(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.lessThan(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildGreaterThanOrEqualPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.gt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
+        }
+    }
+
+    private Predicate buildLessThanOrEqualPredicate(
+            CriteriaBuilder cb,
+            Root<?> root,
+            String fieldName,
+            Object value) {
+        if (value instanceof String string) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), string);
+        } else if (value instanceof Number number) {
+            return cb.lt(root.get(fieldName), number);
+        } else if (value instanceof Date date) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), date);
+        } else if (value instanceof LocalDateTime localDateTime) {
+            return cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
+        } else {
+            throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
+        }
+    }
+    private Predicate calculateInnerPredicate(CriteriaBuilder cb, FilterCriteria inner, Predicate innerPredicate, Predicate p) {
+        if (innerPredicate == null) {
+            innerPredicate = p;
+        } else {
+            String logic = Optional.ofNullable(inner.getLogicOperator())
+                    .map(Object::toString)
+                    .orElse("and");
+            if ("or".equalsIgnoreCase(logic)) {
+                innerPredicate = cb.or(innerPredicate, p);
+            } else {
+                innerPredicate = cb.and(innerPredicate, p);
+            }
+        }
+        return innerPredicate;
+    }
+
 }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -61,5 +62,17 @@ public class ShipmentControllerExternal {
         CommonGetRequest request = CommonGetRequest.builder().build();
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel.buildRequest(retrieveCommonRequest), source);
+    }
+
+    @PostMapping(ApiConstants.API_DYNAMIC_LIST)
+    public ResponseEntity<IRunnerResponse> getShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return shipmentService.fetchShipments(listCommonRequest);
+    }
+    @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
+    public  ResponseEntity<IRunnerResponse> retrieveShipmentDetails(@RequestBody @Valid CommonGetRequest commonGetRequest) {
+        if(commonGetRequest.getId() == null && commonGetRequest.getGuid() ==null) {
+            throw new ValidationException("Id or Guid is mandatory");
+        }
+        return shipmentService.getShipmentDetails(commonGetRequest);
     }
 }
