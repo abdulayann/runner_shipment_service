@@ -27,22 +27,17 @@ public class CarrierBookingRequest {
     private String bookingComment;
     @Size(max = 10000, message = "Carrier Comment cannot exceed 10,000 characters")
     private String carrierComment;
-
+    private String internalEmails;
+    private String externalEmails;
     private PartiesRequest requester;
     private PartiesRequest shipper;
     private PartiesRequest consignee;
     private PartiesRequest forwardingAgent;
-
-    private List<PartiesRequest> additionalParties;
     private PartiesRequest pickupFrom;
     private PartiesRequest deliveryTo;
+    private SailingInformationRequest sailingInformationRequest;
 
-    private String internalEmails;
-    private String externalEmails;
-
-    private Long shippingInstructionId;
-    private Long sailingInformationId;
-
+    private List<PartiesRequest> additionalParties;
     private List<CommonContainerRequest> containersList;
     private List<CarrierRoutingRequest> carrierRoutingList;
     private List<ReferenceNumberRequest> referenceNumbersList;
