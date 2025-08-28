@@ -2100,12 +2100,6 @@ public class ShipmentService implements IShipmentService {
             isConsolUpdated = !Objects.equals(oldId, newId);
         }
 
-        if (isConsolDetached || (isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty())) {
-            ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
-            if (oldConsole != null && oldConsole.getId() != null) {
-                awbDao.validateAirMessaging(oldConsole.getId());
-            }
-        }
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
@@ -2124,7 +2118,6 @@ public class ShipmentService implements IShipmentService {
         setBookingNumberInShipment(shipmentDetails, consolidation);
         processCarrierDetailsForShipmentConsole(shipmentDetails, consolidation);
         processInterBranchConsoleInBeforeSave(shipmentDetails, consolidation);
-        validateAirMessagingIfConsoleExists(shipmentDetails);
         deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
     }
 
@@ -8105,7 +8098,6 @@ public class ShipmentService implements IShipmentService {
             if (buildFailedResponse != null) return buildFailedResponse;
             updatePullRequests(consoleShip, pullRequests, pushRequests);
         }
-        awbDao.validateAirMessaging(consoleId);
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         if(checkForAirDGFlag(consolidationDetails)) {
