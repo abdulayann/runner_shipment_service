@@ -3792,13 +3792,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
             Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-            for (Packing packing : shipmentPackings) {
-                if(packing.getContainerId().equals(containerId)){
-                    shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>())
-                            .add(packing.getId());
+            for (ShipmentDetails ship : shipmentDetails) {
+                List<Long> shipContIds =  ship.getContainersList().stream()
+                        .filter(container -> container != null && container.getId() != null)
+                        .map(Containers::getId)
+                        .collect(Collectors.toList());
+                if (shipContIds.contains(containerId)) {
+                    shipmentPackIds.put(ship.getId(), new ArrayList<>());
                 }
-
             }
+            for (Packing packing : shipmentPackings) {
+                if (packing.getContainerId().equals(containerId)) {
+                    Long shipmentId = packing.getShipmentId();
+                    if (shipmentPackIds.containsKey(shipmentId)) {
+                        shipmentPackIds.get(shipmentId).add(packing.getId());
+                    }
+                }
+            }
+
             unAssignRequest.setShipmentPackIds(shipmentPackIds);
             // Step 2: Create UnAssignContainerParams for this operation
             UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
