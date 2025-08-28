@@ -4364,7 +4364,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
 
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        doThrow(new RuntimeException()).when(awbDao).validateAirMessaging(any());
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         mockShipmentSettings();
