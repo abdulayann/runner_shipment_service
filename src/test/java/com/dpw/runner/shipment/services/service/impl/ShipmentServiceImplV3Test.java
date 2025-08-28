@@ -144,7 +144,6 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
@@ -8000,7 +7999,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    public void testFetchShipments_SuccessWithDefaultPageSize() {
+    void testFetchShipments_SuccessWithDefaultPageSize() {
         // Arrange
         ListCommonRequest request = new ListCommonRequest();
         List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
@@ -8048,14 +8047,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         lenient().when(commonUtils.buildPredicatesFromFilters(any(), any(), any())).thenReturn(new ArrayList<>());
         lenient().when(commonUtils.extractSortFieldFromPayload(any(ListCommonRequest.class))).thenReturn("defaultSortField");
 
-        // Mock buildJoinsAndSelections
-//        lenient().doAnswer(invocation -> {
-//            List<Selection<?>> selections = invocation.getArgument(1);
-//            List<String> columnOrder = invocation.getArgument(2);
-//            selections.add(mock(Selection.class));
-//            columnOrder.add("mockColumn");
-//            return null;
-//        }).when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), anyString());
         // Create real List objects for the test
         List<Selection<?>> selections = new ArrayList<>();
         List<String> columnOrder = new ArrayList<>();
@@ -8107,7 +8098,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    public void testGetShipmentDetails_WithValidId_ReturnsShipmentDetails() {
+    void testGetShipmentDetails_WithValidId_ReturnsShipmentDetails() {
         // Arrange
         CommonGetRequest request = new CommonGetRequest();
         request.setId(123L);

@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotification
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;

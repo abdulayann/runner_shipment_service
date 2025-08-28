@@ -2762,21 +2762,25 @@ public class CommonUtils {
             // Create a Map to hold only the selected fields
             Map<String, Object> partialObject = new HashMap<>();
 
-            for (String field : selectedFields) {
-                try {
-                    Object fieldValue = getNestedFieldValue(source, field);
-                    if (fieldValue != null) {
-                        partialObject.put(field, fieldValue);
-                    }
-                } catch (Exception e) {
-                    log.debug("Could not extract field {} from object: {}", field, e.getMessage());
-                }
-            }
+            setPartialObject(source, selectedFields, partialObject);
 
             return partialObject;
         } catch (Exception e) {
             log.error("Error creating partial object: {}", e.getMessage());
             return source; // Return original object if partial creation fails
+        }
+    }
+
+    private void setPartialObject(Object source, Set<String> selectedFields, Map<String, Object> partialObject) {
+        for (String field : selectedFields) {
+            try {
+                Object fieldValue = getNestedFieldValue(source, field);
+                if (fieldValue != null) {
+                    partialObject.put(field, fieldValue);
+                }
+            } catch (Exception e) {
+                log.debug("Could not extract field {} from object: {}", field, e.getMessage());
+            }
         }
     }
 
@@ -2945,7 +2949,7 @@ public class CommonUtils {
         return value;
     }
 
-    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
+    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException, RunnerException {
         String[] fields = fieldPath.split("\\.");
         Object currentValue = object;
 
@@ -2958,7 +2962,7 @@ public class CommonUtils {
         return currentValue;
     }
 
-    private Object getFieldValue(Object value, String field, String fullPath, boolean isLastField) throws NoSuchMethodException {
+    private Object getFieldValue(Object value, String field, String fullPath, boolean isLastField) throws NoSuchMethodException, RunnerException {
         if (value == null) {
             log.debug("Null value encountered at field: {} in path: {}", field, fullPath);
             return null;
@@ -2974,7 +2978,8 @@ public class CommonUtils {
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             log.error("Error accessing field: {} in path: {}", field, fullPath, e);
-            throw new RuntimeException("Error accessing field: " + field, e);
+            throw new RunnerException(String.format("Error accessing field:  %s. Error: %s",
+                    field, e.getMessage()));
         }
     }
 
@@ -3621,18 +3626,18 @@ public class CommonUtils {
 
             // Process each field
             for (Map.Entry<String, Object> entry : flatRow.entrySet()) {
-                ProcessFields(collectionRelationships, flatRow, entry, rootKeyValue, entityMap);
+                processFields(collectionRelationships, flatRow, entry, rootKeyValue, entityMap);
             }
         }
 
         // Convert to final format
         List<Map<String, Object>> finalList = new ArrayList<>();
-        MapFinalList(rootKey, parentMapById, finalList);
+        mapFinalList(rootKey, parentMapById, finalList);
 
         return finalList;
     }
 
-    private static void ProcessFields(Set<String> collectionRelationships, Map<String, Object> flatRow, Map.Entry<String, Object> entry, String rootKeyValue, Map<String, Object> entityMap) {
+    private static void processFields(Set<String> collectionRelationships, Map<String, Object> flatRow, Map.Entry<String, Object> entry, String rootKeyValue, Map<String, Object> entityMap) {
         String key = entry.getKey();
         Object value = entry.getValue();
 
@@ -3647,23 +3652,23 @@ public class CommonUtils {
             entityMap.put(parts[0], value);
         } else if (parts.length == 2 && collectionRelationships.contains(parts[0])) {
             // Collection field like consolidationList.id
-            HandleNonNestedFields(flatRow, parts, entityMap, value, rootKeyValue);
+            handleNonNestedFields(flatRow, parts, entityMap, value, rootKeyValue);
         } else if (parts.length > 2 && collectionRelationships.contains(parts[0])) {
             // Nested fields within collections (e.g., consolidationList.address.city)
-            HandleNestedFields(flatRow, parts, entityMap, rootKeyValue, value);
+            handleNestedFields(flatRow, parts, entityMap, rootKeyValue, value);
         } else if (parts.length > 1) {
             // Regular nested objects (non-collection)
-            HandlerNestedNonCollectionObject(entityMap, parts, value);
+            handlerNestedNonCollectionObject(entityMap, parts, value);
         }
     }
 
-    private static void MapFinalList(String rootKey, Map<Object, Map<String, Object>> parentMapById, List<Map<String, Object>> finalList) {
+    private static void mapFinalList(String rootKey, Map<Object, Map<String, Object>> parentMapById, List<Map<String, Object>> finalList) {
         for (Map<String, Object> data : parentMapById.values()) {
             finalList.add(Collections.singletonMap(rootKey, data));
         }
     }
 
-    private static void HandlerNestedNonCollectionObject(Map<String, Object> entityMap, String[] parts, Object value) {
+    private static void handlerNestedNonCollectionObject(Map<String, Object> entityMap, String[] parts, Object value) {
         Map<String, Object> current = entityMap;
         for (int i = 0; i < parts.length - 1; i++) {
             current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new LinkedHashMap<>());
@@ -3671,7 +3676,7 @@ public class CommonUtils {
         current.put(parts[parts.length - 1], value);
     }
 
-    private static void HandleNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, String rootKeyValue, Object value) {
+    private static void handleNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, String rootKeyValue, Object value) {
         String collectionName = parts[0];
 
         List<Map<String, Object>> collection =
@@ -3700,7 +3705,7 @@ public class CommonUtils {
         }
     }
 
-    private static void HandleNonNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, Object value, String rootKeyValue) {
+    private static void handleNonNestedFields(Map<String, Object> flatRow, String[] parts, Map<String, Object> entityMap, Object value, String rootKeyValue) {
         String collectionName = parts[0];
         String fieldName = parts[1];
 
@@ -3762,7 +3767,7 @@ public class CommonUtils {
             String sortField
     ) {
 
-        Set<String> rootEntityColumns = new HashSet<String>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
+        Set<String> rootEntityColumns = new HashSet<>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
 
         // If there's a sort field and it's not already in the root entity columns, validate and add it
         if (sortField != null && !rootEntityColumns.contains(sortField)) {

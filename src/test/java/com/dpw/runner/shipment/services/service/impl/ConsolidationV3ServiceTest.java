@@ -6300,7 +6300,7 @@ if (unitConversionUtilityMockedStatic != null) {
     }
 
     @Test
-    public void testFetchConsol_SuccessWithDefaultPageSize() {
+    void testFetchConsol_SuccessWithDefaultPageSize() {
         // Arrange
         ListCommonRequest request = new ListCommonRequest();
         List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
@@ -6407,7 +6407,7 @@ if (unitConversionUtilityMockedStatic != null) {
     }
 
     @Test
-    public void testGetConsolDetails_WithValidId_ReturnsShipmentDetails() {
+    void testGetConsolDetails_WithValidId_ReturnsShipmentDetails() {
         // Arrange
         CommonGetRequest request = new CommonGetRequest();
         request.setId(123L);

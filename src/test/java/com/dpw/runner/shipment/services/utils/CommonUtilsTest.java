@@ -111,7 +111,6 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
@@ -5792,7 +5791,7 @@ class CommonUtilsTest {
         assertEquals("testField", commonUtils.extractSortFieldFromPayload(request));
     }
     @Test
-    public void testExtractRequestedColumns_EmptyIncludeColumns_ReturnsEmptyMap() {
+    void testExtractRequestedColumns_EmptyIncludeColumns_ReturnsEmptyMap() {
         // Arrange
         List<String> includeColumns = new ArrayList<>();
         String mainEntityKey = "shipment";
@@ -5806,7 +5805,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testExtractRequestedColumns_SingleLevelColumns_ExtractsToMainEntity() {
+    void testExtractRequestedColumns_SingleLevelColumns_ExtractsToMainEntity() {
         // Arrange
         List<String> includeColumns = Arrays.asList("id", "updatedAt", "status");
         String mainEntityKey = "shipmentDetails";
@@ -5827,7 +5826,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testExtractRequestedColumns_TwoLevelNesting_CreatesListOfStrings() {
+    void testExtractRequestedColumns_TwoLevelNesting_CreatesListOfStrings() {
         // Arrange
         List<String> includeColumns = Arrays.asList(
                 "pickupDetails.address",
@@ -5858,7 +5857,7 @@ class CommonUtilsTest {
         assertTrue(transporterColumns.contains("name"));
     }
     @Test
-    public void testExtractRequestedColumns_DuplicateColumns_HandlesGracefully() {
+    void testExtractRequestedColumns_DuplicateColumns_HandlesGracefully() {
         // Arrange
         List<String> includeColumns = Arrays.asList(
                 "pickupDetails.address",
@@ -5883,7 +5882,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testFillEmptyColumnLists_EmptyMap_DoesNotModify() {
+    void testFillEmptyColumnLists_EmptyMap_DoesNotModify() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
 
@@ -5894,7 +5893,7 @@ class CommonUtilsTest {
         assertTrue(requestedColumns.isEmpty());
     }
     @Test
-    public void testFillEmptyColumnLists_WithEmptyList_FillsWithAllFields() {
+    void testFillEmptyColumnLists_WithEmptyList_FillsWithAllFields() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         requestedColumns.put("shipmentDetails", new ArrayList<String>());
@@ -5915,7 +5914,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testFillEmptyColumnLists_WithEmptyMap_FillsWithAllFields() {
+    void testFillEmptyColumnLists_WithEmptyMap_FillsWithAllFields() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         requestedColumns.put("pickupDetails", new HashMap<String, Object>());
@@ -5932,7 +5931,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testFillEmptyColumnLists_WithNullValue_FillsWithAllFields() {
+    void testFillEmptyColumnLists_WithNullValue_FillsWithAllFields() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         requestedColumns.put("transporterDetail", null);
@@ -5949,7 +5948,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testFillEmptyColumnLists_WithPopulatedList_DoesNotModify() {
+    void testFillEmptyColumnLists_WithPopulatedList_DoesNotModify() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         List<String> existingFields = new ArrayList<>(Arrays.asList("field1", "field2"));
@@ -5967,7 +5966,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testEnsureIdInCollection_WithList_AddsIdWhenNotPresent() {
+    void testEnsureIdInCollection_WithList_AddsIdWhenNotPresent() {
         // Arrange
         List<String> list = new ArrayList<>(Arrays.asList("field1", "field2"));
 
@@ -5984,7 +5983,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testEnsureIdInCollection_WithListContainingId_DoesNotAddAgain() {
+    void testEnsureIdInCollection_WithListContainingId_DoesNotAddAgain() {
         // Arrange
         List<String> list = new ArrayList<>(Arrays.asList("id", "field1", "field2"));
 
@@ -6001,7 +6000,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testEnsureIdInCollection_WithEmptyList_DoesNotAddId() {
+    void testEnsureIdInCollection_WithEmptyList_DoesNotAddId() {
         // Arrange
         List<String> list = new ArrayList<>();
 
@@ -6015,7 +6014,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testEnsureIdInCollection_WithSet_AddsIdWhenNotPresent() {
+    void testEnsureIdInCollection_WithSet_AddsIdWhenNotPresent() {
         // Arrange
         Set<String> set = new HashSet<>(Arrays.asList("field1", "field2"));
 
@@ -6031,7 +6030,7 @@ class CommonUtilsTest {
         assertTrue(resultSet.contains("id"));
     }
     @Test
-    public void testEnsureIdInCollection_WithNonCollection_ReturnsUnchanged() {
+    void testEnsureIdInCollection_WithNonCollection_ReturnsUnchanged() {
         // Arrange
         String nonCollection = "not a collection";
 
@@ -6043,7 +6042,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testEnsureIdInCollection_WithNull_ReturnsNull() {
+    void testEnsureIdInCollection_WithNull_ReturnsNull() {
         // Act
         Object result = commonUtils.ensureIdInCollection(null);
 
@@ -6051,7 +6050,7 @@ class CommonUtilsTest {
         assertNull(result);
     }
     @Test
-    public void testConvertToNestedMapWithCollections_EmptyFlatList_ReturnsEmptyList() {
+    void testConvertToNestedMapWithCollections_EmptyFlatList_ReturnsEmptyList() {
         // Arrange
         List<Map<String, Object>> flatList = new ArrayList<>();
         Set<String> collectionRelationships = new HashSet<>();
@@ -6067,7 +6066,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testConvertToNestedMapWithCollections_SingleRow_CreatesNestedStructure() {
+    void testConvertToNestedMapWithCollections_SingleRow_CreatesNestedStructure() {
         // Arrange
         List<Map<String, Object>> flatList = new ArrayList<>();
         Map<String, Object> row1 = new HashMap<>();
@@ -6097,7 +6096,7 @@ class CommonUtilsTest {
 
 
     @Test
-    public void testConvertToNestedMapWithCollections_ComplexNestedStructure() {
+    void testConvertToNestedMapWithCollections_ComplexNestedStructure() {
         // Arrange
         List<Map<String, Object>> flatList = new ArrayList<>();
         Map<String, Object> row = new HashMap<>();
@@ -6135,7 +6134,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testRefineIncludeColumns_EmptyList_ReturnsEmptyList() {
+     void testRefineIncludeColumns_EmptyList_ReturnsEmptyList() {
         // Arrange
         List<String> includeColumns = new ArrayList<>();
 
@@ -6147,7 +6146,7 @@ class CommonUtilsTest {
         assertTrue(result.isEmpty());
     }
     @Test
-    public void testRefineIncludeColumns_NullList_ThrowsException() {
+     void testRefineIncludeColumns_NullList_ThrowsException() {
         // Arrange
         List<String> includeColumns = null;
 
@@ -6157,7 +6156,7 @@ class CommonUtilsTest {
         });
     }
     @Test
-    public void testRefineIncludeColumns_NoSpecialColumns_ReturnsUnchanged() {
+     void testRefineIncludeColumns_NoSpecialColumns_ReturnsUnchanged() {
         // Arrange
         List<String> includeColumns = Arrays.asList(
                 "id",
@@ -6181,7 +6180,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testRefineIncludeColumns_WithOrgDataColumns_TruncatesCorrectly() {
+     void testRefineIncludeColumns_WithOrgDataColumns_TruncatesCorrectly() {
         // Arrange - assuming Constants.ORG_DATA = "orgData"
         List<String> includeColumns = Arrays.asList(
                 "transporterDetail.orgData.fullName",
@@ -6203,7 +6202,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testRefineIncludeColumns_WithAddressDataColumns_TruncatesCorrectly() {
+     void testRefineIncludeColumns_WithAddressDataColumns_TruncatesCorrectly() {
         // Arrange - assuming Constants.ADDRESS_DATA = "addressData"
         List<String> includeColumns = Arrays.asList(
                 "pickupDetails.addressData.street",
@@ -6225,7 +6224,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() {
+     void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         String rootEntityKey = "shipmentDetails";
@@ -6240,7 +6239,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() {
+     void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         List<String> rootColumns = Arrays.asList("id", "shipmentNumber", "status");
@@ -6264,7 +6263,7 @@ class CommonUtilsTest {
         assertNotNull(columnOrder);
     }
     @Test
-    public void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() {
+     void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
@@ -6285,7 +6284,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testProcessNestedMap_EmptyNestedMap_DoesNotModifyCollections() {
+     void testProcessNestedMap_EmptyNestedMap_DoesNotModifyCollections() {
         // Arrange
         Map<String, Object> nestedMap = new HashMap<>();
         String rootEntityKey = "shipmentDetails";

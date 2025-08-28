@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
