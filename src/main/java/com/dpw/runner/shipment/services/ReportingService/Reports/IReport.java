@@ -97,6 +97,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DESTINATION_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_ORIGIN_AGENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DANGEROUS_GOODS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_INSTRUCTIONS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TO_ADDRESS_LL;
@@ -513,6 +515,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -5294,13 +5297,24 @@ public abstract class IReport {
         if (dict == null) {
             dict = new HashMap<>();
         }
+
+        List<Parties> partiesList = Stream.of(
+                        consolidationDetails.getBorrowedFrom(),
+                        consolidationDetails.getCreditor(),
+                        consolidationDetails.getCoLoadWith())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        Optional.ofNullable(consolidationDetails.getConsolidationAddresses())
+                .ifPresent(partiesList::addAll);
+
         // Add various grouped information into the map
         addBasicConsolidationFields(dict, consolidationDetails);
         addReferenceNumbers(dict, consolidationDetails.getReferenceNumbersList());
         addRoutingDetails(dict, consolidationDetails.getRoutingsList());
-        addPartyDetails(dict, consolidationDetails.getConsolidationAddresses());
-        addAgentDetails(dict, "C_OriginAgent", consolidationDetails.getSendingAgent());
-        addAgentDetails(dict, "C_DestinationAgent", consolidationDetails.getReceivingAgent());
+        addPartyDetails(dict, partiesList);
+        addAgentDetails(dict, C_ORIGIN_AGENT, consolidationDetails.getSendingAgent());
+        addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
     }
 
@@ -5337,7 +5351,7 @@ public abstract class IReport {
 
         for (ReferenceNumbers ref : refs) {
             if (ref != null && ref.getType() != null) {
-                dict.put("C_" + ref.getType(), ref.getReferenceNumber());
+                dict.put("C_" + ref.getType().replaceAll("\\s+", ""), ref.getReferenceNumber());
             }
         }
     }
@@ -5385,8 +5399,8 @@ public abstract class IReport {
 
         for (Parties party : parties) {
             if (party != null && party.getType() != null) {
-                dict.put("C_" + party.getType(), buildPartyMap(party));
-                dict.put("C_" + party.getType() + CONTACT, buildPartyContact(party));
+                dict.put("C_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party));
+                dict.put("C_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
             }
         }
     }
@@ -5503,11 +5517,26 @@ public abstract class IReport {
         if (dict == null) {
             dict = new HashMap<>();
         }
+
+        List<Parties> partiesList = Stream.of(
+                        shipmentDetails.getClient(),
+                        shipmentDetails.getConsignee(),
+                        shipmentDetails.getConsigner(),
+                        shipmentDetails.getAdditionalDetails() != null
+                                ? shipmentDetails.getAdditionalDetails().getNotifyParty()
+                                : null
+                )
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        Optional.ofNullable(shipmentDetails.getShipmentAddresses())
+                .ifPresent(partiesList::addAll);
+
         // Add various grouped information into the map
         addBasicShipmentFields(dict, shipmentDetails);
         addShipmentReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
         addShipmentRoutingDetails(dict, shipmentDetails.getRoutingsList());
-        addShipmentPartyDetails(dict, shipmentDetails. getShipmentAddresses());
+        addShipmentPartyDetails(dict, partiesList);
         addShipmentAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getSendingAgent());
         addShipmentAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getReceivingAgent());
         addShipmentBranchAndTriangulationDetails(dict, shipmentDetails);
@@ -5582,13 +5611,13 @@ public abstract class IReport {
     }
 
     private void addCutoffFields(Map<String, Object> dictionary, ShipmentDetails details) {
-        dictionary.put(S_TERMINAL, details.getTerminalCutoff());
-        dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
-        dictionary.put(S_SI, details.getShippingInstructionCutoff());
-        dictionary.put(S_EAR_EPY_EQ_PICK, details.getEarliestEmptyEquipmentPickUp());
+        dictionary.put(S_TERMINAL, convertToDPWDateFormat(details.getTerminalCutoff(), "ddMMMyyyy HH:mm", false));
+        dictionary.put(S_VGM, convertToDPWDateFormat(details.getVerifiedGrossMassCutoff(), "ddMMMyyyy HH:mm", false));
+        dictionary.put(S_SI, convertToDPWDateFormat(details.getShippingInstructionCutoff(), "ddMMMyyyy HH:mm", false));
+        dictionary.put(S_EAR_EPY_EQ_PICK, convertToDPWDateFormat(details.getEarliestEmptyEquipmentPickUp(), "ddMMMyyyy HH:mm", false));
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
-        dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff()));
+        dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff(), "ddMMMyyyy HH:mm", false));
         dictionary.put(S_DG, convertToDPWDateFormat(details.getDgCutoff(), "ddMMMyyyy HH:mm", true));
         dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime(), "ddMMMyyyy HH:mm", true));
     }
@@ -5631,7 +5660,7 @@ public abstract class IReport {
 
         for (ReferenceNumbers ref : refs) {
             if (ref != null && ref.getType() != null) {
-                dict.put("S_" + ref.getType(), ref.getReferenceNumber());
+                dict.put("S_" + ref.getType().replaceAll("\\s+", ""), ref.getReferenceNumber());
             }
         }
     }
@@ -5699,8 +5728,8 @@ public abstract class IReport {
 
         for (Parties party : parties) {
             if (party != null && party.getType() != null) {
-                dict.put("S_" + party.getType(), buildPartyMap(party));
-                dict.put("S_" + party.getType() + CONTACT, buildPartyContact(party));
+                dict.put("S_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party));
+                dict.put("S_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
             }
         }
     }

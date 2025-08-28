@@ -26,6 +26,8 @@ public class ReportConstants {
     public static final String C_FIRSTVOYAGE = "C_FirstVoyage";
     public static final String C_FIRSTCARRIER = "C_FirstCarrier";
     public static final String C_FIRSTFLIGHTNUMBER = "C_FirstFlightNumber";
+    public static final String C_ORIGIN_AGENT = "C_OriginAgent";
+    public static final String C_DESTINATION_AGENT = "C_DestinationAgent";
     public static final String HAS_LEGS = "HasLegs";
     public static final String TI_LEGS = "TILegs";
     public static final String HAS_CONTAINERS = "HasContainers";
