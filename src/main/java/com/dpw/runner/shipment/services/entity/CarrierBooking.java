@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.AllArgsConstructor;
@@ -19,6 +21,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -47,6 +50,7 @@ public class CarrierBooking extends MultiTenancy {
     private String consolidationNo;
 
     @Column(name = "service_type", length = 50)
+    @MasterData(type = MasterDataType.SERVICE_MODE)
     private String serviceType;
 
     @UnlocationData
@@ -58,6 +62,36 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "carrier_comment", columnDefinition = "TEXT")
     private String carrierComment;
+
+    @Column(name = "internal_emails", columnDefinition = "TEXT")
+    private String internalEmails;
+
+    @Column(name = "external_emails", columnDefinition = "TEXT")
+    private String externalEmails;
+
+    @Column(name = "pickup_from_req_empty_positioning_date")
+    private LocalDateTime pickupFromReqEmptyPositioningDate;
+
+    @Column(name = "pickup_from_req_full_pickup_date")
+    private LocalDateTime pickupFromReqFullPickupDate;
+
+    @Column(name = "pickup_from_contact_name")
+    private String pickupFromContactName;
+
+    @Column(name = "pickup_from_contact_no")
+    private String pickupFromContactNo;
+
+    @Column(name = "delivery_to_req_empty_positioning_date")
+    private LocalDateTime deliveryToReqEmptyPositioningDate;
+
+    @Column(name = "delivery_to_req_full_pickup_date")
+    private LocalDateTime deliveryToReqFullPickupDate;
+
+    @Column(name = "delivery_to_contact_name")
+    private String deliveryToContactName;
+
+    @Column(name = "delivery_to_contact_no")
+    private String deliveryToContactNo;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "requester_id", referencedColumnName = "id")
@@ -93,12 +127,6 @@ public class CarrierBooking extends MultiTenancy {
     @JoinColumn(name = "deliver_to_id", referencedColumnName = "id")
     @OrganizationData
     private Parties deliveryTo;
-
-    @Column(name = "internal_emails", columnDefinition = "TEXT")
-    private String internalEmails;
-
-    @Column(name = "external_emails", columnDefinition = "TEXT")
-    private String externalEmails;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "shipping_instruction_id", referencedColumnName = "id")
