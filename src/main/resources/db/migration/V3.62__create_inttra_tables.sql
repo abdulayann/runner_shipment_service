@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS carrier_booking (
     delivery_to_req_full_pickup_date timestamp without time zone,
     delivery_to_contact_name varchar(255),
     delivery_to_contact_no varchar(50),
+    loaded_container_drop_off_details jsonb,
+    empty_container_pickup_details jsonb,
     shipping_instruction_id BIGINT REFERENCES shipping_instruction(id),
     sailing_information_id BIGINT REFERENCES sailing_information(id)
 );
