@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
+import java.util.Map;
+
 public class CarrierBookingConstants {
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation
@@ -17,4 +21,6 @@ public class CarrierBookingConstants {
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
     public static final String CARRIER_BOOKING_RETRIEVE_ERROR = "Carrier Booking is null for Id {} with Request Id {}";
+
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
 }
