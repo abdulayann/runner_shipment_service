@@ -129,6 +129,18 @@ class EventServiceTest extends CommonMocks {
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
 
+    @Mock
+    private BillingInvoiceDto billingInvoiceDto;
+
+    @Mock
+    private InvoiceDto invoiceDto;
+
+    @Mock
+    private AccountReceivableDto accountReceivableDto;
+
+    @Mock
+    private ShipmentDetails shipmentDetails;
+
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
     private static ObjectMapper objectMapperTest;
@@ -1091,12 +1103,14 @@ class EventServiceTest extends CommonMocks {
         shipment1.setId(1L);
         shipment1.setShipmentId("S123");
         shipment1.setTenantId(1);
+        shipment1.setDirection(Constants.DIRECTION_EXP);
 
         ShipmentDetails shipment2 = new ShipmentDetails();
         shipment2.setGuid(guid2);
         shipment2.setId(2L);
         shipment2.setShipmentId("S456");
         shipment2.setTenantId(2);
+        shipment2.setDirection(Constants.IMP);
 
         EventsRequest mockRequest1 = new EventsRequest(); // Populate as needed
         EventsRequest mockRequest2 = new EventsRequest();
@@ -1270,5 +1284,104 @@ class EventServiceTest extends CommonMocks {
         // Assert
         assertNull(response.getBranchName());
     }
+
+    @Test
+    void prepareEventsFromBillingCommonEvent_AllScenarios() {
+        // Mock setup
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+
+        LocalDateTime testDate = LocalDateTime.now();
+
+        // Common mock setup
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(testDate);
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV001");
+        when(accountReceivableDto.getId()).thenReturn("AR001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR001");
+        when(accountReceivableDto.getUserEmail()).thenReturn("test@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Test User");
+        when(shipmentDetails.getId()).thenReturn(1L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        // Test CTS → INGO
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_CTS);
+        List<EventsRequest> resultCTS = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultCTS.size());
+        assertEquals(EventConstants.INGO, resultCTS.get(0).getEventCode());
+
+        // Test IMP → INGI
+        when(shipmentDetails.getDirection()).thenReturn(Constants.IMP);
+        List<EventsRequest> resultIMP = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultIMP.size());
+        assertEquals(EventConstants.INGI, resultIMP.get(0).getEventCode());
+
+        // Test EXP → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        List<EventsRequest> resultEXP = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultEXP.size());
+        assertEquals(EventConstants.INGE, resultEXP.get(0).getEventCode());
+
+        // Test DOM → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_DOM);
+        List<EventsRequest> resultDOM = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultDOM.size());
+        assertEquals(EventConstants.INGE, resultDOM.get(0).getEventCode());
+
+        // Test null direction → empty list
+        when(shipmentDetails.getDirection()).thenReturn(null);
+        List<EventsRequest> resultNull = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertTrue(resultNull.isEmpty());
+
+        // Test invalid direction → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn("INVALID");
+        List<EventsRequest> resultInvalid = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultInvalid.size());
+        assertEquals(EventConstants.INGE, resultInvalid.get(0).getEventCode());
+    }
+
+    @Test
+    void prepareEventsFromBillingCommonEvent_AllFieldsPopulated() {
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+
+        LocalDateTime testDate = LocalDateTime.now();
+
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(testDate);
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV001");
+        when(accountReceivableDto.getId()).thenReturn("AR001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR001");
+        when(accountReceivableDto.getUserEmail()).thenReturn("test@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Test User");
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        when(shipmentDetails.getId()).thenReturn(1L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        EventsRequest event = result.get(0);
+        assertEquals(EventConstants.INGE, event.getEventCode());
+        assertEquals(1L, event.getEntityId());
+        assertEquals("SHIP001", event.getShipmentNumber());
+        assertEquals(testDate, event.getActual());
+        assertEquals("GENERATED", event.getStatus());
+        assertEquals("INV001", event.getContainerNumber());
+        assertEquals("AR001", event.getReferenceNumber());
+        assertEquals("BR001", event.getBranch());
+        assertEquals("test@test.com", event.getUserEmail());
+        assertEquals("Test User", event.getUserName());
+    }
+
+
 
 }
