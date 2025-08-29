@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -15,33 +17,38 @@ import java.util.List;
 @AllArgsConstructor
 public class CarrierBookingResponse implements IRunnerResponse {
 
-    private Long id;  // from MultiTenancy / BaseEntity
+    private Long id;
     private String status;
     private String bookingNo;
     private String carrierBookingNo;
-    private String mblNo;
+    private String carrierBlNo;
     private String consolidationNo;
     private String serviceType;
     private String bookingOffice;
+    private LocalDateTime pickupFromReqEmptyPositioningDate;
+    private LocalDateTime pickupFromReqFullPickupDate;
+    private String pickupFromContactName;
+    private String pickupFromContactNo;
+    private LocalDateTime deliveryToReqEmptyPositioningDate;
+    private LocalDateTime deliveryToReqFullPickupDate;
+    private String deliveryToContactName;
+    private String deliveryToContactNo;
     private String bookingComment;
     private String carrierComment;
-
-    // Relations
+    private String internalEmails;
+    private String externalEmails;
+    private Map<String, Object> loadedContainerDropOffDetails;
+    private Map<String, Object> emptyContainerPickupDetails;
     private PartiesResponse requester;
     private PartiesResponse shipper;
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
-    private List<PartiesResponse> additionalParties;
     private PartiesResponse pickupFrom;
     private PartiesResponse deliveryTo;
-
-    private String internalEmails;
-    private String externalEmails;
-
-    private ShippingInstructionResponse shippingInstruction;
-    private SailingInformationResponse sailingInformation;
-
+    private SailingInformationResponse sailingInformationResponse;
+    private ShippingInstructionResponse shippingInstructionResponse;
+    private List<PartiesResponse> additionalParties;
     private List<CommonContainerResponse> containersList;
-    private List<CarrierRoutingResponse> carrierRoutingList;
     private List<ReferenceNumberResponse> referenceNumbersList;
+    private List<CarrierRoutingResponse> carrierRoutingList;
 }

@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,19 +47,22 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final ICarrierBookingDao carrierBookingDao;
     private final JsonHelper jsonHelper;
     private final CarrierBookingMasterDataHelper carrierBookingMasterDataHelper;
+    private final CarrierBookingValidationUtil carrierBookingValidationUtil;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
+        this.carrierBookingValidationUtil = carrierBookingValidationUtil;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
     }
 
     @Override
     public CarrierBookingResponse create(CarrierBookingRequest request) {
         log.info("CarrierBookingService.create() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        carrierBookingValidationUtil.validateRequest(request);
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
-        CarrierBooking  savedEntity = carrierBookingDao.create(carrierBookingEntity);
+        CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
@@ -119,7 +123,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         log.info("CarrierBookingService.update() called with RequestId: {}, id: {} and payload: {}",
                 LoggerHelper.getRequestIdFromMDC(), id, jsonHelper.convertToJson(request));
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
-        CarrierBooking  savedEntity = carrierBookingDao.update(id, carrierBookingEntity);
+        CarrierBooking savedEntity = carrierBookingDao.update(id, carrierBookingEntity);
         CarrierBookingResponse response = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
