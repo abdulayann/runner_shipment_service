@@ -29,7 +29,7 @@ public interface ICarrierBookingService {
     /**
      * Update an existing Carrier Booking.
      *
-     * @param id booking id
+     * @param id      booking id
      * @param request CarrierBookingRequest
      * @return CarrierBookingResponse
      */
