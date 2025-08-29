@@ -381,20 +381,20 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         BigDecimal weight = Optional.ofNullable(booking.getGrossWeight()).orElse(BigDecimal.ZERO);
         String weightUnit = Optional.ofNullable(booking.getGrossWeightUnit()).orElse(WEIGHT_UNIT_KG);
         packing.setWeight(booking.getGrossWeight());
-        packing.setWeightUnit(booking.getGrossWeightUnit());
+        packing.setWeightUnit(weightUnit);
         if(!Objects.isNull(booking.getQuantity())) {
             packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
         }
-        packing.setPackWeightUnit(booking.getGrossWeightUnit());
+        packing.setPackWeightUnit(weightUnit);
 
         BigDecimal volume = Optional.ofNullable(booking.getVolume()).orElse(BigDecimal.ZERO);
         String volumeUnit = Optional.ofNullable(booking.getVolumeUnit()).orElse(VOLUME_UNIT_M3);
         packing.setVolume(booking.getVolume());
-        packing.setVolumeUnit(booking.getVolumeUnit());
+        packing.setVolumeUnit(volumeUnit);
         if(!Objects.isNull(booking.getQuantity())) {
             packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
         }
-        packing.setVolumePerPackUnit(booking.getVolumeUnit());
+        packing.setVolumePerPackUnit(volumeUnit);
         VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
 
         packing.setChargeable(vwOb.getChargeable());
