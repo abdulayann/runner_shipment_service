@@ -48,8 +48,14 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "carrier_bl_no", length = 100)
     private String carrierBlNo;
 
-    @Column(name = "consolidation_no", length = 100)
-    private String consolidationNo;
+    @Column(name = "entity_type", length = 50)
+    private String entityType;
+
+    @Column(name = "entity_id")
+    private Long entityId;
+
+    @Column(name = "entity_number", length = 100)
+    private String entityNumber;
 
     @Column(name = "service_type", length = 50)
     @MasterData(type = MasterDataType.SERVICE_MODE)

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Size;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,13 +15,15 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierBookingRequest {
+public class CarrierBookingRequest implements Serializable {
     private Long id;
     private String status;
     private String bookingNo;
     private String carrierBookingNo;
     private String carrierBlNo;
-    private String consolidationNo;
+    private String entityType;
+    private Long entityId;
+    private String entityNumber;
     private String serviceType;
     private String bookingOffice;
     private LocalDateTime pickupFromReqEmptyPositioningDate;
