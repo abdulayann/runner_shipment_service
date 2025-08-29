@@ -22,7 +22,9 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -85,6 +87,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     private ICustomerBookingBackupRepository customerBookingBackupRepository;
+
+    @Autowired
+    private IPackingRepository packingRepository;
+
+    @Autowired
+    private IContainerRepository containerRepository;
 
     @Autowired
     private CustomerBookingV3Util customerBookingV3Util;
@@ -300,7 +308,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        containerDao.saveAll(containersList);
+        containerRepository.saveAll(containersList);
     }
 
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
@@ -314,7 +322,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 containers.setContainerWeightUnit(containers.getGrossWeightUnit());
             }
         }
-        containerDao.saveAll(containersList);
+        containerRepository.saveAll(containersList);
     }
 
     private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking) throws RunnerException {
@@ -332,7 +340,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             customerBooking.setIsPackageManual(Boolean.FALSE);
         }
 
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private void updateWeight(Packing packing) {
@@ -419,7 +427,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 packing.setVolumePerPackUnit(packing.getVolumeUnit());
             }
         }
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
