@@ -7962,7 +7962,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
 
     @Test
-    void testFetchShipments_NullIncludeColumns_ThrowsValidationException() {
+    void testFetchShipments_NullIncludeColumns_ThrowsValidationException() throws RunnerException{
         // Given
         ListCommonRequest validRequest=  new ListCommonRequest();
         validRequest.setIncludeColumns(null);
@@ -7974,7 +7974,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testFetchShipments_EmptyIncludeColumns_ThrowsValidationException() {
+    void testFetchShipments_EmptyIncludeColumns_ThrowsValidationException() throws RunnerException{
         // Given
         ListCommonRequest validRequest=  new ListCommonRequest();
         validRequest.setIncludeColumns(new ArrayList<>());
@@ -7986,7 +7986,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testFetchShipments_NullPageNo_ThrowsValidationException() {
+    void testFetchShipments_NullPageNo_ThrowsValidationException() throws RunnerException{
         // Given
         ListCommonRequest validRequest=  new ListCommonRequest();
         validRequest.setIncludeColumns(List.of("id"));
@@ -7999,7 +7999,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testFetchShipments_SuccessWithDefaultPageSize() {
+    void testFetchShipments_SuccessWithDefaultPageSize() throws RunnerException {
         // Arrange
         ListCommonRequest request = new ListCommonRequest();
         List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
@@ -8021,7 +8021,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(typedQuery).setMaxResults(25);
     }
     @Test
-    void testFetchShipments_SuccessWithDefaultPageSize2() {
+    void testFetchShipments_SuccessWithDefaultPageSize2() throws RunnerException{
         // Arrange
         ListCommonRequest request = new ListCommonRequest();
         List<String> includeColumns = new ArrayList<>(Arrays.asList("pickupDetails.transporterDetail.orgData.FullName","consignee.orgData.FullName"));
@@ -8045,7 +8045,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
 
 
-    private void setupMocksForSuccessfulExecution() {
+    private void setupMocksForSuccessfulExecution() throws RunnerException{
 //
         // Mock EntityManager and CriteriaBuilder
         when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
@@ -8133,7 +8133,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testGetShipmentDetails_WithValidId_ReturnsShipmentDetails() {
+    void testGetShipmentDetails_WithValidId_ReturnsShipmentDetails() throws RunnerException {
         // Arrange
         CommonGetRequest request = new CommonGetRequest();
         request.setId(123L);

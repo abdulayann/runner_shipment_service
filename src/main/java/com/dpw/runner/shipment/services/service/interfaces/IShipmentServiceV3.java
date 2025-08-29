@@ -52,7 +52,7 @@ public interface IShipmentServiceV3 {
     ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId);
     ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId);
 
-    ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest);
+    ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException;
 
     ShipmentDetailsV3Response create(CommonRequestModel commonRequestModel);
 
@@ -118,5 +118,5 @@ public interface IShipmentServiceV3 {
     void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList);
     ShipmentDetailsResponse getDefaultShipment();
 
-    ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest);
+    ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException;
 }

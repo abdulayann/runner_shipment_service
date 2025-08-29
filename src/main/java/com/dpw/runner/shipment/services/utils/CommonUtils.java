@@ -3765,7 +3765,7 @@ public class CommonUtils {
             List<String> columnOrder,
             String rootEntityKey,
             String sortField
-    ) {
+    ) throws RunnerException {
 
         Set<String> rootEntityColumns = new HashSet<>((Collection) requestedColumns.getOrDefault(rootEntityKey, new ArrayList<>()));
 
@@ -3779,7 +3779,7 @@ public class CommonUtils {
                 log.debug("Auto-included sort field '{}' for entity '{}'", sortField, rootEntityKey);
             } else {
                 log.warn("Invalid sort field '{}' for entity type '{}'. Field does not exist in entity.", sortField, rootEntityKey);
-                throw new IllegalArgumentException(getValidFieldSuggestions(rootEntityKey, sortField));
+                throw new RunnerException("Invalid sort field " + sortField);
             }
         }
 
@@ -3913,20 +3913,6 @@ public class CommonUtils {
             log.debug("Field '{}' does not exist in entity type '{}'", fieldName, root.getJavaType().getSimpleName());
             return false;
         }
-    }
-    private String getValidFieldSuggestions(String entityType, String invalidField) {
-        StringBuilder message = new StringBuilder();
-        message.append("Invalid sort field '").append(invalidField).append("' for entity type '").append(entityType).append("'. ");
-
-        if ("consolidationDetails".equals(entityType)) {
-            message.append("Valid fields include: id, consolidationNumber, consolidationType, transportMode, mawb, createdAt, updatedAt, etc.");
-        } else if ("shipmentDetails".equals(entityType)) {
-            message.append("Valid fields include: id, shipmentNumber, direction, transportMode, mawb, createdAt, updatedAt, etc.");
-        } else {
-            message.append("Please use a valid field name that exists in the ").append(entityType).append(" entity.");
-        }
-
-        return message.toString();
     }
 
     public <T extends MultiTenancy> List<Predicate> buildPredicatesFromFilters(

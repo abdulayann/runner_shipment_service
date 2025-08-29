@@ -5124,7 +5124,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) throws RunnerException {
         if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
             throw new ValidationException("Include columns can not be empty");
         }
@@ -5200,7 +5200,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) {
+    public ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException {
         List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
         Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);

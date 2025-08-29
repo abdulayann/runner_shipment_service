@@ -6300,7 +6300,7 @@ if (unitConversionUtilityMockedStatic != null) {
     }
 
     @Test
-    void testFetchConsol_SuccessWithDefaultPageSize() {
+    void testFetchConsol_SuccessWithDefaultPageSize() throws RunnerException {
         // Arrange
         ListCommonRequest request = new ListCommonRequest();
         List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
@@ -6323,7 +6323,7 @@ if (unitConversionUtilityMockedStatic != null) {
     }
 
 
-    private void setupMocksForSuccessfulExecution() {
+    private void setupMocksForSuccessfulExecution() throws RunnerException {
 //
         // Mock EntityManager and CriteriaBuilder
         when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
@@ -6407,7 +6407,7 @@ if (unitConversionUtilityMockedStatic != null) {
     }
 
     @Test
-    void testGetConsolDetails_WithValidId_ReturnsShipmentDetails() {
+    void testGetConsolDetails_WithValidId_ReturnsShipmentDetails() throws RunnerException {
         // Arrange
         CommonGetRequest request = new CommonGetRequest();
         request.setId(123L);

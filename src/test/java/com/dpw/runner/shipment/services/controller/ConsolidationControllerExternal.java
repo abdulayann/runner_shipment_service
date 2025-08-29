@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -38,7 +39,7 @@ class ConsolidationControllerExternalTest {
     private JsonHelper jsonHelper;
 
     @Test
-    void testGetConsolidationsList() {
+    void testGetConsolidationsList() throws RunnerException {
         ListCommonRequest request = new ListCommonRequest();
 
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
@@ -51,7 +52,7 @@ class ConsolidationControllerExternalTest {
     }
 
     @Test
-    void testRetrieveConsolidationDetails_Success() {
+    void testRetrieveConsolidationDetails_Success() throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
         when(consolidationV3Service.getConsolidationDetails(request)).thenReturn(ResponseEntity.ok(mockResponse));

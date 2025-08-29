@@ -769,7 +769,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException {
         if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
             throw new ValidationException("Include columns can not be empty");
         }
@@ -846,7 +846,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) {
+    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
         List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
         Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);

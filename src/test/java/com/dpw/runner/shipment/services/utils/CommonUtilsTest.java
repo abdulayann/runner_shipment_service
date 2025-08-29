@@ -6305,7 +6305,7 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() {
+     void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() throws RunnerException {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         String rootEntityKey = "shipmentDetails";
@@ -6320,7 +6320,7 @@ class CommonUtilsTest {
     }
 
     @Test
-     void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() {
+     void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() throws RunnerException {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         List<String> rootColumns = Arrays.asList("id", "shipmentNumber", "status");
@@ -6344,7 +6344,7 @@ class CommonUtilsTest {
         assertNotNull(columnOrder);
     }
     @Test
-     void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() {
+     void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() throws RunnerException {
         // Arrange
         Map<String, Object> requestedColumns = new HashMap<>();
         Root<ShipmentDetails> root1= mock(Root.class);
@@ -6441,6 +6441,72 @@ class CommonUtilsTest {
         assertEquals("TQAA25070016", flatList.get(0).get("shipmentDetails.shipmentId"));
         assertEquals("AIR", flatList.get(0).get("shipmentDetails.transportMode"));
         assertEquals("EXP", flatList.get(0).get("shipmentDetails.fileStatus"));
+    }
+
+    @Test
+    void testFetchTotalCount_WithNoPredicates_ShouldReturnCount() {
+        // Given
+        Long expectedCount = 10L;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Long.class)).thenReturn(countQuery);
+        when(countQuery.from(ShipmentDetails.class)).thenReturn(root);
+        // Return empty list for "no predicates" scenario
+        doReturn(Collections.emptyList()).when(commonUtils)
+                .buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+        when(criteriaBuilder.countDistinct(root)).thenReturn(mock(Expression.class));
+        when(entityManager.createQuery(countQuery)).thenReturn(typedQuery1);
+        when(typedQuery1.getSingleResult()).thenReturn(expectedCount);
+
+        // When
+        long result = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+
+        // Then
+        assertEquals(expectedCount, result);
+        verify(countQuery).select(any());
+        verify(countQuery, never()).where(any(Predicate.class));
+        verify(entityManager).createQuery(countQuery);
+        verify(typedQuery1).getSingleResult(); // Fixed: use typedQuery1 consistently
+    }
+
+    @Test
+    void testFetchTotalCount_WithPredicates_ShouldReturnCountForInnerFilter() {
+        // Given
+        Long expectedCount = 10L;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerfilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+        innerCriteria.setFieldName("id");
+        innerCriteria.setValue("TQAA25070016");
+        innerCriteria.setOperator("AND");
+        mockFilterCriteria.setInnerFilter(List.of(innerfilterCriteria));
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+        Predicate predicates = mock(Predicate.class);
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Long.class)).thenReturn(countQuery);
+        when(countQuery.from(ShipmentDetails.class)).thenReturn(root);
+        // Return empty list for "no predicates" scenario
+        doReturn(List.of(predicates)).
+                when(commonUtils)
+                .buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+                //.thenReturn(List.of(predicates));
+        when(criteriaBuilder.countDistinct(root)).thenReturn(mock(Expression.class));
+        when(entityManager.createQuery(countQuery)).thenReturn(typedQuery1);
+        when(typedQuery1.getSingleResult()).thenReturn(expectedCount);
+
+        // When
+        long result = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+
+        // Then
+        assertEquals(expectedCount, result);
+        verify(countQuery).select(any());
+        verify(countQuery, never()).where(any(Predicate.class));
+        verify(entityManager).createQuery(countQuery);
+        verify(typedQuery1).getSingleResult(); // Fixed: use typedQuery1 consistently
     }
 
 
