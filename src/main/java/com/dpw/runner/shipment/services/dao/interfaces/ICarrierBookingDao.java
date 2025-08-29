@@ -14,6 +14,7 @@ public interface ICarrierBookingDao {
     Page<CarrierBooking> findAll(Specification<CarrierBooking> spec, Pageable pageable);
     CarrierBooking update(Long id, CarrierBooking request);
     void delete(Long id);
+    Long getTotalCarrierBookings();
 }
 
 

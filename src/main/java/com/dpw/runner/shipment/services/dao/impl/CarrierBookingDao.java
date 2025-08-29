@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierBookingRepository;
@@ -7,9 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Component
 public class CarrierBookingDao implements ICarrierBookingDao {
     @Autowired
     private ICarrierBookingRepository carrierBookingRepository;
@@ -38,5 +41,10 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     @Override
     public void delete(Long id) {
         carrierBookingRepository.deleteById(id);
+    }
+
+    @Override
+    public Long getTotalCarrierBookings() {
+        return carrierBookingRepository.getTotalCarrierBookings(TenantContext.getCurrentTenant().longValue());
     }
 }

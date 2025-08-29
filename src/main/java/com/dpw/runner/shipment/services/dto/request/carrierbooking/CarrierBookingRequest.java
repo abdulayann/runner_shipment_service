@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -21,9 +23,14 @@ public class CarrierBookingRequest implements Serializable {
     private String bookingNo;
     private String carrierBookingNo;
     private String carrierBlNo;
+    @NotBlank(message = "Entity type can not be empty")
     private String entityType;
+    @NotNull(message = "Entity Id can not be null")
+    @Size(min = 1, message = "Entity id can not be zero/negative")
     private Long entityId;
+    @NotBlank(message = "Entity Number can not be empty")
     private String entityNumber;
+    @NotBlank(message = "Service type can not be empty")
     private String serviceType;
     private String bookingOffice;
     private LocalDateTime pickupFromReqEmptyPositioningDate;
@@ -40,7 +47,9 @@ public class CarrierBookingRequest implements Serializable {
     private String carrierComment;
     private String internalEmails;
     private String externalEmails;
+    @NotNull(message = "Requester can not be null")
     private PartiesRequest requester;
+    @NotNull(message = "Shipper can not be null")
     private PartiesRequest shipper;
     private PartiesRequest consignee;
     private PartiesRequest forwardingAgent;

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 
+import java.util.List;
 import java.util.Map;
 
 public class CarrierBookingConstants {
@@ -27,4 +28,5 @@ public class CarrierBookingConstants {
     public static final String CARRIER_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
+    public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
 }

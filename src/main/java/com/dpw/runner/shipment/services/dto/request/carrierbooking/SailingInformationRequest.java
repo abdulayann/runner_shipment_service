@@ -20,6 +20,7 @@ public class SailingInformationRequest {
     private String carrier;
     private String vesselName;
     private String voyageNo;
+    private Boolean isFromSailingSchedule = Boolean.FALSE;
     @ExcludeTimeZone
     private LocalDateTime eta;
     @ExcludeTimeZone
@@ -33,4 +34,5 @@ public class SailingInformationRequest {
     private LocalDateTime reeferCutoff;
     private LocalDateTime emptyContainerPickupCutoff;
     private LocalDateTime loadedContainerGateInCutoff;
+    private LocalDateTime lastUpdatedSailingInfo;
 }

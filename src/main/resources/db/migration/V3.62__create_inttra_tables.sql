@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS sailing_information (
     hazardous_booking_cutoff timestamp without time zone,
     reefer_cutoff timestamp without time zone,
     empty_cont_pickup_cutoff timestamp without time zone,
-    loaded_cont_gate_in_cutoff timestamp without time zone
+    loaded_cont_gate_in_cutoff timestamp without time zone,
+    last_updated_sailing_info timestamp without time zone,
+    sailing_schedule_data jsonb
 );
 
 -- Step 2: Create shipping_instruction table

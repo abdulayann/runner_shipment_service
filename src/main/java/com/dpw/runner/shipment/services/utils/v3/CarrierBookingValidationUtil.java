@@ -1,8 +1,9 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
-import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,16 @@ public class CarrierBookingValidationUtil {
     @Autowired
     private IConsolidationV3Service consolidationV3Service;
 
-    public void validateRequest(CarrierBookingRequest request) {
+    public Object validateRequest(CarrierBookingRequest request) {
+        if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            return consolidationV3Service.findById(request.getEntityId()).orElseThrow(() -> new ValidationException("Invalid Consolidation id"));
+        }
+        throw new ValidationException("Invalid entity Type");
+    }
 
+    public void validateServiceType(CarrierBookingRequest request) {
+        if (!CarrierBookingConstants.serviceTypes.contains(request.getServiceType())) {
+            throw new ValidationException("Invalid service type");
+        }
     }
 }
