@@ -3,8 +3,6 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -14,7 +12,6 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -25,7 +22,9 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -45,8 +44,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
 @Slf4j
@@ -90,6 +87,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     private ICustomerBookingBackupRepository customerBookingBackupRepository;
+
+    @Autowired
+    private IPackingRepository packingRepository;
+
+    @Autowired
+    private IContainerRepository containerRepository;
 
     @Autowired
     private CustomerBookingV3Util customerBookingV3Util;
@@ -305,21 +308,21 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        containerDao.saveAll(containersList);
+        containerRepository.saveAll(containersList);
     }
 
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Containers> containersList = customerBooking.getContainersList();
         for(Containers containers: containersList) {
-            if(!Objects.isNull(containers.getGrossWeight())) {
-                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), RoundingMode.HALF_UP));
+            if(!Objects.isNull(containers.getGrossWeight()) && !Objects.isNull(containers.getContainerCount())) {
+                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), 3, RoundingMode.HALF_UP));
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
                 containers.setContainerWeightUnit(containers.getGrossWeightUnit());
             }
         }
-        containerDao.saveAll(containersList);
+        containerRepository.saveAll(containersList);
     }
 
     private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking) throws RunnerException {
@@ -331,14 +334,13 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 updateVolume(packing);
                 updateUnits(packing);
             }
-        } else {
+        } else if (customerBooking.getIsPackageManual().equals(Boolean.TRUE)){
             Packing packing = createPackingFromBooking(customerBooking);
-            if (packing != null) {
-                packingList.add(packing);
-            }
+            packingList.add(packing);
+            customerBooking.setIsPackageManual(Boolean.FALSE);
         }
 
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private void updateWeight(Packing packing) {
@@ -370,37 +372,36 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private Packing createPackingFromBooking(CustomerBooking booking) throws RunnerException {
-        if (booking.getQuantity() == null || booking.getQuantity() == 0) return null;
-
         Packing packing = new Packing();
-        packing.setPacks(String.valueOf(booking.getQuantity()));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setPacks(String.valueOf(booking.getQuantity()));
+        }
         packing.setPacksType(booking.getQuantityUnit());
-
-        BigDecimal quantity = BigDecimal.valueOf(booking.getQuantity());
 
         BigDecimal weight = Optional.ofNullable(booking.getGrossWeight()).orElse(BigDecimal.ZERO);
         String weightUnit = Optional.ofNullable(booking.getGrossWeightUnit()).orElse(WEIGHT_UNIT_KG);
-        packing.setWeight(weight);
+        packing.setWeight(booking.getGrossWeight());
         packing.setWeightUnit(weightUnit);
-        packing.setCargoWeightPerPack(weight.divide(quantity, RoundingMode.HALF_UP));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
+        }
         packing.setPackWeightUnit(weightUnit);
 
         BigDecimal volume = Optional.ofNullable(booking.getVolume()).orElse(BigDecimal.ZERO);
         String volumeUnit = Optional.ofNullable(booking.getVolumeUnit()).orElse(VOLUME_UNIT_M3);
-        packing.setVolume(volume);
+        packing.setVolume(booking.getVolume());
         packing.setVolumeUnit(volumeUnit);
-        packing.setVolumePerPack(volume.divide(quantity, RoundingMode.HALF_UP));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
+        }
         packing.setVolumePerPackUnit(volumeUnit);
-
-        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(
-                booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
+        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
 
         packing.setChargeable(vwOb.getChargeable());
         packing.setChargeableUnit(vwOb.getChargeableUnit());
         packing.setTenantId(booking.getTenantId());
         packing.setCommodityGroup("FAK");
         packing.setBookingId(booking.getId());
-
         return packing;
     }
 
@@ -411,12 +412,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Packing> packingList = customerBooking.getPackingList();
         for(Packing packing: packingList) {
-            if(!Objects.isNull(packing.getWeight())) {
-                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+            if(!Objects.isNull(packing.getWeight()) && !Objects.isNull(packing.getPacks())) {
+                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
                 packing.setCargoWeightPerPack(packing.getWeight());
             }
-            if(!Objects.isNull(packing.getVolume())) {
-                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+            if(!Objects.isNull(packing.getVolume()) && !Objects.isNull(packing.getPacks())) {
+                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
                 packing.setVolumePerPack(packing.getVolume());
             }
             if(!Objects.isNull(packing.getWeightUnit())) {
@@ -426,7 +427,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 packing.setVolumePerPackUnit(packing.getVolumeUnit());
             }
         }
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
