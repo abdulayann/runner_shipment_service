@@ -142,4 +142,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean isNetworkFlag;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private Boolean reefer = false;
 }

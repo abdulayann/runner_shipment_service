@@ -163,6 +163,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonIgnore
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private Set<ConsolidationDetailsResponse> consolidationList;
+    private Boolean isReefer;
 
     // dps items
     private String dpsStatus;

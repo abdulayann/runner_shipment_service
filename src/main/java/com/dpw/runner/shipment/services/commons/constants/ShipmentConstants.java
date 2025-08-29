@@ -152,6 +152,7 @@ public class ShipmentConstants {
             Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
             Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
+            Map.entry("isReefer", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isReefer").build()),
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
 
     );
