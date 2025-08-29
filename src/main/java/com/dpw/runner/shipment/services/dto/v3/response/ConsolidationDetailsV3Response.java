@@ -214,4 +214,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private Map<String, Object> masterDataMap;
 }
