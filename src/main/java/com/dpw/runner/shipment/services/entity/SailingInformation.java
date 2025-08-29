@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
@@ -16,6 +17,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "sailing_information")
@@ -88,4 +90,10 @@ public class SailingInformation extends MultiTenancy {
     @Column(name = "loaded_cont_gate_in_cutoff")
     private LocalDateTime loadedContainerGateInCutoff;
 
+    @Column(name = "last_updated_sailing_info")
+    private LocalDateTime lastUpdatedSailingInfo;
+
+    @Type(type = "jsonb")
+    @Column(name = "sailing_schedule_data", columnDefinition = "jsonb")
+    private Map<String, Object> sailingScheduleData;
 }

@@ -84,6 +84,10 @@ public class V1TenantSettingsResponse implements Serializable {
     private List<FileTransferConfigurations> fileTransferConfigurations;
     @JsonProperty("CountryAirCargoSecurity")
     private Boolean countryAirCargoSecurity;
+    @JsonProperty("BookingPrefix")
+    private String bookingPrefix;
+    @JsonProperty("BookingNumberGeneration")
+    private Integer bookingNumberGeneration;
 
     @Data
     @Builder
