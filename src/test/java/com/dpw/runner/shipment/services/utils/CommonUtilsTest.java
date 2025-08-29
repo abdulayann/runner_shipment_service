@@ -207,6 +207,7 @@ import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedTyp
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -332,6 +333,15 @@ class CommonUtilsTest {
 
     @Mock
     private TypedQuery<Long> typedQuery1;
+
+    @Mock
+    private Join firstJoin;  // Remove generics
+
+    @Mock
+    private Join secondJoin;  // Remove generics
+
+    @Mock
+    private Join thirdJoin;  // Remove generics
 
     @Mock
     private CriteriaQuery<Long> countQuery;
@@ -5876,7 +5886,6 @@ class CommonUtilsTest {
                 "consignee.orgData.FullName"
         );
         String mainEntityKey = "shipment";
-        Map<String, Object> mockMap = new HashMap<>();
 
         // Act
         Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
@@ -6370,6 +6379,36 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumnsForBuildJoin() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        Root<ShipmentDetails> root1= mock(Root.class);
+        List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", new ArrayList<>(originalColumns));
+        requestedColumns.put("carrierDetails", Arrays.asList("id",
+                "shippingLine",
+                "vessel",
+                "voyage"));
+        Map<String, Object> pickupDetails = new HashMap<>();
+        pickupDetails.put("transporterDetail", "field");
+        requestedColumns.put("additionalDetails",pickupDetails);
+        String rootEntityKey = "shipmentDetails";
+        String sortField = "shipmentType";
+        doReturn(mock(Path.class)).when(commonUtils).buildJoinPath(any(),  any(), any());
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root1, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Original columns should remain unchanged
+        Object rootEntityValue = requestedColumns.get(rootEntityKey);
+        assertTrue(rootEntityValue instanceof List);
+        List<String> resultColumns = (List<String>) rootEntityValue;
+        assertEquals(originalColumns.size(), resultColumns.size());
+        assertTrue(resultColumns.containsAll(originalColumns));
+    }
+
+    @Test
      void testProcessNestedMap_EmptyNestedMap_DoesNotModifyCollections() {
         // Arrange
         Map<String, Object> nestedMap = new HashMap<>();
@@ -6672,6 +6711,74 @@ class CommonUtilsTest {
         when(criteriaBuilder.not(any(Predicate.class))).thenReturn(mockPredicate);
         when(mockPath.in(any(Collection.class))).thenReturn(mockPredicate);
     }
+
+    @Test
+    @DisplayName("Test unsupported data types throw exceptions")
+    void testUnsupportedDataTypesThrowExceptions() {
+        // Setup
+        int tenantId = 1;
+        when(root.get("tenantId")).thenReturn(mockPath);
+        when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+        when(root.get(anyString())).thenReturn(mockPath);
+
+        String[] comparisonOperators = {">", "<", ">=", "<="};
+
+        for (String operator : comparisonOperators) {
+            // Test with unsupported type (e.g., Boolean)
+            ListCommonRequest request = createListCommonRequestWithOperator(operator, true);
+
+            // This should throw IllegalArgumentException due to unsupported Boolean type
+            assertThrows(IllegalArgumentException.class, () -> {
+                commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, request);
+            }, "Should throw IllegalArgumentException for unsupported Boolean type with operator: " + operator);
+        }
+    }
+
+    @Test
+    @DisplayName("Test buildJoinPath with simple single-level path")
+    void testBuildJoinPath_SingleLevel() {
+        // Given
+        String entityPath = "user";
+        when(root.join("user", JoinType.LEFT)).thenReturn(firstJoin);
+
+        // When
+        Path<?> result = commonUtils.buildJoinPath(root, entityPath, joinCache);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(firstJoin, result);
+        assertTrue(joinCache.containsKey("user"));
+        assertEquals(firstJoin, joinCache.get("user"));
+        verify(root).join("user", JoinType.LEFT);
+    }
+
+    @Test
+    @DisplayName("Test buildJoinPath with same path called multiple times")
+    void testBuildJoinPath_MultipleCalls() {
+        // Given
+        String entityPath = "user.profile";
+        when(root.join("user", JoinType.LEFT)).thenReturn(firstJoin);
+        when(firstJoin.join("profile", JoinType.LEFT)).thenReturn(secondJoin);
+
+        // When - Call multiple times
+        Path<?> firstCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
+        Path<?> secondCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
+        Path<?> thirdCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
+
+        // Then
+        assertEquals(secondJoin, firstCall);
+        assertEquals(secondJoin, secondCall);
+        assertEquals(secondJoin, thirdCall);
+
+        // All calls should return the same cached instance
+        assertSame(firstCall, secondCall);
+        assertSame(secondCall, thirdCall);
+
+        // Verify joins were created only once (first call)
+        verify(root, times(1)).join("user", JoinType.LEFT);
+        verify(firstJoin, times(1)).join("profile", JoinType.LEFT);
+    }
+
 
 
 
