@@ -245,9 +245,7 @@ public class AwbDao implements IAwbDao {
                         if (shipmentDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false, null, includeCSD);
                             // AirMessageSent flag set to SENT
-                            AwbStatus status = AwbStatus.AIR_MESSAGE_SENT;
-                            if(Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
-                                status = AwbStatus.AWB_FSU_LOCKED;
+                            AwbStatus status = setAwbStatus(awb);
                             this.updateAirMessageStatus(awb.getGuid(), status.name());
                             awb.setAirMessageStatus(status);
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
@@ -263,14 +261,19 @@ public class AwbDao implements IAwbDao {
         }
     }
 
+    private AwbStatus setAwbStatus(Awb awb) {
+        AwbStatus status = AwbStatus.AIR_MESSAGE_SENT;
+        if(Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
+            status = AwbStatus.AWB_FSU_LOCKED;
+        return status;
+    }
+
     private void processAirMessagingConsolidation(boolean includeCSD, Awb awb) throws RunnerException {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
         if (consolidationDetails.isPresent()) {
             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
             // AirMessageSent flag set to SENT
-            AwbStatus status = AwbStatus.AIR_MESSAGE_SENT;
-            if(Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
-                status = AwbStatus.AWB_FSU_LOCKED;
+            AwbStatus status = setAwbStatus(awb);
             this.updateAirMessageStatus(awb.getGuid(), status.name());
             awb.setAirMessageStatus(status);
             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), status.name());
