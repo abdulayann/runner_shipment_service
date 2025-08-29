@@ -168,14 +168,13 @@ public class CustomerBookingV3Util {
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
             Long containerCount = containers.getContainerCount();
             BigDecimal weightPerContainer = containers.getCargoWeightPerContainer();
-            BigDecimal containerWeight = BigDecimal.valueOf(containerCount != null ? containerCount : 0).multiply(weightPerContainer != null ? weightPerContainer : BigDecimal.ZERO);
-            if(Objects.isNull(containers.getGrossWeight())) {
-                containers.setGrossWeight(containerWeight);
+            if(!Objects.isNull(weightPerContainer) && !Objects.isNull(containers.getContainerCount())) {
+                containers.setGrossWeight(BigDecimal.valueOf(containerCount).multiply(weightPerContainer));
             }
             containers.setGrossWeightUnit(containers.getContainerWeightUnit());
-            if(!Objects.isNull(containers.getPackagesPerContainer())) {
+            if(!Objects.isNull(containers.getPackagesPerContainer()) && !Objects.isNull(containers.getContainerCount())) {
                 Long packsPerContainer = containers.getPackagesPerContainer();
-                containers.setPacks(String.valueOf(BigDecimal.valueOf(containerCount != null ? containerCount : 0).multiply(new BigDecimal(packsPerContainer))));
+                containers.setPacks(String.valueOf(BigDecimal.valueOf(containerCount).multiply(new BigDecimal(packsPerContainer))));
             }
             if(!Objects.isNull(containers.getContainerPackageType())) {
                 containers.setPacksType(containers.getContainerPackageType());
