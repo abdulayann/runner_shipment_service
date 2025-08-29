@@ -161,12 +161,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException(String.join(",", errors));
         validateTransportModeAndCarrierDetails(consolidationDetails);
         // assign consolidation bol to mawb field as well
+        String oldMawb =  oldConsole != null ? oldConsole.getMawb() : null;
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
         if (!fromV1Sync && consolidationDetails.getTransportMode() != null
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+            consolidationMAWBCheck(consolidationDetails, oldMawb);
 
         if(!Objects.isNull(oldConsole)) {
             consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());

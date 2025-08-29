@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConsta
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -4509,6 +4510,55 @@ class AwbServiceTest extends CommonMocks {
         var e = assertThrows(ValidationException.class, () ->
                 awbService.reset(commonRequestModel));
         assertNotNull(e);
+    }
+
+    @Test
+    void airMessageStatusReset_success() throws RunnerException {
+        Long awbId = 1L;
+        Awb awb = new Awb();
+        awb.setId(awbId);
+        awb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
+        awb.setConsolidationId(2L);
+
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.of(awb));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(jsonHelper.readFromJson(anyString(), eq(Awb.class))).thenReturn(awb);
+        when(awbDao.save(any())).thenReturn(awb);
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildSuccessResponse().getStatusCode(), response.getStatusCode());
+        verify(awbDao).save(awb);
+    }
+
+    @Test
+    void airMessageStatusReset_fails_when_awb_not_locked() {
+        Long awbId = 1L;
+        Awb awb = new Awb();
+        awb.setId(awbId);
+        awb.setAirMessageStatus(AwbStatus.AWB_GENERATED);
+
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.of(awb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildFailedResponse("AWB is not in FSU Locked status, cannot reset the status.").getStatusCode(), response.getStatusCode());
+    }
+
+    @Test
+    void airMessageStatusReset_fails_when_awb_not_found() {
+        Long awbId = 1L;
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildFailedResponse(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE).getStatusCode(), response.getStatusCode());
     }
 
     @Test
