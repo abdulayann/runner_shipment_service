@@ -116,6 +116,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -6508,6 +6509,170 @@ class CommonUtilsTest {
         verify(entityManager).createQuery(countQuery);
         verify(typedQuery1).getSingleResult(); // Fixed: use typedQuery1 consistently
     }
+
+    @Test
+    void testBuildPredicatesFromFilters_WithValidFilters() {
+        // Given
+        int tenantId = 1;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerfilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+        innerCriteria.setFieldName("id");
+        innerCriteria.setValue("TQAA25070016");
+        innerCriteria.setOperator("AND");
+        innerfilterCriteria.setCriteria(innerCriteria);
+        mockFilterCriteria.setInnerFilter(List.of(innerfilterCriteria));
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+//        when(listCommonRequest.getFilterCriteria()).thenReturn(List.of(mockFilterCriteria));
+
+        when(mockFilterCriteria.getInnerFilter()).thenReturn(List.of(innerfilterCriteria));
+        when(innerfilterCriteria.getCriteria()).thenReturn(innerCriteria);
+        when(innerCriteria.getOperator()).thenReturn("AND");
+        when(innerCriteria.getFieldName()).thenReturn("id");
+        when(innerCriteria.getValue()).thenReturn("TQAA25070016");
+
+            when(root.get("tenantId")).thenReturn(mockPath);
+            when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+
+            // When
+            List<Predicate> result = commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+
+            // Then
+            assertNotNull(result);
+            assertEquals(1, result.size());
+        }
+
+    private Object getTestValueForOperator(String operator) {
+        return switch (operator.toLowerCase()) {
+            case "in", "notin" -> Arrays.asList("val1", "val2");
+            case "isnull", "isnotnull" -> null;
+            case ">", "<", ">=", "<=" -> 100;
+            default -> "testValue";
+        };
+    }
+    private ListCommonRequest createListCommonRequestWithOperator(String operator, Object value) {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerFilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+
+        // Setup inner criteria with the specific operator
+        when(innerCriteria.getFieldName()).thenReturn("testField");
+        when(innerCriteria.getValue()).thenReturn(value);
+        when(innerCriteria.getOperator()).thenReturn(operator);
+
+        // Setup filter criteria chain
+        when(innerFilterCriteria.getCriteria()).thenReturn(innerCriteria);
+        when(mockFilterCriteria.getInnerFilter()).thenReturn(List.of(innerFilterCriteria));
+
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+        return listCommonRequest;
+    }
+
+    @Test
+    @DisplayName("Test all operators with different data types")
+    void testAllOperatorsWithDifferentDataTypes() {
+        // Setup common mocks
+        int tenantId = 1;
+        when(root.get("tenantId")).thenReturn(mockPath);
+        when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+        setupAllOperatorMocks1();
+
+        // Test comparison operators with different data types
+        testComparisonOperatorsWithDataTypes();
+
+        // Test other operators
+        testNonComparisonOperators();
+    }
+
+    private void testComparisonOperatorsWithDataTypes() {
+        String[] comparisonOperators = {">", "<", ">=", "<="};
+
+        for (String operator : comparisonOperators) {
+            // Test with String
+            testOperatorWithDataType(operator, "stringValue", "String");
+
+            // Test with Number (Integer)
+            testOperatorWithDataType(operator, 100, "Number");
+
+            // Test with Date
+            testOperatorWithDataType(operator, new Date(), "Date");
+
+            // Test with LocalDateTime
+            testOperatorWithDataType(operator, LocalDateTime.now(), "LocalDateTime");
+        }
+    }
+
+    private void testNonComparisonOperators() {
+        String[] otherOperators = {"=", "!=", "like", "contains", "notlike",
+                "startswith", "endswith", "in", "notin",
+                "isnull", "isnotnull"};
+
+        for (String operator : otherOperators) {
+            Object testValue = getTestValueForOperator(operator);
+            testOperatorWithDataType(operator, testValue, "Standard");
+        }
+    }
+
+    private void testOperatorWithDataType(String operator, Object value, String dataType) {
+        ListCommonRequest request = createListCommonRequestWithOperator(operator, value);
+
+        List<Predicate> result = commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, request);
+
+        assertNotNull(result, String.format("Operator: %s with %s should not return null", operator, dataType));
+        assertTrue(result.size() >= 1, String.format("Should have at least tenant predicate for %s operator with %s", operator, dataType));
+    }
+
+    // Updated setup method to handle all data types
+    private void setupAllOperatorMocks1() {
+        Predicate mockPredicate = mock(Predicate.class);
+        Expression<String> lowerExpression = mock(Expression.class);
+
+        when(root.get(anyString())).thenReturn(mockPath);
+        when(criteriaBuilder.lower(any(Expression.class))).thenReturn(lowerExpression);
+
+        // Basic operators
+        when(criteriaBuilder.equal(any(), any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.notEqual(any(), any())).thenReturn(mockPredicate);
+
+        // String operations
+        when(criteriaBuilder.like(any(Expression.class), anyString())).thenReturn(mockPredicate);
+        when(criteriaBuilder.notLike(any(Expression.class), anyString())).thenReturn(mockPredicate);
+
+        // Comparison operations for different types
+        // String comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+
+        // Number comparisons (using gt/lt for Number type)
+        when(criteriaBuilder.gt(any(Expression.class), any(Number.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lt(any(Expression.class), any(Number.class))).thenReturn(mockPredicate);
+
+        // Date comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+
+        // LocalDateTime comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+
+        // Collection and null operations
+        when(criteriaBuilder.isMember(any(Object.class), any(Expression.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.isNull(any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.isNotNull(any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.not(any(Predicate.class))).thenReturn(mockPredicate);
+        when(mockPath.in(any(Collection.class))).thenReturn(mockPredicate);
+    }
+
 
 
 
