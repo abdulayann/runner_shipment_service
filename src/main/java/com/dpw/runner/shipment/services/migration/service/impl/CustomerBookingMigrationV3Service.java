@@ -328,9 +328,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             }
         } else if (customerBooking.getIsPackageManual().equals(Boolean.TRUE)){
             Packing packing = createPackingFromBooking(customerBooking);
-            if (packing != null) {
-                packingList.add(packing);
-            }
+            packingList.add(packing);
             customerBooking.setIsPackageManual(Boolean.FALSE);
         }
 
@@ -366,37 +364,36 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private Packing createPackingFromBooking(CustomerBooking booking) throws RunnerException {
-        if (booking.getQuantity() == null || booking.getQuantity() == 0) return null;
-
         Packing packing = new Packing();
-        packing.setPacks(String.valueOf(booking.getQuantity()));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setPacks(String.valueOf(booking.getQuantity()));
+        }
         packing.setPacksType(booking.getQuantityUnit());
-
-        BigDecimal quantity = BigDecimal.valueOf(booking.getQuantity());
 
         BigDecimal weight = Optional.ofNullable(booking.getGrossWeight()).orElse(BigDecimal.ZERO);
         String weightUnit = Optional.ofNullable(booking.getGrossWeightUnit()).orElse(WEIGHT_UNIT_KG);
-        packing.setWeight(weight);
-        packing.setWeightUnit(weightUnit);
-        packing.setCargoWeightPerPack(weight.divide(quantity, RoundingMode.HALF_UP));
-        packing.setPackWeightUnit(weightUnit);
+        packing.setWeight(booking.getGrossWeight());
+        packing.setWeightUnit(booking.getGrossWeightUnit());
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), RoundingMode.HALF_UP));
+        }
+        packing.setPackWeightUnit(booking.getGrossWeightUnit());
 
         BigDecimal volume = Optional.ofNullable(booking.getVolume()).orElse(BigDecimal.ZERO);
         String volumeUnit = Optional.ofNullable(booking.getVolumeUnit()).orElse(VOLUME_UNIT_M3);
-        packing.setVolume(volume);
-        packing.setVolumeUnit(volumeUnit);
-        packing.setVolumePerPack(volume.divide(quantity, RoundingMode.HALF_UP));
-        packing.setVolumePerPackUnit(volumeUnit);
-
-        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(
-                booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
+        packing.setVolume(booking.getVolume());
+        packing.setVolumeUnit(booking.getVolumeUnit());
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), RoundingMode.HALF_UP));
+        }
+        packing.setVolumePerPackUnit(booking.getVolumeUnit());
+        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
 
         packing.setChargeable(vwOb.getChargeable());
         packing.setChargeableUnit(vwOb.getChargeableUnit());
         packing.setTenantId(booking.getTenantId());
         packing.setCommodityGroup("FAK");
         packing.setBookingId(booking.getId());
-
         return packing;
     }
 
