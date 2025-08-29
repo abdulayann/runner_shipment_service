@@ -45,8 +45,8 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "carrier_booking_no", length = 100)
     private String carrierBookingNo;
 
-    @Column(name = "mbl_no", length = 100)
-    private String mblNo;
+    @Column(name = "carrier_bl_no", length = 100)
+    private String carrierBlNo;
 
     @Column(name = "consolidation_no", length = 100)
     private String consolidationNo;

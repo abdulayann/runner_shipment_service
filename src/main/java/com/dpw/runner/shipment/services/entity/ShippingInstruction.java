@@ -59,8 +59,8 @@ public class ShippingInstruction extends MultiTenancy {
     @Column(name = "bl_release_office", length = 100)
     private String blReleaseOffice;
 
-    @Column(name = "mbl_no", length = 100)
-    private String mblNo;
+    @Column(name = "carrier_bl_no", length = 100)
+    private String carrierBlNo;
 
     @Column(name = "carrier_booking_no", length = 100)
     private String carrierBookingNo;

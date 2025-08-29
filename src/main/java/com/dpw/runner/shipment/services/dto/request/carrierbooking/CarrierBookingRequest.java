@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -14,15 +15,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CarrierBookingRequest {
-
+    private Long id;
     private String status;
     private String bookingNo;
     private String carrierBookingNo;
-    private String mblNo;
+    private String carrierBlNo;
     private String consolidationNo;
     private String serviceType;
     private String bookingOffice;
-
+    private LocalDateTime pickupFromReqEmptyPositioningDate;
+    private LocalDateTime pickupFromReqFullPickupDate;
+    private String pickupFromContactName;
+    private String pickupFromContactNo;
+    private LocalDateTime deliveryToReqEmptyPositioningDate;
+    private LocalDateTime deliveryToReqFullPickupDate;
+    private String deliveryToContactName;
+    private String deliveryToContactNo;
     @Size(max = 10000, message = "Booking Comment cannot exceed 10,000 characters")
     private String bookingComment;
     @Size(max = 10000, message = "Carrier Comment cannot exceed 10,000 characters")
@@ -36,9 +44,7 @@ public class CarrierBookingRequest {
     private PartiesRequest pickupFrom;
     private PartiesRequest deliveryTo;
     private SailingInformationRequest sailingInformationRequest;
-
     private List<PartiesRequest> additionalParties;
     private List<CommonContainerRequest> containersList;
-    private List<CarrierRoutingRequest> carrierRoutingList;
     private List<ReferenceNumberRequest> referenceNumbersList;
 }

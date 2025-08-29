@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingListRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
@@ -35,7 +34,7 @@ public interface ICarrierBookingService {
     /**
      * Update an existing Carrier Booking.
      *
-     * @param id booking id
+     * @param id      booking id
      * @param request CarrierBookingRequest
      * @return CarrierBookingResponse
      */
