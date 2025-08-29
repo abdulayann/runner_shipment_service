@@ -42,7 +42,6 @@ public class CarrierBookingController {
 
     // Response wrapper classes
     private static class MyResponseClass extends RunnerResponse<CarrierBookingResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<CarrierBookingListResponse> {}
 
     @Autowired
     public CarrierBookingController(ICarrierBookingService carrierBookingService, JsonHelper jsonHelper) {
@@ -74,19 +73,10 @@ public class CarrierBookingController {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyListResponseClass.class, message = CarrierBookingConstants.CARRIER_BOOKING_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerListResponse.class)
-    })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
-        CarrierBookingListResponse response = carrierBookingService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
-        log.info("Carrier Booking LIST successful with RequestId: {} and totalRecords: {}, totalPages: {}", LoggerHelper.getRequestIdFromMDC(), response.getNumberOfRecords(), response.getTotalPages());
-        return ResponseHelper.buildListSuccessCarrierBookingResponse(
-                response.getCarrierBookingResponseList(),
-                response.getTotalPages(),
-                response.getNumberOfRecords());
+        return carrierBookingService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
     }
 
     @ApiResponses(value = {

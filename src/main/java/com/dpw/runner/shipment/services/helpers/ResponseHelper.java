@@ -175,13 +175,6 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildListSuccessCarrierBookingResponse(List<CarrierBookingResponse> data, Integer totalPages, Long totalCount) {
-        IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).numberOfRecords(totalCount).totalPages(totalPages).build();
-        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
-    }
-
     public static ResponseEntity<IRunnerResponse> buildListSuccessConsolidationResponse(List<ConsolidationListResponse> data, Integer totalPages, Long totalCount) {
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())

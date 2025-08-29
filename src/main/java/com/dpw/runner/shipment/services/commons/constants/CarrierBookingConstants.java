@@ -21,6 +21,10 @@ public class CarrierBookingConstants {
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
     public static final String CARRIER_BOOKING_RETRIEVE_ERROR = "Carrier Booking is null for Id {} with Request Id {}";
+    public static final String CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
+    public static final String CARRIER_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Carrier list with Request Id {}";
+    public static final String CARRIER_LIST_REQUEST_NULL_ERROR = "Carrier List Request is Null";
+    public static final String CARRIER_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
 }
