@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingListRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import org.springframework.http.ResponseEntity;
 
 public interface ICarrierBookingService {
 
@@ -24,13 +24,7 @@ public interface ICarrierBookingService {
      */
     CarrierBookingResponse findById(Long id);
 
-    /**
-     * Retrieve a list of Carrier Bookings with pagination/filter criteria.
-     *
-     * @param request CommonV1ListRequest
-     * @return RunnerListResponse of CarrierBookingResponse
-     */
-    CarrierBookingListResponse list(CommonRequestModel listCommonRequest, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
 
     /**
      * Update an existing Carrier Booking.
