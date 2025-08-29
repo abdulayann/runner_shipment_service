@@ -168,9 +168,9 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String destinationSecondarySalesAgentEmail;
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
+    private String destinationParentContractId;
     private String destinationContractType;
     private Boolean isAutoSellRequired;
-
     private UpstreamDateUpdateRequest dateUpdateRequest;
     private LocalDateTime createdAt;
     private String createdBy;

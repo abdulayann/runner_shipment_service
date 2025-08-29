@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
@@ -346,5 +347,17 @@ class ShipmentControllerV3Test {
         }
     }
 
+    @Test void testGetDefaultShipment_shouldReturnSuccessResponse() {
+        // Arrange
+        ShipmentDetailsResponse mockResponse = new ShipmentDetailsResponse();
+        when(shipmentService.getDefaultShipment()).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.getDefaultShipment();
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentService).getDefaultShipment();
+    }
 
 }
