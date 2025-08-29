@@ -3124,6 +3124,11 @@ public class ReportService implements IReportService {
 
     // Converts a Parties object into a consistent map of address/organization values
     private List<Map<String, Object>> buildPartyMap(Parties party) {
+
+        if(party == null) {
+            return List.of();
+        }
+
         Map<String, Object> map = new HashMap<>();
 
         // Add organization name if available
