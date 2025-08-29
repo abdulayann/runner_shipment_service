@@ -212,6 +212,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new IllegalStateException("Failed to clone Consolidation object");
         }
 
+        setConsolidationFields(clonedConsole);
+
         // Extract shipments from the cloned clonedConsole object
         List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList().stream().toList();
         log.info("Cloned Consolidation has {} shipment(s) [guid={}]", shipmentDetailsList.size(), consolGuid);
@@ -269,6 +271,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return clonedConsole;
     }
 
+    private void setConsolidationFields(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getSendingAgent() != null)
+            consolidationDetails.getSendingAgent().setCountryCode(consolidationDetails.getSendingAgentCountry());
+        if(consolidationDetails.getReceivingAgent() != null)
+            consolidationDetails.getReceivingAgent().setCountryCode(consolidationDetails.getReceivingAgentCountry());
+    }
+
     private void relinkContainerToShipment(Map<UUID, List<UUID>> containerGuidToShipments, Map<UUID, ShipmentDetails> guidToShipment, Map<UUID, Containers> guidVsContainer) {
         containerGuidToShipments.forEach((containerGuid, shipmentGuids) -> {
             for (UUID shipmentGuid : shipmentGuids) {
@@ -295,15 +304,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
-        shipmentDetails.setTerminalCutoff(console.getTerminalCutoff());
-        shipmentDetails.setVerifiedGrossMassCutoff(console.getVerifiedGrossMassCutoff());
-        shipmentDetails.setShippingInstructionCutoff(console.getShipInstructionCutoff());
-        shipmentDetails.setDgCutoff(console.getHazardousBookingCutoff());
-        shipmentDetails.setReeferCutoff(console.getReeferCutoff());
-        shipmentDetails.setEarliestEmptyEquipmentPickUp(console.getEarliestEmptyEquPickUp());
-        shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
-        shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
-        shipmentDetails.setLatestArrivalTime(console.getLatDate());
+        shipmentDetails.setConsolRef(console.getConsolidationNumber());
+        if(Objects.equals(console.getShipmentType(), Constants.DIRECTION_DOM))
+            return;
+
+        if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
+            shipmentDetails.setTerminalCutoff(console.getTerminalCutoff());
+            shipmentDetails.setVerifiedGrossMassCutoff(console.getVerifiedGrossMassCutoff());
+            shipmentDetails.setShippingInstructionCutoff(console.getShipInstructionCutoff());
+            shipmentDetails.setDgCutoff(console.getHazardousBookingCutoff());
+            shipmentDetails.setReeferCutoff(console.getReeferCutoff());
+            shipmentDetails.setEarliestEmptyEquipmentPickUp(console.getEarliestEmptyEquPickUp());
+            shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
+            shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
+        }
+        if(Objects.equals(console.getTransportMode(), TRANSPORT_MODE_AIR))
+            shipmentDetails.setLatestArrivalTime(console.getLatDate());
     }
 
     @Override
