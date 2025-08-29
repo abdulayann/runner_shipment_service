@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,17 +46,20 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final ICarrierBookingDao carrierBookingDao;
     private final JsonHelper jsonHelper;
     private final CarrierBookingMasterDataHelper carrierBookingMasterDataHelper;
+    private final CarrierBookingValidationUtil carrierBookingValidationUtil;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
+        this.carrierBookingValidationUtil = carrierBookingValidationUtil;
     }
 
     @Override
     public CarrierBookingResponse create(CarrierBookingRequest request) {
         log.info("CarrierBookingService.create() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        carrierBookingValidationUtil.validateRequest(request);
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
