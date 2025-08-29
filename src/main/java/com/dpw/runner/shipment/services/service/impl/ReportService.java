@@ -3019,7 +3019,7 @@ public class ReportService implements IReportService {
         addBasicConsolidationFields(dict, consolidationDetails);
         addReferenceNumbers(dict, consolidationDetails.getReferenceNumbersList());
         addRoutingDetails(dict, consolidationDetails.getRoutingsList());
-        addPartyDetails(dict, consolidationDetails.getConsolidationAddresses());
+        addPartyDetails(dict, consolidationDetails);
         addAgentDetails(dict, "C_OriginAgent", consolidationDetails.getSendingAgent());
         addAgentDetails(dict, "C_DestinationAgent", consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
@@ -3098,7 +3098,8 @@ public class ReportService implements IReportService {
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+    private void addPartyDetails(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+        List<Parties> parties = consolidationDetails.getConsolidationAddresses();
         if (parties == null) {
             return;
         }
@@ -3108,6 +3109,10 @@ public class ReportService implements IReportService {
                 dict.put("C_" + party.getType(), buildPartyMap(party));
             }
         }
+
+        dict.put("C_BorrowedFrom", buildPartyMap(consolidationDetails.getBorrowedFrom()));
+        dict.put("C_Creditor", buildPartyMap(consolidationDetails.getCreditor()));
+        dict.put("C_CoLoadWith", buildPartyMap(consolidationDetails.getCoLoadWith()));
     }
 
     // Adds single agent party (either origin or destination) using a provided key
