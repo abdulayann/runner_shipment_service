@@ -544,6 +544,26 @@ class AWBControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testAirMessageStatusReset() {
+        // Mock
+        when(awbService.airMessageStatusReset(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = awbController.airMessageStatusReset(1L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAirMessageStatusReset2() {
+        // Mock
+        when(awbService.airMessageStatusReset(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = awbController.airMessageStatusReset(1L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 
 
 
