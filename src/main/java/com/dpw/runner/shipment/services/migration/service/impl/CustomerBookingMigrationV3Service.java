@@ -314,7 +314,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Containers> containersList = customerBooking.getContainersList();
         for(Containers containers: containersList) {
-            if(!Objects.isNull(containers.getGrossWeight())) {
+            if(!Objects.isNull(containers.getGrossWeight()) && !Objects.isNull(containers.getContainerCount())) {
                 containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), 3, RoundingMode.HALF_UP));
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
             }
@@ -412,11 +412,11 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking) {
         List<Packing> packingList = customerBooking.getPackingList();
         for(Packing packing: packingList) {
-            if(!Objects.isNull(packing.getWeight())) {
+            if(!Objects.isNull(packing.getWeight()) && !Objects.isNull(packing.getPacks())) {
                 packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
                 packing.setCargoWeightPerPack(packing.getWeight());
             }
-            if(!Objects.isNull(packing.getVolume())) {
+            if(!Objects.isNull(packing.getVolume()) && !Objects.isNull(packing.getPacks())) {
                 packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
                 packing.setVolumePerPack(packing.getVolume());
             }
