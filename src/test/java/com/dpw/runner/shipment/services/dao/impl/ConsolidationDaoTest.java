@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,11 +89,14 @@ class ConsolidationDaoTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
 
+    private static ObjectMapper objectMapperTest;
+
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
+            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
