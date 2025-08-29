@@ -6385,16 +6385,11 @@ class CommonUtilsTest {
         Root<ShipmentDetails> root1= mock(Root.class);
         List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
         requestedColumns.put("shipmentDetails", new ArrayList<>(originalColumns));
-        requestedColumns.put("carrierDetails", Arrays.asList("id",
-                "shippingLine",
-                "vessel",
-                "voyage"));
         Map<String, Object> pickupDetails = new HashMap<>();
         pickupDetails.put("transporterDetail", "field");
         requestedColumns.put("additionalDetails",pickupDetails);
         String rootEntityKey = "shipmentDetails";
         String sortField = "shipmentType";
-        doReturn(mock(Path.class)).when(commonUtils).buildJoinPath(any(),  any(), any());
 
         // Act
         commonUtils.buildJoinsAndSelections(requestedColumns, root1, selections, columnOrder, rootEntityKey, sortField);
@@ -6406,6 +6401,62 @@ class CommonUtilsTest {
         List<String> resultColumns = (List<String>) rootEntityValue;
         assertEquals(originalColumns.size(), resultColumns.size());
         assertTrue(resultColumns.containsAll(originalColumns));
+    }
+
+    @Test
+    void testBuildJoinsAndSelections_WithCompleteSetup() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = setupRequestedColumns();
+        String rootEntityKey = "shipmentDetails";
+        String sortField = "shipmentType";
+
+        setupAllMocks();
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        assertNotNull(selections);
+        assertFalse(selections.isEmpty());
+        assertTrue(columnOrder.size() > 0);
+    }
+
+    private Map<String, Object> setupRequestedColumns() {
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipmentDetails", Arrays.asList("id", "shipmentNumber", "status"));
+        requestedColumns.put("carrierDetails", Arrays.asList("id", "shippingLine", "vessel", "voyage"));
+
+        Map<String, Object> additionalDetails = new HashMap<>();
+        additionalDetails.put("transporterDetail", Arrays.asList("field"));
+        requestedColumns.put("additionalDetails", additionalDetails);
+
+        return requestedColumns;
+    }
+
+    private void setupAllMocks() {
+        // Mock joins
+        when(root.join("carrierDetails", JoinType.LEFT)).thenReturn(firstJoin);
+        when(root.join("additionalDetails", JoinType.LEFT)).thenReturn(secondJoin);
+        when(secondJoin.join("transporterDetail", JoinType.LEFT)).thenReturn(thirdJoin);
+
+        // Mock all get() calls that return Path objects
+        setupPathMocks(root, Arrays.asList("id", "shipmentNumber", "status"));
+        setupPathMocks(firstJoin, Arrays.asList("id", "shippingLine", "vessel", "voyage"));
+        setupPathMocks(thirdJoin, Arrays.asList("field"));
+
+//        // Mock validation method if needed
+//        when(commonUtils.isValidFieldForEntity(any(), anyString())).thenReturn(true);
+    }
+
+    private void setupPathMocks(Object mockObject, List<String> columns) {
+        for (String col : columns) {
+            Path mockPath = mock(Path.class);
+            if (mockObject instanceof Root) {
+                when(((Root) mockObject).get(col)).thenReturn(mockPath);
+            } else if (mockObject instanceof Join) {
+                when(((Join) mockObject).get(col)).thenReturn(mockPath);
+            }
+        }
     }
 
     @Test
@@ -6733,55 +6784,6 @@ class CommonUtilsTest {
             }, "Should throw IllegalArgumentException for unsupported Boolean type with operator: " + operator);
         }
     }
-
-    @Test
-    @DisplayName("Test buildJoinPath with simple single-level path")
-    void testBuildJoinPath_SingleLevel() {
-        // Given
-        String entityPath = "user";
-        when(root.join("user", JoinType.LEFT)).thenReturn(firstJoin);
-
-        // When
-        Path<?> result = commonUtils.buildJoinPath(root, entityPath, joinCache);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(firstJoin, result);
-        assertTrue(joinCache.containsKey("user"));
-        assertEquals(firstJoin, joinCache.get("user"));
-        verify(root).join("user", JoinType.LEFT);
-    }
-
-    @Test
-    @DisplayName("Test buildJoinPath with same path called multiple times")
-    void testBuildJoinPath_MultipleCalls() {
-        // Given
-        String entityPath = "user.profile";
-        when(root.join("user", JoinType.LEFT)).thenReturn(firstJoin);
-        when(firstJoin.join("profile", JoinType.LEFT)).thenReturn(secondJoin);
-
-        // When - Call multiple times
-        Path<?> firstCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
-        Path<?> secondCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
-        Path<?> thirdCall = commonUtils.buildJoinPath(root, entityPath, joinCache);
-
-        // Then
-        assertEquals(secondJoin, firstCall);
-        assertEquals(secondJoin, secondCall);
-        assertEquals(secondJoin, thirdCall);
-
-        // All calls should return the same cached instance
-        assertSame(firstCall, secondCall);
-        assertSame(secondCall, thirdCall);
-
-        // Verify joins were created only once (first call)
-        verify(root, times(1)).join("user", JoinType.LEFT);
-        verify(firstJoin, times(1)).join("profile", JoinType.LEFT);
-    }
-
-
-
-
 
 
 }

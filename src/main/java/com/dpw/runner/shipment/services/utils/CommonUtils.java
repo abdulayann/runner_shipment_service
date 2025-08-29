@@ -3844,7 +3844,7 @@ public class CommonUtils {
         }
     }
 
-    public Path<?> buildJoinPath(Root<?> root, String entityPath, Map<String, Join<?, ?>> joinCache) {
+    private Path<?> buildJoinPath(Root<?> root, String entityPath, Map<String, Join<?, ?>> joinCache) {
         // Check if we already have this join cached
         if (joinCache.containsKey(entityPath)) {
             return joinCache.get(entityPath);
