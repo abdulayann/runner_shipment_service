@@ -1300,10 +1300,10 @@ public class EventService implements IEventService {
         List<EventsResponse> allEventResponses = fetchAndPrepareEvents(request);
 
         // Step 2: Apply grouping logic if feature flag is enabled
-//        List<EventsResponse> finalResponses = applyGroupingIfEnabled(request, allEventResponses);
+        List<EventsResponse> finalResponses = applyGroupingIfEnabled(request, allEventResponses);
 
-        log.info("Returning {} events after applying tenant-less fetch and grouping logic.", allEventResponses.size());
-        return allEventResponses;
+        log.info("Returning {} events after applying tenant-less fetch and grouping logic.", finalResponses.size());
+        return finalResponses;
     }
 
     /**
