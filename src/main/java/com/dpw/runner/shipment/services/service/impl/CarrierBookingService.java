@@ -1,16 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -36,7 +33,6 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j

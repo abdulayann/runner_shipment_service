@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SailingInformationResponse {
+public class SailingInformationResponse implements IRunnerResponse {
 
     private Long id;
     private String carrierReceiptPlace;

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierRoutingResponse {
+public class CarrierRoutingResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy / BaseEntity
 
