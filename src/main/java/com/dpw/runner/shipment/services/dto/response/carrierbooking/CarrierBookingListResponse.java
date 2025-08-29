@@ -14,6 +14,7 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private Long id;  // from MultiTenancy / BaseEntity
     private String status;
     private String bookingNo;
+    private Integer tenantId;
     private String carrierBookingNo;
     private String mblNo;
     private String consolidationNo;
