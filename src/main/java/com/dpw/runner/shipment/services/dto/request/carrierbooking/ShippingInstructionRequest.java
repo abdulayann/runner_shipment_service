@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShippingInstructionRequest {
+public class ShippingInstructionRequest implements IRunnerRequest {
 
     private String status;
     private String mblNo;
