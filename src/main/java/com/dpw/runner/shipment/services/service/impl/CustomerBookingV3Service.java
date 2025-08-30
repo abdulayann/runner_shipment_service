@@ -2079,11 +2079,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
-        } else {
-            boolean hasAirDGPermission = UserContext.isAirDgUser();
-            if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
-                throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
-            }
         }
     }
 
