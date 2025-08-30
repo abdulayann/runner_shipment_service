@@ -7,6 +7,8 @@ public class PartiesConstants {
 
     public static final String PARTIES_UPDATE_SUCCESSFUL = "Successful Parties Update";
 
+    public static final String PARTY_GET_SUCCESSFUL = "Successful Party Fetch";
+
     public static final String PARTIES_LIST_SUCCESSFUL = "Successful Parties List Retrieval";
     public static final String PARTIES_VALIDATE_ELNUMBER_SUCCESSFUL = "Successful ELNumber validation";
 

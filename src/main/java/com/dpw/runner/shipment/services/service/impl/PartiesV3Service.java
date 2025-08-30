@@ -110,6 +110,13 @@ public class PartiesV3Service implements IPartiesV3Service {
     }
 
     @Override
+    public PartiesResponse get(PartiesRequest partiesRequest) {
+        String orgCode = partiesRequest.getOrgCode();
+        Parties party = partiesDao.findByOrgCode(orgCode);
+        return jsonHelper.convertValue(party, PartiesResponse.class);
+    }
+
+    @Override
     public List<PartiesResponse> list(ListCommonRequest request) {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         log.info("Starting party listing | Request ID: {} | Request Body: {}", requestId, request);
