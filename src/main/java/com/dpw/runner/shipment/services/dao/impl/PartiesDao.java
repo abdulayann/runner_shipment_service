@@ -55,6 +55,10 @@ public class PartiesDao implements IPartiesDao {
         return partiesRepository.findById(id);
     }
 
+    public Parties findByOrgCode(String orgCode) {
+        return partiesRepository.findByOrgCode(orgCode);
+    }
+
     @Override
     public void delete(Parties parties) {
         partiesRepository.delete(parties);
