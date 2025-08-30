@@ -2759,6 +2759,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     syncedRoute.setConsolidationId(null);
                     syncedRoute.setShipmentId(shipmentDetails.getId());
                     syncedRoute.setBookingId(null);
+                    syncedRoute.setTenantId(shipmentDetails.getTenantId());
                     syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
