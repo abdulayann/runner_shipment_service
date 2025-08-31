@@ -591,6 +591,8 @@ public abstract class IReport {
     private ShipmentServiceImplV3 shipmentServiceImplV3;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private MasterDataUtils masterDataUtil;
 
     public static final String TEN_LAKH = "1000000";
 
@@ -5688,13 +5690,13 @@ public abstract class IReport {
 
             // Add last pre routing info
             if (lastPre != null) {
-                dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(lastPre.getVesselName()));
+                dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(masterDataUtil.getVesselName(lastPre.getVesselName())));
                 dict.put(S_R_P_LAST_VOYAGE, StringUtility.toUpperCase(lastPre.getVoyage()));
             }
 
             // Add first pre routing info
             if (firstPre != null) {
-                dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(firstPre.getVesselName()));
+                dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(masterDataUtil.getVesselName(firstPre.getVesselName())));
                 dict.put(S_R_P_FIRST_VOYAGE, StringUtility.toUpperCase(firstPre.getVoyage()));
             }
         }
