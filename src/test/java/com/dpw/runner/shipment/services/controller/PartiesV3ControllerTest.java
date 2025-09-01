@@ -54,6 +54,18 @@ class PartiesV3ControllerTest {
         RunnerResponse<?> actual = (RunnerResponse<?>) result.getBody();
         assertEquals(expectedResponse, actual.getData());
     }
+
+    @Test
+    void testGet_success() {
+        PartiesRequest request = new PartiesRequest();
+        PartiesResponse expectedResponse = new PartiesResponse();
+        when(partiesV3Service.get(any())).thenReturn(expectedResponse);
+        ResponseEntity<IRunnerResponse> result = controller.get(request);
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        RunnerResponse<?> actual = (RunnerResponse<?>) result.getBody();
+        assertEquals(expectedResponse, actual.getData());
+    }
+
     @Test
     void testDelete_success() {
         PartiesRequest request = new PartiesRequest();

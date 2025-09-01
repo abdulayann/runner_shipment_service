@@ -9,6 +9,7 @@ import java.util.List;
 public interface IPartiesV3Service {
     PartiesResponse create(PartiesRequest request);
     PartiesResponse update(PartiesRequest request);
+    PartiesResponse get(PartiesRequest request);
     PartiesResponse delete(PartiesRequest request);
     List<PartiesResponse> list(ListCommonRequest listCommonRequest);
 }

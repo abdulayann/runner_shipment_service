@@ -90,6 +90,14 @@ class PartiesDaoTest {
     }
 
     @Test
+    void testFindByOrgId_Success() {
+        Parties parties = testParties;
+        when(partiesRepository.findByOrgCode(anyString())).thenReturn(parties);
+        Parties response = partiesDao.findByOrgCode("FRC0012345");
+        assertEquals(parties, response);
+    }
+
+    @Test
     void testFindAll_Success() {
         Page<Parties> partiesPage = mock(Page.class);
         Specification<Parties> spec = mock(Specification.class);

@@ -15,6 +15,7 @@ public interface IPartiesDao {
     Parties save(Parties parties);
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
     Optional<Parties> findById(Long id);
+    Parties findByOrgCode(String orgCode);
     void delete(Parties parties);
     List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType);
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws RunnerException;

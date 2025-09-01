@@ -61,6 +61,15 @@ public class PartiesV3Controller {
 
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = MyResponseClass.class, message = PartiesConstants.PARTY_GET_SUCCESSFUL, responseContainer = PartiesConstants.PARTY_GET_SUCCESSFUL)
+    })
+    @GetMapping(ApiConstants.API_GET)
+    public ResponseEntity<IRunnerResponse> get(@RequestBody PartiesRequest partiesRequest) {
+        PartiesResponse party = partiesService.get(partiesRequest);
+        return ResponseHelper.buildSuccessResponse(party);
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = PartiesConstants.PARTIES_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid PartiesRequest partiesRequest) {
