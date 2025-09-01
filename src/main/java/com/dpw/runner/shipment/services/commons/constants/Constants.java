@@ -256,6 +256,9 @@ public class Constants {
     public static final String CONSOLIDATIONS_WITH_SQ_BRACKETS = "[Consolidations]";
     public static final String BOOKINGS_WITH_SQ_BRACKETS = "[Bookings]";
 
+    public static final String DG_OCEAN_APPROVAL = "DG_OCEAN_APPROVAL";
+    public static final String PENDING_ACTION_TASK = "PENDING_ACTION";
+
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
     public static final String CONSOLIDATION_TYPE_DRT = "DRT";
