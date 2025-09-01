@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShippingInstructionRequest implements IRunnerRequest {
+public class ShippingInstructionRequest {
 
     private String status;
     private String mblNo;
@@ -32,5 +32,7 @@ public class ShippingInstructionRequest implements IRunnerRequest {
     private List<FreightDetailRequest> freightDetails;
     private List<CommonPackageRequest> commonPackages;
     private List<CommonContainerRequest> commonContainers;
+    private List<SailingInformationRequest> sailingInformation;
+    private List<ReferenceNumberRequest> referenceNumberRequests;
 }
 

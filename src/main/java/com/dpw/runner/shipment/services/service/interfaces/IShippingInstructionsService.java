@@ -2,15 +2,16 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 
 public interface IShippingInstructionsService {
 
-    ShippingInstructionResponse createShippingInstruction(CommonRequestModel request);
+    ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest request);
 
-    ShippingInstructionResponse getShippingInstructionsById(CommonGetRequest commonRequestModel);
+    ShippingInstructionResponse getShippingInstructionsById(Long id);
 
-    ShippingInstructionResponse updateShippingInstructions(Long id, CommonRequestModel request);
+    ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest updatedInfo);
 
     void deleteShippingInstructions(Long id);
 }
