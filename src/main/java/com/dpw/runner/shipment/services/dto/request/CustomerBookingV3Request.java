@@ -112,13 +112,10 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
-    @ExcludeTimeZone
     private LocalDateTime pickupAtOriginDate;
-    @ExcludeTimeZone
     private LocalDateTime deliveryAtDestinationDate;
     @ExcludeTimeZone
     private LocalDateTime estimatedPickupAtOriginDate;
-    @ExcludeTimeZone
     private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
