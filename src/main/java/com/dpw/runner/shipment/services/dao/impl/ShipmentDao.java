@@ -219,6 +219,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync, boolean isFromBookingV3) {
         setHouseBill(shipmentDetails, oldShipment);
+        setHblOriginalAndHblCopy(shipmentDetails);
         errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync, isFromBookingV3));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
@@ -238,6 +239,21 @@ public class ShipmentDao implements IShipmentDao {
         }
 
 
+    }
+
+    private void setHblOriginalAndHblCopy(ShipmentDetails shipmentDetails) {
+
+        if (Objects.nonNull(shipmentDetails) && Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                && Objects.nonNull(shipmentDetails.getAdditionalDetails().getHouseBillType())) {
+            String houseBillType = shipmentDetails.getAdditionalDetails().getHouseBillType();
+            if (houseBillType.equals("Sea Waybill")) {
+                shipmentDetails.getAdditionalDetails().setOriginal(0);
+                shipmentDetails.getAdditionalDetails().setCopy(1);
+            } else if (houseBillType.equals("Original Bill of Lading")) {
+                shipmentDetails.getAdditionalDetails().setOriginal(3);
+                shipmentDetails.getAdditionalDetails().setCopy(1);
+            }
+        }
     }
 
     private void validateMawb(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
