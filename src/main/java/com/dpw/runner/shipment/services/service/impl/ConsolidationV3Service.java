@@ -4749,10 +4749,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException, JsonMappingException {
+    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException {
         AchievedQuantities achievedQuantities = consolidationDetails.getAchievedQuantities();
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
-        jsonHelper.updateValue(achievedQuantities, shipmentWtVolResponse);
+        achievedQuantities.setWeightVolume(shipmentWtVolResponse.getWeightVolume());
+        achievedQuantities.setWeightVolumeUnit(shipmentWtVolResponse.getWeightVolumeUnit());
+        achievedQuantities.setPacks(shipmentWtVolResponse.getPacks());
+        achievedQuantities.setPacksType(shipmentWtVolResponse.getPacksType());
+        achievedQuantities.setDgPacks(shipmentWtVolResponse.getDgPacks());
+        achievedQuantities.setDgPacksType(shipmentWtVolResponse.getDgPacksType());
+        achievedQuantities.setSlacCount(shipmentWtVolResponse.getSlacCount());
         achievedQuantities.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
         achievedQuantities.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
         achievedQuantities.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
