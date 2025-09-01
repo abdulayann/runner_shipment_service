@@ -1521,28 +1521,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentV3Request request) throws RunnerException {
         if (request == null) {
             log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Request cannot be null");
         }
-        Optional<ShipmentDetails> oldEntity;
 
         if (request.getId() != null) {
-            long id = request.getId();
-            oldEntity = shipmentDao.findById(id);
-            if (!oldEntity.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-        } else if (request.getGuid() != null) {
-            UUID guid = request.getGuid();
-            oldEntity = shipmentDao.findByGuid(guid);
-            if (!oldEntity.isPresent()) {
-                log.debug("Shipment Details is null for GUID {} with Request GUID {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-
-        } else {
-            throw new RunnerException("Either Id or Guid is required");
+            return Optional.ofNullable(shipmentDao.findById(request.getId())
+                    .orElseThrow(() -> {
+                        log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                        return new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                    }));
         }
-        return oldEntity;
+
+        if (request.getGuid() != null) {
+            return Optional.ofNullable(shipmentDao.findByGuid(request.getGuid())
+                    .orElseThrow(() -> {
+                        log.debug("Shipment Details is null for GUID {} with Request GUID {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                        return new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                    }));
+        }
+
+        throw new RunnerException("Either Id or Guid is required");
     }
 
     @SuppressWarnings("java:S125")
