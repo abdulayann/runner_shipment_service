@@ -334,7 +334,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 updateVolume(packing);
                 updateUnits(packing);
             }
-        } else if (customerBooking.getIsPackageManual().equals(Boolean.TRUE)){
+        } else if (Boolean.TRUE.equals(customerBooking.getIsPackageManual())) {
             Packing packing = createPackingFromBooking(customerBooking);
             packingList.add(packing);
             customerBooking.setIsPackageManual(Boolean.FALSE);
