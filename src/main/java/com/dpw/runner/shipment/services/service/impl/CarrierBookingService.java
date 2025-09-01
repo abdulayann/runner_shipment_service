@@ -5,9 +5,11 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -19,10 +21,15 @@ import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +41,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,14 +60,18 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final CarrierBookingMasterDataHelper carrierBookingMasterDataHelper;
     private final CarrierBookingValidationUtil carrierBookingValidationUtil;
     private final CommonUtils commonUtils;
+    private final INotificationService notificationService;
+    private final IV1Service iv1Service;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
         this.carrierBookingValidationUtil = carrierBookingValidationUtil;
         this.commonUtils = commonUtils;
+        this.notificationService = notificationService;
+        this.iv1Service = iv1Service;
     }
 
     @Override
@@ -188,7 +200,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setBookingNo(existingCarrierBooking.getBookingNo());
         carrierBookingEntity.setCarrierBlNo(existingCarrierBooking.getCarrierBlNo());
         carrierBookingEntity.setCarrierBookingNo(existingCarrierBooking.getCarrierBookingNo());
-        if (!(CarrierBookingStatus.Draft.equals(carrierBookingEntity.getStatus()) || CarrierBookingStatus.ChangeDraft.equals(carrierBookingEntity.getStatus()))) {
+        if (!CarrierBookingStatus.ChangeDraft.equals(carrierBookingEntity.getStatus())) {
             carrierBookingEntity.setStatus(existingCarrierBooking.getStatus());
         }
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
@@ -204,6 +216,43 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingDao.delete(id);
         log.info("CarrierBookingService.delete() successful with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
+    }
+
+    private void sendNotification(CarrierBooking carrierBooking) {
+        try {
+            List<String> requests = new ArrayList<>(
+                    List.of(Constants.CARRIER_BOOKING_EMAIL_TEMPLATE));
+            List<EmailTemplatesRequest> emailTemplates = getCarrierBookingEmailTemplate(requests);
+            EmailTemplatesRequest carrierBookingTemplate = emailTemplates.stream()
+                    .filter(Objects::nonNull)
+                    .filter(template -> Constants.CARRIER_BOOKING_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
+                    .findFirst()
+                    .orElse(null);
+            if (carrierBookingTemplate != null) {
+                SendEmailBaseRequest request = new SendEmailBaseRequest();
+                request.setTo(carrierBooking.getInternalEmails());
+                request.setSubject(carrierBookingTemplate.getSubject());
+                request.setTemplateName(carrierBookingTemplate.getName());
+                request.setHtmlBody(carrierBookingTemplate.getBody());
+                notificationService.sendEmail(request);
+                log.info("Email sent with Excel attachment");
+            }
+        } catch (Exception e) {
+            log.error("Error in  sending carrier booking email: {}", e.getMessage());
+        }
+    }
+
+    public List<EmailTemplatesRequest> getCarrierBookingEmailTemplate(List<String> templateCodes) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        if (v1DataResponse != null && v1DataResponse.entities != null) {
+            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+        }
+        return new ArrayList<>();
     }
 }
 
