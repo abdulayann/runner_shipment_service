@@ -376,6 +376,62 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void convertTrackingEventCodeToShortCode_CACO() {
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.AT_ORIGIN_PICKUP);
+        event.setDescription(EventConstants.TESLA_HYPHEN_PREFIX);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        assertEquals(EventConstants.CACO, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_INTR() {
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.IN_TRANSIT);
+        event.setDescription(EventConstants.TESLA_HYPHEN_PREFIX);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        assertEquals(EventConstants.INTR, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_CAFS() {
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.AT_DESTINATION_DELIVERY);
+        event.setDescription(EventConstants.TESLA_HYPHEN_PREFIX);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        assertEquals(EventConstants.CAFS, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_PRDE() {
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.DEPARTED_DESTINATION_DELIVERY);
+        event.setDescription(EventConstants.TESLA_HYPHEN_PREFIX);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        assertEquals(EventConstants.PRDE, result);
+    }
+
+    @Test
     void convertTrackingEventCodeToShortCode_FlightDeparture() {
         Event event = new Event();
         event.setLocationRole("someRole");
