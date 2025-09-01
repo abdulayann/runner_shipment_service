@@ -31,4 +31,5 @@ public class NotesResponse implements IRunnerResponse {
     private String assignedTo;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private Boolean isReadOnly;
 }

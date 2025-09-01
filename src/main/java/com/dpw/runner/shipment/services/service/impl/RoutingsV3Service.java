@@ -1018,7 +1018,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         });
         if (!CollectionUtils.isEmpty(routingsRequests)) {
             for (RoutingsRequest routingsRequest : routingsRequests) {
-                if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode()) && StringUtility.isNotEmpty(routingsRequest.getFlightNumber())) {
+                if (Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode()) && StringUtility.isNotEmpty(routingsRequest.getFlightNumber())) {
                     routingsRequest.setVoyage(routingsRequest.getFlightNumber());
                 }
             }
