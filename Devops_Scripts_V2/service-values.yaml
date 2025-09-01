@@ -229,7 +229,7 @@ dr:
   
 prod-background:
   cicd: Full
-  envName: prod
+  envName: prod-background
   namespace: runner-shipment-service-prod-background
   hpa:
     minReplicas: 1
