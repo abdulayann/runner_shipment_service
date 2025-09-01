@@ -33,6 +33,7 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private String consolidationNumber;
     private Integer tenantId;
     private String transportMode;
+    private String assignedTo;
     private String mawb;
     private String payment;
     private String containerCategory;

@@ -386,6 +386,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.executorServiceMasterData = Executors.newFixedThreadPool(2);
         shipmentDetailsEntity = jsonTestUtility.getTestShipment();
         consolidationDetailsEntity = new ConsolidationDetails();
+        consolidationDetailsEntity.setAssignedTo("assignedToUser");
         testShipment = jsonTestUtility.getTestShipment();
         testConsol = jsonTestUtility.getJson("MAWB_CONSOLIDATION", ConsolidationDetails.class);
         aibActionShipment = AibActionShipment.builder().build();
@@ -7153,6 +7154,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         cd1.setId(1L);
         cd1.setTenantId(100);
         cd1.setCreatedBy("userA");
+        cd1.setAssignedTo("assignedToUser");
         ConsolidationDetails cd2 = new ConsolidationDetails();
         cd2.setId(2L);
         cd2.setTenantId(200);
@@ -7166,7 +7168,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertSame(cd1, consolidationDetailsMap.get(1L));
         assertSame(cd2, consolidationDetailsMap.get(2L));
         assertEquals(Set.of(100, 200), tenantIds);
-        assertEquals(Set.of("userA", "userB"), userNames);
+        assertEquals(Set.of("userA", "userB", "assignedToUser"), userNames);
     }
 
     @Test

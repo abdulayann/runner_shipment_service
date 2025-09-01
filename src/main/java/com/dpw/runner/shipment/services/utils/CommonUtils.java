@@ -765,6 +765,9 @@ public class CommonUtils {
         }
         for (ConsolidationDetails consolidationDetails1 : otherConsolidationDetails) {
             usernamesList.add(consolidationDetails1.getCreatedBy());
+            if (consolidationDetails1.getAssignedTo() != null) {
+                usernamesList.add(consolidationDetails1.getAssignedTo());
+            }
             tenantIds.add(consolidationDetails1.getTenantId());
         }
 
@@ -818,6 +821,7 @@ public class CommonUtils {
 
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setCurrentUserEmail(ccEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
@@ -865,6 +869,7 @@ public class CommonUtils {
         populateDictionaryForPullAccepted(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap(), sendEmailDto.getRequestedUser());
 
         setConsolidationCreatedUserEmail(sendEmailDto, toEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
@@ -979,6 +984,7 @@ public class CommonUtils {
         populateDictionaryForPullRejected(dictionary, sendEmailDto.getConsolidationDetails(), sendEmailDto.getRejectRemarks(), sendEmailDto.getRequestedUser());
 
         setConsolidationCreatedUserEmail(sendEmailDto, toEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
@@ -1001,6 +1007,7 @@ public class CommonUtils {
         populateDictionaryForPushRequested(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap());
 
         setConsolidationCreatedUserEmail(sendEmailDto, toEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
@@ -1024,6 +1031,7 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
@@ -1044,6 +1052,7 @@ public class CommonUtils {
 
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
@@ -1065,6 +1074,7 @@ public class CommonUtils {
 
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
@@ -1086,6 +1096,7 @@ public class CommonUtils {
 
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
         if (sendEmailDto.getV1TenantSettingsMap().containsKey(sendEmailDto.getShipmentDetails().getTenantId())) {
@@ -1124,6 +1135,7 @@ public class CommonUtils {
 
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setConsolidationCreatedUserEmail(sendEmailDto, toEmailIds);
+        setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setRequestedUserEmail(sendEmailDto, toEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
@@ -1196,6 +1208,11 @@ public class CommonUtils {
     public void setConsolidationCreatedUserEmail(SendEmailDto sendEmailDto, Set<String> emailIds) {
         if (!isStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getCreatedBy()))
             emailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getCreatedBy()));
+    }
+    private void setConsolidationAssignedToUserEmail(SendEmailDto sendEmailDto, Set<String> emailIds) {
+        if (!isStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getAssignedTo()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getAssignedTo())) {
+            emailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getAssignedTo()));
+        }
     }
 
     public void setRequestedUserEmail(SendEmailDto sendEmailDto, Set<String> emailIds) {
