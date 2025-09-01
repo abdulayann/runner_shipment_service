@@ -211,6 +211,10 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         return customerBookingRepository.findByBookingNumber(bookingNumber);
     }
 
+    public String findCustomerBookingIntegrationSourceByBookingNumber(String bookingNumber) {
+        return customerBookingRepository.findCustomerBookingIntegrationSourceByBookingNumber(bookingNumber);
+    }
+
     @Override
     @Transactional
     public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated){

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.ExternalDocumentRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
@@ -89,4 +90,5 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String shipmentReferenceNumber;
     private List<NotesRequest> notesList;
     private String integrationSource;
+    private List<ExternalDocumentRequest> externalDocuments;
 }
