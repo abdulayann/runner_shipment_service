@@ -497,12 +497,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setVolume(BigDecimal.valueOf(1l));
         details.setVolumetricWeight(BigDecimal.valueOf(1l));
         details.setChargable(BigDecimal.valueOf(1l));
+        details.setIsReefer(false);
         ShipmentListResponse shipmentListResponse = new ShipmentListResponse();
         shipmentListResponse.setContainsHazardous(false);
         shipmentListResponse.setWeight(BigDecimal.valueOf(1l));
         shipmentListResponse.setVolume(BigDecimal.valueOf(1l));
         shipmentListResponse.setVolumetricWeight(BigDecimal.valueOf(1l));
         shipmentListResponse.setChargable(BigDecimal.valueOf(1l));
+        shipmentListResponse.setIsReefer(false);
         shipmentDetailsList.add(details);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         PageImpl<Long> shipmentIdPage = new PageImpl<>(List.of(1L));
