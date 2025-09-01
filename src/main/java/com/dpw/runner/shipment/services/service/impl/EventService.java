@@ -1702,7 +1702,9 @@ public class EventService implements IEventService {
                             }
                     );
             if (ObjectUtils.isNotEmpty(eventsToDelete)) {
-                eventDao.saveAll(eventsToDelete);
+                for (Events eventToDelete : eventsToDelete) {
+                    eventDao.saveWithoutTenant(eventToDelete);
+                }
             }
         }
     }
