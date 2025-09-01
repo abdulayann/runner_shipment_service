@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
@@ -889,6 +890,14 @@ public class ShipmentController {
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.retrieveByIdV3(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
+    public ResponseEntity<IRunnerResponse> mdmOceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request) throws RunnerException {
+        log.info("Received for MDM_OCEAN_DG_APPROVAL_RESPONSE with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = shipmentService.mdmDGApprovalResponse(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }
