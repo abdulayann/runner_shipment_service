@@ -215,6 +215,7 @@ public class ShipmentController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
