@@ -1757,14 +1757,19 @@ public class CommonUtils {
     }
 
     public void populateDictionaryForOceanDGApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks,
-                                                     TaskCreateResponse taskCreateResponse) {
+                                                     TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
 
         populateDictionaryForDGEmailFromShipment(dictionary, shipmentDetails, vesselsResponse, taskCreateResponse);
         populateDictionaryApprovalRequestForDGEmail(dictionary, remarks);
+        if(taskServiceV2Enabled){
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2MDM(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
+        }else {
+            dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+        }
     }
 
-    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
-        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
+        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null && !auditLogList.isEmpty()){
@@ -1939,12 +1944,6 @@ public class CommonUtils {
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
         dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
-        //TODO : TaskFlag
-        if(true){
-            dictionary.put(VIEWS, getTaskIdHyperLinkV2MDM(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
-        }else {
-            dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
-        }
     }
 
     private void populateDictionaryApprovalRequestForDGEmail(Map<String, Object> dictionary, String remarks) {

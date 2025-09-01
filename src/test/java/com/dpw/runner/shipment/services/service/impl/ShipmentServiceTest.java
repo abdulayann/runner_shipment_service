@@ -8625,7 +8625,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 
@@ -8644,7 +8644,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 

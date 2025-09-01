@@ -8944,8 +8944,8 @@ public class ShipmentService implements IShipmentService {
         CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
         Integer roleId = commonUtils.getRoleId(templateStatus);
         List<String> toUserEmails = commonUtils.getUserEmailsByRoleId(roleId);
-        //TODO : tenantsettings --> TaskServiceV2Enabled
-        boolean taskServiceV2Enabled = false;
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        boolean taskServiceV2Enabled = v1TenantSettingsResponse.getTaskServiceV2Enabled();
         TaskCreateResponse taskCreateResponse;
         if(taskServiceV2Enabled) {
             taskCreateResponse = commonUtils.createTaskMDM(shipmentDetails, roleId);
@@ -8955,7 +8955,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             sendEmailForApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,
-                taskCreateResponse);
+                taskCreateResponse, taskServiceV2Enabled);
         } catch (Exception ex) {
             throw new RunnerException(ex.getMessage());
         }
@@ -9146,8 +9146,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void sendEmailForApproval(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap, List<String> toEmailIds,
-        VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
-        TaskCreateResponse taskCreateResponse) throws RunnerException {
+                                     VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
+                                     TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) throws RunnerException {
         EmailTemplatesRequest emailTemplate = Optional.ofNullable(emailTemplatesRequestMap.get(templateStatus))
             .orElseThrow(() -> new RunnerException("template is not present for : " + templateStatus));
 
@@ -9156,7 +9156,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         Map<String, Object> dictionary = new HashMap<>();
-        populateDictionary(templateStatus, dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        populateDictionary(templateStatus, dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
 
         emailTemplate.setBody(generateEmailBody(dictionary, shipmentDetails, emailTemplate.getBody()));
         notificationService.sendEmail(emailTemplate.getBody(), emailTemplate.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>());
@@ -9164,12 +9164,12 @@ public class ShipmentService implements IShipmentService {
 
     private void populateDictionary(OceanDGStatus templateStatus, Map<String, Object> dictionary,
         ShipmentDetails shipmentDetails,
-        VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
+        VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
 
         if (templateStatus == OCEAN_DG_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
         } else if (templateStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
         }
     }
 
