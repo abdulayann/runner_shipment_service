@@ -117,7 +117,7 @@ public class EventConstants {
     public static final String LITERAL = "literal";
     public static final String DEPARTED_DESTINATION_DELIVERY = "DEPARTED_DESTINATION_DELIVERY";
     public static final String AT_DESTINATION_DELIVERY = "AT_DESTINATION_DELIVERY";
-    public static final String TESLA_ = "Tesla -";
+    public static final String TESLA_HYPHEN_PREFIX = "Tesla -";
     public static final String IN_TRANSIT = "IN_TRANSIT";
     public static final String AT_ORIGIN_PICKUP = "AT_ORIGIN_PICKUP";
     public static final String DEPARTED_ORIGIN_PICKUP = "DEPARTED_ORIGIN_PICKUP";
