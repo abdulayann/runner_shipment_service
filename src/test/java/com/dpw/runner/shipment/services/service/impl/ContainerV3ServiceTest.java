@@ -62,6 +62,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -172,6 +173,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
 
     @InjectMocks
+    @Spy
     private ContainerV3Service containerV3Service;
 
     private static ObjectMapper objectMapper;
@@ -226,6 +228,442 @@ class ContainerV3ServiceTest extends CommonMocks {
         params = new AssignContainerParams();
         params.setShipmentDetailsMap(shipmentDetailsMap);
     }
+
+
+    @Test
+    void testSaveUnAssignContainerResultsBatch_withData() {
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setShipmentIdsForCargoDetachment(List.of(201L));
+        unAssignContainerParams.setRemoveAllPackingIds(List.of(101L));
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(201L);
+        unAssignContainerParams.setShipmentsContainersMappings(List.of(mapping));
+
+        List<List<Long>> shipmentIds = List.of(List.of(201L));
+        Map<String, List<Containers>> containers = new HashMap<>();
+        containers.put("containerToSave", List.of(new Containers()));
+        List<UnAssignContainerParams> paramsList = List.of(unAssignContainerParams);
+
+        doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
+        doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
+        lenient().when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
+        doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
+
+        assertDoesNotThrow(() ->
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, false));
+    }
+
+    @Test
+    void testSaveUnAssignContainerResultsBatch_withFCLDelete() {
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setShipmentIdsForCargoDetachment(List.of(201L));
+        unAssignContainerParams.setRemoveAllPackingIds(List.of(101L));
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(201L);
+        mapping.setContainerId(8976L);
+        unAssignContainerParams.setShipmentsContainersMappings(List.of(mapping));
+
+        List<List<Long>> shipmentIds = List.of(List.of(201L));
+        Containers container1 = new Containers();
+        container1.setId(1234L);
+        Containers container2 = new Containers();
+        container2.setId(89761L);
+        Map<String, List<Containers>> containers = new HashMap<>();
+        containers.put("containersToSave", List.of(container2));
+        containers.put("FCLContainersToRemove", List.of(container1, container2));
+        List<UnAssignContainerParams> paramsList = List.of(unAssignContainerParams);
+
+        doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
+        doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
+        lenient().when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
+        lenient().doNothing().when(containerDao).deleteByIdIn(anyList());
+        doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
+
+        assertDoesNotThrow(() ->
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, true));
+    }
+
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_Success() throws RunnerException {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, List.of(100L, 101L)));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        AssignContainerParams params = new AssignContainerParams();
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testAssignContainers_withNonReassignmentRequest_Success() throws RunnerException {
+
+        AssignContainerRequest req = new AssignContainerRequest();
+        req.setAllowPackageReassignment(Boolean.FALSE);
+        req.setContainerId(1L);
+        req.setShipmentPackIds(Map.of(10L, List.of(100L, 101L)));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        AssignContainerParams params = new AssignContainerParams();
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(req, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testAssignContainers_withoutReassignmentRequest_ValidationException() {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.FALSE);
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, List.of(100L, 101L)));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(10L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+
+        assertThrows(ValidationException.class, () ->  containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT"));
+    }
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_PacksEmpty() {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, List.of()));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+
+        assertThrows(RunnerException.class, () ->  containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT"));
+    }
+
+    @Test
+    void testAssignContainers_withoutReassignmentRequest_PacksEmpty_LCLValidCase() {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.FALSE);
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, List.of()));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(10L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+
+        assertThrows(NullPointerException.class, () ->  containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT"));
+    }
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_PackNewAndOldContainerSame() throws RunnerException {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, List.of(100L, 101L)));
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(1L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_PackNewAndOldContainerSame1() throws RunnerException {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(10L, new ArrayList<>(List.of(100L)));
+        assignContainerRequest.setShipmentPackIds(shipmentPackIds);
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(1L);
+        mockPacking1.setShipmentId(10L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_PackNewAndOldContainerSame2() throws RunnerException {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(10L, new ArrayList<>(List.of(100L, 101L)));
+        assignContainerRequest.setShipmentPackIds(shipmentPackIds);
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(1L);
+        mockPacking1.setShipmentId(10L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testAssignContainers_withValidReassignmentRequest_PackNewAndOldContainerDifferent() throws RunnerException {
+
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setAllowPackageReassignment(Boolean.TRUE);
+        assignContainerRequest.setContainerId(1L);
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(10L, new ArrayList<>(List.of(100L, 101L)));
+        assignContainerRequest.setShipmentPackIds(shipmentPackIds);
+
+        Containers mockContainer = new Containers();
+        mockContainer.setId(1L);
+
+        Packing mockPacking1 = new Packing();
+        mockPacking1.setId(100L);
+        mockPacking1.setContainerId(2L);
+        mockPacking1.setShipmentId(10L);
+        Packing mockPacking2 = new Packing();
+        mockPacking2.setId(101L);
+
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setId(10L);
+
+        when(containerDao.findById(1L)).thenReturn(Optional.of(mockContainer));
+        when(packingDao.findByIdIn(List.of(100L, 101L))).thenReturn(List.of(mockPacking1, mockPacking2));
+        when(shipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(new ArrayList<>());
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(mockShipment));
+        doNothing().when(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        doNothing().when(containerV3Util).resetContainerDataForRecalculation(any());
+        when(containerDao.save(any(Containers.class))).thenReturn(mockContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
+
+        ContainerResponse response = containerV3Service.assignContainers(assignContainerRequest, "SHIPMENT");
+
+        assertNotNull(response);
+        verify(containerDao).findById(1L);
+        verify(containerValidationUtil).validateBeforeAssignContainer(any(), any(), any());
+        verify(containerDao).save(any(Containers.class));
+    }
+
+    @Test
+    void testUnAssignPackageContainers_withReassignment_successful() throws RunnerException {
+
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.TRUE);
+        self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(self).assignContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
+    @Test
+    void testAssignContainers_withoutReassignment_successful() throws RunnerException {
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.FALSE);
+
+        self.assignContainers(request, Constants.SHIPMENT_PACKING);
+
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(self).assignContainers(request, Constants.SHIPMENT_PACKING);
+    }
+
+    @Test
+    void testUnAssignContainers_calledDirectly() throws RunnerException {
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        UnAssignContainerParams params = new UnAssignContainerParams();
+
+        self.unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params, null, null, null, Boolean.FALSE, Boolean.FALSE);
+
+        verify(self).unAssignContainers(request, Constants.CONSOLIDATION_PACKING, params, null, null, null, Boolean.FALSE, Boolean.FALSE);
+
+    }
+
+    @Test
+    void testAssignContainers_withMissingOldContainerPackIdsThrowsException() throws RunnerException{
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(true);
+
+        doThrow(new RunnerException("Old container mapping is required for package reassignment."))
+                .when(self).assignContainers(any(), any());
+
+        assertThrows(RunnerException.class,
+                () -> self.assignContainers(request, Constants.SHIPMENT_PACKING));
+    }
+
+    @Test
+    void testAssignContainers_packNotInTargetContainer() throws RunnerException {
+        Long shipmentId = 10L;
+        Long packId = 100L;
+        Long targetContainerId = 500L;
+        Long oldContainerId = 400L;
+
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setAllowPackageReassignment(Boolean.TRUE);
+        request.setContainerId(targetContainerId);
+        request.setShipmentPackIds(new HashMap<>(Map.of(shipmentId, new ArrayList<>(List.of(packId)))));
+
+        Packing mockPacking = new Packing();
+        mockPacking.setId(packId);
+        mockPacking.setShipmentId(shipmentId);
+        mockPacking.setContainerId(targetContainerId);
+
+        ContainerResponse actualResponse = self.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+
+        assertEquals(null, actualResponse);
+
+        assertFalse(request.getShipmentPackIds().get(shipmentId).isEmpty(),
+                "PackId should be removed from shipmentPackIds since it was already in target container");
+
+        verify(self, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+    }
+
 
     @Test
     void calculateContainerSummary() throws RunnerException {
@@ -552,7 +990,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
         when(packingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>());
-        ContainerListResponse response = containerV3Service.list(request, anyBoolean(), anyString());
+        ContainerListResponse response = containerV3Service.list(request, false, "CONTAINER");
 
         assertNotNull(response);
     }
@@ -802,6 +1240,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         testContainer.setId(1L);
         testShipment.setId(1L);
         testPacking.setId(1L);
+        testPacking.setContainerId(null);
         ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
@@ -824,11 +1263,12 @@ class ContainerV3ServiceTest extends CommonMocks {
         testShipment.setContainerAssignedToShipmentCargo(2L);
         testShipment.setPackingList(new ArrayList<>());
         testPacking.setId(1L);
+        testPacking.setContainerId(null);
         ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
-        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any());
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
@@ -847,6 +1287,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         testShipment.setContainerAssignedToShipmentCargo(1L);
         testShipment.setPackingList(new ArrayList<>());
         testPacking.setId(1L);
+        testPacking.setContainerId(null);
         ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
@@ -873,7 +1314,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -893,7 +1334,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -913,7 +1354,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE,  Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -938,7 +1379,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE,  Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -964,7 +1405,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE,  Boolean.FALSE);
         assertNotNull(response);
     }
 
@@ -990,8 +1431,92 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE,  Boolean.FALSE);
         assertNotNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers6() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        testPacking1.setContainerId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        lenient().when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
+        lenient().when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), Boolean.TRUE,  Boolean.FALSE);
+        assertNull(response);
+    }
+    @Test
+    void testUnAssignContainers7() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        testPacking1.setContainerId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        lenient().when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
+        lenient().when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), Boolean.FALSE,  Boolean.TRUE);
+        assertNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers8() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        testPacking1.setContainerId(1L);
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setShipmentIdsForCargoDetachment(new ArrayList<>(List.of(201L)));
+        unAssignContainerParams.setRemoveAllPackingIds(new ArrayList<>(List.of(2L)));
+        Map<Long, List<Packing>> shipmentPackingMap = new HashMap<>();
+        shipmentPackingMap.put(2L, new ArrayList<>(List.of(testPacking1)));
+        unAssignContainerParams.setShipmentPackingMap(shipmentPackingMap);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        lenient().when(containerDao.save(any())).thenReturn(testContainer);
+        lenient().when(commonUtils.isSeaFCLOrRoadFTL(any(), any())).thenReturn(Boolean.TRUE);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
+        lenient().when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, unAssignContainerParams, new HashMap<>(), new ArrayList<>(), new ArrayList<>(), Boolean.FALSE,  Boolean.TRUE);
+        assertNull(response);
     }
 
     @Test
@@ -2282,10 +2807,12 @@ class ContainerV3ServiceTest extends CommonMocks {
                 ShipmentDetails.class,
                 List.class,
                 List.class,
-                Set.class
+                Set.class,
+                Map.class,
+                Boolean.class
         );
         method.setAccessible(true);
-        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds);
+        method.invoke(service, params1, container1, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds, new HashMap<>(), Boolean.FALSE);
         assertEquals("KG", container1.getGrossWeightUnit());
         assertEquals("CBM", container1.getGrossVolumeUnit());
         assertEquals("5", container1.getPacks());

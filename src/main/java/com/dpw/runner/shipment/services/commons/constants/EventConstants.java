@@ -70,6 +70,8 @@ public class EventConstants {
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
     public static final String INGE  = "INGE";
+    public static final String INGO  = "INGO";
+    public static final String INGI  = "INGI";
     public static final String SISC  = "SISC";
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";
@@ -108,6 +110,7 @@ public class EventConstants {
     public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
     public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
     public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
+    public static final String GATE_OUT_WITH_CONTAINER_EMPTY = "gateOutWithContainerEmpty";
     public static final String FLIGHT_ARRIVAL = "flightArrival";
     public static final String FLIGHT_DEPARTURE = "flightDeparture";
     public static final String LITERAL = "literal";

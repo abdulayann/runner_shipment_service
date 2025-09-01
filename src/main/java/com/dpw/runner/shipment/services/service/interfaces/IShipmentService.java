@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -120,7 +120,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) throws RunnerException;
+    String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException;
     PartiesRequest fetchOrgInfoFromV1(PartiesOrgAddressRequest request) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId);

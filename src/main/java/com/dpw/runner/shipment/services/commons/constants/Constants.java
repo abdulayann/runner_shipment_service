@@ -242,6 +242,8 @@ public class Constants {
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
+    public static final String DATE_TIME_FORMAT_DDMMMYYYY_HHMM = "ddMMMyyyy HH:mm";
+
     public static final String AGENT_PREFIX = "A";
     public static final String CARRIER_PREFIX = "C";
 
@@ -720,6 +722,12 @@ public class Constants {
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
     public static final String TENANTS = "Tenants";
+    public static final String ORG_DATA = "orgData";
+    public static final String ADDRESS_DATA = "addressData";
+    public static final String SHIPMENT_ROOT_KEY_NAME = "shipmentDetails";
+    public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
+    public static final String DOT = ".";
+
     private Constants() {
     }
 

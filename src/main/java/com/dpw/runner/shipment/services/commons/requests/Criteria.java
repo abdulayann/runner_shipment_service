@@ -7,6 +7,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class Criteria {
 
     private String fieldName;
