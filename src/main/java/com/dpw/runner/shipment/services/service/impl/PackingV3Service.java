@@ -1612,6 +1612,7 @@ public class PackingV3Service implements IPackingV3Service {
         if(request.getShipmentPackIds().size() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
+
         return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
     }
 
@@ -1638,6 +1639,7 @@ public class PackingV3Service implements IPackingV3Service {
         if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
             throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
         }
+
         return containerV3Service.assignContainers(request, SHIPMENT_PACKING);
     }
 
@@ -1670,7 +1672,8 @@ public class PackingV3Service implements IPackingV3Service {
         }
         UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
-            containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
+            containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams,
+                    null, null, null, Boolean.FALSE, Boolean.FALSE);
         }
         // update shipments and consolidations data only for FCL/FTL shipments
         updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);

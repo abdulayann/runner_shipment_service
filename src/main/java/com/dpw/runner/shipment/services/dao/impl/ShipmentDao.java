@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -69,6 +71,7 @@ import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -113,6 +116,10 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    @Lazy
+    private IContainerDao containerDao;
 
     private final EntityManager entityManager;
     @Autowired
@@ -349,21 +356,14 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findMaxId();
     }
 
-    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    private boolean isNotAirExport(ShipmentDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getDirection()));
     }
 
-    private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request) {
+        if(isNotAirExport(request)) {
             return false;
-        return Boolean.TRUE.equals(request.getContainsHazardous());
-    }
-
-    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
-            return false;
+        }
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
@@ -386,7 +386,7 @@ public class ShipmentDao implements IShipmentDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addCargotSecurityValidationErrors(request, fromV1Sync, errors);
         } else {
-            addNonDgValidationErrors(request, fromV1Sync, shipmentSettingsDetails, errors);
+            addNonDgValidationErrors(request, errors);
         }
 
         // Routings leg no can not be repeated
@@ -428,17 +428,17 @@ public class ShipmentDao implements IShipmentDao {
         if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGPackage(request)) {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
+        // Non dg Shipments can not have dg containers
+        if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGContainer(request)) {
+            errors.add("The shipment contains DG container. Marking the shipment as non DG is not allowed");
+        }
     }
 
-    private void addNonDgValidationErrors(ShipmentDetails request, boolean fromV1Sync, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationErrors(ShipmentDetails request, Set<String> errors) {
         // Non dg Shipments can not have dg packs
-        if (checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && checkContainsDGPackage(request)) {
+        if (checkForNonDGShipmentAndAirDGFlag(request) && checkContainsDGPackage(request)) {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
-
-        // Non dg user cannot save dg shipment
-        if (!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
-            errors.add("You don't have permission to update DG Shipment");
     }
 
     private void addRoutingValidationsErrors(ShipmentDetails request, Set<String> errors) {
@@ -553,7 +553,7 @@ public class ShipmentDao implements IShipmentDao {
     private void addUnLocationValidationErrors(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
             String unLoc = null;
-            if (request.getDirection().equals(Constants.DIRECTION_EXP)) {
+            if (request.getDirection().equals(DIRECTION_EXP)) {
                 unLoc = request.getCarrierDetails().getOriginPort();
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for Loading Port is not allowed or invalid");
@@ -965,6 +965,20 @@ public class ShipmentDao implements IShipmentDao {
             return false;
         for (Packing packing : packingList) {
             if (Boolean.TRUE.equals(packing.getHazardous())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkContainsDGContainer(ShipmentDetails request) {
+        List<Containers> containersList = new ArrayList<>();
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && request.getId()!=null)
+            containersList = containerDao.findByShipmentId(request.getId());
+        if (CommonUtils.listIsNullOrEmpty(containersList))
+            return false;
+        for (Containers containers : containersList) {
+            if (Boolean.TRUE.equals(containers.getHazardous())) {
                 return true;
             }
         }

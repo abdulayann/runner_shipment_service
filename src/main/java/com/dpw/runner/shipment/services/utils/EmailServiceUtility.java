@@ -32,6 +32,12 @@ public class EmailServiceUtility {
             ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
             "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com");
 
+    List<String> migrationEmailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
+            "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
+            ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
+            "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com",
+            "Dipanshu.Saini@dpworld.com", "Shadab.Sayeed@dpworld.com");
+
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 
         Session session = this.emailConfig.getSession();
@@ -88,9 +94,13 @@ public class EmailServiceUtility {
             String prefix = isError ? "ERROR in " : "";
             String subject = prefix + action + " for Tenant Id: " + tenantId + " in ENV: " + currentEnvironment + " DateTime: " + LocalDateTime.now();
             String body = prefix + action + " for Tenant Id: " + tenantId + "\n" + response;
-            this.sendEmailDefault(body, subject);
+            this.sendMigrationEmails(body, subject);
         } catch (Exception ex) {
             log.error("Not able to send email for {} due to: {}", action, ex.getMessage());
         }
+    }
+
+    public void sendMigrationEmails(String body, String subject) throws MessagingException, IOException {
+        this.sendEmail(body, subject, migrationEmailIds, null, null, null);
     }
 }

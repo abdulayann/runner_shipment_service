@@ -26,6 +26,8 @@ public class ReportConstants {
     public static final String C_FIRSTVOYAGE = "C_FirstVoyage";
     public static final String C_FIRSTCARRIER = "C_FirstCarrier";
     public static final String C_FIRSTFLIGHTNUMBER = "C_FirstFlightNumber";
+    public static final String C_ORIGIN_AGENT = "C_OriginAgent";
+    public static final String C_DESTINATION_AGENT = "C_DestinationAgent";
     public static final String HAS_LEGS = "HasLegs";
     public static final String TI_LEGS = "TILegs";
     public static final String HAS_CONTAINERS = "HasContainers";
@@ -1508,6 +1510,10 @@ public class ReportConstants {
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";
+    public static final String S_R_P_FIRST_VESSEL = "S_R_P_FirstVessel";
+    public static final String S_R_P_FIRST_VOYAGE = "S_R_P_FirstVoyage";
+    public static final String S_R_P_LAST_VESSEL = "S_R_P_LastVessel";
+    public static final String S_R_P_LAST_VOYAGE = "S_R_P_LastVoyage";
     public static final String S_LAST_FLIGHT_NUMBER = "S_LastFlightNumber";
     public static final String S_LAST_CARRIER = "S_LastCarrier";
 

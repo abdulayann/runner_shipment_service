@@ -39,6 +39,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -214,4 +215,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private Map<String, Object> masterDataMap;
 }

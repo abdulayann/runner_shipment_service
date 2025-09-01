@@ -738,9 +738,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            log.info("Matched GATE_OUT_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
         return null;

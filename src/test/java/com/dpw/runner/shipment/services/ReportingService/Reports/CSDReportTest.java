@@ -160,7 +160,21 @@ class CSDReportTest {
         last.setCarrier("Carrier2");
         last.setFlightNumber("FL999");
 
-        shipmentDetails.setRoutingsList(List.of(first, last));
+        Routings firstPre = new Routings();
+        firstPre.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        firstPre.setVesselName("First Vessel");
+        firstPre.setVoyage("FV001");
+        firstPre.setCarrier("Carrier1");
+        firstPre.setFlightNumber("FL123");
+
+        Routings lastPre = new Routings();
+        lastPre.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        lastPre.setVesselName("Last Vessel");
+        lastPre.setVoyage("LV001");
+        lastPre.setCarrier("Carrier2");
+        lastPre.setFlightNumber("FL999");
+
+        shipmentDetails.setRoutingsList(List.of(first, last, firstPre, lastPre));
 
         Parties shipper = new Parties();
         shipper.setType("Shipper");

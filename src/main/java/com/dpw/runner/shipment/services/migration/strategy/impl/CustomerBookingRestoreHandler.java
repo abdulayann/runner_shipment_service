@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +73,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     @Autowired
     private HelperExecutor trxExecutor;
+    private final TransactionTemplate transactionTemplate;
 
 
     @Override
@@ -97,7 +99,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                         v1Service.setAuthContext();
                         TenantContext.setCurrentTenant(tenantId);
                         UserContext.getUser().setPermissions(new HashMap<>());
-                        return trxExecutor.runInTrx(() -> {
+                        return transactionTemplate.execute(status -> {
                             restoreCustomerBookingData(id, tenantId);
                             return null;
                         });

@@ -1,55 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_DIMS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_GROSS_VOLUME_AND_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_ISSUING_AGENT_ADDRESS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_NOTIFYPARTY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AWB_NOTIFY_PARTY_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_HQ;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CC_CHARGE_IN_DEST_CURRENCY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WEIGHT_DECIMAL_PLACES;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_AT_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMA_HS_CODE1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMA_SLAC1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY_GROUP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONVERSION_RATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_INSTRUCTIONS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DIMENSIONS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOOD_DESC_HS_CODE_COMMA_SEPARATED;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOOD_DESC_HS_CODE_COMMA_SEPARATED1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WT_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HSCODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HS_CODE1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUED_BY_NAME_IN_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_AGENT_ADDRESS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_AGENT_CITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NATURE_OF_GOODS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NTR_QTY_GOODS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OTHER_INFO_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_COMMODITY_GROUP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_INSTRUCTION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PIECES_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE_PARTY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RCP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_NEW;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TARGET_CURRENCY_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_INITIALS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.emptyIfNull;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
@@ -145,7 +96,9 @@ public class HawbReport extends IReport{
                 validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
             }
         } else {
-            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            }
         }
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
@@ -712,26 +665,12 @@ public class HawbReport extends IReport{
     }
 
     private void processOtherInfoRows(Map<String, Object> dictionary, AwbOtherInfo otherInfoRows, Map<String, UnlocationsResponse> locCodeMap, String tsDateTimeFormat) {
-        Set<String> locCodes;
-        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap;
         if(otherInfoRows != null)
         {
-            locCodes = new HashSet<>();
-            locCodes.add(otherInfoRows.getExecutedAt());
-            entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
-                String key = entry.getKey();
-                UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
-                locCodeMap.put(key, value);
-            }
-            String executedAtName = null;
-            if (locCodeMap.get(otherInfoRows.getExecutedAt()) != null) {
-                // Get the name from v1 and convert it to uppercase if not null
-                executedAtName = Optional.ofNullable(locCodeMap.get(otherInfoRows.getExecutedAt()).getName())
-                        .map(String::toUpperCase)
-                        .orElse(null);
-            }
-            dictionary.put(ReportConstants.EXECUTED_AT, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ?  locCodeMap.get(otherInfoRows.getExecutedAt()).getIataCode() : null);
+            String executedAtName = Optional.ofNullable(otherInfoRows.getExecutedAt())
+                    .map(String::toUpperCase)
+                    .orElse(null);
+            dictionary.put(ReportConstants.EXECUTED_AT, executedAtName);
             dictionary.put(ReportConstants.EXECUTED_AT_NAME, executedAtName);
             dictionary.put(ReportConstants.EXECUTED_ON, convertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
             dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());

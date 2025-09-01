@@ -19,7 +19,10 @@ public enum MeasurementBasis {
     TEU(8, "TEU", "TEU"),
     ChargePercentage(9, "ChargePercentage", "Charge_Percentage"),
     Custom(10, "Custom", "Custom"),
-    ContainerType(11, "ContainerType", "Container_Type");
+    ContainerType(11, "ContainerType", "Container_Type"),
+    Per_Bl_Awb(12, "Per_Bl_Awb", "Per_Bl_Awb"),
+    Per_Mile(13, "Per_Mile", "Per_Mile"),
+    Per_Kilometer(14, "Per_Kilometer", "Per_Kilometer");
 
     private final int value;
     private final String description;
