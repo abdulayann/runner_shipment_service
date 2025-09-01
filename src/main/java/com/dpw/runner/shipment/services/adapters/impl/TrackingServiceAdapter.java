@@ -551,7 +551,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Nullable
     private static String getCacoEventCode(String safeEventType, String safeDescription) {
         if (EventConstants.AT_ORIGIN_PICKUP.equalsIgnoreCase(safeEventType)
-                && safeDescription.startsWith(EventConstants.TESLA_)) {
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched AT_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.CACO);
             return EventConstants.CACO;
         }
@@ -561,7 +561,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Nullable
     private static String getIntrEventCode(String safeEventType, String safeDescription) {
         if (EventConstants.IN_TRANSIT.equalsIgnoreCase(safeEventType)
-                && safeDescription.startsWith(EventConstants.TESLA_)) {
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched IN_TRANSIT and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.INTR);
             return EventConstants.INTR;
         }
@@ -571,7 +571,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Nullable
     private static String getCafsEventCode(String safeEventType, String safeDescription) {
         if (EventConstants.AT_DESTINATION_DELIVERY.equalsIgnoreCase(safeEventType)
-                && safeDescription.startsWith(EventConstants.TESLA_)) {
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched AT_DESTINATION_DELIVERY and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.CAFS);
             return EventConstants.CAFS;
         }
@@ -581,7 +581,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Nullable
     private static String getPRDEEventCode(String safeEventType, String safeDescription) {
         if (EventConstants.DEPARTED_DESTINATION_DELIVERY.equalsIgnoreCase(safeEventType)
-                && safeDescription.startsWith(EventConstants.TESLA_)) {
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched DEPARTED_DESTINATION_DELIVERY and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.PRDE);
             return EventConstants.PRDE;
         }
@@ -754,7 +754,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
 
         if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeDescription)
-                && safeDescription.startsWith(EventConstants.TESLA_)) {
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
