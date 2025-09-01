@@ -44,28 +44,24 @@ public class ShippingInstructionsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = MyResponseClass.class)
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody ShippingInstructionRequest info) {
-        ShippingInstructionRequest request = jsonHelper.convertValue(info, ShippingInstructionRequest.class);
-        ShippingInstructionResponse response = service.createShippingInstruction(CommonRequestModel.buildRequest(request));
+        ShippingInstructionResponse response = service.createShippingInstruction(info);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
     @GetMapping("/{id}")
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShippingInstructionsConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     public ResponseEntity<IRunnerResponse> getById(@PathVariable Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        ShippingInstructionResponse response = service.getShippingInstructionsById(request);
+        ShippingInstructionResponse response = service.getShippingInstructionsById(id);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShippingInstructionsConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    public ResponseEntity<IRunnerResponse> update(@PathVariable Long id,
-                                                  @RequestBody ShippingInstructionRequest info) {
-        ShippingInstructionRequest request = jsonHelper.convertValue(info, ShippingInstructionRequest.class);
-        ShippingInstructionResponse response = service.updateShippingInstructions(id, CommonRequestModel.buildRequest(request));
+    public ResponseEntity<IRunnerResponse> update(@RequestBody ShippingInstructionRequest info) {
+        ShippingInstructionResponse response = service.updateShippingInstructions(info);
         return ResponseHelper.buildSuccessResponse(response);
     }
 

@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
-
 import java.util.List;
 import java.util.Map;
 
