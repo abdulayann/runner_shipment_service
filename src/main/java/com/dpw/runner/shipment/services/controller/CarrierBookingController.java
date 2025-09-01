@@ -84,7 +84,7 @@ public class CarrierBookingController {
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) {
-        log.info("Received Carrier Booking UPDATE request with RequestId: {}, id: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), id, jsonHelper.convertToJson(request));
+        log.info("Received Carrier Booking UPDATE request with RequestId: {}, and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.update(request);
         log.info("Carrier Booking UPDATE successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
         return ResponseHelper.buildSuccessResponse(response);
@@ -101,4 +101,5 @@ public class CarrierBookingController {
         log.info("Carrier Booking DELETE successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
         return ResponseHelper.buildSuccessResponse();
     }
+
 }

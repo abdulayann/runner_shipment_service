@@ -719,6 +719,8 @@ public class Constants {
     public static final String PROPER_SHIPPING_NAME = "properShippingName";
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
+    public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
+
     private Constants() {
     }
 

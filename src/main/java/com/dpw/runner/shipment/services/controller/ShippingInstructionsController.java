@@ -24,18 +24,18 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class ShippingInstructionsController {
 
-    @Autowired
     private final IShippingInstructionsService service;
 
-    @Autowired
-    private JsonHelper jsonHelper;
+    private final JsonHelper jsonHelper;
 
     // Response wrapper classes
     private static class MyResponseClass extends RunnerResponse<SailingInformationResponse> {
     }
 
-    public ShippingInstructionsController(IShippingInstructionsService service) {
+    @Autowired
+    public ShippingInstructionsController(IShippingInstructionsService service, JsonHelper jsonHelper) {
         this.service = service;
+        this.jsonHelper = jsonHelper;
     }
 
     @PostMapping
