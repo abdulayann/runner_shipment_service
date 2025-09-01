@@ -893,7 +893,7 @@ public class ShipmentController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
-    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
+    @PostMapping(ApiConstants.MDM_OCEAN_DG_APPROVAL_RESPONSE)
     public ResponseEntity<IRunnerResponse> mdmOceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request) throws RunnerException {
         log.info("Received for MDM_OCEAN_DG_APPROVAL_RESPONSE with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String warning = shipmentService.mdmDGApprovalResponse(request);

@@ -8945,7 +8945,7 @@ public class ShipmentService implements IShipmentService {
         Integer roleId = commonUtils.getRoleId(templateStatus);
         List<String> toUserEmails = commonUtils.getUserEmailsByRoleId(roleId);
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        boolean taskServiceV2Enabled = v1TenantSettingsResponse.getTaskServiceV2Enabled();
+        boolean taskServiceV2Enabled = Boolean.TRUE.equals(v1TenantSettingsResponse.getTaskServiceV2Enabled());
         TaskCreateResponse taskCreateResponse;
         if(taskServiceV2Enabled) {
             taskCreateResponse = commonUtils.createTaskMDM(shipmentDetails, roleId);

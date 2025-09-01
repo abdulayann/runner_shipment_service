@@ -8381,6 +8381,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getRoleId(any())).thenReturn(roleId);
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
             assertThrows(RunnerException.class,() ->shipmentService.sendOceanDGApprovalEmail(request));
         }
@@ -8419,6 +8420,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getRoleId(any())).thenReturn(roleId);
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
             assertThrows(RunnerException.class,()-> shipmentService.sendOceanDGApprovalEmail(request));
             verify(shipmentDao).findById(any());
