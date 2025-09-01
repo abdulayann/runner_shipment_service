@@ -2365,6 +2365,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             }
         }
     }
@@ -2404,6 +2405,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
         } else{
             // SEA, Rail , Road behaviour will be same
             //Non-Editable Fields
@@ -2490,6 +2492,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
             shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
             shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
+        }
+    }
+
+    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+            String oldIncoTerms = oldEntity.getIncoterms();
+            String newIncoTerms = console.getIncoterms();
+
+            if(isFieldChanged(oldIncoTerms, newIncoTerms)){
+                shipmentDetails.setIncoterms(console.getIncoterms());
+            }
+        }else{
+            shipmentDetails.setIncoterms(console.getIncoterms());
         }
     }
 
