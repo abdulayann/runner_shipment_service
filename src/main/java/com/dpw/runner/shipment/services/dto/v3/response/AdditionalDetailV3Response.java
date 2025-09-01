@@ -164,10 +164,8 @@ public class AdditionalDetailV3Response implements IRunnerResponse {
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime pickupDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
