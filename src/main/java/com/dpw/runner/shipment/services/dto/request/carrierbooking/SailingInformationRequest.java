@@ -21,7 +21,6 @@ public class SailingInformationRequest {
     private String carrier;
     private String vesselName;
     private String voyageNo;
-    private Boolean isFromSailingSchedule = Boolean.FALSE;
     @ExcludeTimeZone
     private LocalDateTime eta;
     @ExcludeTimeZone

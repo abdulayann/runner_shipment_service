@@ -28,4 +28,5 @@ public class CarrierBookingValidationUtil {
             throw new ValidationException("Invalid service type");
         }
     }
+
 }
