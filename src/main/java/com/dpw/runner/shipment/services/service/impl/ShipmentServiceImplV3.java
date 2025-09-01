@@ -3020,26 +3020,22 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void processShipmentRequestFromDetails(ShipmentV3Request shipmentRequest, ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getGoodsDescription() != null)
-            shipmentRequest.setGoodsDescription(shipmentDetails.getGoodsDescription());
+        Optional.ofNullable(shipmentDetails.getGoodsDescription())
+                .ifPresent(shipmentRequest::setGoodsDescription);
 
-        if (shipmentDetails.getReferenceNumbersList() != null) {
-            List<ReferenceNumbersRequest> referenceNumbersList = jsonHelper.convertValue(shipmentDetails.getReferenceNumbersList(), new TypeReference<List<ReferenceNumbersRequest>>() {
-            });
-            shipmentRequest.setReferenceNumbersList(referenceNumbersList);
-        }
+        Optional.ofNullable(shipmentDetails.getReferenceNumbersList())
+                .map(list -> jsonHelper.convertValue(list, new TypeReference<List<ReferenceNumbersRequest>>() {}))
+                .ifPresent(shipmentRequest::setReferenceNumbersList);
 
-        if (shipmentDetails.getAdditionalDetails() != null) {
-            if (shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
-                PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
-                shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
-            }
+        Optional.ofNullable(shipmentDetails.getAdditionalDetails()).ifPresent(details -> {
+            Optional.ofNullable(details.getImportBroker())
+                    .map(broker -> jsonHelper.convertValue(broker, PartiesRequest.class))
+                    .ifPresent(shipmentRequest.getAdditionalDetails()::setImportBroker);
 
-            if (shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
-                PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
-                shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
-            }
-        }
+            Optional.ofNullable(details.getExportBroker())
+                    .map(broker -> jsonHelper.convertValue(broker, PartiesRequest.class))
+                    .ifPresent(shipmentRequest.getAdditionalDetails()::setExportBroker);
+        });
     }
 
     public void populateOriginDestinationAgentDetailsForBookingShipment(ShipmentDetails shipmentDetails) {
