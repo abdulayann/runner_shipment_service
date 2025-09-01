@@ -146,6 +146,32 @@ class EventDaoTest {
     }
 
     @Test
+    void testSaveWithoutTenant() {
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        testData.setId(1L);
+        when(eventRepository.saveWithoutTenant(any())).thenReturn(testData);
+
+        var r = eventDao.saveWithoutTenant(testData);
+
+        assertNotNull(r);
+        assertNotNull(r.getId());
+    }
+
+    @Test
+    void testFindByIdWithoutTenant() {
+        when(eventRepository.findByIdWithoutTenant(any())).thenReturn(Optional.of(testData));
+
+        var r = eventDao.findByIdWithoutTenant(any());
+
+        assertNotNull(r);
+    }
+
+    @Test
+    void testDeleteByIdWithoutTenant() {
+        assertDoesNotThrow(() -> eventDao.deleteByIdWithoutTenant(any()));
+    }
+
+    @Test
     void saveThrowsException() {
         String error = "error";
         Set<String> errors = Set.of(error);
