@@ -117,6 +117,5 @@ public interface IShipmentServiceV3 {
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException;
     void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList);
     ShipmentDetailsResponse getDefaultShipment();
-
     ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException;
 }
