@@ -95,5 +95,5 @@ public class SailingInformation extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "sailing_schedule_data", columnDefinition = "jsonb")
-    private Map<String, Object> sailingScheduleData;
+    private Map<String, Object> sailingScheduleData; // set the value first value at the time of send/amend booking, second value on confirmation from carrier
 }

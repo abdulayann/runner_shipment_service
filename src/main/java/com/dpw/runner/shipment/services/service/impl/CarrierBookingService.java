@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -31,7 +32,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -77,37 +77,19 @@ public class CarrierBookingService implements ICarrierBookingService {
             sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
             sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
             sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
-            if (request.getSailingInformationRequest().getIsFromSailingSchedule() == Boolean.TRUE) {
-                SailingInformation sailingScheduleData = getSailingScheduleData(sailingInformation);
-                sailingInformation.setSailingScheduleData(jsonHelper.convertJsonToMap(jsonHelper.convertToJson(sailingScheduleData)));
-                sailingInformation.setLastUpdatedSailingInfo(LocalDateTime.now());
-            }
         }
         carrierBookingEntity.setCarrierRoutingList(null);// we will get it from carrier
         carrierBookingEntity.setLoadedContainerDropOffDetails(null); // we will get it from carrier
         carrierBookingEntity.setEmptyContainerPickupDetails(null); // we will get it from carrier
         carrierBookingEntity.setCarrierComment(null); //we will get it from carrier
         generateBookingNumber(carrierBookingEntity);
+        carrierBookingEntity.setCarrierBlNo(null);
+        carrierBookingEntity.setCarrierBookingNo(null);
+        carrierBookingEntity.setStatus(CarrierBookingStatus.Draft);
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
-    }
-
-    private static SailingInformation getSailingScheduleData(SailingInformation sailingInformation) {
-        SailingInformation sailingScheduleData = new SailingInformation();
-        sailingScheduleData.setVesselName(sailingInformation.getVesselName());
-        sailingScheduleData.setVoyageNo(sailingInformation.getVoyageNo());
-        sailingScheduleData.setEta(sailingInformation.getEta());
-        sailingScheduleData.setEtd(sailingInformation.getEtd());
-        sailingScheduleData.setVerifiedGrossMassCutoff(sailingInformation.getVerifiedGrossMassCutoff());
-        sailingScheduleData.setShipInstructionCutoff(sailingInformation.getShipInstructionCutoff());
-        sailingScheduleData.setEmptyContainerPickupCutoff(sailingInformation.getEmptyContainerPickupCutoff());
-        sailingScheduleData.setLoadedContainerGateInCutoff(sailingInformation.getLoadedContainerGateInCutoff());
-        sailingScheduleData.setReeferCutoff(sailingInformation.getReeferCutoff());
-        sailingScheduleData.setTerminalCutoff(sailingInformation.getTerminalCutoff());
-        sailingScheduleData.setHazardousBookingCutoff(sailingInformation.getHazardousBookingCutoff());
-        return sailingScheduleData;
     }
 
     private void generateBookingNumber(CarrierBooking carrierBookingEntity) {
@@ -179,15 +161,40 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public CarrierBookingResponse update(Long id, CarrierBookingRequest request) {
-        log.info("CarrierBookingService.update() called with RequestId: {}, id: {} and payload: {}",
-                LoggerHelper.getRequestIdFromMDC(), id, jsonHelper.convertToJson(request));
+    public CarrierBookingResponse update(CarrierBookingRequest request) {
+        log.info("CarrierBookingService.update() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        CarrierBooking existingCarrierBooking = carrierBookingDao.findById(request.getId()).orElseThrow(() -> new ValidationException("Invalid carrier booking Id"));
+        carrierBookingValidationUtil.validateServiceType(request);
+        Object entity = carrierBookingValidationUtil.validateRequest(request);
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
-        CarrierBooking savedEntity = carrierBookingDao.update(id, carrierBookingEntity);
-        CarrierBookingResponse response = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
-        log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}",
-                LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
-        return response;
+        if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
+            //read only fields
+            SailingInformation sailingInformation = carrierBookingEntity.getSailingInformation();
+            if (sailingInformation == null) {
+                sailingInformation = new SailingInformation();
+            }
+            sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
+            sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+            sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+            sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            carrierBookingEntity.setSailingInformation(sailingInformation);
+        }
+        carrierBookingEntity.setCarrierRoutingList(existingCarrierBooking.getCarrierRoutingList());// we will get it from carrier
+        carrierBookingEntity.setLoadedContainerDropOffDetails(existingCarrierBooking.getLoadedContainerDropOffDetails()); // we will get it from carrier
+        carrierBookingEntity.setEmptyContainerPickupDetails(existingCarrierBooking.getEmptyContainerPickupDetails()); // we will get it from carrier
+        carrierBookingEntity.setCarrierComment(existingCarrierBooking.getCarrierComment()); //we will get it from carrier
+        carrierBookingEntity.setBookingNo(existingCarrierBooking.getBookingNo());
+        carrierBookingEntity.setCarrierBlNo(existingCarrierBooking.getCarrierBlNo());
+        carrierBookingEntity.setCarrierBookingNo(existingCarrierBooking.getCarrierBookingNo());
+        if (!(CarrierBookingStatus.Draft.equals(carrierBookingEntity.getStatus()) || CarrierBookingStatus.ChangeDraft.equals(carrierBookingEntity.getStatus()))) {
+            carrierBookingEntity.setStatus(existingCarrierBooking.getStatus());
+        }
+        CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
+        CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
+        log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
+        return carrierBookingResponse;
     }
 
     @Override
