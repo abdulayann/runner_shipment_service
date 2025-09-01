@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -535,7 +536,7 @@ public class EventService implements IEventService {
         }
         else {
             log.info("Creating criteria for fetching consolidation events");
-            listRequest = CommonUtils.andCriteria("consolidationId", consolidationId, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, consolidationId, "=", listRequest);
             Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
             Page<Events> consolEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
             log.info("Received {} events for consolidation with id {}", consolEventsPage.getTotalElements(), consolidationId);
@@ -1374,12 +1375,12 @@ public class EventService implements IEventService {
         List<EventsResponse> groupedEvents = events.stream()
                 .collect(Collectors.groupingBy(EventsResponse::getEventCode))
                 .values().stream()
-                .peek(group -> {
+                .map(group -> {
                     group.sort(
                             Comparator.comparing(EventsResponse::getShipmentNumber, Comparator.nullsLast(Comparator.naturalOrder()))
                                     .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
                     );
-                    log.info("Sorted group with eventCode={} | groupSize={}", group.get(0).getEventCode(), group.size());
+                    return group;
                 })
                 .sorted(Comparator.comparing(
                         group -> group.get(0).getActual(),
@@ -1401,7 +1402,7 @@ public class EventService implements IEventService {
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
         } else if (ObjectUtils.isNotEmpty(consolidationId)) {
             log.info("Applying filter by consolidationId={}", consolidationId);
-            listRequest = CommonUtils.andCriteria("consolidationId", consolidationId, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, consolidationId, "=", listRequest);
         } else {
             log.info("No shipmentNumber or consolidationId provided. No filters applied.");
         }
@@ -1555,7 +1556,7 @@ public class EventService implements IEventService {
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
         }
         else {
-            listRequest = CommonUtils.andCriteria("consolidationId", id, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, id, "=", listRequest);
         }
         Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
         List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
