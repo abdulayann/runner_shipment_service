@@ -261,6 +261,14 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 }
             }
         }
+        // Step 7: Console summary update
+        try {
+            if(Objects.isNull(clonedConsole.getAchievedQuantities()))
+                clonedConsole.setAchievedQuantities(new AchievedQuantities());
+            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
+        } catch (Exception e){
+            log.error("Failed to calculate AchievedQuantitiesEntity for console [id={}] to V3 format", clonedConsole.getId(), e);
+        }
 
         log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
 
