@@ -57,6 +57,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "is_domestic")
     private Boolean isDomestic;
 
+    @Column(name = "assigned_to")
+    private String assignedTo;
+
     @Column(name = "mawb")
     private String mawb;
 

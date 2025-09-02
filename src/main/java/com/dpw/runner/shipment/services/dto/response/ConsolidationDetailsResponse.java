@@ -30,6 +30,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     private String mawb;
     private String serviceLevel;
     private String payment;

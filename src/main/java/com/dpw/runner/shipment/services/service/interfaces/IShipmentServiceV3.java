@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
@@ -51,6 +52,8 @@ public interface IShipmentServiceV3 {
     ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId);
     ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId);
 
+    ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException;
+
     ShipmentDetailsV3Response create(CommonRequestModel commonRequestModel);
 
     void delete(CommonRequestModel commonRequestModel);
@@ -81,7 +84,7 @@ public interface IShipmentServiceV3 {
     ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 
     List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode);
-    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
+    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach);
 
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
     void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);
@@ -113,4 +116,6 @@ public interface IShipmentServiceV3 {
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException;
     void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList);
+    ShipmentDetailsResponse getDefaultShipment();
+    ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException;
 }
