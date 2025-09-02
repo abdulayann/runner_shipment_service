@@ -38,7 +38,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
          "/rollback/**",
         "/api/v2/enums/**",
         "/api/v2/events/push-tracking-events",
-        "/api/v2/cache/**"
+        "/api/v2/cache/**",
+        "/api/v2/network-transfer/create/external/bridge"
     };
 
     @Override
