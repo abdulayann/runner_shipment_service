@@ -117,6 +117,20 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
+import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -258,6 +272,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IPartiesDao partiesDao;
 
@@ -3555,7 +3572,7 @@ public class ShipmentService implements IShipmentService {
 
         processLclOrAirEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
-        processLclEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
+        processTeslaEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
         processEMCREvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
@@ -3588,8 +3605,8 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processLclEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isLcl(shipmentDetails) || isFcl(shipmentDetails)) {
+    private void processTeslaEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (isTeslaShipment(shipmentDetails) && (isLcl(shipmentDetails) || isFcl(shipmentDetails))) {
 
             processPUEDEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
@@ -3918,6 +3935,11 @@ public class ShipmentService implements IShipmentService {
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
         return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+    }
+
+    private boolean isTeslaShipment(ShipmentDetails shipmentDetails) {
+        String integrationSource = customerBookingDao.findCustomerBookingIntegrationSourceByBookingNumber(shipmentDetails.getBookingReference());
+        return Constants.TESLA.equalsIgnoreCase(integrationSource);
     }
 
     private boolean isLcl(ShipmentDetails shipmentDetails) {
