@@ -229,6 +229,7 @@ public class SeawayBillReport extends IReport {
         dict.put("BLCustomConsigner", consignerWithNameAndAddress);
         dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+        populateFreightsAndCharges(dict, model.blObject);
     }
 
     private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {
