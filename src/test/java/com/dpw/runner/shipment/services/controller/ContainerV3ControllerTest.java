@@ -102,6 +102,26 @@ class ContainerV3ControllerTest {
   }
 
   @Test
+  void testUpdatePatchBulk() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulk(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void testUpdatePatchBulkShipment() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulkShipment(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
   void testShipmentUpdateBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
@@ -301,5 +321,7 @@ class ContainerV3ControllerTest {
     IRunnerResponse body = result.getBody();
     assertNotNull(body);
   }
+
+
 }
 
