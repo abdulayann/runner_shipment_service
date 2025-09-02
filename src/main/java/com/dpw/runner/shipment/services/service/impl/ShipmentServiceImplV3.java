@@ -3043,7 +3043,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 jobType("STD").
                 incoterms(customerBookingRequest.getIncoTerms()).
                 serviceType(customerBookingRequest.getServiceMode()).
-                status(4).
+                status(0).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
                 clientCountry(customerBookingRequest.getClientCountry()).
                 consignorCountry(customerBookingRequest.getConsignorCountry()).
