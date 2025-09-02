@@ -2949,8 +2949,10 @@ public class ReportService implements IReportService {
         String entityGuid;
         String entityType;
         String identifier;
+        if (StringUtility.isEmpty(reportRequest.getEntityName())) {
+            return new HashMap<>();
+        }
         log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
-
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
