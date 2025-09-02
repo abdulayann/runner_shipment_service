@@ -22,8 +22,11 @@ import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -98,7 +101,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -823,6 +825,20 @@ public class CommonUtils {
                 template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
+    public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
+                                                 OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
+
+        populateDGReceiverDictionaryV3(dictionary, shipmentDetails, request);
+
+
+        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
+                template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+    }
+
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -1400,6 +1416,11 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
+    public String getTaskIdHyperLinkV2MDM(String shipmentId, String taskGuid) {
+        String link = baseUrl + "/v2/manage/tasks/" + taskGuid;
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
+    }
+
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
         return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
@@ -1671,6 +1692,17 @@ public class CommonUtils {
         }
     }
 
+
+    private void populateDGReceiverDictionaryV3(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequestV3 request) {
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+        dictionary.put(REMARKS, request.getRemarks());
+        dictionary.put(STATUS, request.getStatus());
+    }
+
     public <T> void getChangedUnLocationFields(T newEntity, T oldEntity, Set<String> unlocationSet) {
         if (Objects.isNull(newEntity))
             return;
@@ -1725,14 +1757,19 @@ public class CommonUtils {
     }
 
     public void populateDictionaryForOceanDGApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks,
-                                                     TaskCreateResponse taskCreateResponse) {
+                                                     TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
 
         populateDictionaryForDGEmailFromShipment(dictionary, shipmentDetails, vesselsResponse, taskCreateResponse);
         populateDictionaryApprovalRequestForDGEmail(dictionary, remarks);
+        if(taskServiceV2Enabled){
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2MDM(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
+        }else {
+            dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+        }
     }
 
-    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
-        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
+        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null && !auditLogList.isEmpty()){
@@ -1907,7 +1944,6 @@ public class CommonUtils {
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
         dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
-        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
     }
 
     private void populateDictionaryApprovalRequestForDGEmail(Map<String, Object> dictionary, String remarks) {
@@ -2742,6 +2778,32 @@ public class CommonUtils {
             log.info("Email sent with Excel attachment");
         } catch (Exception e) {
             log.error("Error sending email: " + e.getMessage());
+        }
+    }
+
+    public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
+        MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
+                .builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityUuid(shipmentDetails.getGuid().toString())
+                .roleId(roleId)
+                .taskType(DG_OCEAN_APPROVAL)
+                .status(PENDING_ACTION_TASK)
+                .userId(UserContext.getUser().getUserId())
+                .isCreatedFromV2(true)
+                .sendEmail(false)
+                .build();
+
+        try {
+            MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
+            return TaskCreateResponse
+                    .builder()
+                    .tasksId(mdmTaskCreateResponse.getId().toString())
+                    .taskGuid(mdmTaskCreateResponse.getUuid())
+                    .build();
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
+                    shipmentDetails.getId(), e.getMessage()));
         }
     }
 }

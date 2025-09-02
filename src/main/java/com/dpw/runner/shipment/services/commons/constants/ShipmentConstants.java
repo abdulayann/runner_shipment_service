@@ -268,4 +268,9 @@ public class ShipmentConstants {
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
+    public static final String ERROR_INVALID_REQUEST_DG_APPROVE = "Invalid request for sendEmailForDGApprove";
+    public static final String WARNING_DG_APPROVAL_NOT_REQUIRED = "DG approval not required for Import Shipment";
+    public static final String ERROR_SHIPMENT_NOT_FOUND = "Shipment details not found for ID: ";
+    public static final String ERROR_AUDIT_FAILED = "Audit failed for shipmentId: {} and operation: {}. Error: {}";
+
 }

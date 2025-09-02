@@ -81,6 +81,8 @@ public class V1TenantSettingsResponse implements Serializable {
     private List<FileTransferConfigurations> fileTransferConfigurations;
     @JsonProperty("CountryAirCargoSecurity")
     private Boolean countryAirCargoSecurity;
+    @JsonProperty("TaskServiceV2Enabled")
+    private Boolean taskServiceV2Enabled;
 
     @Data
     @Builder
@@ -103,6 +105,7 @@ public class V1TenantSettingsResponse implements Serializable {
         private int intervalTimeUnit;
         @JsonProperty("IsActive")
         private int isActive;
+
     }
     
 }

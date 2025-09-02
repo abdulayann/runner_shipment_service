@@ -1,6 +1,6 @@
-package com.dpw.runner.shipment.services.dto.v1.response;
-
+package com.dpw.runner.shipment.services.dto.response.mdm;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +14,9 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskCreateResponse  implements IRunnerResponse {
-  private String tasksId;
-  private String taskGuid;
+public class MdmTaskCreateResponse implements IRunnerResponse {
+    @JsonProperty("id")
+    private Integer id;
+    @JsonProperty("uuid")
+    private String uuid;
 }

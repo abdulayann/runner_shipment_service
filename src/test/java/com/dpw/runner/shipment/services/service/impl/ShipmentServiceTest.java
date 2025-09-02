@@ -8381,6 +8381,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getRoleId(any())).thenReturn(roleId);
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
             assertThrows(RunnerException.class,() ->shipmentService.sendOceanDGApprovalEmail(request));
         }
@@ -8419,6 +8420,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getRoleId(any())).thenReturn(roleId);
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
             assertThrows(RunnerException.class,()-> shipmentService.sendOceanDGApprovalEmail(request));
             verify(shipmentDao).findById(any());
@@ -8625,7 +8627,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 
@@ -8644,7 +8646,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 

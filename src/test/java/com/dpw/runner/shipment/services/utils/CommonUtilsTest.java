@@ -2356,7 +2356,7 @@ class CommonUtilsTest {
 
         when(iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
-        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, false);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
