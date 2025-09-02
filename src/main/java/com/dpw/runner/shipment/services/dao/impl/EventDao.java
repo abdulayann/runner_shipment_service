@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -100,7 +101,19 @@ public class EventDao implements IEventDao {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
+        if (events.getTenantId() == null) {
+            events.setTenantId(TenantContext.getCurrentTenant());
+        }
         return eventRepository.save(events);
+    }
+
+    @Override
+    public Events saveWithoutTenant(Events events) {
+        updateUserFieldsInEvent(events, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
+        return eventRepository.saveWithoutTenant(events);
     }
 
     @Override
@@ -109,6 +122,9 @@ public class EventDao implements IEventDao {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
+            if (events.getTenantId() == null) {
+                events.setTenantId(TenantContext.getCurrentTenant());
+            }
         }
         return eventRepository.saveAll(eventsList);
     }
@@ -126,6 +142,16 @@ public class EventDao implements IEventDao {
     @Override
     public Optional<Events> findById(Long id) {
         return eventRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Events> findByIdWithoutTenant(Long id) {
+        return eventRepository.findByIdWithoutTenant(id);
+    }
+
+    @Override
+    public void deleteByIdWithoutTenant(Long events) {
+        eventRepository.deleteByIdWithoutTenant(events);
     }
 
     @Override

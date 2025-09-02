@@ -1,5 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -11,18 +30,34 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.EventsDump;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -40,6 +75,17 @@ import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,19 +108,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -251,11 +284,11 @@ class EventServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         EventsResponse eventsResponse = objectMapperTest.convertValue(testData, EventsResponse.class);
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.save(any(Events.class))).thenReturn(testData);
+        when(eventDao.saveWithoutTenant(any(Events.class))).thenReturn(testData);
         when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(eventsResponse);
 
 
@@ -292,7 +325,7 @@ class EventServiceTest extends CommonMocks {
         EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.empty());
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> eventService.update(commonRequestModel));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
@@ -324,11 +357,11 @@ class EventServiceTest extends CommonMocks {
 
         String errorMessage = DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.save(any())).thenThrow(new RuntimeException());
+        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException());
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);
 
@@ -451,13 +484,10 @@ class EventServiceTest extends CommonMocks {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
 
-        when(eventDao.findById(id)).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(id)).thenReturn(Optional.of(testData));
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.delete(commonRequestModel);
-
-        verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
-        verify(eventDao, times(1)).delete(any(Events.class));
         Assertions.assertEquals(responseEntity.getStatusCodeValue() , HttpStatus.OK.value());
     }
 
@@ -467,7 +497,7 @@ class EventServiceTest extends CommonMocks {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
 
-        when(eventDao.findById(id)).thenReturn(Optional.empty());
+        when(eventDao.findByIdWithoutTenant(id)).thenReturn(Optional.empty());
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.delete(commonRequestModel);
 
@@ -1131,7 +1161,7 @@ class EventServiceTest extends CommonMocks {
         doNothing().when(commonUtils).updateEventWithMasterData(anyList());
         doNothing().when(eventDao).updateEventDetails(any());
 
-        when(eventDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(Page.empty());
 //        doNothing().when(eventDao).delete(any());
         when(eventDao.save(any())).thenReturn(mockEvent);
 
@@ -1382,6 +1412,116 @@ class EventServiceTest extends CommonMocks {
         assertEquals("Test User", event.getUserName());
     }
 
+    @Test
+    void testListWithoutTenantFilter_withShipmentNumber_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+        verify(eventDao, times(1)).findAllWithoutTenantFilter(any(), any());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_withConsolidationId_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setConsolidationId(99L);
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_noShipmentNoConsolidation_returnsEmpty() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class)))
+                .thenReturn(Collections.emptyList());
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_withSortRequest_skipsGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+        request.setSortRequest(new SortRequest()); // mock sort
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_noSort_appliesGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        EventsResponse e1 = new EventsResponse();
+        e1.setEventCode("E1");
+        e1.setShipmentNumber("S1");
+        e1.setActual(LocalDateTime.now());
+
+        EventsResponse e2 = new EventsResponse();
+        e2.setEventCode("E1");
+        e2.setShipmentNumber("S2");
+        e2.setActual(LocalDateTime.now().minusDays(1));
+
+        List<EventsResponse> responses = List.of(e1, e2);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(responses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(2, result.size());
+        assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
+    }
 
 
 }

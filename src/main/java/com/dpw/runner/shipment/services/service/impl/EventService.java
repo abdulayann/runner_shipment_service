@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -201,7 +202,7 @@ public class EventService implements IEventService {
             throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
         }
         long id = request.getId();
-        Optional<Events> oldEntity = eventDao.findById(id);
+        Optional<Events> oldEntity = eventDao.findByIdWithoutTenant(id);
         if (oldEntity.isEmpty()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -215,7 +216,7 @@ public class EventService implements IEventService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            saveEventUtil(request);
+            saveEventUtilWithoutTenant(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -302,14 +303,14 @@ public class EventService implements IEventService {
             }
             long id = request.getId();
 
-            Optional<Events> events = eventDao.findById(id);
-            if (!events.isPresent()) {
+            Optional<Events> events = eventDao.findByIdWithoutTenant(id);
+            if (events.isEmpty()) {
                 log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
             String oldEntityJsonString = jsonHelper.convertToJson(events.get());
-            eventDao.delete(events.get());
+            eventDao.deleteByIdWithoutTenant(events.get().getId());
 
             // audit logs
             auditLogService.addAuditLog(
@@ -535,7 +536,7 @@ public class EventService implements IEventService {
         }
         else {
             log.info("Creating criteria for fetching consolidation events");
-            listRequest = CommonUtils.andCriteria("consolidationId", consolidationId, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, consolidationId, "=", listRequest);
             Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
             Page<Events> consolEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
             log.info("Received {} events for consolidation with id {}", consolEventsPage.getTotalElements(), consolidationId);
@@ -1292,6 +1293,132 @@ public class EventService implements IEventService {
     }
 
     @Override
+    public List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source) {
+        log.info("Listing events without tenant filter | shipmentNumber={} | consolidationId={} | source={}",
+                request.getShipmentNumber(), request.getConsolidationId(), source);
+
+        // Step 1: Fetch events and prepare base response list
+        List<EventsResponse> allEventResponses = fetchAndPrepareEvents(request);
+
+        // Step 2: Apply grouping logic if feature flag is enabled
+        List<EventsResponse> finalResponses = applyGroupingIfEnabled(request, allEventResponses);
+
+        log.info("Returning {} events after applying tenant-less fetch and grouping logic.", finalResponses.size());
+        return finalResponses;
+    }
+
+    /**
+     * Fetch events from DB without tenant filter, then enrich responses with branch names and master data.
+     */
+    private List<EventsResponse> fetchAndPrepareEvents(TrackingEventsRequest request) {
+        String shipmentNumber = request.getShipmentNumber();
+        Long consolidationId = request.getConsolidationId();
+
+        log.info("Fetching events | shipmentNumber={} | consolidationId={}", shipmentNumber, consolidationId);
+
+        // Convert incoming tracking request into a common list request format
+        ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
+
+        // Fetch events based on shipmentNumber or consolidationId
+        List<Events> events = new ArrayList<>();
+        if (shipmentNumber != null) {
+            log.info("Fetching events for shipmentNumber={}", shipmentNumber);
+            events = fetchEventsWithoutTenantFilter(shipmentNumber, null, listRequest);
+        } else if (consolidationId != null) {
+            log.info("Fetching events for consolidationId={}", consolidationId);
+            events = fetchEventsWithoutTenantFilter(null, consolidationId, listRequest);
+        } else {
+            log.info("No shipmentNumber or consolidationId provided. No events fetched.");
+        }
+
+        log.info("Fetched {} raw events", events.size());
+
+        // Convert raw Events into EventsResponse
+        List<EventsResponse> eventResponses = jsonHelper.convertValueToList(events, EventsResponse.class);
+        log.info("Converted {} events into EventsResponse", eventResponses.size());
+
+        // Enrich with branch names
+        populateBranchNames(eventResponses);
+        log.info("Populated branch names for events");
+
+        // Enrich with master data (event code → description)
+        setEventCodesMasterData(
+                eventResponses,
+                EventsResponse::getEventCode,
+                EventsResponse::setDescription
+        );
+        log.info("Populated event code descriptions for events");
+
+        return eventResponses;
+    }
+
+    /**
+     * Conditionally apply grouping logic if feature flag is enabled and sortRequest is absent.
+     */
+    private List<EventsResponse> applyGroupingIfEnabled(TrackingEventsRequest request, List<EventsResponse> events) {
+        // Step 1: Check feature flag
+        boolean revampEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled());
+        if (!revampEnabled) {
+            log.info("Events Revamp feature flag is disabled. Returning {} events as-is.", events.size());
+            return events;
+        }
+
+        // Step 2: If request already has sort defined, skip grouping logic
+        if (request.getSortRequest() != null) {
+            log.info("SortRequest present in request. Skipping grouping logic. Returning {} events as-is.", events.size());
+            return events;
+        }
+
+        log.info("Applying events grouping logic on {} events", events.size());
+
+        // Step 3: Group by eventCode, sort each group, then sort groups by latest actual date
+        List<EventsResponse> groupedEvents = events.stream()
+                .collect(Collectors.groupingBy(EventsResponse::getEventCode))
+                .values().stream()
+                .map(group -> {
+                    group.sort(
+                            Comparator.comparing(EventsResponse::getShipmentNumber, Comparator.nullsLast(Comparator.naturalOrder()))
+                                    .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
+                    );
+                    return group;
+                })
+                .sorted(Comparator.comparing(
+                        group -> group.get(0).getActual(),
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .flatMap(List::stream).toList();
+
+        log.info("After grouping and sorting, final event count={}", groupedEvents.size());
+        return groupedEvents;
+    }
+
+    private List<Events> fetchEventsWithoutTenantFilter(String shipmentNumber, Long consolidationId, ListCommonRequest listRequest) {
+        log.info("Fetching events without tenant filter | shipmentNumber={} | consolidationId={}", shipmentNumber, consolidationId);
+
+        // Build criteria based on shipmentNumber or consolidationId
+        if (ObjectUtils.isNotEmpty(shipmentNumber)) {
+            log.info("Applying filter by shipmentNumber={} with entityType={}", shipmentNumber, Constants.SHIPMENT);
+            listRequest = CommonUtils.andCriteria(EventConstants.SHIPMENT_NUMBER, shipmentNumber, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
+        } else if (ObjectUtils.isNotEmpty(consolidationId)) {
+            log.info("Applying filter by consolidationId={}", consolidationId);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, consolidationId, "=", listRequest);
+        } else {
+            log.info("No shipmentNumber or consolidationId provided. No filters applied.");
+        }
+
+        // Build specification + pagination
+        Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
+        log.info("Specification and pagination prepared for Events query");
+
+        // Execute DB call
+        List<Events> allEvents = eventDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()).getContent();
+        log.info("fetchEventsWithoutTenantFilter - retrieved {} events", allEvents.size());
+
+        return allEvents;
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel) {
         TrackingEventsRequest request = (TrackingEventsRequest) commonRequestModel.getData();
 
@@ -1429,7 +1556,7 @@ public class EventService implements IEventService {
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
         }
         else {
-            listRequest = CommonUtils.andCriteria("consolidationId", id, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, id, "=", listRequest);
         }
         Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
         List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
@@ -1457,6 +1584,19 @@ public class EventService implements IEventService {
         handleDuplicationForExistingEvents(entity);
 
         eventDao.save(entity);
+        // auto generate runner events | will remain as it is inside shipment and consolidation
+    }
+
+    public void saveEventUtilWithoutTenant(EventsRequest eventsRequest) {
+        Events entity = convertRequestToEntity(eventsRequest);
+
+        // event code and master-data description
+        commonUtils.updateEventWithMasterData(List.of(entity));
+        eventDao.updateEventDetails(entity);
+
+        handleDuplicationForExistingEvents(entity);
+
+        eventDao.saveWithoutTenant(entity);
         // auto generate runner events | will remain as it is inside shipment and consolidation
     }
 
@@ -1507,7 +1647,9 @@ public class EventService implements IEventService {
 
             predicate = getPredicateForPlaceName(event, root, cb, predicate);
 
-            predicate = getPredicateForEntityId(event, root, cb, predicate);
+            if(Constants.CONSOLIDATION.equalsIgnoreCase(event.getEntityType())) {
+                predicate = getPredicateForEntityId(event, root, cb, predicate);
+            }
 
             predicate = getPredicateForEventType(event, root, cb, predicate);
 
@@ -1547,7 +1689,7 @@ public class EventService implements IEventService {
     private void handleDuplicationForExistingEvents(Events event) {
 
         Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
-        Page<Events> duplicateEventPage = eventDao.findAll(duplicateEventSpecification, Pageable.unpaged());
+        Page<Events> duplicateEventPage = eventDao.findAllWithoutTenantFilter(duplicateEventSpecification, Pageable.unpaged());
 
         if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
             // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
@@ -1561,7 +1703,9 @@ public class EventService implements IEventService {
                             }
                     );
             if (ObjectUtils.isNotEmpty(eventsToDelete)) {
-                eventDao.saveAll(eventsToDelete);
+                for (Events eventToDelete : eventsToDelete) {
+                    eventDao.saveWithoutTenant(eventToDelete);
+                }
             }
         }
     }

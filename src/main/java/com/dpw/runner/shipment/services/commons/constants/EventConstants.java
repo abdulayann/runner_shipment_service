@@ -130,6 +130,7 @@ public class EventConstants {
     public static final String ERROR_FETCHING_EVENTS_MSG = "Error fetching Events";
     public static final String ENTITY_ID = "entityId";
     public static final String ENTITY_TYPE = "entityType";
+    public static final String SHIPMENT_NUMBER = "shipmentNumber";
     public static final String ORIGIN_PORT = "originPort";
     public static final String LOAD_ON_VESSEL = "loadOnVessel";
     public static final String MSCU = "MSCU";
