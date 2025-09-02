@@ -88,6 +88,14 @@ public class ConsumerConfiguration {
         factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
         return factory;
     }
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> bridgeServiceContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(documentConsumerFactory());
+        factory.setConcurrency(1);
+        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
 
     @Bean
     public ConsumerFactory<String, String> documentConsumerFactory() {
