@@ -1,14 +1,19 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.mdm.MDMTaskRetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,14 +23,20 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Optional;
+
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,8 +49,15 @@ class TasksServiceTest {
     @Mock
     private JsonHelper jsonHelper;
 
+    @Mock
+    private IShipmentDao shipmentDao;
+
     @InjectMocks
+    @Spy
     private TasksService tasksService;
+
+    @Mock
+    private IMDMServiceAdapter imdmServiceAdapter;
 
     @BeforeEach
     void setUp() {
@@ -124,5 +142,48 @@ class TasksServiceTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void retrieveMDMTask_Success() throws RunnerException {
+        // Arrange
+        String uuid = "test-uuid-123";
+        String entityGuid = "81ee39c7-86c3-4637-9a3f-82ca00d9905c";
+        Long shipmentId = 789L;
+
+        MDMTaskRetrieveResponse mockMdmResponse = MDMTaskRetrieveResponse.builder()
+                .entityGuid(entityGuid)
+                .build();
+
+        ShipmentDetails mockShipmentDetails = new ShipmentDetails();
+        mockShipmentDetails.setId(shipmentId);
+
+        when(imdmServiceAdapter.getTask(uuid)).thenReturn(mockMdmResponse);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipmentDetails));
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveMDMTask(uuid);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(imdmServiceAdapter).getTask(uuid);
+    }
+
+    @Test
+    void retrieveMDMTask_ShipmentNotFound_ThrowsException() throws RunnerException {
+        // Arrange
+        String uuid = "test-uuid-123";
+        String entityGuid = "81ee39c7-86c3-4637-9a3f-82ca00d9905c";
+
+        MDMTaskRetrieveResponse mockMdmResponse = MDMTaskRetrieveResponse.builder()
+                .entityGuid(entityGuid)
+                .build();
+
+        when(imdmServiceAdapter.getTask(uuid)).thenReturn(mockMdmResponse);
+        lenient().when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RuntimeException.class,
+                () -> tasksService.retrieveMDMTask(uuid));
+
+    }
 
 }
