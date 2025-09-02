@@ -1,19 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.mdm.MDMTaskRetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1SaveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
@@ -25,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -33,11 +39,15 @@ public class TasksService implements ITasksService {
 
     private IV1Service iv1Service;
     private JsonHelper jsonHelper;
+    private IMDMServiceAdapter imdmServiceAdapter;
+    private IShipmentDao shipmentDao;
 
     @Autowired
-    public TasksService(IV1Service iv1Service, JsonHelper jsonHelper) {
+    public TasksService(IV1Service iv1Service, JsonHelper jsonHelper, IMDMServiceAdapter imdmServiceAdapter, IShipmentDao shipmentDao) {
         this.jsonHelper = jsonHelper;
         this.iv1Service = iv1Service;
+        this.imdmServiceAdapter = imdmServiceAdapter;
+        this.shipmentDao = shipmentDao;
     }
 
 
@@ -94,6 +104,17 @@ public class TasksService implements ITasksService {
     }
 
     @Override
+    public ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid) throws RunnerException {
+        MDMTaskRetrieveResponse mdmTaskRetrieveResponse = imdmServiceAdapter.getTask(uuid);
+        String entityGuid = mdmTaskRetrieveResponse.getEntityGuid();
+        ShipmentDetails shipmentDetails = shipmentDao.findByGuid(UUID.fromString(entityGuid))
+                .orElseThrow(() -> new RuntimeException("Shipment not present with guid: " + entityGuid));
+        TaskResponse taskResponse = mapToTaskResponse(mdmTaskRetrieveResponse);
+        taskResponse.setEntityId(shipmentDetails.getId().toString());
+        return ResponseHelper.buildSuccessResponse(taskResponse);
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> updateTask(CommonRequestModel commonRequestModel) {
         var request = (TaskUpdateRequest) commonRequestModel.getData();
         return ResponseHelper.buildSuccessResponse(iv1Service.updateTask(V1SaveRequest.builder().entity(request).entityId(request.getId()).build()));
@@ -104,5 +125,26 @@ public class TasksService implements ITasksService {
         var request = (TaskCreateRequest) commonRequestModel.getData();
         request.setTaskStatus(TaskStatus.PENDING_ACTION.getDescription());
         return ResponseHelper.buildSuccessResponse(iv1Service.createTask(request));
+    }
+
+    private TaskResponse mapToTaskResponse(MDMTaskRetrieveResponse mdmResponse) {
+        TaskResponse taskResponse = new TaskResponse();
+
+        taskResponse.setId(mdmResponse.getId());
+        taskResponse.setGuid(mdmResponse.getGuid());
+        taskResponse.setStatus(mdmResponse.getStatus());
+        taskResponse.setRoleId(mdmResponse.getRoleId());
+        taskResponse.setEntityType(mdmResponse.getEntityType());
+        taskResponse.setTenantId(mdmResponse.getTenantId());
+        taskResponse.setTaskType(mdmResponse.getTaskType());
+        taskResponse.setRejectionRemarks(mdmResponse.getRejectionRemarks());
+        taskResponse.setUserId(mdmResponse.getUserId());
+        taskResponse.setUserName(mdmResponse.getUserName());
+        taskResponse.setUserEmail(mdmResponse.getUserEmail());
+        taskResponse.setSendEmail(mdmResponse.getSendEmail());
+        taskResponse.setIsActive(mdmResponse.getIsActive());
+        taskResponse.setIsCreatedFromV2(mdmResponse.getIsCreatedFromV2());
+
+        return taskResponse;
     }
 }
