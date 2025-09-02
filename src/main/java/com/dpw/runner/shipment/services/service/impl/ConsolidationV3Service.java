@@ -1678,9 +1678,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Boolean.TRUE.equals(fromConsolidation))
             setContextIfNeededForHub(shipmentRequestedType, consolidationDetails);
 
-        // Validate messaging logic for air consoles
-        awbDao.validateAirMessaging(consolidationId);
-        log.info("Air messaging validated for consolidationId: {}", consolidationId);
 
         ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
 
@@ -3951,8 +3948,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) throws RunnerException{
         consolidationValidationV3Util.validateAirDGPermissionsInDetach(shipmentDetails, consolidationDetails);
-        // Validate messaging logic for air consolidations
-        awbDao.validateAirMessaging(consolidationDetails.getId());
         log.info("{} | validateShipmentDetachment | Air messaging validated for consolidationId: {}", LoggerHelper.getRequestIdFromMDC(), consolidationDetails.getId());
         return validateOutstandingDuesForShipments(shipmentDetails);
     }
