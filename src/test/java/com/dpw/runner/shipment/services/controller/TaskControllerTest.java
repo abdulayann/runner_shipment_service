@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import org.junit.jupiter.api.Assertions;
@@ -89,5 +90,33 @@ class TaskControllerTest {
     }
 
 
+    @Test
+    void mdmretrieve() throws RunnerException {
+        // Mock
+        when(tasksService.retrieveMDMTask(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = taskController.retrieveMDMTask("123");
+        // Assert
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void mdmretrieve2() throws RunnerException {
+        // Mock
+        when(tasksService.retrieveMDMTask(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = taskController.retrieveMDMTask("123");
+        // Assert
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void mdmretrieve3() throws RunnerException {
+        // Mock
+        when(tasksService.retrieveMDMTask(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = taskController.retrieveMDMTask("123");
+        // Assert
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

@@ -40,15 +40,14 @@ public class TasksService implements ITasksService {
     private IV1Service iv1Service;
     private JsonHelper jsonHelper;
     private IMDMServiceAdapter imdmServiceAdapter;
-
-    @Autowired
     private IShipmentDao shipmentDao;
 
     @Autowired
-    public TasksService(IV1Service iv1Service, JsonHelper jsonHelper, IMDMServiceAdapter imdmServiceAdapter) {
+    public TasksService(IV1Service iv1Service, JsonHelper jsonHelper, IMDMServiceAdapter imdmServiceAdapter, IShipmentDao shipmentDao) {
         this.jsonHelper = jsonHelper;
         this.iv1Service = iv1Service;
         this.imdmServiceAdapter = imdmServiceAdapter;
+        this.shipmentDao = shipmentDao;
     }
 
 
