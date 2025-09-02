@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -1411,6 +1412,114 @@ class EventServiceTest extends CommonMocks {
         assertEquals("Test User", event.getUserName());
     }
 
+    @Test
+    void testListWithoutTenantFilter_withShipmentNumber_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(eq(events), eq(EventsResponse.class))).thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+        verify(eventDao, times(1)).findAllWithoutTenantFilter(any(), any());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_withConsolidationId_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setConsolidationId(99L);
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(eq(events), eq(EventsResponse.class))).thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_noShipmentNoConsolidation_returnsEmpty() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class)))
+                .thenReturn(Collections.emptyList());
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_withSortRequest_skipsGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+        request.setSortRequest(new SortRequest()); // mock sort
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_noSort_appliesGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        EventsResponse e1 = new EventsResponse();
+        e1.setEventCode("E1");
+        e1.setShipmentNumber("S1");
+        e1.setActual(LocalDateTime.now());
+
+        EventsResponse e2 = new EventsResponse();
+        e2.setEventCode("E1");
+        e2.setShipmentNumber("S2");
+        e2.setActual(LocalDateTime.now().minusDays(1));
+
+        List<EventsResponse> responses = List.of(e1, e2);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(responses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(2, result.size());
+        assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
+    }
 
 
 }
