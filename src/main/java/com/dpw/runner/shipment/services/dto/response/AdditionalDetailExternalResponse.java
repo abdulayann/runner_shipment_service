@@ -136,6 +136,7 @@ public class AdditionalDetailExternalResponse implements IRunnerResponse {
     private LocalDateTime dateOfReceipt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfIssue;
+    private Boolean isRatedBL;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime shippedOnboard;

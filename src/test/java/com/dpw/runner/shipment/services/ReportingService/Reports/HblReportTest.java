@@ -13,10 +13,13 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -56,6 +59,7 @@ import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -84,6 +88,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -454,6 +459,7 @@ class HblReportTest extends CommonMocks {
         hblModel.setUser(usersDto);
         Hbl hbl = new Hbl();
         hbl.setId(123L);
+        hbl.setShipmentId(123L);
 
         HblDataDto hblDataDto = new HblDataDto();
         hblDataDto.setMarksAndNumbers("123");
@@ -611,6 +617,249 @@ class HblReportTest extends CommonMocks {
         entityAddress.setCountry("India");
         when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
         assertNotNull(hblReport.populateDictionary(hblModel));
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_nullAdditionalDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(null);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_nullShipmentDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(null);
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_emptyShipmentDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_nullHbl() {
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, null);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueAndValidCharges() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("PREPAID");
+        hblFreightsAndCharges.setValue(11.00);
+        hblFreightsAndCharges.setCurrency("INR");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+        assertTrue(dictionary.containsKey("freightsAndCharges")
+                        || !dictionary.isEmpty(), "Should populate dictionary with charges");
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullCurrency() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setValue(11.00);
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullValue() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setCurrency("USD");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullCharges() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setCurrency("USD");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullChargeType() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("1001");
+        hblFreightsAndCharges.setCurrency("USD");
+        hblFreightsAndCharges.setValue(100.00);
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenFreightsAndChargesIsNull_11() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(null);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void whenFreightsAndChargesIsNull_thenSkipProcessing() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(null);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void whenFreightsAndChargesIsEmpty_thenSkipProcessing() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(Collections.emptyList());
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenRatedBLThrowsValidationError() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(4L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(4L)).thenReturn(Optional.of(shipmentDetails));
+        hbl.setHblFreightsAndCharges(new ArrayList<>());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLFalse() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(2L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(false);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(2L)).thenReturn(Optional.of(shipmentDetails));
+        Map<String, Object> dictionary = new HashMap<>();
+
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+        assertFalse(dictionary.isEmpty());
     }
 
     @Test
