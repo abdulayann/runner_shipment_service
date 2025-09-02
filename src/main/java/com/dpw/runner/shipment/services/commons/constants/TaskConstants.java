@@ -6,4 +6,5 @@ public class TaskConstants {
     public static final String TASK_CREATION = "/create";
     public static final String TASK_CREATION_SUCCESSFUL = "Successful task Data Created";
     public static final String ID = "Id";
+    public static final String UUID = "uuid";
 }
