@@ -1425,7 +1425,8 @@ class EventServiceTest extends CommonMocks {
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
 
         when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
-        when(jsonHelper.convertValueToList(eq(events), eq(EventsResponse.class))).thenReturn(eventResponses);
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
 
         List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
 
@@ -1447,7 +1448,8 @@ class EventServiceTest extends CommonMocks {
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
 
         when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
-        when(jsonHelper.convertValueToList(eq(events), eq(EventsResponse.class))).thenReturn(eventResponses);
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
 
         List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
 
