@@ -178,4 +178,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String partner;
     private Boolean reefer;
     private MigrationStatus migrationStatus;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }
