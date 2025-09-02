@@ -66,4 +66,21 @@ public class TaskController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_UUID)
+    public ResponseEntity<IRunnerResponse> retrieveMDMTask(@ApiParam(value = TaskConstants.UUID, required = true) @RequestParam String uuid) {
+        String responseMsg;
+        try {
+            return tasksService.retrieveMDMTask(uuid);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }
