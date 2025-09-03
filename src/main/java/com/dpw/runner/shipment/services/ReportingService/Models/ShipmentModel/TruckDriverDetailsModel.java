@@ -40,4 +40,6 @@ public class TruckDriverDetailsModel implements IDocumentModel {
     private Long consolidationId;
     @JsonProperty("SelfTransporterName")
     private String selfTransporterName;
+    @JsonProperty("DriverID")
+    private String driverId;
 }

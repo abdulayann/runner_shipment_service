@@ -15,6 +15,9 @@ public class CustomLocalDateTimeDeserializer extends JsonDeserializer<LocalDateT
     @Override
     public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         String dateTimeString = jsonParser.getValueAsString();
+        if (dateTimeString == null || dateTimeString.trim().isEmpty()) {
+            return null;
+        }
         return multiFormatLocalDateTimeConverter.convert(dateTimeString);
     }
 

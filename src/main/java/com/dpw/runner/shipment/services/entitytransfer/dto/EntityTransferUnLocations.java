@@ -21,6 +21,7 @@ public class EntityTransferUnLocations implements IEntityTranferBaseEntity, Seri
     public String lookupDesc;
     public String lookupDescAir;
     public String lookupDescSea;
+    public String lookupDescV3;
     public String IATACode;
     public String IATARegionCode;
     public String PortName;

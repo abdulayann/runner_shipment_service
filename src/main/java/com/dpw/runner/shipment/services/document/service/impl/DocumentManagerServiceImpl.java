@@ -12,6 +12,9 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.FileUtils;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,8 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     @Autowired
     private HttpServletRequest httpServletRequest;
 
+    @Autowired
+    private JsonHelper jsonHelper;
 
     @Override
     public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file, String filename) {
@@ -120,10 +125,9 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     }
 
     @Override
-    public byte[] downloadDocument(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(CommonRequestModel commonRequestModel) {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-        var response = restClient.downloadDocument(request.getId());
-        return response.getBody();
+        return restClient.downloadDocument(request.getId());
     }
 
     @Override
@@ -151,14 +155,17 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     }
 
     @Override
-    public void pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest) {
+    public DocumentManagerResponse<DocumentManagerDataResponse> pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest) {
         try {
             long start = System.currentTimeMillis();
+            log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(uploadRequest));
             var uploadResponse = this.temporaryFileUpload(file, filename);
-            if (Boolean.FALSE.equals(uploadResponse.getSuccess()))
+            if (Boolean.FALSE.equals(uploadResponse.getSuccess())) {
+                log.error("{} | {} Processing temporaryFileUpload Failed for Doc Response: {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(uploadResponse));
                 throw new IOException(FILE_UPLOAD_TO_TEMP_FAILED);
+            }
 
-            this.saveFile(DocumentManagerSaveFileRequest.builder()
+            var response = this.saveFile(DocumentManagerSaveFileRequest.builder()
                     .fileName(filename)
                     .entityType(uploadRequest.getEntityType())
                     .entityKey(uploadRequest.getKey())
@@ -173,10 +180,14 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
                     .childType(uploadRequest.getChildType())
                     .transportMode(uploadRequest.getTransportMode())
                     .shipmentType(uploadRequest.getShipmentType())
+                    .consolidationType(uploadRequest.getConsolidationType())
+                    .overrideRuleDocName(true)
                 .build());
             log.info("Time take to pushSystemGeneratedDocumentToDocMaster: {}ms", System.currentTimeMillis() - start);
+            return response;
         } catch (Exception ex) {
-            log.error("Request: {} | Error while uploading file to document service: Error: {}", LoggerHelper.getRequestIdFromMDC(), ex.getMessage());
+            log.error("{} | {} Failed temporaryFileUpload process for Doc Response: {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(ex.getLocalizedMessage()));
+            throw new DocumentClientException(ex.getMessage());
         }
     }
 }

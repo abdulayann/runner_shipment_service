@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,7 +83,7 @@ public class AdditionalDetailsListResponse implements IRunnerResponse {
     private Integer copy;
     private String BLChargesDisplay;
     private String BLExporterShipment;
-    private String screeningStatus;
+    private List<String> screeningStatus;
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;

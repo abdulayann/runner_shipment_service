@@ -85,6 +85,9 @@ class PreAlertReportTest extends CommonMocks {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private MasterDataFactory masterDataFactory;
 
     @Mock

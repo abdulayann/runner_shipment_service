@@ -4,5 +4,5 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IEnumConstantService {
-    ResponseEntity<IRunnerResponse> list();
+    ResponseEntity<IRunnerResponse> list(Boolean isFromV3);
 }

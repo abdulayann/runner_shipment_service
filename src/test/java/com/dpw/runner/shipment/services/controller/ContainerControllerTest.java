@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -130,7 +131,7 @@ class ContainerControllerTest {
     @Test
     void downloadCSV() throws RunnerException {
         boolean isSuccess = true;
-        doNothing().when(containerService).downloadContainers(any(), any());
+        lenient().doNothing().when(containerService).downloadContainers(any(), any());
         containerController.downloadCSV(new MockHttpServletResponse(), new BulkDownloadRequest());
         assertTrue(isSuccess);
     }

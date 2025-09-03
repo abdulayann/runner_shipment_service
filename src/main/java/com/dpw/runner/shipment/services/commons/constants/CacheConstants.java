@@ -37,4 +37,6 @@ public class CacheConstants {
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String CUSTOMER_BOOKING_ID = "CustomerBookingId";
     public static final String CUSTOMER_BOOKING_GUID = "CustomerBookingGuid";
+    public static final String ORGANIZATIONS = "Organizations";
+    public static final String ORDER_DPW = "ORDER_DPW";
 }

@@ -1,43 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -200,25 +162,6 @@ import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -243,6 +186,64 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -1158,6 +1159,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -1189,7 +1191,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
-        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantIds", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -1207,6 +1212,104 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
         assertEquals("AE", responseBody.getDepartment());
+    }
+
+    @Test
+    void testGetDefaultConsolidationPopulatesDefaultDepartment2() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals(1, responseBody.getSourceTenantId());
+        assertEquals("AE", responseBody.getDepartment());
+    }
+
+    @Test
+    void testGetDefaultConsolidationPopulatesDefaultDepartment3() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantIds", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals(1, responseBody.getSourceTenantId());
+        assertEquals("AE", responseBody.getDepartment());
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayName", "EGYPT Alexandria p10");
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest2(){
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
+    }
+    @Test
+    void setOriginBranchMasterDataTest3(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayNames", "EGYPT Alexandria p10");
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
     }
 
     @Test
@@ -2306,8 +2409,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2355,8 +2456,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2397,8 +2496,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -5522,8 +5619,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), true));
     }
 
@@ -5533,8 +5628,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5545,8 +5638,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(2);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5557,8 +5648,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertDoesNotThrow(() -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5569,8 +5658,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5581,8 +5668,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), true));
     }
 

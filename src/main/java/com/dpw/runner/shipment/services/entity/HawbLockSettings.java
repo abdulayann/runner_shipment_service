@@ -315,4 +315,163 @@ public class HawbLockSettings extends MultiTenancy {
 
     @Column(name = "packing_hs_code_lock")
     private Boolean packingHsCodeLock;
+
+    @Column(name = "shipper_address_line2_lock")
+    private Boolean shipperAddressLine2Lock;
+
+    @Column(name = "shipper_city_lock")
+    private Boolean shipperCityLock;
+
+    @Column(name = "shipper_state_code")
+    private Boolean shipperStateCode;
+
+    @Column(name = "shipper_zip_code")
+    private Boolean shipperZipCode;
+
+    @Column(name = "shipper_country_code_lock")
+    private Boolean shipperCountyCodeLock;
+
+    @Column(name = "shipper_country_name_lock")
+    private Boolean shipperCountryNameLock;
+
+    @Column(name = "shipper_contact_name_lock")
+    private Boolean shipperContactNameLock;
+
+    @Column(name = "shipper_phone_number_lock")
+    private Boolean shipperPhoneNumberLock;
+
+    @Column(name = "shipper_tax_number_lock")
+    private Boolean shipperTAXNumberLock;
+
+    @Column(name = "shipper_account_number")
+    private Boolean shipperAccountNumber;
+
+    @Column(name = "consignee_address_line2_lock")
+    private Boolean consigneeAddressLine2Lock;
+
+    @Column(name = "consignee_city_lock")
+    private Boolean consigneeCityLock;
+
+    @Column(name = "consignee_state_code")
+    private Boolean consigneeStateCode;
+
+    @Column(name = "consignee_zip_code")
+    private Boolean consigneeZipCode;
+
+    @Column(name = "consignee_country_code_lock")
+    private Boolean consigneeCountyCodeLock;
+
+    @Column(name = "consignee_country_name_lock")
+    private Boolean consigneeCountryNameLock;
+
+    @Column(name = "consignee_contact_name_lock")
+    private Boolean consigneeContactNameLock;
+
+    @Column(name = "consignee_phone_number_lock")
+    private Boolean consigneePhoneNumberLock;
+
+    @Column(name = "consignee_tax_number_lock")
+    private Boolean consigneeTAXNumberLock;
+
+    @Column(name = "consignee_account_number")
+    private Boolean consigneeAccountNumber;
+
+    @Column(name = "notify_address_line2_lock")
+    private Boolean notifyAddressLine2Lock;
+
+    @Column(name = "notify_city_lock")
+    private Boolean notifyCityLock;
+
+    @Column(name = "notify_state_code")
+    private Boolean notifyStateCode;
+
+    @Column(name = "notify_zip_code")
+    private Boolean notifyZipCode;
+
+    @Column(name = "notify_country_code_lock")
+    private Boolean notifyCountyCodeLock;
+
+    @Column(name = "notify_country_name_lock")
+    private Boolean notifyCountryNameLock;
+
+    @Column(name = "notify_contact_name_lock")
+    private Boolean notifyContactNameLock;
+
+    @Column(name = "notify_phone_number_lock")
+    private Boolean notifyPhoneNumberLock;
+
+    @Column(name = "notify_tax_number_lock")
+    private Boolean notifyTAXNumberLock;
+
+    @Column(name = "issuing_agent_address_line2_lock")
+    private Boolean issuingAgentAddressLine2Lock;
+
+    @Column(name = "issuing_agent_city_lock")
+    private Boolean issuingAgentCityLock;
+
+    @Column(name = "issuing_agent_state_code")
+    private Boolean issuingAgentStateCode;
+
+    @Column(name = "issuing_agent_zip_code")
+    private Boolean issuingAgentZipCode;
+
+    @Column(name = "issuing_agent_country_code_lock")
+    private Boolean issuingAgentCountyCodeLock;
+
+    @Column(name = "issuing_agent_country_name_lock")
+    private Boolean issuingAgentCountryNameLock;
+
+    @Column(name = "issuing_agent_contact_name_lock")
+    private Boolean issuingAgentContactNameLock;
+
+    @Column(name = "issuing_agent_phone_number_lock")
+    private Boolean issuingAgentPhoneNumberLock;
+
+    @Column(name = "issuing_agent_tax_number_lock")
+    private Boolean issuingAgentTAXNumberLock;
+
+    @Column(name = "specified_address_location")
+    private Boolean specifiedAddressLocation;
+
+    @Column(name = "cass_code")
+    private Boolean cassCode;
+
+    @Column(name = "account_number")
+    private Boolean accountNumber;
+
+    @Column(name = "other_information_code_lock")
+    private Boolean otherInformationCodeLock;
+
+    @Column(name = "override_auto_update_lock")
+    private Boolean overrideAutoUpdateLock;
+
+    @Column(name = "country_code_lock")
+    private Boolean countryCodeLock;
+
+    @Column(name = "ra_number_lock")
+    private Boolean raNumberLock;
+
+    @Column(name = "ra_expiry_date_lock")
+    private Boolean raExpiryDateLock;
+
+    @Column(name = "screening_status_lock")
+    private Boolean screeningStatusLock;
+
+    @Column(name = "screening_time_lock")
+    private Boolean screeningTimeLock;
+
+    @Column(name = "screener_name_lock")
+    private Boolean screenerNameLock;
+
+    @Column(name = "gross_volume_lock")
+    private Boolean grossVolumeLock;
+
+    @Column(name = "gross_volume_unit_lock")
+    private Boolean grossVolumeUnitLock;
+
+    @Column(name = "dimensions_lock")
+    private Boolean dimensionsLock;
+
+    @Column(name = "version_lock")
+    private Boolean versionLock;
 }

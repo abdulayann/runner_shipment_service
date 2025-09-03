@@ -33,6 +33,12 @@ public class PackingResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomVolumeValueSerializer.class)
     private BigDecimal volume;
     private String volumeUnit;
+    @JsonSerialize(using = CustomVolumeValueSerializer.class)
+    private BigDecimal volumePerPack;
+    private String volumePerPackUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    private BigDecimal cargoWeightPerPack;
+    private String packWeightUnit;
     private String inspections;
     private String origin;
     private String commodity;
@@ -66,6 +72,7 @@ public class PackingResponse implements IRunnerResponse {
     private String vinNumber;
     private Long containerId;
     private String containerNumber;
+    private String containerCode;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
@@ -74,6 +81,9 @@ public class PackingResponse implements IRunnerResponse {
     private String chargeableUnit;
     private String customsReleaseCode;
     private String shipmentNumber;
+    private Long shipmentContainerAssignedToShipmentCargo;
+    private String shipmentContainerNumberAssignedToShipmentCargo;
+    private String shipmentContainerCodeAssignedToShipmentCargo;
     private Boolean shipmentHazardous;
     private Long innerPacksId;
     private Long innerPacksCount;
@@ -100,6 +110,7 @@ public class PackingResponse implements IRunnerResponse {
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
+    private String shipmentType;
 
     public boolean getAssigned() {return containerId != null;}
 }

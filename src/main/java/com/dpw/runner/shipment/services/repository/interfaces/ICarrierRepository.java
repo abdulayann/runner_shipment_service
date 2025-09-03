@@ -5,12 +5,14 @@ import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
-@Generated
+@Generated @InterBranchEntity
 public interface ICarrierRepository extends JpaRepository<CarrierDetails, Long> {
     @Modifying @Transactional
     @Query(value = "Update carrier_details set origin_loc_code = ?2, origin_port_loc_code = ?3, " +

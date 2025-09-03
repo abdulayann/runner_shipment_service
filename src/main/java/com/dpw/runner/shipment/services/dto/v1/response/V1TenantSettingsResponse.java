@@ -27,6 +27,7 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean UseV2ScreenForBillCharges;
     private Boolean P100Branch;
     private String DPWDateFormat;
+    private String DefaultPackUnit;
     private Integer VolumeDecimalPlace;
     private Integer WeightDecimalPlace;
     private Integer WVDigitGrouping;

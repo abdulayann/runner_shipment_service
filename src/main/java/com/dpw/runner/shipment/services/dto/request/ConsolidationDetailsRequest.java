@@ -2,18 +2,18 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -110,6 +110,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private PartiesRequest borrowedFrom;
     private PartiesRequest creditor;
     private PartiesRequest coLoadWith;
+    private Long bookingAgent;
+    private String coLoadCarrierName;
     private List<PackingRequest> packingList;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private List<RoutingsRequest> routingsList;
@@ -145,4 +147,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private String partner;
+
+    private Boolean borrowed;
+    private MigrationStatus migrationStatus;
 }

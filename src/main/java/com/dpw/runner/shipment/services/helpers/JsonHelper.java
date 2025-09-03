@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -181,6 +183,10 @@ public class JsonHelper {
         return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
+    public <T, F> Set<F> convertValueToSet(T object, Class<F> clazz) {
+        return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(Set.class, clazz));
+    }
+
     public Map<String, Object> convertJsonToMap(String json) {
         Map<String, Object> map = null;
         try {
@@ -197,6 +203,10 @@ public class JsonHelper {
 
     public <T,F> F convertCreateValue(T object, Class<F> clazz) {
         return createMapper.convertValue(object, clazz);
+    }
+
+    public <T> T updateValue(T valueToUpdate, Object overrides) throws JsonMappingException {
+        return mapper.updateValue(valueToUpdate, overrides);
     }
 
 }

@@ -1,0 +1,1 @@
+update public.awb set air_message_status ='FAILED' where tenant_id ='536' and shipment_id ='68759';

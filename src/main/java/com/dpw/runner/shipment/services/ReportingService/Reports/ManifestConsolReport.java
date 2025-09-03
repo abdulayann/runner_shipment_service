@@ -1,5 +1,33 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT_BY_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HSN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OBJECT_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENTS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_AND_CONTAINER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_MAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_MBL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_TYPE_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_VOLUME_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_VOLUME_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_VOLUME_UNIT_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_WEIGHT_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_WEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_WEIGHT_UNIT_MANIFEST;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -15,14 +43,14 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 @Slf4j
@@ -132,6 +160,10 @@ public class ManifestConsolReport extends IReport {
 
         dictionary.put(TOTAL_MBL, 1);
         dictionary.put(TOTAL_MAWB, 1);
+
+        if (model.getConsolidation() != null) {
+            this.populateConsolidationReportData(dictionary, null, model.getConsolidation().getId());
+        }
 
         return dictionary;
     }

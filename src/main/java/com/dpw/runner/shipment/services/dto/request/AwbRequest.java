@@ -28,7 +28,7 @@ public class AwbRequest implements IRunnerRequest {
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     private List<AwbRoutingInfo> awbRoutingInfo;
     @Valid
-    private AwbCargoInfo awbCargoInfo;
+    private AwbCargoInfoRequest awbCargoInfo;
     private AwbPaymentInfo awbPaymentInfo;
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
     private AwbOtherInfo awbOtherInfo;

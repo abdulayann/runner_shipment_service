@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -120,7 +121,7 @@ public class AuditLogService implements IAuditLogService {
     public Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
-            var triplet = fetchList(commonRequestModel);
+            var triplet = fetchList(commonRequestModel, null);
             List<Map<String, Object>> listAsMap = getData(triplet.getLeft());
             return excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
         } catch (Exception e) {
@@ -249,10 +250,10 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, String xSource) {
         String responseMsg;
         try {
-            var triplet = fetchList(commonRequestModel);
+            var triplet = fetchList(commonRequestModel, xSource);
             return ResponseHelper.buildListSuccessResponse(
                     triplet.getLeft(),
                     triplet.getMiddle(),
@@ -265,13 +266,17 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel) {
+    public Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel, String xSource) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for audit log list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Pair<Specification<AuditLog>, Pageable> tuple = fetchData(request, AuditLog.class);
-        Page<AuditLog> auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<AuditLog> auditLogPage;
+        if(Objects.equals(xSource, Constants.NETWORK_TRANSFER))
+            auditLogPage = auditLogDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+        else
+            auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Audit log list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         return Triple.of(
                 convertEntityListToDtoList(auditLogPage.getContent()),
@@ -313,11 +318,43 @@ public class AuditLogService implements IAuditLogService {
         for (Map.Entry<String, AuditLogChanges> entry : auditLog.getChanges().entrySet()) {
             AuditLogChanges auditChange = entry.getValue();
             auditChange.setFieldName(replaceFieldNames(auditLog, entry.getKey()));
+
+            // Modifying Status Field of ShipmentDetails Entity and Parent
+            log.info("Modifying Status Field of ShipmentDetails Entity and ShipmentDetails Parent basis ShipmentStatus mapping");
+            setStatusFieldOfShipmentDetailsEntity(auditChange, auditLog);
+
             changes.add(entry.getValue());
         }
 
         response.setChanges(changes);
         return response;
+    }
+
+    private void setStatusFieldOfShipmentDetailsEntity(AuditLogChanges auditChange, AuditLog auditLog) {
+
+        if (Objects.nonNull(auditLog.getEntity()) && auditLog.getEntity().equals("ShipmentDetails") && auditLog.getParentType().equals("ShipmentDetails")
+                && auditChange.getFieldName().equals("Status")) {
+
+            // Converting OldValue if present in ShipmentStatus Enum
+            if (auditChange.getOldValue() instanceof Number) {
+                int oldValueInt = ((Number) auditChange.getOldValue()).intValue();
+                try {
+                    auditChange.setOldValue(ShipmentStatus.fromValue(oldValueInt).getDescription());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Old status value: {} not present in ShipmentStatus", oldValueInt);
+                }
+            }
+
+            // Converting newValue if present in ShipmentStatus Enum
+            if (auditChange.getNewValue() instanceof Number) {
+                int newValueInt = ((Number) auditChange.getNewValue()).intValue();
+                try {
+                    auditChange.setNewValue(ShipmentStatus.fromValue(newValueInt).getDescription());
+                } catch (IllegalArgumentException e) {
+                    log.warn("New status value: {} not present in ShipmentStatus", newValueInt);
+                }
+            }
+        }
     }
 
     public String replaceFieldNames(AuditLog auditLog, String key) {

@@ -1,10 +1,19 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.HblConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -19,7 +28,19 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblLockSettings;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -36,8 +57,24 @@ import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,15 +86,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -313,6 +341,39 @@ public class HblService implements IHblService {
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateSealNumberWarning(Long shipmentId) {
+        // Get shipment
+        ShipmentDetails shipment = shipmentDao.findById(shipmentId)
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
+
+        // Check mandatory conditions (Sea + Export + has containers)
+        if (!isSeaExportShipment(shipment) || shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) {
+            return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
+        }
+        // Find containers missing all seals
+        List<String> containersWithoutSeals = shipment.getContainersList().stream().filter(this::isSealEmpty).map(Containers::getContainerNumber).filter(Objects::nonNull).collect(Collectors.toList());
+        // Return warning only if containers are missing seals
+        if (!containersWithoutSeals.isEmpty()) {
+            return ResponseEntity.ok(
+                    RunnerResponse.builder().success(true).warning("Seal Number not entered against the Container Number - " + String.join(", ", containersWithoutSeals)).build());
+        }
+        return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
+    }
+
+    private boolean isSeaExportShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection());
+    }
+
+    private boolean isSealEmpty(Containers container) {
+        return StringUtility.isEmpty(container.getCarrierSealNumber())
+                && StringUtility.isEmpty(container.getCustomsSealNumber())
+                && StringUtility.isEmpty(container.getShipperSealNumber())
+                && StringUtility.isEmpty(container.getVeterinarySealNumber());
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
@@ -528,7 +589,7 @@ public class HblService implements IHblService {
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
-            shipmentDao.save(shipmentDetail, false);
+            shipmentDao.save(shipmentDetail, false, false);
             syncShipment = true;
         }
         return syncShipment;
@@ -774,6 +835,7 @@ public class HblService implements IHblService {
     }
 
     public void validateHblContainerNumberCondition(Hbl hblObject){
+        ShipmentSettingsDetails shipmentSettingFromContext = commonUtils.getShipmentSettingFromContext();
         if(!Objects.isNull(hblObject.getHblContainer()) ) {
             List<HblContainerDto> hblContainers = hblObject.getHblContainer().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!hblContainers.isEmpty())
@@ -782,7 +844,7 @@ public class HblService implements IHblService {
 
         if(!Objects.isNull(hblObject.getHblCargo()) ) {
             List<HblCargoDto> hblCargos = hblObject.getHblCargo().stream().filter(c -> StringUtility.isEmpty(c.getBlContainerContainerNumber())).toList();
-            if (!hblCargos.isEmpty())
+            if (!hblCargos.isEmpty() && !Boolean.TRUE.equals(shipmentSettingFromContext.getAllowUnassignedBlInvGeneration()))
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment.");
         }
     }
@@ -1125,8 +1187,9 @@ public class HblService implements IHblService {
                     hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
                 break;
             case "PlaceOfDelivery":
-                if (!Objects.isNull(carrierDetails))
-                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                if (Objects.nonNull(carrierDetails)) {
+                    setPlaceOfDeliveryInHbl(v1Data, hblDataDto, carrierDetails);
+                }
                 break;
             case "PlaceOfReceipt":
                 if (!Objects.isNull(additionalDetails))
@@ -1136,7 +1199,7 @@ public class HblService implements IHblService {
                 if (!Objects.isNull(carrierDetails)) {
                     hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
                     hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
-                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                    setPlaceOfDeliveryInHbl(v1Data, hblDataDto, carrierDetails);
                 }
                 if (!Objects.isNull(additionalDetails)) {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
@@ -1144,7 +1207,15 @@ public class HblService implements IHblService {
                 break;
             default:
         }
+    }
 
+    private void setPlaceOfDeliveryInHbl(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, CarrierDetails carrierDetails) {
+        if (null != carrierDetails.getDestinationPortLocCode() &&
+                carrierDetails.getDestinationPortLocCode().equals(carrierDetails.getDestinationLocCode())) {
+            hblDataDto.setPlaceOfDelivery("");
+        } else {
+            hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+        }
     }
 
     private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {

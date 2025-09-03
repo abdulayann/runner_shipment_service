@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +45,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -66,6 +68,13 @@ class TransportOrderReportTest extends CommonMocks {
     @Mock
     private IShipmentDao shipmentDao;
 
+    @Mock
+    private IContainerDao containerDao;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -86,6 +95,12 @@ class TransportOrderReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(TransportOrderModel transportOrderModel) {
@@ -275,6 +290,8 @@ class TransportOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
         shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
@@ -290,6 +307,8 @@ class TransportOrderReportTest extends CommonMocks {
         truckDriverDetailsModels.add(truckDriverDetailsModel);
         shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }

@@ -10,19 +10,34 @@ import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
-import lombok.experimental.Accessors;
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import javax.persistence.*;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Setter
@@ -50,6 +65,9 @@ public class Containers extends MultiTenancy {
     @DedicatedMasterData(type = Constants.CONTAINER_TYPE_MASTER_DATA)
     private String containerCode;
 
+    @Column(name = "teu")
+    private BigDecimal teu;
+
     @Column(name = "container_number")
     private String containerNumber;
 
@@ -57,7 +75,7 @@ public class Containers extends MultiTenancy {
     private String sealNumber;
 
     @Column(name = "description_of_goods")
-    @Size(max = 2048, message = "max size is 2048 for description_of_goods")
+    @Size(max = 25000, message = "max size is 25000 for description_of_goods")
     private String descriptionOfGoods;
 
     @Column(name = "net_weight")
@@ -98,18 +116,22 @@ public class Containers extends MultiTenancy {
     private Long containerCount;
 
     @Column(name = "carrier_seal_number")
+    @Size(max = 100, message = "max size is 100 for carrier_seal_number")
     private String carrierSealNumber;
 
     @Column(name = "shipper_seal_number")
+    @Size(max = 100, message = "max size is 100 for shipper_seal_number")
     private String shipperSealNumber;
 
     @Column(name = "terminal_operator_seal_number")
     private String terminalOperatorSealNumber;
 
     @Column(name = "veterinary_seal_number")
+    @Size(max = 100, message = "max size is 100 for veterinary_seal_number")
     private String veterinarySealNumber;
 
     @Column(name = "customs_seal_number")
+    @Size(max = 100, message = "max size is 100 for customs_seal_number")
     private String customsSealNumber;
 
     @Column(name = "customs_release_code")
@@ -205,7 +227,7 @@ public class Containers extends MultiTenancy {
     private String packsType;
 
     @Column(name = "marks_n_nums")
-    @Size(max=50, message = "max size is 50 for marks_n_nums")
+    @Size(max=25000, message = "max size is 25000 for marks_n_nums")
     private String marksNums;
 
     @Column(name = "inner_package_measurement_unit")
@@ -372,21 +394,54 @@ public class Containers extends MultiTenancy {
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
 
+    @Column(name = "humidity")
+    private BigDecimal humidity;
+
+    @Column(name = "vents")
+    private BigDecimal vents;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "pra_status")
     private ContainerPraStatus praStatus;
+
+    @Column(name = "packages_per_container")
+    private Long packagesPerContainer;
+
+    @Column(name = "container_package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String containerPackageType;
+
+    @Column(name = "cargo_weight_per_container")
+    private BigDecimal cargoWeightPerContainer;
+
+    @Column(name = "container_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
+    private String containerWeightUnit;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Containers that = (Containers) o;
-        return Objects.equals(getId(), that.getId());
+
+        // If both IDs are non-null, compare only by ID
+        if (this.getId() != null && that.getId() != null) {
+            return Objects.equals(this.getId(), that.getId());
+        }
+
+        // Else, fallback to GUID comparison (ensuring non-null GUIDs)
+        return Objects.equals(this.getGuid(), that.getGuid());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId());
+        // If ID is non-null, use only ID
+        if (getId() != null) {
+            return Objects.hash(getId());
+        }
+
+        // Else use GUID (safely)
+        return Objects.hash(getGuid());
     }
 
 }

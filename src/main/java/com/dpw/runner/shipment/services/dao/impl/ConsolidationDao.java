@@ -10,8 +10,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
@@ -24,12 +26,14 @@ import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjectio
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -43,9 +47,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NON_DG_MARKING_ERROR_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -63,6 +70,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -82,6 +91,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private IPackingDao packingDao;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -91,12 +102,24 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
+        if(consolidationDetails.getMigrationStatus() == null && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        } else if (consolidationDetails.getMigrationStatus() == null){
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
+        }
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
+        return consolidationDetails;
+    }
+
+    @Nullable
+    private ConsolidationDetails getConsolidationDetails(ConsolidationDetails consolidationDetails) {
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
             Optional<ConsolidationDetails> oldEntity = findById(id);
-            if (!oldEntity.isPresent()) {
-                log.debug("Container is null for Id {}", consolidationDetails.getId());
+            if (oldEntity.isEmpty()) {
+                log.debug("Consolidation is null for Id {}", consolidationDetails.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(consolidationDetails.getShipmentsList() == null) {
@@ -104,8 +127,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
-        return consolidationDetails;
+        return oldConsole;
     }
 
     @Override
@@ -114,7 +136,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment) {
+    public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails);
         ConsolidationDetails oldConsole = null;
@@ -129,7 +151,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 oldConsole = oldEntity;
             }
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, updatingFromDgShipment);
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, allowDGValueChange);
         return consolidationDetails;
     }
 
@@ -245,20 +267,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMaxId();
     }
 
-    private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    private boolean isNotAirExport(ConsolidationDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getShipmentType()));
     }
 
-    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request) {
+        if(isNotAirExport(request)) {
             return false;
+        }
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
-    private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request) {
+        if(isNotAirExport(request))
             return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
@@ -271,7 +292,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addAirCargoSecurityValidationsErrors(request, creatingFromDgShipment, fromV1Sync, errors);
         } else {
-            addNonDgValidationsErrors(request, creatingFromDgShipment, fromV1Sync, shipmentSettingsDetails, errors);
+            addNonDgValidationsErrors(request, creatingFromDgShipment, fromV1Sync, errors);
         }
 
         // Container Number can not be repeated
@@ -379,6 +400,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
+    private void addAgentOrganisationIdValidationErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getSendingAgent() != null && request.getReceivingAgent() != null) {
+
+            String sendingAgentOrganisationId = request.getSendingAgent().getOrgId();
+
+            if (sendingAgentOrganisationId != null && sendingAgentOrganisationId.equals(
+                    request.getReceivingAgent().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
+            }
+        }
+    }
+
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
         if(!isStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
@@ -388,26 +421,22 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrors(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationsErrors(ConsolidationDetails request, boolean creatingFromDgShipment, boolean fromV1Sync, Set<String> errors) {
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if(checkForNonDGConsoleAndAirDGFlag(request)) {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
             if (isDGShipmentAttached) {
-                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
 
             // Non dg Consolidations can not have dg packs
             if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
-                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
         }
         // Dg consolidation validations
-        if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
-
-            // Non dg user cannot save dg consolidation
-            if (!UserContext.isAirDgUser())
-                errors.add("You don't have permission to update DG Consolidation");
+        if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request)) {
 
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = checkContainsDGShipment(request, creatingFromDgShipment);
@@ -425,19 +454,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
             if (isDGShipmentAttached) {
-                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
 
             // Non dg Consolidations can not have dg packs
             if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
-                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
         }
         if (!fromV1Sync && Boolean.TRUE.equals(request.getHazardous())) {
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = checkContainsDGShipment(request, creatingFromDgShipment);
             if (!containsDgShipment && !creatingFromDgShipment)
-                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+                errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
         }
     }
 
@@ -491,7 +520,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return v1Service.fetchCarrierMasterData(carrierListObject, false);
     }
 
-    private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {
+    protected void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {
         if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
             if(!consolidationRequest.getShipmentType().equals(Constants.IMP)) {
                 mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMawb);
@@ -526,15 +555,38 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         if (isMAWBNumberExist){
-            if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
-                throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-            }
+            mawbStockValidation(mawbStocksLink, consolidationRequest);
         } else {
             createNewMAWBEntry(consolidationRequest, correspondingCarrier != null ? correspondingCarrier.getItemValue() : consolidationRequest.getCarrierDetails().getShippingLine());
         }
     }
 
-    private CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb) {
+    private void mawbStockValidation(MawbStocksLink mawbStocksLink , ConsolidationDetails consolidationRequest){
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
+            throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
+        }  else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && (!Objects.equals(mawbStocksLink.getEntityId(), consolidationRequest.getId()) || mawbStocksLink.getEntityId() == null)) {
+            var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
+            if (mawbStock.isEmpty()) {
+                throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
+            }
+            if (validatedBorrowedFrom(consolidationRequest, mawbStock.get())) {
+                throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None.");
+            }
+            if(StringUtility.isNotEmpty(mawbStock.get().getBorrowedFrom())) {
+                consolidationRequest.setBorrowed(true);
+                Parties borrowedParty = v1ServiceUtil.getOrganizationDataFromV1(mawbStock.get().getBorrowedFrom());
+                consolidationRequest.setBorrowedFrom(borrowedParty);
+            }
+        }
+    }
+
+    private boolean validatedBorrowedFrom(ConsolidationDetails consilidationRequest, MawbStocks mawbStocks) {
+        if (StringUtility.isEmpty(mawbStocks.getBorrowedFrom())) return false;
+        return StringUtility.isNotEmpty(consilidationRequest.getPartner());
+    }
+
+    protected CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb) {
         CarrierResponse correspondingCarrier = null;
         if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(consolidationRequest.getMawb(), oldMawb) ) {
@@ -637,6 +689,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
     public ConsolidationDetails findConsolidationsById(Long id) {
         return consolidationRepository.getConsolidationFromId(id);
     }
@@ -719,6 +776,246 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private boolean checkContainsDGPackage(ConsolidationDetails request) {
         for (Packing packing: request.getPackingList()) {
+            if(Boolean.TRUE.equals(packing.getHazardous())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails) {
+        return saveV3(consolidationDetails, false);
+    }
+
+    @Override
+    public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        ConsolidationDetails oldConsole = null;
+        if(consolidationDetails.getId() != null) {
+            long id = consolidationDetails.getId();
+            Optional<ConsolidationDetails> oldEntity = findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Consolidation is null for Id {}", consolidationDetails.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(consolidationDetails.getShipmentsList() == null) {
+                consolidationDetails.setShipmentsList(oldEntity.get().getShipmentsList());
+            }
+            oldConsole = oldEntity.get();
+        }
+        if(consolidationDetails.getMigrationStatus() == null) {
+            consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        }
+        onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
+        return consolidationDetails;
+    }
+
+    @Override
+    public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails) {
+        return updateV3(consolidationDetails, false);
+    }
+
+    @Override
+    public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        validateLockStatus(consolidationDetails);
+        ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
+        onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
+        return consolidationDetails;
+    }
+
+    @Override
+    public void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId) {
+        consolidationRepository.updateSailingScheduleRelatedInfo(consolidationId, request.getTerminalCutoff(), request.getVerifiedGrossMassCutoff(),
+                request.getShippingInstructionCutoff(), request.getDgCutoff(), request.getReeferCutoff(),
+                request.getEarliestEmptyEquipmentPickUp(), request.getLatestFullEquipmentDeliveredToCarrier(),
+                request.getEarliestDropOffFullEquipmentToCarrier());
+    }
+
+    @Override
+    public void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId) {
+        consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime());
+    }
+
+    @Override
+    public String getBookingNumberFromConsol(Long consolidationId) {
+        return consolidationRepository.getBookingNumberFromConsol(consolidationId);
+    }
+
+    @Override
+    public Boolean getAllowAttachMentFromConsol(Long consolidationId) {
+        return consolidationRepository.getAllowAttachMentFromConsol(consolidationId);
+    }
+
+    @Override
+    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
+        consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+    }
+
+    @Override
+    public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        return consolidationRepository.save(consolidationDetails);
+    }
+
+    @Override
+    public void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId) {
+        consolidationRepository.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
+    }
+
+    @Override
+    public void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId) {
+        consolidationRepository.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
+
+    private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
+        errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
+        validateTransportModeAndCarrierDetails(consolidationDetails);
+        // assign consolidation bol to mawb field as well
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            consolidationDetails.setMawb(consolidationDetails.getBol());
+        }
+        if (consolidationDetails.getTransportMode() != null
+                && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+
+        if(!Objects.isNull(oldConsole)) {
+            consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
+            consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
+        }
+        processOldConsole(consolidationDetails, oldConsole);
+        consolidationDetails = consolidationRepository.save(consolidationDetails);
+        if (StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
+            setMawbStock(consolidationDetails);
+        }
+    }
+
+    public Set<String> applyConsolidationValidationsV3(ConsolidationDetails request, boolean allowDGValueChange) {
+        Set<String> errors = new LinkedHashSet<>();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            addAirCargoSecurityValidationsErrorsV3(request, errors, allowDGValueChange);
+        } else {
+            addNonDgValidationsErrorsV3(request, errors, allowDGValueChange);
+        }
+
+        // MBL number must be unique
+        addMBLNumberValidationErrors(request, errors);
+
+        // Duplicate party types not allowed
+        addPartyTypeValidationErrors(request, errors);
+
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
+
+        // Shipment restricted unlocations validation
+        addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
+
+        // Reference No can not be repeated
+        addReferenceNumberValidationErrors(request, errors);
+
+        addCarrierDetailsValidationErrors(request, shipmentSettingsDetails, errors);
+
+        addOriginDestinationValidationsError(request, errors);
+        addPolPodValidationsErrors(request, errors);
+
+
+        return errors;
+    }
+
+    private void addAirCargoSecurityValidationsErrorsV3(ConsolidationDetails request, Set<String> errors, boolean allowDGValueChange) {
+        if (!CommonUtils.checkAirSecurityForConsolidation(request)) {
+            errors.add("You don't have Air Security permission to create or update AIR EXP Consolidation.");
+        }
+        // Non dg consolidation validations
+        if (!Boolean.TRUE.equals(request.getHazardous()) && !allowDGValueChange) {
+            // Non dg Consolidations can not have dg shipments
+            boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
+            if (isDGShipmentAttached) {
+                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+            }
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackageV3(request)) {
+                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+            }
+        }
+        if (Boolean.TRUE.equals(request.getHazardous()) && !allowDGValueChange) {
+            // Dg consolidation must have at least one dg shipment
+            boolean containsDgShipment = checkContainsDGShipmentV3(request);
+            if (!containsDgShipment)
+                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+        }
+    }
+
+    private void addOriginDestinationValidationsError(ConsolidationDetails request, Set<String> errors) {
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestination())) {
+            errors.add("Origin and Destination fields cannot be same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestinationPort())) {
+            errors.add("Origin and POD fields cannot be same.");
+        }
+    }
+
+    private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getCarrierDetails() != null && !isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) && !isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())
+                && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+                errors.add("POL and POD fields cannot be the same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
+            errors.add("POL and Destination fields cannot be same.");
+        }
+    }
+
+    private void addNonDgValidationsErrorsV3(ConsolidationDetails request,
+                                             Set<String> errors, boolean allowDGValueChange) {
+        // Non dg consolidation validations
+        if(checkForNonDGConsoleAndAirDGFlag(request) && (!allowDGValueChange)) {
+            // Non dg Consolidations can not have dg shipments
+            boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
+            if (isDGShipmentAttached) {
+                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+            }
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackageV3(request)) {
+                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+            }
+        }
+
+        // Dg consolidation validations
+        if (checkForDGConsoleAndAirDGFlag(request) && !allowDGValueChange) {
+                boolean containsDgShipment = checkContainsDGShipmentV3(request);
+                if (!containsDgShipment)
+                    errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
+            }
+    }
+
+    private boolean checkContainsDGShipmentV3(ConsolidationDetails request) {
+        if (!CommonUtils.setIsNullOrEmpty(request.getShipmentsList())) {
+            for (ShipmentDetails shipmentDetails : request.getShipmentsList()) {
+                if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkContainsDGPackageV3(ConsolidationDetails request) {
+        List<Packing> packings = request.getPackingList();
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && request.getId()!=null)
+            packings = packingDao.findByConsolidationId(request.getId());
+        for (Packing packing: packings) {
             if(Boolean.TRUE.equals(packing.getHazardous())) {
                 return true;
             }

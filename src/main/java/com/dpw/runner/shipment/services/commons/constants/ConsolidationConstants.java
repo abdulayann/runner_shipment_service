@@ -15,7 +15,9 @@ public class ConsolidationConstants {
             "Origin", "Destination"
     );
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "containersList", "routingsList", "PackingList", "triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "triangulationPartnerList");
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
+    public static final String CONSOLIDATION_V3_API_HANDLE = "/api/v3/consolidation";
     public static final String MBL_NUMBER = "MBL Number";
 
     public static final String CREATE_SUCCESSFUL = "Successful Consolidation Data Creation";
@@ -67,4 +69,6 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_DETAILS_NULL = "Consolidation Details is null for Guid {} with Request Id {}";
     public static final String PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE = "Existing Shipment Push Request already in place, Cannot initiate a new request.";
     public static final String CONSOLIDATION_RETRIEVE_NULL_REQUEST =  "Request Id is null for Consolidation retrieve with Request Id {}";
+    public static final String CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR = "Id and GUID can't be null. Please provide any one !";
+    public static final String AIR_DRT_CONSOLIDATION_CREATION_ERROR = "Cannot create consolidation with transportMode as AIR and consolidationType as DRT";
 }

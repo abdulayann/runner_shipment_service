@@ -15,7 +15,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,14 +67,12 @@ class ContainerDaoTest {
     private ContainerDao containerDao;
 
     private static JsonTestUtility jsonTestUtility;
-    private static ObjectMapper objectMapperTest;
     private static Containers testContainer;
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
-            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -190,7 +188,7 @@ class ContainerDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromBooking_Failure() throws RunnerException {
+    void testUpdateEntityFromBooking_Failure() {
         List<Containers> containersList = Collections.singletonList(testContainer);
         ContainerDao spyService = spy(containerDao);
         doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
@@ -223,7 +221,7 @@ class ContainerDaoTest {
     }
 
     @Test
-    void testSaveEntityFromBooking_RetrievalFailure() throws Exception {
+    void testSaveEntityFromBooking_RetrievalFailure() {
         testContainer.setId(4L);
         List<Containers> containersList = Collections.singletonList(testContainer);
         ContainerDao spyService = spy(containerDao);
@@ -267,7 +265,7 @@ class ContainerDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromConsolidationV1_Failure() throws RunnerException {
+    void testUpdateEntityFromConsolidationV1_Failure() {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
@@ -287,7 +285,7 @@ class ContainerDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromShipmentV1_Failure() throws RunnerException {
+    void testUpdateEntityFromShipmentV1_Failure() {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
@@ -303,6 +301,28 @@ class ContainerDaoTest {
         List<Containers> containers = containerDao.findByShipmentId(4L);
         assertNotNull(containers);
         assertEquals(containersList, containers);
+    }
+
+    @Test
+    void findByShipmentIdWithoutTenantFilter() {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        when(containerRepository.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
+        List<Containers> containers = containerDao.findByShipmentIdWithoutTenantFilter(4L);
+        assertNotNull(containers);
+        assertEquals(containersList, containers);
+    }
+
+    @Test
+    void findAllWithoutTenantFilter() {
+        List<Containers> containersList = new ArrayList<>();
+        containersList.add(testContainer);
+        when(containerRepository.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
+        Specification<Containers> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        Page<Containers> containers = containerDao.findAllWithoutTenantFilter(spec, pageable);
+        assertNotNull(containers);
+        assertEquals(containersList, containers.stream().toList());
     }
 
     @Test
@@ -345,6 +365,11 @@ class ContainerDaoTest {
     }
 
     @Test
+    void findByConsolidationIdWithoutTenantFilter() {
+        assertDoesNotThrow(() -> containerDao.findByConsolidationIdWithoutTenantFilter(1L));
+    }
+
+    @Test
     void getAllContainers() {
         assertDoesNotThrow(() -> containerDao.getAllContainers());
     }
@@ -373,5 +398,41 @@ class ContainerDaoTest {
         when(containerRepository.save(any())).thenReturn(container1);
 
         assertEquals(containersList, containerDao.updateEntityFromConsolidationV1(containersList, 1L, oldList));
+    }
+
+    @Test
+    void testDeleteAdditionalDataByContainersIdsConsolidationId() {
+        List<Long> containersIds = List.of(1L, 2L);
+        Long consolidationId = 10L;
+        containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
+        verify(containerRepository, times(1))
+                .deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByContainersIdsAndConsolidationId() {
+        List<Long> containersIds = List.of(3L, 4L);
+        Long consolidationId = 20L;
+        containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+        verify(containerRepository, times(1))
+                .revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByContainersIdsBookingId() {
+        List<Long> containersIds = List.of(5L, 6L);
+        Long bookingId = 30L;
+        containerDao.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+        verify(containerRepository, times(1))
+                .deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByContainersIdsAndBookingId() {
+        List<Long> containersIds = List.of(7L, 8L);
+        Long bookingId = 40L;
+        containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
+        verify(containerRepository, times(1))
+                .revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
     }
 }

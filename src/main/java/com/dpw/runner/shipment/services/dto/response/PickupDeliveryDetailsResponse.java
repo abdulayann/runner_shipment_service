@@ -84,4 +84,5 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
 
     private Map<String, String> masterData;
     private Boolean isDirectDelivery;
+    private String tiReferenceNumber;
 }

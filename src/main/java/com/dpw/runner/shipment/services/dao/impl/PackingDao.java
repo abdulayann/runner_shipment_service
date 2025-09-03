@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -34,8 +35,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -115,6 +116,35 @@ public class PackingDao implements IPackingDao {
 
     public List<Packing> findByShipmentId(Long shipmentId) {
         return packingRepository.findByShipmentId(shipmentId);
+    }
+
+    public List<Packing> findByShipmentIdInAndContainerId(List<Long> shipmentIds, Long containerId) {
+        return packingRepository.findByShipmentIdInAndContainerId(shipmentIds, containerId);
+    }
+
+    public List<Packing> findByShipmentIdIn(List<Long> shipmentIds) {
+        return packingRepository.findByShipmentIdIn(shipmentIds);
+    }
+
+    @Override
+    public List<Packing> findByBookingIdIn(List<Long> bookingIds) {
+        return packingRepository.findByBookingIdIn(bookingIds);
+    }
+
+    @Override
+    public void setPackingIdsToContainer(List<Long> packingIds, Long containerId) {
+        packingRepository.setPackingIdsToContainer(packingIds, containerId);
+    }
+
+    public Optional<Packing> findByIdWithQuery(Long id) {
+        return packingRepository.findByIdWithQuery(id);
+    }
+    public Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable) {
+        return packingRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    public Optional<Packing> findByGuidWithQuery(UUID guid){
+        return packingRepository.findByGuidWithQuery(guid);
     }
 
     public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
@@ -450,6 +480,12 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
+    @Override
+    public void removeContainersFromPacking(List<Long> containerIds) {
+        List<Packing> packingList = findByContainerIdIn(containerIds);
+        saveEntityFromContainer(packingList, null);
+    }
+
     public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
@@ -520,4 +556,78 @@ public class PackingDao implements IPackingDao {
     public List<Packing> findByContainerIdIn(List<Long> deleteContainerIds) {
         return packingRepository.findByContainerIdIn(deleteContainerIds);
     }
+
+    @Override
+    public List<Packing> findByContainerIdInWithoutTenantFilter(List<Long> deleteContainerIds) {
+        return packingRepository.findByContainerIdInWithoutTenantFilter(deleteContainerIds);
+    }
+
+    @Override
+    public List<Packing> findByIdIn(List<Long> packingIds) {
+        return packingRepository.findByIdIn(packingIds);
+    }
+
+    @Override
+    public void deleteByIdIn(List<Long> packingIds) {
+        packingRepository.deleteAllById(packingIds);
+    }
+
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId) {
+        return packingRepository.getPackingAssignmentCountByShipment(shipmentId);
+    }
+
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(List<Long> shipmentIds) {
+        return packingRepository.getPackingAssignmentCountByShipmentIn(shipmentIds);
+    }
+
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentAndTenant(Long shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentAndTenant(shipmentIds, tenantId);
+    }
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, tenantId);
+    }
+
+    public boolean checkPackingExistsForShipment(Long shipmentId) {
+        return packingRepository.existsPackingByShipmentId(shipmentId);
+    }
+
+    @Override
+    public List<Long> getContainerIdByContainerNumberAndType(String containerNumber, Long id, String type) {
+        return packingRepository.getContainerIdByContainerNumberAndType(containerNumber, id, type);
+    }
+
+    @Override
+    public void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId) {
+        packingRepository.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId) {
+        packingRepository.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
+    }
+
+    @Override
+    public void deleteAdditionalPackingByCustomerBookingId(List<Long> packingIds, Long bookingId) {
+        packingRepository.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndBookingId(List<Long> packingIds, Long bookingId) {
+        packingRepository.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
+    }
+
+    @Override
+    public void deleteAdditionalPackingByShipmentId(List<Long> packingIds, Long shipmentId) {
+        packingRepository.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId) {
+        packingRepository.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
+    }
+
 }

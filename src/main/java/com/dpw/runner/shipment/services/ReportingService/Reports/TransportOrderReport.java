@@ -15,11 +15,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 
 @Component
@@ -46,6 +48,8 @@ public class TransportOrderReport extends IReport{
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             validateAirDGAndAirSecurityCheckShipments(transportOrderModel.shipmentDetails);
+        }else{
+            validateAirDGCheckShipments(transportOrderModel.shipmentDetails);
         }
         validateAirAndOceanDGCheck(transportOrderModel.shipmentDetails);
         return transportOrderModel;
@@ -58,6 +62,7 @@ public class TransportOrderReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipmentModel.getShipmentId());
         processTruckDriverDetailsTags(shipmentModel, dictionary);
+        populateV3TruckDriverDetailsTags(shipmentModel, dictionary);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         UnlocationsResponse origin = unlocationsMap.get(shipmentModel.getCarrierDetails().getOrigin());
@@ -73,6 +78,11 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
         dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
+
+        populateShippedOnboardFields(shipmentModel, dictionary);
+        populateDGFields(shipmentModel, dictionary);
+        populateReeferFields(shipmentModel, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipmentModel.getShipmentType());
 
         if(shipmentModel.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
@@ -96,6 +106,11 @@ public class TransportOrderReport extends IReport{
         addFreightLocalTags(shipmentModel, dictionary, v1TenantSettingsResponse);
         if(shipmentModel.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary, shipmentModel);
+        if(transportOrderModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
+            this.getContainerDetails(transportOrderModel.shipmentDetails, dictionary);
+            this.getPackingDetails(transportOrderModel.shipmentDetails, dictionary);
+        }
         return dictionary;
     }
 
@@ -137,7 +152,10 @@ public class TransportOrderReport extends IReport{
                 carrierSealNumbers = getCarrierSealNumbers(containerModel, carrierSealNumbers);
             }
             if(carrierSealNumbers != null) dictionary.put(ReportConstants.CARRIER_SEAL_NUMBER, carrierSealNumbers.toString());
-            if(containerNumbers != null) dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
+            if(containerNumbers != null) {
+                dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
+                dictionary.put(ReportConstants.TI_CONTAINER_NUM, containerNumbers.toString());
+            }
         }
     }
 

@@ -119,6 +119,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Page<Events> findAllWithoutTenantFilter(Specification<Events> spec, Pageable pageable) {
+        return eventRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
     public Optional<Events> findById(Long id) {
         return eventRepository.findById(id);
     }
@@ -565,6 +570,26 @@ public class EventDao implements IEventDao {
                 updateUserFieldsInEvent(event, false);
             }
         }
+    }
+
+    @Override
+    public void deleteAdditionalDataByEventsIdsConsolidationId(List<Long> eventsIds, Long consolidationId) {
+        eventRepository.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
+    }
+
+    @Override
+    public void revertSoftDeleteByEventsIds(List<Long> eventsIds) {
+        eventRepository.revertSoftDeleteByEventsIds(eventsIds);
+    }
+
+    @Override
+    public void deleteAdditionalEventDetailsByEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType) {
+        eventRepository.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
+
+    @Override
+    public void revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType) {
+        eventRepository.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
     }
 
     private void processShipmentEvents(Events event, Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Long> shipmentToConsolidationMap) {

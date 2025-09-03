@@ -64,7 +64,7 @@ class CancelValidateAspectTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         mockGetShipment(mockShipment);
 
-        cancelValidateAspect.validateShipmentCancel(joinPoint, commonRequestModel);
+        cancelValidateAspect.validateShipmentCancel(commonRequestModel);
         assert (true);
     }
 
@@ -92,7 +92,7 @@ class CancelValidateAspectTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         mockGetShipment(mockShipment);
 
-        assertThrows(RunnerException.class, () -> cancelValidateAspect.validateShipmentCancel(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> cancelValidateAspect.validateShipmentCancel(commonRequestModel));
     }
 
     void mockGetShipment(ShipmentDetails mockShipment) {

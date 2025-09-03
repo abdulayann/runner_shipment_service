@@ -2,12 +2,14 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.AuditLogDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -42,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -141,6 +144,107 @@ class AuditLogServiceTest {
         when(jsonHelper.convertValue(any(), eq(JsonNode.class))).thenReturn(jsonNode);
         doThrow(new RunnerException()).when(excelUtils).createExcelAsResource(any(), any(), any());
         assertThrows(RunnerException.class, () -> auditLogService.downloadExcel(CommonRequestModel.builder().data(new ListCommonRequest()).build()));
+    }
+
+    @Test
+    void testConvertEntityToDto_withValidStatusMapping() {
+
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChange = new AuditLogChanges();
+
+        auditLogChange.setFieldName("Status");
+        auditLogChange.setOldValue(4);
+        auditLogChange.setNewValue(10);
+
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("Status", auditLogChange);
+        auditLog.setEntityId(1L);
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setEntity("ShipmentDetails");
+
+        AuditLogResponse response = auditLogService.convertEntityToDto(auditLog);
+
+        assertThat(response.getChanges()).isNotNull();
+        AuditLogChanges returnedChange = response.getChanges().get(0);
+        assertThat(returnedChange.getOldValue()).isEqualTo("Confirmed");
+        assertThat(returnedChange.getNewValue()).isEqualTo("Non-Movement");
+    }
+
+    @Test
+    void testConvertEntityToDto_withInvalidStatusMapping() {
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChange = new AuditLogChanges();
+
+        auditLogChange.setFieldName("Status");
+        auditLogChange.setOldValue(999);
+        auditLogChange.setNewValue(999);
+
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("Status", auditLogChange);
+        auditLog.setEntityId(1L);
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setEntity("ShipmentDetails");
+
+        AuditLogResponse response = auditLogService.convertEntityToDto(auditLog);
+
+        assertThat(response.getChanges()).isNotNull();
+        AuditLogChanges returnedChange = response.getChanges().get(0);
+        assertThat(returnedChange.getOldValue()).isEqualTo(999);
+        assertThat(returnedChange.getNewValue()).isEqualTo(999);
+    }
+
+    @Test
+    void testConvertEntityToDto_withNonStatusField() {
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChange = new AuditLogChanges();
+
+        auditLogChange.setFieldName("SomeOtherField");
+        auditLogChange.setOldValue(100);
+        auditLogChange.setNewValue(200);
+
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("SomeOtherField", auditLogChange); // Associating the changes with a different field name
+        auditLog.setEntityId(1L);
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setEntity("ShipmentDetails");
+
+        AuditLogResponse response = auditLogService.convertEntityToDto(auditLog);
+        assertThat(response.getChanges()).isNotNull();
+
+        AuditLogChanges returnedChange = response.getChanges().get(0);
+        assertThat(returnedChange.getOldValue()).isEqualTo(100);
+        assertThat(returnedChange.getNewValue()).isEqualTo(200);
+    }
+
+    @Test
+    void testConvertEntityToDto_withNullValuesForStatus() {
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChange = new AuditLogChanges();
+
+        auditLogChange.setFieldName("Status");
+        auditLogChange.setOldValue(null);
+        auditLogChange.setNewValue(null);
+
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("Status", auditLogChange);
+        auditLog.setEntityId(1L);
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setEntity("ShipmentDetails");
+
+        AuditLogResponse response = auditLogService.convertEntityToDto(auditLog);
+
+        assertThat(response.getChanges()).isNotNull();
+        AuditLogChanges returnedChange = response.getChanges().get(0);
+        assertThat(returnedChange.getOldValue()).isNull();
+        assertThat(returnedChange.getNewValue()).isNull();
     }
 
     @Test
@@ -317,7 +421,7 @@ class AuditLogServiceTest {
 
     @Test
     void testList() {
-        var response = auditLogService.list(null);
+        var response = auditLogService.list(null, null);
         assertNotNull(response);
     }
 
@@ -337,7 +441,27 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testListNTE() {
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChanges = new AuditLogChanges();
+        auditLogChanges.setFieldName("houseBill");
+        auditLogChanges.setNewValue("2");
+        auditLogChanges.setOldValue("1");
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("houseBill", auditLogChanges);
+        auditLog.getChanges().put("Id", new AuditLogChanges("Id", 1, 2));
+        auditLog.setEntityId(1L);
+        auditLog.setEntity("ShipmentDetails");
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        when(auditLogDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), Constants.NETWORK_TRANSFER);
         assertNotNull(response);
     }
 
@@ -357,7 +481,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -377,7 +501,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -397,7 +521,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -417,7 +541,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -437,7 +561,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -457,7 +581,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -477,7 +601,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -497,7 +621,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -517,7 +641,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -537,7 +661,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), "");
         assertNotNull(response);
     }
 
@@ -554,7 +678,7 @@ class AuditLogServiceTest {
         auditLog.setEntityId(1L);
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        var response = auditLogService.list(CommonRequestModel.builder().data(null).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(null).build(), Constants.NETWORK_TRANSFER);
         assertNotNull(response);
     }
 }

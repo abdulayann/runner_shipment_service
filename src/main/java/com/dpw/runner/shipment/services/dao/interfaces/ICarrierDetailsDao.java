@@ -11,4 +11,6 @@ public interface ICarrierDetailsDao {
     void updateAta(Long id, LocalDateTime shipmentAta);
 
     void updateAtd(Long id, LocalDateTime shipmentAtd);
+
+    void update(CarrierDetails carrierDetails);
 }

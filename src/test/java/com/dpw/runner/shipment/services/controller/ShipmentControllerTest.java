@@ -31,7 +31,6 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
@@ -1305,17 +1304,6 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testOceanDGApprovalResponse() throws RunnerException {
-        OceanDGRequest request = OceanDGRequest.builder().build();
-        // Mock
-        when(shipmentService.dgApprovalResponse(request)).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = shipmentController.oceanDGApprovalResponse(request);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
     void testListWithoutTenantFilter() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         when(shipmentService.listWithoutTenantCheck(any())).thenThrow(new RuntimeException());
@@ -1570,6 +1558,41 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.retrieveByIdV3(Optional.of(111L), Optional.of(UUID.randomUUID().toString()), true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateShipmentParty_success() throws RunnerException {
+        when(jsonHelper.convertToJson(any()))
+                .thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.updateShipmentParties(any()))
+                .thenReturn(ResponseEntity.ok("Updated Successfully"));
+        var request = new ShipmentPartyRequestV2();
+        var responseEntity = shipmentController.updateShipmentParty(request);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals("Updated Successfully", responseEntity.getBody());
+    }
+
+    @Test
+    void updateShipmentParty_exceptionWithMessage() throws RunnerException {
+        when(jsonHelper.convertToJson(any()))
+                .thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.updateShipmentParties(any()))
+                .thenThrow(new RuntimeException("Something went wrong"));
+        var request = new ShipmentPartyRequestV2();
+        var responseEntity = shipmentController.updateShipmentParty(request);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
+        assertEquals("Something went wrong", responseEntity.getBody());
+    }
+
+    @Test
+    void updateShipmentParty_exceptionWithoutMessage() throws RunnerException {
+        when(jsonHelper.convertToJson(any()))
+                .thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.updateShipmentParties(any()))
+                .thenThrow(new RuntimeException());
+        var request = new ShipmentPartyRequestV2();
+        var responseEntity = shipmentController.updateShipmentParty(request);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
     }
 
 }

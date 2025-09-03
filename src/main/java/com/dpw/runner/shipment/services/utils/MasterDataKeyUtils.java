@@ -4,10 +4,12 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrE
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -15,6 +17,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import java.util.HashMap;
@@ -35,6 +38,9 @@ public class MasterDataKeyUtils {
     CacheManager cacheManager;
 
     @Autowired
+    CommonUtils commonUtils;
+
+    @Autowired
     CustomKeyGenerator keyGenerator;
 
     public void setMasterDataValue(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> masterDataResponse, Map<String, Object> cacheMap) {
@@ -48,6 +54,7 @@ public class MasterDataKeyUtils {
         }
     }
     private void setKeyValueInResponse(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> response, Map<String, Object> cacheMap) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return;
         fieldNameKeyMap.forEach((key1, value1) -> {
@@ -59,7 +66,9 @@ public class MasterDataKeyUtils {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
-                                response.put(value, object.getLookupDesc());
+                                response.put(value, populateLookupDesc(shipmentSettingsDetails, object));
+                                response.put(value + Constants.CODE, object.getLocCode());
+                                response.put(value + Constants.IATA_CODE, object.getIATACode());
                                 break;
                             case CacheConstants.UNLOCATIONS_AWB:
                                 EntityTransferUnLocations obj = (EntityTransferUnLocations) cache;
@@ -83,6 +92,8 @@ public class MasterDataKeyUtils {
                             case CacheConstants.CARRIER:
                                 EntityTransferCarrier object5 = (EntityTransferCarrier) cache;
                                 response.put(value, object5.getItemDescription());
+                                response.put(value + Constants.SCAC_CODE, object5.getIdentifier1());
+                                response.put(value + Constants.IATA_CODE, object5.getIATACode());
                                 break;
                             case CacheConstants.CURRENCIES:
                                 EntityTransferCurrency object6 = (EntityTransferCurrency) cache;
@@ -116,12 +127,20 @@ public class MasterDataKeyUtils {
                                 EntityTransferUnLocations obj13 = (EntityTransferUnLocations) cache;
                                 response.put(value, obj13.Country);
                                 break;
+                            case CacheConstants.ORGANIZATIONS:
+                                EntityTransferOrganizations obj14 = (EntityTransferOrganizations) cache;
+                                response.put(value, obj14.getFullName());
+                                break;
                             default:
                         }
                     }
                 });
             }
         });
+    }
+
+    private String populateLookupDesc(ShipmentSettingsDetails shipmentSettingsDetails, EntityTransferUnLocations object) {
+        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) ? object.getLookupDescV3() : object.getLookupDesc();
     }
 
     @Nullable

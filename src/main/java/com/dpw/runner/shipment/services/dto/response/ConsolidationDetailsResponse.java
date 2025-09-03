@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.LocalDateTime;
@@ -12,11 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -134,6 +135,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Map<String, String> currenciesMasterData;
     private Map<String, String> tenantIdsData;
     private Map<String, String> textData;
+    private Map<String, Object> masterDataMap;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
@@ -168,4 +170,11 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private Long originBranch;
+    private String incoterms;
+    private String incotermsLocation;
+    private String coLoadCarrierName;
+    private String partner;
+    private Boolean reefer;
+    private MigrationStatus migrationStatus;
 }

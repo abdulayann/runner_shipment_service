@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -22,10 +23,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
@@ -40,6 +38,7 @@ import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataIm
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -66,8 +65,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -106,6 +104,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Mock
@@ -125,6 +126,10 @@ class ArrivalNoticeReportTest extends CommonMocks {
 
     @Mock
     private CustomKeyGenerator keyGenerator;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
 
     private static final String DG_CLASS_VALUE = "DG";
 
@@ -147,6 +152,12 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void mockVessel() {
@@ -265,14 +276,109 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
         packingModel.setPacks("10");
+        packingModel.setContainerNumber("CONT1234567");
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setWeightUnit("MG");
+        packingModel.setVolumeUnit("CC");
         packingModels.add(packingModel);
 
         PackingModel packingModel2 = new PackingModel();
         packingModel2.setLength(BigDecimal.TEN);
         packingModel2.setWidth(BigDecimal.TEN);
         packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setWeight(BigDecimal.TEN);
+        packingModel2.setVolume(BigDecimal.TEN);
+        packingModel2.setWeightUnit("LB");
+        packingModel2.setVolumeUnit("CF");
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
+
+        PackingModel packingModel3 = new PackingModel();
+        packingModel3.setWeight(BigDecimal.TEN);
+        packingModel3.setVolume(BigDecimal.TEN);
+        packingModel3.setWeightUnit("OT");
+        packingModel3.setVolumeUnit("D3");
+        packingModels.add(packingModel3);
+
+        PackingModel packingModel4 = new PackingModel();
+        packingModel4.setWeight(BigDecimal.TEN);
+        packingModel4.setVolume(BigDecimal.TEN);
+        packingModel4.setWeightUnit(null);
+        packingModel4.setVolumeUnit(null);
+        packingModels.add(packingModel4);
+
+        PackingModel packingModel5 = new PackingModel();
+        packingModel5.setWeight(BigDecimal.TEN);
+        packingModel5.setVolume(BigDecimal.TEN);
+        packingModel5.setWeightUnit("MT");
+        packingModel5.setVolumeUnit("CY");
+        packingModels.add(packingModel5);
+
+        PackingModel packingModel6 = new PackingModel();
+        packingModel6.setWeight(BigDecimal.TEN);
+        packingModel6.setVolume(BigDecimal.TEN);
+        packingModel6.setWeightUnit("KT");
+        packingModel6.setVolumeUnit("D3");
+        packingModels.add(packingModel6);
+
+        PackingModel packingModel7 = new PackingModel();
+        packingModel7.setWeight(BigDecimal.TEN);
+        packingModel7.setVolume(BigDecimal.TEN);
+        packingModel7.setWeightUnit("LT");
+        packingModel7.setVolumeUnit("GA");
+        packingModels.add(packingModel7);
+
+
+        PackingModel packingModel8 = new PackingModel();
+        packingModel8.setWeight(BigDecimal.TEN);
+        packingModel8.setVolume(BigDecimal.TEN);
+        packingModel8.setWeightUnit("KG");
+        packingModel8.setVolumeUnit("M3");
+        packingModels.add(packingModel8);
+
+        PackingModel packingModel9 = new PackingModel();
+        packingModel9.setWeight(BigDecimal.TEN);
+        packingModel9.setVolume(BigDecimal.TEN);
+        packingModel9.setWeightUnit("G");
+        packingModel9.setVolumeUnit("L");
+        packingModels.add(packingModel9);
+
+        PackingModel packingModel10 = new PackingModel();
+        packingModel10.setWeight(BigDecimal.TEN);
+        packingModel10.setVolume(BigDecimal.TEN);
+        packingModel10.setWeightUnit("HG");
+        packingModel10.setVolumeUnit("CY");
+        packingModels.add(packingModel10);
+
+        PackingModel packingModel11 = new PackingModel();
+        packingModel11.setWeight(BigDecimal.TEN);
+        packingModel11.setVolume(BigDecimal.TEN);
+        packingModel11.setWeightUnit("OG");
+        packingModel11.setVolumeUnit("ML");
+        packingModels.add(packingModel11);
+
+        PackingModel packingModel12 = new PackingModel();
+        packingModel12.setWeight(BigDecimal.TEN);
+        packingModel12.setVolume(BigDecimal.TEN);
+        packingModel12.setWeightUnit("DF");
+        packingModel12.setVolumeUnit("CI");
+        packingModels.add(packingModel12);
+
+        PackingModel packingModel13 = new PackingModel();
+        packingModel13.setWeight(BigDecimal.TEN);
+        packingModel13.setVolume(BigDecimal.TEN);
+        packingModel13.setWeightUnit("TT");
+        packingModel13.setVolumeUnit("GI");
+        packingModels.add(packingModel13);
+
+        PackingModel packingModel14 = new PackingModel();
+        packingModel14.setWeight(BigDecimal.TEN);
+        packingModel14.setVolume(BigDecimal.TEN);
+        packingModel14.setWeightUnit("TT");
+        packingModel14.setVolumeUnit("II");
+        packingModels.add(packingModel14);
+
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
@@ -363,6 +469,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -374,6 +481,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -397,6 +505,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
@@ -411,6 +520,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -443,6 +553,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
@@ -456,6 +567,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -489,6 +601,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
@@ -501,6 +614,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -536,6 +650,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
         EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
@@ -544,6 +659,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         masterDataMock();
         mockCarrier();
@@ -684,6 +800,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
         ContainerModel containerModel = new ContainerModel();
         containerModel.setHazardous(true);
+        containerModel.setContainerCode("Code");
         shipmentModel.setContainersList(Arrays.asList(containerModel));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);

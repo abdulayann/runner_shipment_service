@@ -13,6 +13,6 @@ public interface IViewsDao {
     Optional<Views> findById(Long id);
     void delete(Views views);
     List<Views> findAll();
-    List<String> findAllByUsername(String username);
+    List<String> findAllByUsernameAndEntity(String username, String entity);
     Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity);
 }

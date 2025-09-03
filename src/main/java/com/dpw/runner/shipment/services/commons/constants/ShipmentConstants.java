@@ -8,14 +8,17 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class ShipmentConstants {
     public static final String HBL_NUMBER = "HBL Number";
+    public static final String REFERENCE_NUMBERS_LIST = "referenceNumbersList";
+
     @SuppressWarnings("java:S2386")
     public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
             "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
-            "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
+            "Fin. Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
             "Delivery Mode", "Consolidation Type", "Activity Type", "Shipment Type", "Carrier",
             "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
             "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
@@ -33,7 +36,8 @@ public class ShipmentConstants {
             "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
             "POD", "Waybill Number", "Additional Terms", "Reference Number", "POL Code", "POD Code", "Origin Code", "Destination Code"
     );
-    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", "referenceNumbersList","servicesList", "containersList", "eventsList","triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", REFERENCE_NUMBERS_LIST,"servicesList", "containersList", "eventsList","triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", REFERENCE_NUMBERS_LIST, "triangulationPartnerList");
     public static final String ORIGIN_PORT_LOC_CODE = "originPortLocCode";
     public static final String PLACE_OF_ISSUE = "placeOfIssue";
     public static final String PAID_PLACE = "paidPlace";
@@ -124,7 +128,7 @@ public class ShipmentConstants {
             Map.entry(CONSOLIDATION_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(String.class).fieldName(CONSOLIDATION_NUMBER).build()),
             Map.entry(Constants.ORDER_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_NUMBER).build()),
             Map.entry(Constants.ORDER_MANAGEMENT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_NUMBER).build()),
-            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName(REFERENCE_NUMBERS_LIST).dataType(String.class).fieldName("referenceNumber").build()),
             Map.entry("activityType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("activityType").build()),
             Map.entry("goodsCO", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("goodsCO").build()),
             Map.entry("route", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("route").build()),
@@ -145,10 +149,15 @@ public class ShipmentConstants {
             Map.entry("routingPol", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pol").build()),
             Map.entry("routingPolCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
             Map.entry("routingPod", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pod").build()),
-            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build())
+            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
+            Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
+            Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
+            Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
+
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";
+    public static final String UPDATE_SAILING_SCHEDULE_SUCCESSFUL = "Sailing schedule data updated successfully";
 
     private ShipmentConstants() {
     }
@@ -219,8 +228,11 @@ public class ShipmentConstants {
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
     public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
+    public static final String AIB_PUSH_REQUEST = "/aib/push";
+
     // Shipment V3.0 API Endpoints
     public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
+    public static final String SHIPMENT_EXTERNAL_API_HANDLE = "/api/v3/shipment/external";
     public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
 
 
@@ -229,6 +241,7 @@ public class ShipmentConstants {
     public static final String ALL_SHIPMENT_COUNT = "All shipment count fetched successfully";
     public static final String LATEST_CARGO_DELIVERY_DATE = "Latest cargo delivery date out of shipments fetched successfully";
     public static final String UPDATE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
+    public static final String AIB_ACTION = "Inter branch operation has been done successfully";
 
     // Shipment Statuses
     public static final String PENDING = "PENDING";
@@ -267,5 +280,12 @@ public class ShipmentConstants {
     public static final String SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE = "Request Id and Guid are null for Shipment retrieve with Request Id {}";
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
+
+    public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
+    public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
+    public static final String SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
+    public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
+
+    public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
 
 }

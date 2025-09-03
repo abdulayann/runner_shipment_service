@@ -93,5 +93,9 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
         private String customerOrgId;
         @JsonProperty("contract_id")
         private String contractId;
+        @JsonProperty("dg_class")
+        private List<String> dgClass;
+        @JsonProperty("dg_un_num")
+        private List<String> dgUnNum;
     }
 }

@@ -24,4 +24,5 @@ public class CustomerAccountInfo implements Serializable {
     private String knownConsignorIndicator;
     private String billingType;
     private LocalDateTime establishmentDate;
+    private String proofOfIdentification;
 }

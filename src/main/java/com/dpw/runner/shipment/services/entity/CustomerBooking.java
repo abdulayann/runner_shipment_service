@@ -4,8 +4,11 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
@@ -13,6 +16,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +41,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "customer_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties customer;
 
     @Column(name = "is_customer_free_text")
@@ -44,6 +49,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignor_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consignor;
 
     @Column(name = "is_consignor_free_text")
@@ -51,6 +57,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignee_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consignee;
 
     @Column(name = "is_consignee_free_text")
@@ -58,10 +65,16 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties notifyParty;
 
     @Column(name = "is_notify_party_free_text")
     private Boolean isNotifyPartyFreeText;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'BOOKING_ADDITIONAL_PARTY'")
+    @BatchSize(size = 50)
+    private List<Parties> additionalParties;
 
     @Column(name = "customer_email")
     private String customerEmail;
@@ -91,6 +104,9 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "direction")
     @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String direction;
+
+    @Column(name = "cargo_delivery_date")
+    private LocalDateTime cargoDeliveryDate;
 
     @Column(name = "quantity")
     private Integer quantity;
@@ -243,6 +259,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
 
+    @Column(name = "is_shipper_client_equal")
+    private Boolean isShipperClientEqual;
+
+    @Column(name = "is_consignee_client_equal")
+    private Boolean isConsigneeClientEqual;
+
     @Column(name = "is_bill_created")
     private Boolean isBillCreated;
 
@@ -264,6 +286,161 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "rejection_remarks")
     private String rejectionRemarks;
 
+    @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
+    private String paymentTerms;
+
     @Column(name = "shipment_reference_number")
     private String shipmentReferenceNumber;
+
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
+
+    @Column(name = "incoterms_location")
+    @Size(max = 64)
+    private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 64)
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String partner;
+
+    @Column(name = "booking_agent")
+    @OrganizationMasterData
+    private Long bookingAgent;
+
+    @Column(name = "co_load_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
+    private String coLoadCarrierName;
+
+    @Column(name = "partner_bkg_number")
+    @Size(max = 64)
+    private String partnerBkgNumber;
+
+    @Column(name = "partner_bl_or_awb_number")
+    @Size(max = 64)
+    private String partnerBLOrAWBNumber;
+
+    @Column(name = "carrier_bkg_number")
+    @Size(max = 64)
+    private String carrierBookingNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin_date")
+    private LocalDateTime pickupAtOriginDate;
+
+    @Column(name = "delivery_at_destination_date")
+    private LocalDateTime deliveryAtDestinationDate;
+
+    @Column(name = "est_pickup_at_origin_date")
+    private LocalDateTime estimatedPickupAtOriginDate;
+
+    @Column(name = "est_delivery_at_destination_date")
+    private LocalDateTime estimatedDeliveryAtDestinationDate;
+
+    @Column(name = "pickup_at_origin")
+    @OrganizationMasterData
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    @OrganizationMasterData
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    @OrganizationMasterData
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    @OrganizationMasterData
+    private Long brokerageAtDestination;
+
+    @Column(name = "est_brokerage_at_origin_date")
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @Column(name = "est_brokerage_at_destination_date")
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
+
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
+
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
+
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
+
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
+
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
+
+    @Column(name = "teu_count")
+    private BigDecimal teuCount;
+
+    @Column(name = "containers")
+    private Long containers;
+
+    @Column(name = "package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String packageType;
+
+    @Column(name = "packages")
+    private Long packages;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "marks_n_numbers")
+    private String marksnNumbers;
+
+    @Column(name = "additional_terms")
+    private String additionalTerms;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
 }

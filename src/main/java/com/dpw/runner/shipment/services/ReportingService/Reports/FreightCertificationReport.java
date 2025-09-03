@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVOICE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT_CURRENCY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addTenantDetails;
@@ -17,6 +18,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertificationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -38,9 +40,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -134,7 +138,24 @@ public class FreightCertificationReport extends IReport{
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
+        populateShippedOnboardFields(freightCertificationModel.shipmentDetails, dictionary);
+        populateDGFields(freightCertificationModel.shipmentDetails, dictionary);
+        populateReeferFields(freightCertificationModel.shipmentDetails, dictionary);
         processBillingList(freightCertificationModel, dictionary);
+
+        if (Objects.nonNull(freightCertificationModel.shipmentDetails) && Objects.nonNull(freightCertificationModel.shipmentDetails.getShipmentType()))
+            dictionary.put(SHIPMENT_CARGO_TYPE, freightCertificationModel.shipmentDetails.getShipmentType());
+
+        if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
+            ConsolidationModel consolidationModel = freightCertificationModel.shipmentDetails.getConsolidationList().get(0);
+            this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+        }
+
+        if(freightCertificationModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, freightCertificationModel.shipmentDetails.getId());
+            this.getContainerDetails(freightCertificationModel.shipmentDetails, dictionary);
+            this.getPackingDetails(freightCertificationModel.shipmentDetails, dictionary);
+        }
         return dictionary;
     }
 

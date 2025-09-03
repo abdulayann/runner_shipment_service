@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -21,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Data @Generated
 public class ShipmentListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
@@ -36,6 +38,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String serviceType;
     private String masterBill;
     private String bookingReference;
+    private Long bookingId;
     private String srnReferenceNumber;
     private String consolRef;
     private Long salesAgent;
@@ -47,12 +50,16 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
+    private String weightFormatted;
     private String weightUnit;
     private BigDecimal volume;
+    private String volumeFormatted;
     private String volumeUnit;
     private BigDecimal volumetricWeight;
+    private String volumetricWeightFormatted;
     private String volumetricWeightUnit;
     private BigDecimal chargable;
+    private String chargableFormatted;
     private String chargeableUnit;
     private BigDecimal netWeight;
     private String netWeightUnit;
@@ -80,6 +87,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
+    private Long originBranch;
     private Boolean intraBranch;
     private Integer prevShipmentStatus;
     private Boolean isShipmentReadOnly;
@@ -99,6 +107,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private Set<String> containerNumbers;
+    private Integer containerCount;
     private PickupDeliveryDetailsListResponse pickupDetails;
     private PickupDeliveryDetailsListResponse deliveryDetails;
     private String createdBy;
@@ -134,6 +143,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
+    private Map<String, String> shipmentTypeMasterData;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private Integer pendingActionCount;
@@ -152,10 +162,12 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<ShipmentOrderResponse> shipmentOrders;
     @JsonIgnore
     private List<ReferenceNumbersResponse> referenceNumbersList;
+    private Set<ConsolidationDetailsResponse> consolidationList;
 
     // dps items
     private String dpsStatus;
     private String cgsStatus;
     
     private Boolean isFrob;
+    private MigrationStatus migrationStatus;
 }

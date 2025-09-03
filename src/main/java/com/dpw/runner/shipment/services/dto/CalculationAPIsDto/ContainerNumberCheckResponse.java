@@ -6,5 +6,7 @@ import lombok.Data;
 @Data
 public class ContainerNumberCheckResponse implements IRunnerResponse {
     private boolean success;
-    private int lastDigit;
+    private Boolean isLastDigitCorrect;
+    private Integer lastDigit;
+    private String warningMessage;
 }

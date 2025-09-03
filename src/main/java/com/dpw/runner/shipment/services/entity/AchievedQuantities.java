@@ -56,4 +56,30 @@ public class AchievedQuantities extends MultiTenancy {
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
+    @Column(name = "packs")
+    private Integer packs;
+
+    @Column(name = "packs_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String packsType;
+
+    @Column(name = "dg_packs")
+    private Integer dgPacks;
+
+    @Column(name = "dg_packs_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String dgPacksType;
+
+    @Column(name = "dg_container_count")
+    private Integer dgContainerCount;
+
+    @Column(name = "slac_count")
+    private Integer slacCount;
+
+    @Column(name = "container_count")
+    private Integer containerCount;
+
+    @Column(name = "teu_count")
+    private BigDecimal teuCount;
+
 }

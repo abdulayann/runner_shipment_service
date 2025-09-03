@@ -75,6 +75,9 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
         private String cargo_type;
         private String product_category_code;
         private String commodity;
+        private Boolean is_dangerous;
+        private String code;
+        private String un_number;
     }
 
 

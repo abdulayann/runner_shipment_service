@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -58,5 +59,15 @@ public class TiLegDao implements ITiLegDao {
     @Override
     public List<TiLegs> updateTiLegDetails(List<TiLegs> tiLegsList) {
         return tiLegRepository.saveAll(tiLegsList);
+    }
+
+    @Override
+    public List<TiLegs> findByIdIn(Set<Long> tiLegs) {
+        return tiLegRepository.findAllById(tiLegs);
+    }
+
+    @Override
+    public List<TiLegs> findByPickupDeliveryDetailsId(Long transportInstructionId) {
+        return tiLegRepository.findByPickupDeliveryDetailsId(transportInstructionId);
     }
 }

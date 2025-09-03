@@ -27,8 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @Slf4j
 @Generated
@@ -94,6 +92,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             dest.setAirImportConsoleManifest(req.getAirImportConsolManifest());
             dest.setSeaImportConsoleManifest(req.getSeaImportConsolManifest());
             dest.setSeaExportConsoleManifest(req.getSeaExportConsolManifest());
+            dest.setIsRunnerV3Enabled(req.getShipmentServiceV3Enabled());
 
             return shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(dest));
         } catch (Exception e) {

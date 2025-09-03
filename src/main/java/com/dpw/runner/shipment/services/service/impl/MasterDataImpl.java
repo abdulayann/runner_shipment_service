@@ -1,12 +1,15 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -14,8 +17,10 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,15 +36,20 @@ public class MasterDataImpl implements IMasterDataService {
     private final MasterDataUtils masterDataUtils;
     private final CommonUtils commonUtils;
     private final IMDMServiceAdapter mdmServiceAdapter;
+    private final ModelMapper modelMapper;
+    private final V1ServiceUtil v1ServiceUtil;
+    private static final String TENANT_ID = "TenantId";
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
-    ,IMDMServiceAdapter mdmServiceAdapter) {
+    , IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
         this.commonUtils = commonUtils;
         this.mdmServiceAdapter = mdmServiceAdapter;
+        this.modelMapper = modelMapper;
+        this.v1ServiceUtil = v1ServiceUtil;
     }
 
     @Override
@@ -83,8 +93,10 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel) {
-        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchContainerTypeData(commonRequestModel.getDependentData()));
+    public ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel, String quoteId) {
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchContainerTypeData(commonRequestModel.getDependentData());
+        commonUtils.updateContainerTypeWithQuoteId(dependentServiceResponse, quoteId);
+        return ResponseHelper.buildDependentServiceResponse(dependentServiceResponse);
     }
 
     @Override
@@ -411,8 +423,11 @@ public class MasterDataImpl implements IMasterDataService {
         List<Object> criteria = request.getCriteria() ;
         List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request);
         if(tenantIds!=null && !tenantIds.isEmpty()) {
-            List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
-            criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
+            if(criteria!=null)
+                addTenantsToCriteria(criteria, tenantIds);
+            else {
+                criteria = convertToV1NotInCriteria(TENANT_ID, tenantIds, null);
+            }
         }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
                 .sort(request.getSort())
@@ -426,6 +441,72 @@ public class MasterDataImpl implements IMasterDataService {
                 .build();
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
     }
+
+    public void addTenantsToCriteria(List<Object> criteria, List<Long> newTenants) {
+        // Case 1: criteria IS a single condition
+        if (isTenantCondition(criteria)) {
+            updateTenantIds(criteria, newTenants);
+            return;
+        }
+
+        // Case 2: criteria contains multiple conditions (and/or + conditions)
+        for (Object item : criteria) {
+            if (item instanceof List<?> innerList && isTenantCondition(innerList)) {
+                updateTenantIds(innerList, newTenants);
+                return;
+            }
+        }
+
+
+        List<Object> tenantCondition = convertToV1NotInCriteria(TENANT_ID, newTenants, null);
+        if (isSingleCondition(criteria)) {
+            // Turn single condition into compound condition
+            List<Object> original = new ArrayList<>(criteria);
+            criteria.clear();
+            criteria.add(original);
+            criteria.add("and");
+            criteria.add(tenantCondition);
+        } else {
+            // Append to compound criteria
+            criteria.add("and");
+            criteria.add(tenantCondition);
+        }
+    }
+
+    private boolean isSingleCondition(List<Object> criteria) {
+        if (criteria.size() != 3) return false;
+
+        Object first = criteria.get(0);
+        Object second = criteria.get(1);
+
+        return first instanceof List
+                && ((List<?>) first).size() == 1
+                && ((List<?>) first).get(0) instanceof String
+                && second instanceof String;
+    }
+
+    private boolean isTenantCondition(Object obj) {
+        if (!(obj instanceof List<?> list)) return false;
+        if (list.size() < 3) return false;
+
+        Object fieldPart = list.get(0);
+        Object operator = list.get(1);
+
+        return fieldPart instanceof List
+                && ((List<?>) fieldPart).size() == 1
+                && TENANT_ID.equals(((List<?>) fieldPart).get(0))
+                && "not in".equals(operator);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateTenantIds(List<?> condition, List<Long> newTenants) {
+        Object valuePart = condition.get(2);
+        if (valuePart instanceof List<?> outerList && !outerList.isEmpty() && outerList.get(0) instanceof List<?>) {
+            List<Long> existing = (List<Long>) outerList.get(0);
+            existing.addAll(newTenants);
+        }
+    }
+
 
     @SuppressWarnings("java:S4838")
     public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values, List<Long> existingTenantIds) {
@@ -444,5 +525,14 @@ public class MasterDataImpl implements IMasterDataService {
             }
         }
         return new ArrayList<>(Arrays.asList(itemType, "not in", Collections.singletonList(param)));
+    }
+
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getDefaultOrgAddressByTenantId(CommonRequestModel commonRequestModel) {
+        V1RetrieveResponse v1DataResponse = v1Service.retrieveTenantByTenantId(commonRequestModel.getDependentData());
+        TenantModel tenantModel = modelMapper.map(v1DataResponse.getEntity(), TenantModel.class);
+        PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true).data(partiesResponse).build());
     }
 }

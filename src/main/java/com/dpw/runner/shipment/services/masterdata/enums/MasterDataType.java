@@ -162,7 +162,8 @@ public enum MasterDataType {
     LOCATION_ROLE(189, "LocationRole"),
     EVENT_SOURCE(190, "EventSource"),
     PACKAGE_TYPE(191, "PackageType"),
-    CONTAINER_TYPE(192, "ContainerType");
+    CONTAINER_TYPE(192, "ContainerType"),
+    ORDER_DPW(201, "OrderDPW");
 
     private int id;
     private String description;

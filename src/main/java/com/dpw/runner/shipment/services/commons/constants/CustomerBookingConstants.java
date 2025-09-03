@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+
 public class CustomerBookingConstants {
 
     private CustomerBookingConstants(){}
     public static final String DATE_FORMAT = "yyyy/MM/dd";
     public static final String ONE = "1";
     public static final String CUSTOMER_BOOKING_API_HANDLE = "/api/v2/customer-booking";
+    public static final String CUSTOMER_BOOKING_API_HANDLE_V3 = "/api/v3/customer-booking";
     public static final String PLATFORM_CREATE_BOOKING = "/platform-create-update";
     public static final String PLATFORM_UPDATE_BOOKING = "/platform-update";
     public static final String CREATE_SUCCESSFUL = "Successful Customer Booking Data Creation";
@@ -37,6 +40,10 @@ public class CustomerBookingConstants {
     public static final String TENANT_ID = "TenantId";
     public static final String RUNNER_FUSION = "Runner";
     public static final String GCR_FUSION = "GCR";
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String BOOKING_DETAILS_NULL_FOR_ID_ERROR = "Booking Details is null for Id {}";
+    public static final String DEFAULT_BOOKING_GENERATED_SUCCESSFULLY = "Default booking generated successfully";
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "referenceNumbersList", "containersList", "packingList", "routingList");
 
     public static final String IMMEDIATE= "IMMEDIATE";
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";

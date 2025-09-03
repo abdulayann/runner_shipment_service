@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -9,6 +11,9 @@ import org.springframework.data.domain.Page;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +38,49 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     }
 
     List<Routings> findByConsolidationId(Long consolidationId);
+
+    List<Routings> findByIdIn(List<Long> routingIds);
+
+    List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage);
+
+    @Query(value = "SELECT * FROM routings WHERE id = ?1", nativeQuery = true)
+    Optional<Routings> findByIdWithQuery(Long id);
+
+    @Query(value = "SELECT * FROM routings WHERE guid = ?1", nativeQuery = true)
+    Optional<Routings> findByGuidWithQuery(UUID guid);
+
+    @ExcludeTenantFilter
+    default Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable) {
+        return findAll(spec, pageable);
+    }
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByRoutingsIdsConsolidationId(List<Long> routingsIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByRoutingsIdsAndConsolidationId(List<Long> routingsIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and booking_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByRoutingsIdsBookingId(List<Long> routingsIds, Long bookingId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByRoutingsIdsAndBookingId(List<Long> routingsIds, Long bookingId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalroutingsByShipmentId(List<Long> routingsIds, Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByroutingsIdsAndShipmentId(List<Long> routingsIds, Long shipmentId);
 }

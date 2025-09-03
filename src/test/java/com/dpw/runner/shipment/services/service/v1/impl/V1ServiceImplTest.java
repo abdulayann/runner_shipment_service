@@ -6120,4 +6120,41 @@ class V1ServiceImplTest {
 
         assertEquals("RuntimeException", throwable.getMessage());
     }
+
+    @Test
+    void retrieveTenantByTenantId() {
+        var mockResponse = V1RetrieveResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.retrieveTenantByTenantId("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void retrieveTenantByTenantId2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTenantByTenantId("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void retrieveTenantByTenantId3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.retrieveTenantByTenantId("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
 }

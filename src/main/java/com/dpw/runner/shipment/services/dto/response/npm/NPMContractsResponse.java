@@ -43,6 +43,12 @@ public class NPMContractsResponse implements IRunnerResponse {
         private ListContractResponse.Meta meta;
         @JsonProperty("valid_till")
         private LocalDateTime validTill;
+        @JsonProperty("dg_class")
+        private List<String> dgClass;
+        @JsonProperty("dg_un_num")
+        private List<String> dgUnNum;
+        @JsonProperty("load_types")
+        private List<String> loadTypes;
     }
 }
 

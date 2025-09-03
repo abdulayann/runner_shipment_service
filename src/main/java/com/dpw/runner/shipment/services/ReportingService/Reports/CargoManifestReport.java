@@ -88,6 +88,12 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.MAWB_NO, cargoManifestModel.shipmentDetails.getMasterBill());
         dictionary.put(ReportConstants.HAWB_NO, cargoManifestModel.shipmentDetails.getHouseBill());
         dictionary.put(ReportConstants.SHIPMENT_NO, cargoManifestModel.shipmentDetails.getShipmentId());
+
+        populateShippedOnboardFields(cargoManifestModel.shipmentDetails, dictionary);
+        populateDGFields(cargoManifestModel.shipmentDetails, dictionary);
+        populateReeferFields(cargoManifestModel.shipmentDetails, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, cargoManifestModel.shipmentDetails.getShipmentType());
+
         Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
         Set<String> locCodes = new HashSet<>();
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
@@ -166,6 +172,7 @@ public class CargoManifestReport extends IReport{
         processShipmentRoutingList(cargoManifestModel, dictionary);
 
         processReferenceNumbersList(cargoManifestModel, dictionary);
+        populateV3TruckDriverDetailsTags(cargoManifestModel.shipmentDetails, dictionary);
         return dictionary;
     }
 

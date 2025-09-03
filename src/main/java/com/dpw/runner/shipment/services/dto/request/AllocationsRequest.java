@@ -31,4 +31,14 @@ public class AllocationsRequest implements IRunnerRequest {
     private String minTempUnit;
     private BigDecimal maxTemp;
     private String maxTempUnit;
+    private BigDecimal weightVolume;
+    private String weightVolumeUnit;
+    private Integer packs;
+    private String packsType;
+    private Integer dgPacks;
+    private String dgPacksType;
+    private Integer dgContainerCount;
+    private Integer containerCount;
+    private BigDecimal teuCount;
+    private Integer slacCount;
 }

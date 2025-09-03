@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_DESCRIPTION_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_ADDRESS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_AGENT_ADDRESS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_AGENT_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_ADDRESS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_ADDRESS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_NAME_IN_CAPS;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
@@ -9,12 +21,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Re
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 public class BookingConfirmationReport extends IReport{
@@ -55,14 +66,7 @@ public class BookingConfirmationReport extends IReport{
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
 
         populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary, orgWithoutTranslation);
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
-                }
-            }
-        }
+        populateChargeDescriptions(dictionary, chargeTypesWithoutTranslation);
 
         dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.hblModel.shipment.getHouseBill());
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.hblModel.shipment.getMasterBill());
@@ -81,6 +85,8 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.hblModel.shipment.getTransportMode());
 
+        populateShippedOnboardFields(bookingConfirmationModel.hblModel.shipment, dictionary);
+
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
         if (referenceNumbers != null && !referenceNumbers.isEmpty()) {
@@ -89,6 +95,7 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        dictionary.put(ReportConstants.CARRIER_BOOKING_NUMBER, bookingConfirmationModel.hblModel.shipment.getBookingNumber());
 
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
@@ -96,7 +103,28 @@ public class BookingConfirmationReport extends IReport{
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         ReportHelper.addTenantDetails(dictionary, bookingConfirmationModel.hblModel.tenant);
+
+        if (bookingConfirmationModel.hblModel.consolidation != null) {
+            this.populateConsolidationReportData(dictionary, null, bookingConfirmationModel.hblModel.consolidation.getId());
+        }
+
+        if(bookingConfirmationModel.hblModel.shipment != null) {
+            this.populateShipmentReportData(dictionary, null, bookingConfirmationModel.hblModel.shipment.getId());
+            this.getContainerDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
+            this.getPackingDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
+        }
         return dictionary;
+    }
+
+    private void populateChargeDescriptions(Map<String, Object> dictionary, List<String> chargeTypesWithoutTranslation) {
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List) {
+            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> charge: values) {
+                if(charge.containsKey(CHARGE_TYPE_CODE) && charge.get(CHARGE_TYPE_CODE) != null) {
+                    charge.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)charge.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                }
+            }
+        }
     }
 
     private void processReferenceNumberList(List<ReferenceNumbersModel> referenceNumbers, Map<String, Object> dictionary) {

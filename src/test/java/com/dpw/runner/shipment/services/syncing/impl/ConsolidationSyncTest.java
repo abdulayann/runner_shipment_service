@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -80,6 +82,11 @@ class ConsolidationSyncTest {
     private ITruckDriverDetailsDao truckDriverDetailsDao;
     @Mock
     private V1AuthHelper v1AuthHelper;
+
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
 
     /**
      * Method under test:

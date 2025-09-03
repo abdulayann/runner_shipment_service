@@ -11,7 +11,7 @@ resources:
     name: DevOps/_git/devops-common-utils
     type: git
     ref: main
-    
+
 pool:
   vmImage: ubuntu-latest
 

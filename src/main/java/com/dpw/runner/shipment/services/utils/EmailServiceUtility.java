@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.utils.config.EmailConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.Objects;
 
 @SuppressWarnings("ALL")
 @Component
+@Slf4j
 public class EmailServiceUtility {
 
     @Autowired
@@ -26,8 +28,15 @@ public class EmailServiceUtility {
     @Value("${spring.profiles.active}")
     private String currentEnvironment;
     List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
-            "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
-            "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
+            "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
+            ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
+            "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com");
+
+    List<String> migrationEmailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
+            "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
+            ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
+            "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com",
+            "Dipanshu.Saini@dpworld.com", "Shadab.Sayeed@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 
@@ -80,4 +89,18 @@ public class EmailServiceUtility {
         this.sendEmailDefault("ERROR in Syncing Entity : " + entity + "\n id : " + id + " guid : " + guid + "\n" + "Error Message: " + error, sub);
     }
 
+    public void sendMigrationAndRestoreEmail(Integer tenantId, String response, String action, boolean isError) {
+        try {
+            String prefix = isError ? "ERROR in " : "";
+            String subject = prefix + action + " for Tenant Id: " + tenantId + " in ENV: " + currentEnvironment + " DateTime: " + LocalDateTime.now();
+            String body = prefix + action + " for Tenant Id: " + tenantId + "\n" + response;
+            this.sendMigrationEmails(body, subject);
+        } catch (Exception ex) {
+            log.error("Not able to send email for {} due to: {}", action, ex.getMessage());
+        }
+    }
+
+    public void sendMigrationEmails(String body, String subject) throws MessagingException, IOException {
+        this.sendEmail(body, subject, migrationEmailIds, null, null, null);
+    }
 }

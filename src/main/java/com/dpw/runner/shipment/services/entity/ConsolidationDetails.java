@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -94,11 +96,11 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "co_load_mbl")
     @Size(max=64, message = "max size is 64 for co_load_mbl")
-    private String coLoadMBL;
+    private String coLoadMBL; // Coloader BL No., booking agent bl no
 
     @Column(name = "co_load_booking_reference")
     @Size(max=64, message = "max size is 64 for co_load_booking_reference")
-    private String coLoadBookingReference;
+    private String coLoadBookingReference; // Coloader Booking Number, booking agent booking number
 
     @Column(name = "manifest_print")
     @MasterData(type = MasterDataType.PRINT_OPTIONS)
@@ -140,7 +142,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime shipInstructionCutoff;
 
     @Column(name = "hazardous_booking_cutoff")
-    private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime hazardousBookingCutoff; // DG Cutoff
 
     @Column(name = "latest_full_equ_delivered_to_carrier")
     private LocalDateTime latestFullEquDeliveredToCarrier;
@@ -162,7 +164,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String shipmentType;
 
     @Column(name = "bol")
-    @Size(max=20, message = "max size is 20 for bol")
+    @Size(max=50, message = "max size is 50 for bol")
     private String bol;
 
     @Column(name = "is_cargo_only")
@@ -263,6 +265,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @TenantIdData
     private Long receivingBranch;
 
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
+
     @Column(name = "intra_branch")
     private boolean intraBranch;
 
@@ -330,6 +336,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @OrganizationData
     private Parties borrowedFrom;
 
+    @Column(name = "is_borrowed")
+    private Boolean borrowed;
+
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "creditor_id", referencedColumnName = "id")
     @OrganizationData
@@ -339,6 +348,15 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
     @OrganizationData
     private Parties coLoadWith;
+
+    @Column(name = "co_load_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64, message = "max size is 64 for coload carrier name")
+    private String coLoadCarrierName; // Coloader
+
+    @Column(name = "booking_agent_id")
+    @OrganizationMasterData
+    private Long bookingAgent; //booking agent
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
@@ -414,6 +432,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "hazardous")
     private Boolean hazardous = false;
 
+    @Column(name = "reefer")
+    private Boolean reefer = false;
+
     @Column(name = "emergency_contact_number")
     @Size(max=31, message = "max size is 31 for emergency_contact_number")
     private String emergencyContactNumber;
@@ -476,6 +497,26 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "is_transferred_to_receiving_branch")
     private Boolean isTransferredToReceivingBranch;
+
+    @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    @Size(max = 64, message = "max size is 64 for partner")
+    private String partner;
+
+    @Column(name = "incoterms")
+    @MasterData(type = MasterDataType.INCOTERMS)
+    private String incoterms;
+
+    @Column(name = "transport_info_status")
+    @Enumerated(EnumType.STRING)
+    private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
+    @Column(name = "trigger_migration_warning")
+    private Boolean triggerMigrationWarning = false;
 
     @Override
     public boolean equals(Object o) {

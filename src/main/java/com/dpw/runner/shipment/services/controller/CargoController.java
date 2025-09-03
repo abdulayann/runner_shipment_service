@@ -1,0 +1,54 @@
+package com.dpw.runner.shipment.services.controller;
+
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.CargoConstants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
+import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.validation.Valid;
+
+import static com.dpw.runner.shipment.services.commons.constants.CargoConstants.CARGO_API_HANDLE_V3;
+
+@Slf4j
+@SuppressWarnings("ALL")
+@RestController
+@RequestMapping(value = CARGO_API_HANDLE_V3)
+public class CargoController {
+
+    private final ICargoService cargoService;
+
+    @Autowired
+    public CargoController(ICargoService cargoService){
+        this.cargoService = cargoService;
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = CargoDetailsResponse.class, message = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
+    })
+    @PostMapping(ApiConstants.GET_CARGO_DETAILS)
+    public ResponseEntity<IRunnerResponse> getCargoDetails(@RequestBody @NonNull @Valid CargoDetailsRequest cargoDetailsRequest) throws RunnerException {
+        CargoDetailsResponse cargoDetailsResponse = cargoService.getCargoDetails(cargoDetailsRequest);
+        return ResponseHelper.buildSuccessResponse(cargoDetailsResponse);
+    }
+
+    @PostMapping(ApiConstants.GET_CARGO_CHARGEABLE)
+    public ResponseEntity<IRunnerResponse> calculateChargeable(@RequestBody CargoChargeableRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(cargoService.calculateChargeable(request));
+    }
+
+}

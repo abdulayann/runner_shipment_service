@@ -2,17 +2,19 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class PartiesConstants {
     private PartiesConstants(){}
-    public static final String PARTIES_API_HANDLE = "/api/v2/parties";
-    public static final String PARTIES_CREATE_SUCCESSFUL = "Successful Parties  Creation";
+    public static final String PARTIES_API_HANDLE_V3 = "/api/v3/parties";
+    public static final String PARTIES_CREATE_SUCCESSFUL = "Successful Parties Creation";
 
-    public static final String PARTIES_UPDATE_SUCCESSFUL = "Successful Parties  Update";
+    public static final String PARTIES_UPDATE_SUCCESSFUL = "Successful Parties Update";
 
-    public static final String PARTIES_LIST_SUCCESSFUL = "Successful Parties  List Retrieval";
+    public static final String PARTIES_LIST_SUCCESSFUL = "Successful Parties List Retrieval";
     public static final String PARTIES_VALIDATE_ELNUMBER_SUCCESSFUL = "Successful ELNumber validation";
 
     public static final String PARTIES_DELETE_SUCCESSFUL = "Successful Parties  Delete";
 
     public static final String PARTIES_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Parties Details Retrieval By Id";
+    public static final String PARTY_RETRIEVE_BY_ID_ERROR = "Party is null for Id {} with Request Id {}";
+
 
     /**
      * Party Json Fields
@@ -20,6 +22,7 @@ public class PartiesConstants {
     public static final String FULLNAME = "FullName";
     public static final String ADDRESS1 = "Address1";
     public static final String ADDRESS2 = "Address2";
+    public static final String TAX_REG_NUMBER = "TaxRegNumber";
     public static final String COUNTRY = "Country";
     public static final String CITY = "City";
     public static final String ID = "Id";
@@ -63,4 +66,9 @@ public class PartiesConstants {
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
     public static final String ORG_ID = "OrgId";
+
+
+    public static final String NOTIFY_PART_1 = "Notify Part 1";
+    public static final String NOTIFY_PART_2 = "Notify Part 2";
+    public static final String NOTIFY_PART_3 = "Notify Part 3";
 }

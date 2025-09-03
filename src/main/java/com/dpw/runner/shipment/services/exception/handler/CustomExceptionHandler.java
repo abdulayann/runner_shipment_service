@@ -1,24 +1,33 @@
 package com.dpw.runner.shipment.services.exception.handler;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,10 +50,30 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             ReportException.class,
             RoutingException.class,
             NotificationException.class,
-            GenericException.class
+            GenericException.class,
+            ValidationException.class,
+            IllegalArgumentException.class,
+            DataRetrievalFailureException.class,
+            NotificationServiceException.class
     })
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({
+            ReportExceptionWarning.class
+    })
+    private ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
+        return ResponseHelper.buildSuccessResponseWithWarning(ex.getMessage());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<IRunnerResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        String errorMessages = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+        return ResponseHelper.buildFailedResponse(errorMessages, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler({DpsException.class})
@@ -73,8 +102,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(InvalidAuthenticationException.class)
-    public final ResponseEntity<IRunnerResponse> handleAuthenticationException(RunnerException ex) {
+    public final ResponseEntity<IRunnerResponse> handleAuthenticationException(InvalidAuthenticationException ex) {
         return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(V1ServiceException.class)
+    public ResponseEntity<IRunnerResponse> handleV1ServiceException(V1ServiceException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
@@ -90,7 +124,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .map(x-> x.getField() + ": " + x.getDefaultMessage())
                 .toList();
         String errorMessages = errors.size() > 1
                 ? String.join(" | ", errors)
@@ -117,5 +151,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({SectionFieldsException.class})
     private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({BackupFailureException.class, RestoreFailureException.class})
+    public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

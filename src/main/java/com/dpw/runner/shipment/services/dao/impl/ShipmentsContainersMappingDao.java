@@ -8,8 +8,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContaine
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +16,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -67,8 +67,19 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         return null;
     }
 
-    private ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping) {
+    @Override
+    public ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping) {
         return shipmentsContainersMappingRepository.save(shipmentsContainersMapping);
+    }
+
+    @Override
+    public List<ShipmentsContainersMapping> saveAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
+        return shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappingList);
+    }
+
+    @Override
+    public void deleteAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
+        shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappingList);
     }
 
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
@@ -104,16 +115,15 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
-    public void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
+    public void assignShipments(Long containerId, Set<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
-        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
-                shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
+                shipIds.remove(shipmentsContainersMappings.getShipmentId());
             }
         }
-        if (!shipmentIds.isEmpty()) {
-            for (Long id : shipmentIds) {
+        if (shipIds!= null && !shipIds.isEmpty()) {
+            for (Long id : shipIds) {
                 ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
                 entity.setShipmentId(id);
                 entity.setContainerId(containerId);
@@ -186,6 +196,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     @Override
     public List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
         return shipmentsContainersMappingRepository.findByContainerIdIn(containerIds);
+    }
+
+    @Override
+    public List<ShipmentsContainersMapping> findByContainerIdInWithoutTenantFilter(List<Long> containerIds) {
+        return shipmentsContainersMappingRepository.findByContainerIdInWithoutTenantFilter(containerIds);
     }
 
     @Override

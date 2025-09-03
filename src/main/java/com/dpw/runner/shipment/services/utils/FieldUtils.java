@@ -61,7 +61,8 @@ public class FieldUtils {
 
     private static boolean isMasterDataField(Field field) {
         return field.isAnnotationPresent(MasterData.class) ||
-                field.isAnnotationPresent(DedicatedMasterData.class) || field.isAnnotationPresent(UnlocationData.class);
+                field.isAnnotationPresent(DedicatedMasterData.class) || field.isAnnotationPresent(UnlocationData.class) ||
+                field.isAnnotationPresent(OrganizationMasterData.class);
     }
 
     public static List<String> getTenantIdAnnotationFields(List<FieldClassDto> classes) {
@@ -71,7 +72,11 @@ public class FieldUtils {
             for (Field field : fieldClassDto.getClazz().getDeclaredFields()) {
                 // Check if the field has any Hibernate relationship annotation
                 if (isTenantIdDataField(field)) {
-                    fields.add(field.getName());
+                    if (StringUtility.isNotEmpty(fieldClassDto.getFieldRef())) {
+                        fields.add(fieldClassDto.getFieldRef() + field.getName());
+                    } else {
+                        fields.add(field.getName());
+                    }
                 }
             }
         }

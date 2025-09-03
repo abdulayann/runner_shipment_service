@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS ti_containers
+    ADD COLUMN IF NOT EXISTS package_type VARCHAR(10);

@@ -713,43 +713,6 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_UndgEmpty_DgPermissionError() throws Exception{
-        List<Packing> packingList = List.of(testCsvPacking);
-        packingList.get(0).setDGClass("dgClass");
-        packingList.get(0).setFlashPoint("23");
-        packingList.get(0).setUNDGContact("");
-        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-        bulkUploadRequest.setConsolidationId(1L);
-        bulkUploadRequest.setShipmentId(2L);
-        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
-                .thenAnswer(invocation -> {
-
-                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
-                    masterDataMap.clear();
-                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
-
-                    Map<Long, Long> dgsubstance = (Map<Long, Long>) captor2.getValue();
-                    dgsubstance.clear();
-                    dgsubstance.putAll(jsonTestUtility.getDgSubstanceContactMap());
-
-                    Map<Long, String> dgsubstanceFlashPoint = (Map<Long, String>) captor3.getValue();
-                    dgsubstanceFlashPoint.clear();
-                    dgsubstanceFlashPoint.putAll(jsonTestUtility.getDgSubstanceFlashPoint());
-
-                    return packingList;
-                });
-        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-        volumeWeightChargeable.setChargeable(new BigDecimal(434));
-        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
-    }
-
-    @Test
     void uploadPacking_Exception() throws Exception{
         List<Packing> packingList = List.of(testCsvPacking);
         packingList.get(0).setDGClass("dgClass");

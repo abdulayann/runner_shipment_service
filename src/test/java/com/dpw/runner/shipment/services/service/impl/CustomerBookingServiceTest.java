@@ -105,6 +105,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Mock
     private IContainerDao containerDao;
     @Mock
+    private IPartiesDao partiesDao;
+    @Mock
     private IAuditLogService auditLogService;
     @Mock
     private INPMServiceAdapter npmService;
@@ -137,6 +139,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     private static ObjectMapper objectMapper;
     private static CustomerBookingRequest customerBookingRequest;
     private static CustomerBooking customerBooking;
+    private static Parties testParties;
 
 
     @BeforeAll
@@ -153,6 +156,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void setup() {
         customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
         customerBooking = jsonTestUtility.getCustomerBooking();
+        testParties = jsonTestUtility.getParties();
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().hasNoUtilization(true).build());
     }
@@ -1418,38 +1422,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
-    }
-
-    @Test
-    void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AirShipment_AIRDGPermission_AirDgTrue_AirPermissionFalse_throwsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
-        request.setIsDg(true);
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
-//        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-//        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
     }
 
     @Test

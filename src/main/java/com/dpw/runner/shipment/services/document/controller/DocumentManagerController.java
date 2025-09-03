@@ -12,11 +12,13 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.Optional;
+
+import java.util.Objects;
 
 
 @RestController
@@ -88,7 +92,9 @@ public class DocumentManagerController {
         String responseMsg;
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
-            return ResponseHelper.buildFileResponse(documentManagerService.downloadDocument(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, "Document-" + docId);
+            var response = documentManagerService.downloadDocument(CommonRequestModel.buildRequest(request));
+            return ResponseHelper.buildFileResponse(Objects.requireNonNull(response.getBody()).getContent(), MediaType.APPLICATION_OCTET_STREAM, HttpHeaders.CONTENT_DISPOSITION,
+                    StringUtility.convertToString(Objects.requireNonNull(response.getBody()).getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;

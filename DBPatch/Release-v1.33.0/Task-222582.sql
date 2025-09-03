@@ -1,0 +1,1 @@
+update shipment_details set house_bill = null where shipment_id = 'SNZS25052937' and tenant_id  = 551;

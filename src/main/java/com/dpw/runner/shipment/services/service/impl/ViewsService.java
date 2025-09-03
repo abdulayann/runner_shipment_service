@@ -58,7 +58,7 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
-        List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
+        List<String> viewsNamesList = viewsDao.findAllByUsernameAndEntity(UserContext.getUser().getUsername(), request.getEntity());
         if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
         {
             throw new ValidationException("A view with this name already exists, please change the view name!");
@@ -108,7 +108,7 @@ public class ViewsService implements IViewsService {
         }
         if(!Objects.equals(oldEntity.get().getName(), request.getName()))
         {
-            List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
+            List<String> viewsNamesList = viewsDao.findAllByUsernameAndEntity(UserContext.getUser().getUsername(), request.getEntity());
             if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
             {
                 throw new ValidationException("A view with this name already exists, please change the view name!");

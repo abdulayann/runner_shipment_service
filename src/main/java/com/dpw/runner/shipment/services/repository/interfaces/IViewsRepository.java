@@ -20,8 +20,8 @@ public interface IViewsRepository extends MultiTenancyRepository<Views> {
         return findOne(spec);
     }
 
-    @Query(value = "SELECT name from views where created_by = ?1 and is_deleted = FALSE", nativeQuery = true)
-    List<String> findAllByUsername(String username);
+    @Query(value = "SELECT name from views where created_by = ?1 and is_deleted = FALSE and entity = ?2", nativeQuery = true)
+    List<String> findAllByUsernameAndEntity(String username, String entity);
 
     @Query(value = "SELECT * from views where created_by = ?1 and is_default = TRUE and entity = ?2 and is_deleted = FALSE", nativeQuery = true)
     Views findByCreatedByAndIsDefault(String createdBy, String entity);

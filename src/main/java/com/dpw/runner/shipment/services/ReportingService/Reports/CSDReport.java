@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DATE_OF_PRINT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -13,16 +18,17 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DATE_OF_PRINT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
 
 @Component
 public class CSDReport extends IReport{
@@ -63,18 +69,7 @@ public class CSDReport extends IReport{
 
         populateUserFields(csdModel.getUsersDto(), dictionary);
         if(isConsolidation){
-            populateConsolidationFields(csdModel.getConsolidationModel(), dictionary);
-            populateRaKcDataConsolidation(dictionary, csdModel.getConsolidationModel());
-            dictionary.put(ReportConstants.IS_CONSOLIDATION, true);
-            // CarrierDetails
-            if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
-                carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
-                dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
-                        csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
-                ));
-            }
-            if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
-                dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
+            handleConsolidationData(csdModel, dictionary);
         }
         else {
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);
@@ -95,6 +90,11 @@ public class CSDReport extends IReport{
             dictionary.put(ReportConstants.REGULATORY_ENTITY_CATEGORY, additionalDetailModel.getRegulatedEntityCategory());
             if(!CollectionUtils.isEmpty(additionalDetailModel.getScreeningStatus()))
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(additionalDetailModel.getScreeningStatus()));
+            if (csdModel.getShipmentModel() != null) {
+                this.populateShipmentReportData(dictionary, null, csdModel.getShipmentModel().getId());
+                this.getContainerDetails(csdModel.getShipmentModel(), dictionary);
+                this.getPackingDetails(csdModel.getShipmentModel(), dictionary);
+            }
         }
 
         var securityStatus = dictionary.get(ReportConstants.CONSIGNMENT_STATUS);
@@ -112,6 +112,28 @@ public class CSDReport extends IReport{
         }
         return dictionary;
     }
+
+    private void handleConsolidationData(CSDModel csdModel, Map<String, Object> dictionary) {
+
+        CarrierDetailModel carrierModel;
+        populateConsolidationFields(csdModel.getConsolidationModel(), dictionary);
+        populateRaKcDataConsolidation(dictionary, csdModel.getConsolidationModel());
+        dictionary.put(ReportConstants.IS_CONSOLIDATION, true);
+        // CarrierDetails
+        if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
+            carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
+            dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
+                    csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
+            ));
+        }
+        if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
+            dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
+
+        if (csdModel.getConsolidationModel() != null) {
+            this.populateConsolidationReportData(dictionary, null, csdModel.getConsolidationModel().getId());
+        }
+    }
+
 
     private String getMainCarriageAirPorts(List<RoutingsModel> routingsModelList, String pol, String pod) {
         if (CollectionUtils.isEmpty(routingsModelList))

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface IPickupDeliveryDetailsDao {
     PickupDeliveryDetails save(PickupDeliveryDetails pickupDeliveryDetails);
@@ -18,4 +19,11 @@ public interface IPickupDeliveryDetailsDao {
     List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
     List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
     List<PickupDeliveryDetails> findByShipmentId(Long shipmentId);
+
+    Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId);
+    List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds);
+
+    void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
+
+    void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
 }

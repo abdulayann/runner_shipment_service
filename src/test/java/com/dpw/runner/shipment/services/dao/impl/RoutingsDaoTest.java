@@ -170,6 +170,18 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
+    void testFindAllWithoutTenantFilter() {
+        Page<Routings> routingsPage = mock(Page.class);
+        Specification<Routings> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(routingsRepository.findAllWithoutTenantFilter(spec, pageable)).thenReturn(routingsPage);
+
+        Page<Routings> foundRoutingsPage = routingsDao.findAllWithoutTenantFilter(spec, pageable);
+
+        assertEquals(routingsPage, foundRoutingsPage);
+    }
+
+    @Test
     void testFindById() {
         Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
         Optional<Routings> optionalRoutings = Optional.of(routings);
@@ -188,6 +200,30 @@ class RoutingsDaoTest extends CommonMocks {
         when(routingsRepository.findByGuid(any(UUID.class))).thenReturn(optionalRoutings);
 
         Optional<Routings> foundRoutings = routingsDao.findByGuid(UUID.randomUUID());
+
+        assertTrue(foundRoutings.isPresent());
+        assertEquals(routings, foundRoutings.get());
+    }
+
+    @Test
+    void testFindByIdWithQuery() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Optional<Routings> optionalRoutings = Optional.of(routings);
+        when(routingsRepository.findByIdWithQuery(anyLong())).thenReturn(optionalRoutings);
+
+        Optional<Routings> foundRoutings = routingsDao.findByIdWithQuery(1L);
+
+        assertTrue(foundRoutings.isPresent());
+        assertEquals(routings, foundRoutings.get());
+    }
+
+    @Test
+    void testFindByGuidWithQuery() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Optional<Routings> optionalRoutings = Optional.of(routings);
+        when(routingsRepository.findByGuidWithQuery(any(UUID.class))).thenReturn(optionalRoutings);
+
+        Optional<Routings> foundRoutings = routingsDao.findByGuidWithQuery(UUID.randomUUID());
 
         assertTrue(foundRoutings.isPresent());
         assertEquals(routings, foundRoutings.get());
@@ -742,4 +778,92 @@ class RoutingsDaoTest extends CommonMocks {
         assertEquals(0, result.size());
     }
 
+    @Test
+    void testFindByIdIn() {
+        List<Long> routingIds = new ArrayList<>();
+        routingIds.add(1L);
+        routingsDao.findByIdIn(routingIds);
+        verify(routingsRepository).findByIdIn(routingIds);
+    }
+
+    @Test
+    void testDeleteByIdIn() {
+        List<Long> routingIds = new ArrayList<>();
+        routingIds.add(1L);
+        routingsDao.deleteByIdIn(routingIds);
+        verify(routingsRepository).deleteAllById(routingIds);
+    }
+
+    @Test
+    void testFindByShipmentIdAndCarriage() {
+        routingsDao.findByShipmentIdAndCarriage(1L, RoutingCarriage.MAIN_CARRIAGE);
+        verify(routingsRepository).findByShipmentIdAndCarriage(1L, RoutingCarriage.MAIN_CARRIAGE);
+    }
+
+    @Test
+    void testFindByConsolidationId() {
+        routingsDao.findByConsolidationId(1L);
+        verify(routingsRepository).findByConsolidationId(1L);
+    }
+
+    @Test
+    void testDeleteAll() {
+        List<Routings> existingRoutingsForDeletion = new ArrayList<>();
+        routingsDao.deleteAll(existingRoutingsForDeletion);
+        verify(routingsRepository).deleteAll(existingRoutingsForDeletion);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByRoutingsIdsConsolidationId() {
+        List<Long> routingsIds = List.of(1L, 2L);
+        Long consolidationId = 100L;
+        routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByRoutingsIdsAndConsolidationId() {
+        List<Long> routingsIds = List.of(3L, 4L);
+        Long consolidationId = 200L;
+        routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByRoutingsIdsBookingId() {
+        List<Long> routingsIds = List.of(5L, 6L);
+        Long bookingId = 300L;
+        routingsDao.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByRoutingsIdsAndBookingId() {
+        List<Long> routingsIds = List.of(7L, 8L);
+        Long bookingId = 400L;
+        routingsDao.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+    }
+
+    @Test
+    void testDeleteAdditionalroutingsByShipmentId() {
+        List<Long> routingsIds = List.of(9L, 10L);
+        Long shipmentId = 500L;
+        routingsDao.deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
+        verify(routingsRepository, times(1))
+                .deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByroutingsIdsAndShipmentId() {
+        List<Long> routingsIds = List.of(11L, 12L);
+        Long shipmentId = 600L;
+        routingsDao.revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
+        verify(routingsRepository, times(1))
+                .revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
+    }
 }

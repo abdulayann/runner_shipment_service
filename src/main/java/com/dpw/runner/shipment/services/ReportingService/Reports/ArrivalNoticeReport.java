@@ -126,6 +126,11 @@ public class ArrivalNoticeReport extends IReport {
         populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        if (arrivalNoticeModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, arrivalNoticeModel.shipmentDetails.getId());
+            this.getContainerDetails(arrivalNoticeModel.shipmentDetails, dictionary);
+        }
+
         processShipmentPackingList(arrivalNoticeModel, dictionary);
 
         ReportHelper.addPartyNameAndAddressInCaps(arrivalNoticeModel.shipmentDetails.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
@@ -134,6 +139,11 @@ public class ArrivalNoticeReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         ReportHelper.addTenantDetails(dictionary, getTenant());
+
+        if (arrivalNoticeModel.consolidationDetails != null) {
+            this.populateConsolidationReportData(dictionary, null, arrivalNoticeModel.consolidationDetails.getId());
+        }
+
         return dictionary;
     }
 

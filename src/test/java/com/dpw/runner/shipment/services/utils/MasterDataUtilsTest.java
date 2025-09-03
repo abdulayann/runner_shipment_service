@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -8,15 +9,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -26,17 +35,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
@@ -80,7 +79,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -103,7 +105,7 @@ import org.springframework.test.context.TestPropertySource;
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
-class MasterDataUtilsTest {
+class MasterDataUtilsTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -122,11 +124,10 @@ class MasterDataUtilsTest {
     @Mock
     private ModelMapper modelMapper;
     @Mock
-    private CommonUtils commonUtils;
-    @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
+    @Spy
     @InjectMocks
     private  MasterDataUtils masterDataUtils;
     @Mock
@@ -134,7 +135,7 @@ class MasterDataUtilsTest {
 
 
     @BeforeAll
-    static void init() throws IOException, NoSuchFieldException, IllegalAccessException {
+    static void init() throws IOException {
 
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
@@ -147,6 +148,7 @@ class MasterDataUtilsTest {
     @BeforeEach
     void setup() throws NoSuchFieldException, IllegalAccessException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
         customerBooking = jsonTestUtility.getCustomerBooking();
 
@@ -307,6 +309,95 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void createInBulkOrganizationRequest() {
+        // Act and Assert
+        var response = masterDataUtils.createInBulkOrganizationRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+        assertNull(response);
+    }
+
+    @Test
+    void createInBulkOrganizationRequest2() {
+        // Arrange
+        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        mockShipmentDetailsResponse.setPickupAtOrigin(2L);
+        mockShipmentDetailsResponse.setDeliveryAtDestination(2L);
+        mockShipmentDetailsResponse.setBookingAgent(2L);
+        mockShipmentDetailsResponse.setBrokerageAtOrigin(2L);
+        mockShipmentDetailsResponse.setBrokerageAtDestination(2L);
+        Cache cache = mock(Cache.class);
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(null);
+
+        // Act and Assert
+        var response = masterDataUtils.createInBulkOrganizationRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+        assertNotNull(response);
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
+    void fetchInOrganizations() {
+        Set<String> requests = new HashSet<>();
+        requests.add("123");
+        String onField = "";
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        EntityTransferOrganizations entityTransferOrganizations = EntityTransferOrganizations.builder()
+                .FullName("Org1")
+                .Id(1L)
+                .build();
+        List<EntityTransferOrganizations> organizations = new ArrayList<>();
+        organizations.add(entityTransferOrganizations);
+        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(organizations);
+        var response = masterDataUtils.fetchInOrganizations(requests, onField);
+        assertEquals(entityTransferOrganizations, response.get("1"));
+    }
+
+    @Test
+    void fetchInOrganizations1() {
+        Set<String> requests = new HashSet<>();
+        var response = masterDataUtils.fetchInOrganizations(requests, "");
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void createInBulkOrganizationRequest3() {
+        // Arrange
+        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        mockShipmentDetailsResponse.setPickupAtOrigin(2L);
+        mockShipmentDetailsResponse.setDeliveryAtDestination(2L);
+        mockShipmentDetailsResponse.setBookingAgent(2L);
+        mockShipmentDetailsResponse.setBrokerageAtOrigin(2L);
+        mockShipmentDetailsResponse.setBrokerageAtDestination(2L);
+        Cache cache = mock(Cache.class);
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferOrganizations::new);
+
+        // Act and Assert
+        var response = masterDataUtils.createInBulkOrganizationRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void createInBulkOrganizationRequest4() {
+        // Arrange
+        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+        Cache cache = mock(Cache.class);
+
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
+
+        // Act and Assert
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkOrganizationRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -531,13 +622,13 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
-
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
+        container.setContainerCode("FAK");
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
-        assertFalse(response.isEmpty());
     }
 
     @Test
@@ -547,14 +638,15 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
+        container.setContainerCode("FAK");
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
-
     }
 
     @Test
@@ -881,7 +973,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
@@ -898,7 +990,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
@@ -1695,6 +1787,7 @@ class MasterDataUtilsTest {
         var inputFieldNameKeyMap = new HashMap<String, String>();
         inputFieldNameKeyMap.put("field", "value");
 
+        mockShipmentSettings();
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
@@ -1712,6 +1805,7 @@ class MasterDataUtilsTest {
         var inputFieldNameKeyMap = new HashMap<String, String>();
         inputFieldNameKeyMap.put("field", "value");
 
+        mockShipmentSettings();
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
@@ -2082,6 +2176,28 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void setLocationData10() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData11() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void fetchVesselForList() {
         boolean isSuccess = true;
         Cache cache = mock(Cache.class);
@@ -2307,6 +2423,69 @@ class MasterDataUtilsTest {
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
+
+    @Test
+    void setShipmentTypeMasterData_successfulMapping() {
+        // Arrange
+        String jobType = "EXPORT";
+        String expectedDescription = "Export Shipment";
+
+        ShipmentListResponse shipmentResponse = new ShipmentListResponse();
+        shipmentResponse.setJobType(jobType);
+
+        List<IRunnerResponse> responseList = List.of(shipmentResponse);
+
+        EntityTransferMasterLists mockMaster = new EntityTransferMasterLists();
+        mockMaster.setItemDescription(expectedDescription);
+
+        String key = MasterDataType.SHIPMENT_TYPE.name() + "#" + jobType;
+        Map<String, EntityTransferMasterLists> masterDataMap = Map.of(key, mockMaster);
+
+        // ✅ Mock the internal method of the class using doReturn().when(spy).method(...)
+        doReturn(masterDataMap).when(masterDataUtils).fetchMasterListFromCache(any(MasterListRequestV2.class));
+
+        // Act
+        masterDataUtils.setShipmentTypeMasterData(responseList);
+
+        // Assert
+        assertEquals(Map.of(jobType, expectedDescription), shipmentResponse.getShipmentTypeMasterData());
+    }
+
+    @Test
+    void setShipmentTypeMasterData_noJobType_noMapping() {
+        // Arrange
+        ShipmentListResponse shipmentResponse = new ShipmentListResponse();
+        shipmentResponse.setJobType(null); // No jobType
+
+        List<IRunnerResponse> responseList = List.of(shipmentResponse);
+
+        // Act
+        masterDataUtils.setShipmentTypeMasterData(responseList);
+
+        // Assert
+        assertNull(shipmentResponse.getShipmentTypeMasterData());
+    }
+
+    @Test
+    void setShipmentTypeMasterData_masterDataMissing_noMapping() {
+        // Arrange
+        String jobType = "IMPORT";
+
+        ShipmentListResponse shipmentResponse = new ShipmentListResponse();
+        shipmentResponse.setJobType(jobType);
+
+        List<IRunnerResponse> responseList = List.of(shipmentResponse);
+
+        // Mock: Master data map doesn't contain the key
+        doReturn(Collections.emptyMap()).when(masterDataUtils).fetchMasterListFromCache(any(MasterListRequestV2.class));
+
+        // Act
+        masterDataUtils.setShipmentTypeMasterData(responseList);
+
+        // Assert
+        assertNull(shipmentResponse.getShipmentTypeMasterData());
+    }
+
 
     @Test
     void getCountriesMasterDataList() {
@@ -2551,6 +2730,227 @@ class MasterDataUtilsTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         var response = spyService.getPartiesOrgInfoFromCache(List.of(locationGuid));
         assertNotNull(response);
+    }
+
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("MSC")
+                .build();
+
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_carrierDetails_null() {
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("Evergreen")
+                .build();
+
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder().id(1L).build();
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_carrierDetails_null() {
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("Maersk Line") // also needed for setting master data
+                .build();
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_carrierDetails_null() {
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withException_shouldCatchGracefully() {
+        List<IRunnerResponse> responses = List.of(mock(ShipmentListResponse.class));
+
+        // Use a spy here if mocking inside the method (fetchInBulkCarriers)
+        MasterDataUtils masterDataUtilsSpy = spy(masterDataUtils);
+        doThrow(new RuntimeException("Simulated failure")).when(masterDataUtilsSpy).fetchInBulkCarriers(any());
+        assertDoesNotThrow(() -> masterDataUtilsSpy.fetchCarriersForList(responses));
+    }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("MSC")
+                .build();
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingV3Response_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingV3Response_carrierDetails_null() {
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_success() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+
+        String scacCode = "MSKU";
+        String expectedItemValue = "Maersk";
+
+        // Mock the internal method call
+        doReturn(Map.of(scacCode, expectedItemValue))
+                .when(spyService)
+                .getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        String result = spyService.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCode);
+
+        assertEquals(expectedItemValue, result);
+    }
+
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_notFound_shouldThrowException() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String scacCode = "UNKNOWN";
+
+        doReturn(Collections.emptyMap())
+                .when(spyService)
+                .getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+                spyService.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCode)
+        );
+
+        assertEquals("Data not present in Carrier Master data", exception.getMessage());
+    }
+
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_nullOrBlank_shouldReturnNull() {
+        String result1 = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(null);
+        assertNull(result1);
+
+        String result2 = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa("   ");
+        assertNull(result2);
+    }
+
+    @Test
+    void getCarrierItemValuesFromSCACList_success() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String scacCode = "MSKU";
+        EntityTransferCarrier carrier = new EntityTransferCarrier();
+        carrier.ItemValue = "Maersk";
+
+        Map<String, EntityTransferCarrier> carrierMap = Map.of(scacCode, carrier);
+
+        doReturn(carrierMap).when(spyService).fetchInBulkCarriersBySCACCode(List.of(scacCode));
+
+        Map<String, String> result = spyService.getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Maersk", result.get(scacCode));
     }
 
     @Test

@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Profile("qa")
+@Profile({"qa","dev"})
 @Configuration
 @EnableSwagger2
 @Generated

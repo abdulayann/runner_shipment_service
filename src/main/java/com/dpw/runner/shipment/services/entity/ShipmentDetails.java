@@ -3,11 +3,13 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -124,7 +126,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
-    @Size(max=2048, message = "max size is 2048 for additional_terms")
+    @Size(max=25000, message = "max size is 25000 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
@@ -249,6 +251,12 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
 
+    @Column(name = "is_shipper_client_equal")
+    private Boolean isShipperClientEqual;
+
+    @Column(name = "is_consignee_client_equal")
+    private Boolean isConsigneeClientEqual;
+
     //ShipmentOrderId
 
     @Column(name = "booking_type")
@@ -283,6 +291,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "receiving_branch")
     @TenantIdData
     private Long receivingBranch;
+
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
 
     @Column(name = "intra_branch")
     private Boolean intraBranch;
@@ -516,6 +528,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "destination_contract_id")
     private String destinationContractId;
 
+    @Column(name = "destination_parent_contract_id")
+    private String destinationParentContractId;
+
     @Column(name = "destination_contract_type")
     private String destinationContractType;
 
@@ -581,7 +596,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String coLoadCarrierName;
 
     @Column(name = "co_load_bl_number")
-    @Size(max = 64)
+    @Size(max = 50)
     private String coLoadBlNumber;
 
     @Column(name = "issuing_carrier_name")
@@ -598,6 +613,133 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_frob")
     private Boolean isFrob;
+
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
+
+    @Column(name = "incoterms_location")
+    @Size(max = 64)
+    private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 50)
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String partner;
+
+    @Column(name = "booking_agent")
+    @OrganizationMasterData
+    private Long bookingAgent;
+
+    @Column(name = "co_load_bkg_number")
+    @Size(max = 50)
+    private String coLoadBkgNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin")
+    @OrganizationMasterData
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    @OrganizationMasterData
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    @OrganizationMasterData
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    @OrganizationMasterData
+    private Long brokerageAtDestination;
+
+    @Column(name = "est_brokerage_at_origin_date")
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @Column(name = "est_brokerage_at_destination_date")
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
+
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
+
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
+
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
+
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
+
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
+
+    @Column(name = "container_assigned_to_shipment_cargo")
+    private Long containerAssignedToShipmentCargo;
+
+    @Column(name = "is_borrowed")
+    private Boolean isBorrowed;
+
+    @Column(name = "slac")
+    private Integer slac;
+
+    @Column(name = "dg_packs_count")
+    private Integer dgPacksCount;
+
+    @Column(name = "dg_packs_unit")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String dgPacksUnit;
+
+    @Column(name = "transport_info_status")
+    @Enumerated(EnumType.STRING)
+    private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
+    @Column(name = "trigger_migration_warning")
+    private Boolean triggerMigrationWarning = false;
 
     @Override
     public boolean equals(Object o) {

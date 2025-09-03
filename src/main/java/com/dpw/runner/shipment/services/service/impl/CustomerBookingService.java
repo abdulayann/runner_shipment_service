@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -108,6 +109,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IRoutingsDao routingsDao;
+
+    @Autowired
+    private IPartiesDao partiesDao;
 
     @Autowired
     private IContainerDao containerDao;
@@ -225,6 +229,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         populateTotalRevenueDetails(customerBooking, request);
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
@@ -377,7 +382,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
-
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -485,11 +490,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!CommonUtils.checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
-        } else {
-            boolean hasAirDGPermission = UserContext.isAirDgUser();
-            if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
-                throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
-            }
         }
     }
 
@@ -572,6 +572,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
             double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             log.info("Time taken to fetch booking details from db: {} Request Id {}", current - startTime, LoggerHelper.getRequestIdFromMDC());
@@ -1147,7 +1148,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
             npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
@@ -1169,7 +1170,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
-    private void npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
+    private void npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
@@ -1726,6 +1727,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public Optional<CustomerBooking> findById(Long bookingId) {
+        return customerBookingDao.findById(bookingId);
     }
 
     public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {

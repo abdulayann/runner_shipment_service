@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -96,6 +98,9 @@ class BookingOrderReportTest extends CommonMocks {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Mock
@@ -115,6 +120,10 @@ class BookingOrderReportTest extends CommonMocks {
 
     @Mock
     private CustomKeyGenerator keyGenerator;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
 
     private static final String LOC_CODE = "TEST";
     private static final String ORG_CODE = "ORG_TEST";
@@ -141,6 +150,12 @@ class BookingOrderReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
             V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void mockVessel() {
@@ -376,6 +391,8 @@ class BookingOrderReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(bookingOrderReport.populateDictionary(bookingOrderModel));
     }
 

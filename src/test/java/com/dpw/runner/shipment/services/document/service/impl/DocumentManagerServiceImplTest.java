@@ -8,6 +8,8 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,11 +19,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -33,6 +37,9 @@ import static org.mockito.Mockito.when;
 class DocumentManagerServiceImplTest {
     @Mock
     private DocumentManagerRestClient documentManagerRestClient;
+
+    @Mock
+    private JsonHelper jsonHelper;
 
     @InjectMocks
     private DocumentManagerServiceImpl documentManagerServiceImpl;
@@ -252,11 +259,11 @@ class DocumentManagerServiceImplTest {
 
     @Test
     void testDownloadDocument() {
-        var mockResponse = ResponseEntity.ok(new byte[1024]);
+        var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HttpHeaders()).build());
         when(documentManagerRestClient.downloadDocument(any())).thenReturn(mockResponse);
         var responseEntity = documentManagerServiceImpl.downloadDocument(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
         assertNotNull(responseEntity);
-        assertEquals(mockResponse.getBody(), responseEntity);
+        assertEquals(mockResponse, responseEntity);
     }
 
     @Test
@@ -324,7 +331,9 @@ class DocumentManagerServiceImplTest {
 
     @Test
     void testPushSystemGeneratedDocumentToDocMaster2() {
-
+        var request = new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1});
+        var fileName = "test.txt";
+        var uploadRequest = new DocUploadRequest();
         DocumentManagerResponse<DocumentManagerDataResponse> documentManagerResponse = new DocumentManagerResponse<>();
         documentManagerResponse.setCount(3L);
         documentManagerResponse.setData(new DocumentManagerDataResponse());
@@ -332,8 +341,7 @@ class DocumentManagerServiceImplTest {
         when(documentManagerRestClient.temporaryFileUpload(Mockito.<DocumentManagerTempFileUploadRequest>any()))
                 .thenReturn(documentManagerResponse);
 
-        documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1}), "test.txt", new DocUploadRequest());
-        verify(documentManagerRestClient).temporaryFileUpload(isA(DocumentManagerTempFileUploadRequest.class));
+        assertThrows(DocumentClientException.class, () -> documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(request, fileName, uploadRequest));
     }
 
 

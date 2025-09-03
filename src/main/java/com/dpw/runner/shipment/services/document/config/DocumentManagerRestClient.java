@@ -7,10 +7,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
 
 @Component
 @Generated
@@ -101,7 +105,7 @@ public class DocumentManagerRestClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
-        headers.add(Constants.SOURCE_SERVICE_TYPE, LoggingConstants.SHIPMENT);
+        headers.add(SOURCE_SERVICE_TYPE, CommonUtils.getSourceService());
         return headers;
     }
 
@@ -110,6 +114,7 @@ public class DocumentManagerRestClient {
         HttpEntity<DocumentManagerTempFileUploadRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
         String url = baseUrl + "/files-management/v2/addTemporaryFile";
+        log.info("{} | {} Processing temporaryFileUpload process for Doc request{}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(requestEntity));
 
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
                 url,
@@ -128,7 +133,7 @@ public class DocumentManagerRestClient {
             HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
             String url = baseUrl + "/files-management/v2/saveFile";
-            log.info("{} | URL: {} | saveFile request: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(requestEntity));
+            log.info("{} | {} URL: {} | saveFile request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(requestEntity));
 
             ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
                     url,
@@ -137,12 +142,15 @@ public class DocumentManagerRestClient {
                     new ParameterizedTypeReference<>() {
                     }
             );
-            log.info("{} | URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(responseEntity.getBody()));
+            log.info("{} | {} URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(),LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(responseEntity.getBody()));
             return responseEntity.getBody();
-        }
-        catch (Exception ex) {
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("saveFile", request, ex);
-            throw new DocumentClientException(ex.getMessage());
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
         }
 
     }
@@ -290,7 +298,7 @@ public class DocumentManagerRestClient {
 
     }
 
-    public ResponseEntity<byte[]> downloadDocument(Object object) {
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Object object) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
@@ -302,7 +310,7 @@ public class DocumentManagerRestClient {
                     httpEntity,
                     byte[].class
             );
-            return ResponseEntity.ok(response.getBody());
+            return ResponseEntity.ok(DocumentDownloadResponse.builder().content(response.getBody()).headers(response.getHeaders()).build());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("downloadDocument", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)

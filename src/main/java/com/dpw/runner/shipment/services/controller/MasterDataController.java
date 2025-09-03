@@ -188,10 +188,10 @@ public class MasterDataController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
     @PostMapping(MasterDataConstants.CONTAINER_TYPE + ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> listContainerType(@RequestBody @Valid Object request) {
+    public ResponseEntity<IRunnerResponse> listContainerType(@RequestBody @Valid Object request, @RequestParam(name = "quoteId", required = false) String quoteId) {
         String responseMsg;
         try {
-            return masterDataService.listContainerType(CommonRequestModel.buildDependentDataRequest(request));
+            return masterDataService.listContainerType(CommonRequestModel.buildDependentDataRequest(request), quoteId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -1181,4 +1181,22 @@ public class MasterDataController {
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.TENANT_DATA_RETRIEVAL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(ApiConstants.FETCH_TENANT_DATA_WITH_TENANT_ID)
+    public ResponseEntity<IRunnerResponse> getDefaultOrgAddressFromTenant(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return masterDataService.getDefaultOrgAddressByTenantId(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }

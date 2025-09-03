@@ -190,30 +190,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
-            if(npmContractsResponse != null)
-            {
-                List<NPMContractsResponse.NPMContractResponse> list = npmContractsResponse.getContracts();
-                if(list != null && !list.isEmpty())
-                {
-                    list = list.stream().filter(c -> c.getValidTill() != null && LocalDateTime.now().isBefore(c.getValidTill())).toList();
-                    if(listContractsWithFilterRequest.getCargoType() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getCargoType().equals(c.getProduct_type())).toList();
-                    }
-                    if(listContractsWithFilterRequest.getOrigin() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getOrigin().equals(c.getOrigin())).toList();
-                    }
-                    if(listContractsWithFilterRequest.getDestination() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getDestination().equals(c.getDestination())).toList();
-                    }
-                    npmContractsResponse.setContracts(list);
-                }
+            List<NPMContractsResponse.NPMContractResponse> filteredContracts = filterContracts(npmContractsResponse, listContractsWithFilterRequest);
+            if (npmContractsResponse != null) {
+                npmContractsResponse.setContracts(filteredContracts);
             }
 
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
-            return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
+            return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -222,7 +205,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
@@ -756,12 +739,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p,
                                                                           String offerType) {
+        List<String> dgClassList = request.getContractsInfo().getDgClass();
+        List<String> dgUnNumList = request.getContractsInfo().getDgUnNum();
+
+        boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
+        String dgCode = isDangerous ? dgClassList.iterator().next() : null;
+        String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(p.getPackageType())
                         .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)?p.getCommodity():null)
                         .commodity(NPMConstants.OFFERS_V8.equals(offerType)?p.getCommodity():null)
+                        .is_dangerous(isDangerous)
+                        .code(dgCode)
+                        .un_number(unNumber)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .chargeable(p.getChargeable())
@@ -780,12 +773,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromContainers(NPMFetchOffersRequestFromUI request,
                                                                                NPMFetchOffersRequestFromUI.Container containerFromRequest,
                                                                                String offerType) {
+        List<String> dgClassList = request.getContractsInfo().getDgClass();
+        List<String> dgUnNumList = request.getContractsInfo().getDgUnNum();
+
+        boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
+        String dgCode = isDangerous ? dgClassList.iterator().next() : null;
+        String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(containerFromRequest.getContainerType())
                         .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? containerFromRequest.getCommodityCode() : null)
                         .commodity(NPMConstants.OFFERS_V8.equals(offerType)? containerFromRequest.getCommodityCode() : null)
+                        .is_dangerous(isDangerous)
+                        .code(dgCode)
+                        .un_number(unNumber)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .delta_quantity(containerFromRequest.getQuantity())
@@ -973,5 +976,33 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             containerList.add(containerResponse);
         }
         return containerList;
+    }
+
+    private List<NPMContractsResponse.NPMContractResponse> filterContracts(NPMContractsResponse response, ListContractsWithFilterRequest filterRequest) {
+        if (response == null || response.getContracts() == null || response.getContracts().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return response.getContracts().stream().filter(c -> isValidContract(c, filterRequest)).toList();
+    }
+
+    private boolean isValidContract(NPMContractsResponse.NPMContractResponse contract,
+                                    ListContractsWithFilterRequest filter) {
+        if (contract.getValidTill() == null || LocalDateTime.now().isAfter(contract.getValidTill())) {
+            return false;
+        }
+        if (filter.getCargoType() != null && !filter.getCargoType().equals(contract.getProduct_type())) {
+            return false;
+        }
+        if (filter.getOrigin() != null && !filter.getOrigin().equals(contract.getOrigin())) {
+            return false;
+        }
+        if (filter.getDestination() != null && !filter.getDestination().equals(contract.getDestination())) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(filter.getIsDgEnabled())) {
+            List<String> dgClass = contract.getDgClass();
+            return dgClass != null && !dgClass.isEmpty() && dgClass.get(0) != null;
+        }
+        return true;
     }
 }

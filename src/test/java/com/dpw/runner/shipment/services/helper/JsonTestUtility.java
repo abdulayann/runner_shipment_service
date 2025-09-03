@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
@@ -62,7 +63,9 @@ public class JsonTestUtility {
     public String readJson(String fileName) throws IOException {
         return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
     }
-
+    public <T> T convertJsonTClazz(String jsonContent,Class<T> clazz) throws IOException {
+        return objectMapper.readValue(jsonContent, clazz);
+    }
     public String getMDMResponseString() throws JsonProcessingException {
         return convertToJson(payload.get("MDM_RESPONSE"));
     }
@@ -370,6 +373,11 @@ public class JsonTestUtility {
     public CustomerBookingRequest getCustomerBookingRequest() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingRequest.class);
     }
+
+    public CustomerBookingV3Request getCustomerBookingV3Request() {
+        return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingV3Request.class);
+    }
+
     public CustomerBooking getCustomerBooking() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
     }
@@ -469,6 +477,16 @@ public class JsonTestUtility {
     }
     public EntityTransferConsolidationDetails getImportConsolidationSea() {
         return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
+    }
+
+    public EntityTransferV3ShipmentDetails getV3ImportShipmentData() {
+        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferV3ShipmentDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationAir() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferV3ConsolidationDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationSea() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferV3ConsolidationDetails.class);
     }
 
     public Notification getNotification() {

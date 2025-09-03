@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -48,6 +50,11 @@ class HblSyncTest {
 
     @Mock
     private CommonUtils commonUtils;
+
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
 
     /**
      * Method under test: {@link HblSync#sync(Hbl, String)}

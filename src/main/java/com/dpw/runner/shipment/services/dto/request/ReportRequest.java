@@ -2,11 +2,12 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -33,12 +34,14 @@ public class ReportRequest implements IRunnerRequest {
     String noOfCopies = null;
     boolean fromShipment;
     boolean fromConsolidation;
+    boolean setParentEntityFlag = true;
     Boolean pushAwbEvent;
     Boolean printWithoutTranslation;
     List<Long> shipmentIds;
     boolean isShipperAndConsignee;
     boolean isSecurityData;
     String transportInstructionId;
+    Set<Long> tiLegs = new HashSet<>();
     String remarks;
     boolean includeCsdInfo;
     boolean printCSD;

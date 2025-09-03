@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -23,6 +25,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,6 +73,16 @@ class PickupOrderReportTest extends CommonMocks {
     @Mock
     private HblReport hblReport;
 
+    @Mock
+    IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -90,6 +103,12 @@ class PickupOrderReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(HblModel hblModel) {
@@ -310,6 +329,9 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        mockTenantSettings();
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 

@@ -1,36 +1,110 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DocumentConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dao.impl.AwbDao;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.EventDao;
+import com.dpw.runner.shipment.services.dao.impl.HblDao;
+import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
+import com.dpw.runner.shipment.services.dao.impl.HblTermsConditionTemplateDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.DocDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -38,12 +112,32 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,33 +152,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ReportServiceTest extends CommonMocks {
 
     @InjectMocks
+    @Spy
     private ReportService reportService;
 
     private static JsonTestUtility jsonTestUtility;
@@ -221,6 +301,14 @@ class ReportServiceTest extends CommonMocks {
     @Mock
     private ReportService self;
 
+    @Mock
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
+    @Mock
+    private ITransportInstructionLegsService transportInstructionLegsService;
+    @Mock
+    private TransportInstructionReportHelper transportInstructionReport;
+
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
     @BeforeAll
@@ -230,6 +318,7 @@ class ReportServiceTest extends CommonMocks {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setEnableTimeZone(false);
         UserContext.setUser(mockUser);
     }
 
@@ -251,6 +340,49 @@ class ReportServiceTest extends CommonMocks {
         reportService.executorServiceReport.shutdown();
     }
 
+    @Test
+    void shouldValidateHblReport_CallInternalValidator() {
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        reportService.validateHouseBill(reportRequest);
+
+        verify(reportService).validateUnassignedPackagesInternal(
+                any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
+        );
+    }
+
+    @Test
+    void shouldThrowValidationException_WhenInvalidReportType() {
+        // some dummy report implementation or plain mock
+        when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
+
+        assertThrows(ValidationException.class, () ->
+                reportService.validateHouseBill(reportRequest));
+    }
+
+    @Test
+    void shouldValidateSeawayBill_CallInternalValidator() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        Mockito.when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act
+        reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        verify(reportService).validateUnassignedPackagesInternal(
+                any(), any(), eq("Seaway Bill"), eq("Seaway for possible cargo discrepancies.")
+        );
+    }
+
 
     @Test
     void getSeawayBillDocumentData()
@@ -264,16 +396,18 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setSeawayMainPage("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -379,7 +513,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -404,7 +538,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -429,7 +563,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -454,8 +588,201 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_throwsException() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocName"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_nullSetting_throwsException() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(null);  // null treated like false
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocName"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedAllowed_throwsWarning() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Discrepancy"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("Discrepancy"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_allAssigned_noException() {
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE); // value doesn't matter here
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_emptyPackingList_noException() {
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.emptyList());
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_noPackingList_noException() {
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(null);
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_packingListNoUnassigned_noException() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE); // True or False does not matter here
+
+        // No exception because containerId is not null on any packing
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedAllowed_throwsReportExceptionWarning() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(null); // unassigned package
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "DiscrepancyNote"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("DiscrepancyNote"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_throwsReportException() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(null); // unassigned package
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocumentName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocumentName"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedContainer_notAllowed_throwsException() {
+        // Packing list has assigned container, so packing branch will not trigger
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        Containers container = mock(Containers.class);
+        when(container.getPacksList()).thenReturn(Collections.emptyList()); // unassigned container
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+        when(shipment.getContainersList()).thenReturn(Collections.singleton(container));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedContainer_allowed_throwsWarning() {
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        Containers container = mock(Containers.class);
+        when(container.getPacksList()).thenReturn(Collections.emptyList());
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+        when(shipment.getContainersList()).thenReturn(Collections.singleton(container));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Discrepancy"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("Discrepancy"));
     }
 
 
@@ -488,7 +815,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -522,7 +849,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.SPECIAL_HANDLING_CODE, "EAW");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -555,7 +882,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -590,7 +917,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -601,8 +928,6 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
-
-        Awb mockAwb = new Awb();
 
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
@@ -639,7 +964,7 @@ class ReportServiceTest extends CommonMocks {
         });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -663,7 +988,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
-        Awb mockAwb = new Awb();
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
@@ -686,7 +1010,7 @@ class ReportServiceTest extends CommonMocks {
             return mockRunnable;
         });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -720,7 +1044,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -756,7 +1080,7 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(shipmentService).updateDateAndStatus(any(), any(), any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -831,7 +1155,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -905,7 +1229,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -977,7 +1301,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1024,7 +1348,7 @@ class ReportServiceTest extends CommonMocks {
         when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(List.of(hbl));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1063,7 +1387,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1102,7 +1426,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1142,7 +1466,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1167,8 +1491,8 @@ class ReportServiceTest extends CommonMocks {
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1196,8 +1520,8 @@ class ReportServiceTest extends CommonMocks {
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1232,7 +1556,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1267,7 +1591,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1298,7 +1622,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1333,7 +1657,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1368,7 +1692,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1403,7 +1727,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1438,7 +1762,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1469,7 +1793,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1504,7 +1828,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1539,7 +1863,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1574,7 +1898,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1612,9 +1936,9 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1652,9 +1976,9 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1689,7 +2013,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1724,7 +2048,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1755,7 +2079,159 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+    @Test
+    void getPickupOrderV3SeaDocumentData()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        Parties transporter = new Parties();
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        addressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(ReportConstants.FULL_NAME,"trasportername");
+        orgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        transporter.setAddressCode("42 Main St");
+        transporter.setAddressData(addressData);
+        transporter.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        transporter.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        transporter.setEntityId(1L);
+        transporter.setEntityType("Entity Type");
+        transporter.setGuid(UUID.randomUUID());
+        transporter.setId(1L);
+        transporter.setIsAddressFreeText(true);
+        transporter.setIsDeleted(true);
+        transporter.setOrgCode("Org Code");
+        transporter.setOrgData(orgData);
+        transporter.setTenantId(1);
+        transporter.setType("Type");
+        transporter.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        transporter.setUpdatedBy("2020-03-01");
+
+        Parties importAgent = new Parties();
+        Map<String, Object> importAgentAddressData = new HashMap<>();
+        importAgentAddressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        importAgentAddressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> importAgentOrgData = new HashMap<>();
+        importAgentOrgData.put(ReportConstants.FULL_NAME,"ImportName");
+        importAgentOrgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        importAgent.setAddressCode("42 Main St");
+        importAgent.setAddressData(importAgentAddressData);
+        importAgent.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        importAgent.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        importAgent.setEntityId(1L);
+        importAgent.setEntityType("Entity Type");
+        importAgent.setGuid(UUID.randomUUID());
+        importAgent.setId(1L);
+        importAgent.setIsAddressFreeText(true);
+        importAgent.setIsDeleted(true);
+        importAgent.setOrgCode("Org Code");
+        importAgent.setOrgData(importAgentOrgData);
+        importAgent.setTenantId(1);
+        importAgent.setType("IMA");
+        importAgent.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        importAgent.setUpdatedBy("2020-03-01");
+
+        Parties exportAgent = new Parties();
+        Map<String, Object> exportAgentAddressData = new HashMap<>();
+        exportAgentAddressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        exportAgentAddressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> exportAgentOrgData = new HashMap<>();
+        exportAgentOrgData.put(ReportConstants.FULL_NAME,"exportName");
+        exportAgentOrgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        exportAgent.setAddressCode("42 Main St");
+        exportAgent.setAddressData(exportAgentAddressData);
+        exportAgent.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        exportAgent.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        exportAgent.setEntityId(1L);
+        exportAgent.setEntityType("Entity Type");
+        exportAgent.setGuid(UUID.randomUUID());
+        exportAgent.setId(1L);
+        exportAgent.setIsAddressFreeText(true);
+        exportAgent.setIsDeleted(true);
+        exportAgent.setOrgCode("Org Code");
+        exportAgent.setOrgData(exportAgentOrgData);
+        exportAgent.setTenantId(1);
+        exportAgent.setType("EXA");
+        exportAgent.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        exportAgent.setUpdatedBy("2020-03-01");
+
+        pickupDeliveryDetails.setTransporterDetail(transporter);
+        pickupDeliveryDetails.setPartiesList(List.of(exportAgent, importAgent));
+        // Mock
+        when(transportInstructionLegsService.findByTransportInstructionId(anyLong())).thenReturn(List.of(new TiLegs()));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+    @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1l));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123l);
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1790,7 +2266,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1821,7 +2297,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1856,7 +2332,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1887,7 +2363,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         verify(eventService, times(0)).saveEvent(any());
         assertNotNull(data);
     }
@@ -1923,7 +2399,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
         verify(eventService, times(0)).saveEvent(any());
     }
@@ -1959,7 +2435,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1994,7 +2470,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2029,7 +2505,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2064,7 +2540,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2099,7 +2575,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2134,7 +2610,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2169,7 +2645,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2200,7 +2676,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2239,7 +2715,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2339,7 +2815,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2375,7 +2851,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2410,7 +2886,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2445,7 +2921,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2480,7 +2956,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2515,7 +2991,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2550,7 +3026,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2585,7 +3061,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2620,7 +3096,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2655,7 +3131,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2690,7 +3166,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2724,7 +3200,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2798,7 +3274,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2834,7 +3310,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2867,7 +3343,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2902,7 +3378,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3136,12 +3612,6 @@ class ReportServiceTest extends CommonMocks {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-//        when(reportService1.executorService.submit(any(Runnable.class)))
-//            .thenAnswer(invocation -> {
-//                Runnable runnable = invocation.getArgument(0);
-//                runnable.run(); // Execute immediately for testing
-//                return CompletableFuture.completedFuture(null);
-//            });
         // Mock GetFromDocumentService to return null
         doReturn(null).when(reportService1).getFromDocumentService(any(Map.class), anyString());
 
@@ -3278,8 +3748,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint() {
         ReportRequest newReportRequest = new ReportRequest();
         newReportRequest.setReportId("1");
         newReportRequest.setPrintType("ORIGINAL");
@@ -3287,7 +3756,7 @@ class ReportServiceTest extends CommonMocks {
         newReportRequest.setReportInfo("HAWB");
 
         DocUploadRequest docUploadRequest = new DocUploadRequest();
-        reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
+        reportService.addCSDDocumentToDocumentMaster(newReportRequest, docUploadRequest, "123");
         assertNotNull(newReportRequest);
     }
 
@@ -3339,6 +3808,28 @@ class ReportServiceTest extends CommonMocks {
         verify(shipmentDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
     }
+
+    @Test
+    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "123434567", "SHIP123");
+        assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
+    }
+
+    @Test
+    void applyCustomNaming_MawbWithChildType_DraftChildType() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "1234567",  "MAWB456");
+        assertEquals("MAWB_DRAFT_MAWB456.pdf", result);
+    }
+
+    @Test
+    void applyCustomNaming_StillFormsValidFilename() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "1234567555", "SHIP123");
+        assertEquals("PICKUPORDER_SHIP123.pdf", result);
+    }
+
 
     @Test
     void triggerAutomaticTransferWithHblReport_InvalidCase_EmptyConsole() {
@@ -3542,7 +4033,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void getPreAlertEmailTemplateData(){
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));
     }
 
@@ -3582,15 +4073,13 @@ class ReportServiceTest extends CommonMocks {
         dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
+    @ValueSource(strings = {Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
     void testPushFileToDocumentMasterForTO(String entityName) {
         reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
         reportRequest.setEntityName(entityName);
@@ -3601,11 +4090,10 @@ class ReportServiceTest extends CommonMocks {
         dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3618,11 +4106,11 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
 
@@ -3635,11 +4123,10 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3652,10 +4139,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
@@ -3669,11 +4154,10 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3700,17 +4184,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        Runnable mockRunnable = mock(Runnable.class);
-
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
 
         verify(documentManagerService, times(1)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
@@ -3726,18 +4201,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        Runnable mockRunnable = mock(Runnable.class);
 
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
@@ -3761,7 +4226,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         reportRequest.setReportInfo(ReportConstants.BOOKING_ORDER);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3807,7 +4272,7 @@ class ReportServiceTest extends CommonMocks {
         when(awbLabelReport.getData(any())).thenReturn(dataRetrived);
         reportRequest.setCopyCountForAWB(2);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3852,7 +4317,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().preAlertEmailAndLogs(true).build());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3905,7 +4370,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintCustomLabel(true);
         reportRequest.setTotalHawbPieces(1);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3937,7 +4402,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setTotalHawbPieces(1);
         reportRequest.setCombiLabel(true);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -4037,10 +4502,10 @@ class ReportServiceTest extends CommonMocks {
         }
 
         // Convert URL to Path
-        Path path = Paths.get(resource.toURI());
+        Path path1 = Paths.get(resource.toURI());
 
         // Read all bytes
-        byte[] sampleDoc = Files.readAllBytes(path);
+        byte[] sampleDoc = Files.readAllBytes(path1);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(new ResponseEntity<>(sampleDoc, HttpStatus.OK));
 
         Map<String, Object> data = new HashMap<>();
@@ -4052,7 +4517,7 @@ class ReportServiceTest extends CommonMocks {
         assertEquals(2, pdfBytes.size());
     }
     @Test
-    void testPrintForPartiesAndBarcode_Failure() throws Exception {
+    void testPrintForPartiesAndBarcode_Failure() {
         reportRequest.setPrintingFor_str("1,2");
         reportRequest.setPrintBarcode(true);
         when(docPages.getMainPageId()).thenReturn("main-page-id");
@@ -4062,8 +4527,442 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
         assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
     }
+
+    @Test
+    void testReportPrintWithInvalidReportKey() {
+        reportRequest.setReportInfo("TEST");
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(reportRequest).build();
+        assertThrows(ValidationException.class,() -> reportService.getDocumentData(requestModel));
+    }
     private Runnable mockRunnable() {
         return null;
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withValidData() {
+        // Given - prepare test data
+        Map<String, Object> dict = new HashMap<>();
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOriginBranch(100L);
+        consolidationDetails.setReceivingBranch(200L);
+
+        TriangulationPartner triangulationPartner = new TriangulationPartner();
+        triangulationPartner.setTriangulationPartner(300L);
+        consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));
+
+        // Mock tenant models with lowercase values
+        TenantModel origin = new TenantModel();
+        origin.setDisplayName("origin branch");
+        origin.setAddress1("origin addr1");
+        origin.setAddress2("origin addr2");
+        origin.setCity("origin city");
+        origin.setState("origin state");
+        origin.setZipPostCode("12345");
+        origin.setCountry("origin country");
+
+        TenantModel dest = new TenantModel();
+        dest.setDisplayName("dest branch");
+
+        TenantModel triang = new TenantModel();
+        triang.setDisplayName("triang branch");
+
+        // Prepare mocked tenant map
+        Map<String, TenantModel> mockedTenantMap = new HashMap<>();
+        mockedTenantMap.put("100", origin);
+        mockedTenantMap.put("200", dest);
+        mockedTenantMap.put("300", triang);
+
+        // Mocks
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
+
+        // Call method
+        reportService.populateConsolidationReportData(dict, consolidationDetails);
+
+        // Then - validate results
+        List<Map<String, Object>> originBranch = (List<Map<String, Object>>) dict.get("C_OriginBranch");
+        assertNotNull(originBranch);
+        assertEquals("ORIGIN BRANCH", originBranch.get(0).get("C_FullName"));
+        assertEquals("ORIGIN ADDR1", originBranch.get(0).get("C_Address1"));
+        assertEquals("ORIGIN CITY", originBranch.get(0).get("C_City"));
+
+        List<Map<String, Object>> destinationBranch = (List<Map<String, Object>>) dict.get("C_DestinationBranch");
+        assertNotNull(destinationBranch);
+        assertEquals("DEST BRANCH", destinationBranch.get(0).get("C_FullName"));
+
+        List<Map<String, Object>> triangBranch = (List<Map<String, Object>>) dict.get("C_TriangulationBranch1");
+        assertNotNull(triangBranch);
+        assertEquals("TRIANG BRANCH", triangBranch.get(0).get("C_FullName"));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withBasicFields() {
+        Map<String, Object> dict = new HashMap<>();
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setReefer(true);
+        details.setHazardous(false);
+
+        Allocations allocations = new Allocations();
+        allocations.setDgContainerCount(3);
+        allocations.setDgPacks(7);
+        details.setAllocations(allocations);
+
+        AchievedQuantities aq = new AchievedQuantities();
+        aq.setDgPacksType("BOX");
+        aq.setDgContainerCount(2);
+        aq.setDgPacks(5);
+        aq.setSlacCount(9);
+        details.setAchievedQuantities(aq);
+
+        details.setAdditionalTerms("Handle with care");
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals(true, dict.get(ReportConstants.C_D_REEFER));
+        assertEquals(false, dict.get(ReportConstants.C_D_DG));
+        assertEquals(3, dict.get(ReportConstants.C_CA_DGCONTAINER));
+        assertEquals(7, dict.get(ReportConstants.C_CA_DGPACKAGES));
+        assertEquals("BOX", dict.get(ReportConstants.C_C_DGPACKAGESTYPE));
+        assertEquals(2, dict.get(ReportConstants.C_C_DGCONTAINER));
+        assertEquals(5, dict.get(ReportConstants.C_C_DGPACKAGES));
+        assertEquals(9, dict.get(ReportConstants.C_C_SLACCOUNT));
+        assertEquals("Handle with care", dict.get(ReportConstants.C_C_ADDITIONAL_TERMS));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withReferenceNumbers() {
+        Map<String, Object> dict = new HashMap<>();
+        ReferenceNumbers ref1 = new ReferenceNumbers();
+        ref1.setType("MAWB");
+        ref1.setReferenceNumber("123-456789");
+
+        ReferenceNumbers ref2 = new ReferenceNumbers();
+        ref2.setType("HAWB");
+        ref2.setReferenceNumber("789-123456");
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setReferenceNumbersList(List.of(ref1, ref2));
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals("123-456789", dict.get("C_MAWB"));
+        assertEquals("789-123456", dict.get("C_HAWB"));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withRoutingDetails() {
+        Map<String, Object> dict = new HashMap<>();
+
+        Routings first = new Routings();
+        first.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        first.setVesselName("First Vessel");
+        first.setVoyage("FV001");
+        first.setCarrier("Carrier1");
+        first.setFlightNumber("FL123");
+
+        Routings last = new Routings();
+        last.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        last.setVesselName("Last Vessel");
+        last.setVoyage("LV001");
+        last.setCarrier("Carrier2");
+        last.setFlightNumber("FL999");
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setRoutingsList(List.of(first, last));
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals("First Vessel", dict.get(ReportConstants.C_FIRSTVESSEL));
+        assertEquals("Carrier1", dict.get(ReportConstants.C_FIRSTCARRIER));
+        assertEquals("FL123", dict.get(ReportConstants.C_FIRSTFLIGHTNUMBER));
+
+        assertEquals("Last Vessel", dict.get(ReportConstants.C_LASTVESSEL));
+        assertEquals("Carrier2", dict.get(ReportConstants.C_LASTCARRIER));
+        assertEquals("FL999", dict.get(ReportConstants.C_LASTFLIGHTNUMBER));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withPartiesAndAgents() {
+        Map<String, Object> dict = new HashMap<>();
+
+        Parties shipper = new Parties();
+        shipper.setType("Shipper");
+        Map<String, Object> orgData = Map.of(PartiesConstants.FULLNAME, "Shipper Ltd.");
+        shipper.setOrgData(orgData);
+        Map<String, Object> addrData = Map.of(
+                PartiesConstants.ADDRESS1, "123 Street",
+                PartiesConstants.CITY, "Cityville",
+                PartiesConstants.COUNTRY, "India"
+        );
+        shipper.setAddressData(addrData);
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setConsolidationAddresses(List.of(shipper));
+        details.setSendingAgent(shipper); // reuse as agent for test
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        List<Map<String, Object>> shipperMapped = (List<Map<String, Object>>) dict.get("C_Shipper");
+        assertNotNull(shipperMapped);
+        assertEquals("123 STREET", shipperMapped.get(0).get("C_Address1"));
+        assertEquals("CITYVILLE", shipperMapped.get(0).get("C_City"));
+        assertEquals("INDIA", shipperMapped.get(0).get("C_Country"));
+
+        List<Map<String, Object>> originAgent = (List<Map<String, Object>>) dict.get("C_OriginAgent");
+        assertNotNull(originAgent);
+        assertEquals("SHIPPER LTD.", originAgent.get(0).get("C_FullName"));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSeaBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("SWB");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSurrenderBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid3(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid4(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid5(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid6(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid7(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid8(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid9(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    private static final String ENTITY_GUID = "123456543";
+    private static final String IDENTIFIER = "SHIP123";
+
+    private DocumentManagerEntityFileResponse createFile(String fileType, String docCode, String childType, int count) {
+        DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
+        file.setFileType(fileType);
+        file.setDocCode(docCode);
+        file.setChildType(childType);
+        file.setCount(count);
+        return file;
+    }
+
+    private DocumentManagerEntityFileResponse createFile(String docCode, String childType) {
+        DocumentManagerEntityFileResponse file = new DocumentManagerEntityFileResponse();
+        file.setFileType("PDF"); // Required for filter to pass
+        file.setDocCode(docCode);
+        file.setChildType(childType);
+        return file;
+    }
+
+    @Test
+    void shouldReturnFileNameWithoutSuffix_WhenNoFilesExist() {
+        // Mock no existing files
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123.pdf", fileName);
+    }
+
+    @Test
+    void shouldUseMappingAndUppercaseName_WhenMappingExists() {
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.AWB_LABEL, null, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("AIRLABEL_SHIP123.pdf", fileName);
+    }
+
+    @Test
+    void shouldFallbackToDocType_WhenMappingNotFound() {
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of());
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, "UNKNOWN_DOC", null, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("UNKNOWN_DOC_SHIP123.pdf", fileName);
+    }
+
+    @Test
+    void shouldReturnNull_WhenDocTypeInExcludeList() {
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.FCR_DOCUMENT, null, ENTITY_GUID, IDENTIFIER);
+
+        assertNull(fileName);
+    }
+
+    @Test
+    void shouldHandleChildType_MAWBFile() {
+        // Mock 2 existing files for MAWB
+        DocumentManagerEntityFileResponse file = createFile(ReportConstants.MAWB, ReportConstants.MAWB, ReportConstants.DRAFT, 2);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, ReportConstants.MAWB, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("MAWB_DRAFT_SHIP123_2.pdf", fileName);
+    }
+
+    @Test
+    void shouldAppendSuffix_WhenThreeFilesAlreadyExist() {
+        // Mock 3 existing files
+        DocumentManagerEntityFileResponse file = createFile(DocumentConstants.HBL, DocumentConstants.HBL, ReportConstants.DRAFT, 3);
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> response = new DocumentManagerListResponse<>();
+        response.setData(List.of(file));
+        when(documentManagerService.fetchMultipleFilesWithTenant(any())).thenReturn(response);
+
+        DocUploadRequest request = new DocUploadRequest();
+        String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
+
+        assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
     }
 
 }

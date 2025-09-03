@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
@@ -23,6 +25,17 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private LocalDateTime customsNoIssueDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime expiryDate;
+
+    private LocalDateTime blInstructionReceived;
+    private String additionalSecurityInformation;
+    private String regulatedEntityCategory;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String exemptionCodes;
+    private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
+
+
     private String inspection;
     private String airwayBillDims;
     private BigDecimal shipperCOD;
@@ -126,4 +139,14 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private Boolean emptyContainerReturned;
     private Map<String, EntityTransferMasterLists> masterData;
     private Map<String, EntityTransferUnLocations> unlocationData;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime pickupDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime cargoDeliveredDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
 }

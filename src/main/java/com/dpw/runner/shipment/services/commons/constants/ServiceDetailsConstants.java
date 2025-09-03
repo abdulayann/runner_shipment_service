@@ -4,6 +4,8 @@ public class ServiceDetailsConstants {
     private ServiceDetailsConstants(){}
     public static final String SERVICE_DETAILS_API_HANDLE = "/api/v2/service-details";
 
+    public static final String SERVICE_DETAILS_V3_API_HANDLE = "/api/v3/service-details";
+
     public static final String SERVICE_DETAILS_CREATE_SUCCESSFUL = "Successful Service Details Data Creation";
 
     public static final String SERVICE_DETAILS_UPDATE_SUCCESSFUL = "Successful Service Details Data Update";
@@ -18,4 +20,6 @@ public class ServiceDetailsConstants {
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String SERVICE_DETAILS_RETRIEVE_BY_ID_ERROR = "Service Details is null for Id {} with Request Id {}";
+
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
 }

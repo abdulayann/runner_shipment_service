@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -38,7 +38,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -513,7 +512,7 @@ public class EventService implements IEventService {
             boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
 
             if (isShipmentUpdateRequired) {
-                shipmentDao.save(shipment, false);
+                shipmentDao.save(shipment, false, false);
                 try {
                     shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {
@@ -796,11 +795,11 @@ public class EventService implements IEventService {
     }
 
     private boolean isFclShipment(String shipmentType) {
-        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType));
+        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(safeString(shipmentType));
     }
 
     private boolean isLclShipment(String shipmentType) {
-        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType));
+        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(safeString(shipmentType));
     }
 
     private boolean isAirShipment(String transportMode) {
@@ -894,17 +893,21 @@ public class EventService implements IEventService {
                 }
                 isShipmentUpdateRequired = true;
         }
+
+        String transportMode = shipment.getTransportMode();
+        String cargoType = shipment.getShipmentType();
+        boolean isSeaFCL = Constants.TRANSPORT_MODE_SEA.equals(transportMode) && Constants.CARGO_TYPE_FCL.equals(cargoType);
+        boolean isRoadFCLorFTL = Constants.TRANSPORT_MODE_ROA.equals(transportMode) && (Constants.CARGO_TYPE_FCL.equals(cargoType) || CARGO_TYPE_FTL.equals(cargoType));
         if (isEmptyContainerReturnedEvent && shipment.getAdditionalDetails() != null &&
                 !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned()) &&
-                Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
+                (isSeaFCL || isRoadFCLorFTL)) {
                 shipment.getAdditionalDetails().setEmptyContainerReturned(true);
                 isShipmentUpdateRequired = true;
         }
         return isShipmentUpdateRequired;
     }
 
-    private void updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
+    private void updateShipmentDetails(ShipmentDetails shipment,
             LocalDateTime shipmentAta, LocalDateTime shipmentAtd, Container container, String messageId) {
         // Try to update carrier details
         try {
@@ -969,22 +972,6 @@ public class EventService implements IEventService {
         });
 
         eventDao.updateEventsList(shipmentEvents);
-    }
-
-    private void updateEmptyContainerReturnedStatus(ShipmentDetails shipment, List<Events> events) {
-        // Check for empty container returned event
-        boolean isEmptyContainerReturnedEvent = events.stream()
-                .anyMatch(event -> EventConstants.EMCR.equals(event.getEventCode()));
-
-        AdditionalDetails additionalDetails = shipment.getAdditionalDetails();
-        // Update empty container returned status if conditions are met
-        if (isEmptyContainerReturnedEvent
-                && additionalDetails != null
-                && !Boolean.TRUE.equals(additionalDetails.getEmptyContainerReturned())
-                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
-            shipmentDao.updateAdditionalDetailsByShipmentId(shipment.getId(), true);
-        }
     }
 
     private void updateCarrierDetails(ShipmentDetails shipment, LocalDateTime shipmentAta, LocalDateTime shipmentAtd) {
@@ -1276,7 +1263,7 @@ public class EventService implements IEventService {
 
         log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId(), messageId);
 
-        updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
+        updateShipmentDetails(shipmentDetails, shipmentAta, shipmentAtd, container, messageId);
         log.info("Finished updating shipment with tracking events. Success: {} messageId {}", isSuccess, messageId);
         return isSuccess;
     }
@@ -1356,7 +1343,7 @@ public class EventService implements IEventService {
         List<V1TenantResponse> tenants = Collections.emptyList();
         try {
             // Step 1: Fetch cousin branches from V1 service
-            V1DataResponse dataResponse = v1Service.listCousinBranches(Collections.emptyMap());
+            V1DataResponse dataResponse = v1Service.listCousinBranches(CommonV1ListRequest.builder().build());
 
             if (dataResponse == null || dataResponse.getEntities() == null) {
                 log.warn("Received null or empty response from V1 service while fetching cousin branches.");

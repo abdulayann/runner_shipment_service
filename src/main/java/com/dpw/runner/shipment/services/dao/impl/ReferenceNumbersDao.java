@@ -1,16 +1,20 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -39,19 +43,35 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     private JsonHelper jsonHelper;
     @Autowired
     private IAuditLogService logService;
+    @Autowired
+    private ValidatorUtility validatorUtility;
 
     @Override
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(referenceNumbers), Constants.REFERENCE_NUMBERS, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
         return referenceNumbersRepository.save(referenceNumbers);
     }
+
     @Override
     public List<ReferenceNumbers> saveAll(List<ReferenceNumbers> referenceNumbersList) {
+        for(var packing : referenceNumbersList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing), Constants.REFERENCE_NUMBERS, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(String.join(",", errors));
+        }
         return referenceNumbersRepository.saveAll(referenceNumbersList);
     }
 
     @Override
     public Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable) {
         return referenceNumbersRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public Page<ReferenceNumbers> findAllWithoutTenantFilter(Specification<ReferenceNumbers> spec, Pageable pageable) {
+        return referenceNumbersRepository.findAllWithoutTenantFilter(spec, pageable);
     }
 
     @Override
@@ -488,6 +508,37 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public void deleteAdditionalDataByReferenceNumberIdsConsolidationId(List<Long> referenceNumberIds, Long consolidationId) {
+        referenceNumbersRepository.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Override
+    public void revertSoftDeleteByReferenceNumberIdsAndConsolidationId(List<Long> referenceNumberIds, Long consolidationId) {
+        referenceNumbersRepository.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Override
+    public void deleteAdditionalDataByReferenceNumberIdsBookingId(List<Long> referenceNumberIds, Long bookingId) {
+        referenceNumbersRepository.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+    }
+
+    @Override
+    public void revertSoftDeleteByReferenceNumberIdsAndBookingId(List<Long> referenceNumberIds, Long bookingId) {
+        referenceNumbersRepository.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+    }
+
+
+    @Override
+    public void deleteAdditionalreferenceNumbersByShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
+        referenceNumbersRepository.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByreferenceNumbersIdsAndShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
+        referenceNumbersRepository.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
     }
 
     private Pair<String, String> prepareReferenceNumberDataForSave(ReferenceNumbers req) {

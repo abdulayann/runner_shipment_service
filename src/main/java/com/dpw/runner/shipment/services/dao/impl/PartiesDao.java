@@ -112,7 +112,8 @@ public class PartiesDao implements IPartiesDao {
         }
     }
 
-    private List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType) {
+    @Override
+    public List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType) {
         return partiesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
@@ -272,6 +273,21 @@ public class PartiesDao implements IPartiesDao {
     @Override
     public List<Parties> findByIds(List<Long> id) {
         return partiesRepository.findByIdIn(id);
+    }
+
+    @Override
+    public void deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(List<Long> addressIds, Long entityId, String entityType) {
+        partiesRepository.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(addressIds, entityId, entityType);
+    }
+
+    @Override
+    public void revertSoftDeleteByPartiesIds(List<Long> addressIds) {
+        partiesRepository.revertSoftDeleteByPartiesIds(addressIds);
+    }
+
+    @Override
+    public void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String pickupDelivery) {
+        partiesRepository.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(partiesIds, pickupDeliveryDetailsIds, pickupDelivery);
     }
 
 }

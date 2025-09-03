@@ -28,6 +28,7 @@ public class ContainerResponse implements IRunnerResponse {
     private Long bookingId;
     private Long loggingId;
     private String containerCode;
+    private BigDecimal teu;
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
@@ -129,4 +130,11 @@ public class ContainerResponse implements IRunnerResponse {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
     private ContainerPraStatus praStatus;
+    private BigDecimal humidity;
+    private BigDecimal vents;
+    private String assignedContainer;
+    private Long packagesPerContainer;
+    private String containerPackageType;
+    private BigDecimal cargoWeightPerContainer;
+    private String containerWeightUnit;
 }

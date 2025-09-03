@@ -32,11 +32,11 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAN_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_LOCATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGABLE_AND_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADRS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
@@ -155,6 +155,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SENDING_AGENT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SERVICE_MODE_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CAN_DOCUMENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_ID;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PICKUP_PICKUPINSTRUCTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_REF_NO;
@@ -228,6 +229,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
@@ -248,9 +250,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -265,6 +275,8 @@ public class HblReport extends IReport {
     private ShipmentService shipmentService;
     @Autowired
     private HblService hblService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -279,43 +291,53 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
-        V1TenantSettingsResponse tenantSettings;
-        tenantSettings = getCurrentTenantSettings();
-
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
+            validateOriginalPrintType(shipmentId, shipment, tenantSettings);
+        }
+    }
 
-            if (shipment == null) {
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
+    private void validateOriginalPrintType(Long shipmentId, ShipmentDetails shipment, V1TenantSettingsResponse tenantSettings) {
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
+
+        if (isSeaFclExportOrCtsShipment(shipment)) {
+            Hbl hblObject = getHbl(shipmentId);
+            shipmentService.validateHblContainerNumberCondition(shipment);
+            hblService.validateHblContainerNumberCondition(hblObject);
+        }
+
+        processMissingFields(tenantSettings, shipment);
+    }
+
+    private boolean isSeaFclExportOrCtsShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
+                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
+    }
+
+    private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {
+        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
 
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType()))
-                && ObjectUtils.isNotEmpty(shipment.getJobType())
-                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-                Hbl hblObject = getHbl(shipmentId);
-                shipmentService.validateHblContainerNumberCondition(shipment);
-                hblService.validateHblContainerNumberCondition(hblObject);
-            }
-
-            if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
-                List<ModuleValidationFieldType> missingFields = new ArrayList<>();
-
-                if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                    && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
                     && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                     || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
                     && ObjectUtils.isNotEmpty(shipment.getJobType())
                     && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
 
-                    shipmentService.validateCarrierDetails(shipment, missingFields);
-                    shipmentService.validateContainerDetails(shipment, missingFields);
+                shipmentService.validateCarrierDetails(shipment, missingFields);
+                shipmentService.validateContainerDetails(shipment, missingFields);
 
-                }
-
-                raiseMissingFieldException(missingFields);
             }
+
+            raiseMissingFieldException(missingFields);
         }
     }
 
@@ -540,6 +562,7 @@ public class HblReport extends IReport {
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
 
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -547,13 +570,7 @@ public class HblReport extends IReport {
         dictionary.put(ReportConstants.DELIVERY_AGENT, null);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(hblModel.getCommonContainers()));
         processHblShipmentTag(hblModel, dictionary);
-
-        if (hblModel.consolidation != null) {
-            processHblConsolidation(hblModel, dictionary);
-        } else if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails())) {
-            processShipmentAdditionalDetails(hblModel, dictionary);
-        }
-
+        processAdditionalDetails(hblModel, dictionary);
         processReferenceNumber(hblModel, dictionary);
 
         populateBillChargesFields(hblModel.shipment, dictionary);
@@ -588,8 +605,9 @@ public class HblReport extends IReport {
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
-        dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getName()) : "");
-        dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getCountry()) : "");
+        dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()));
+        EntityTransferAddress address = commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode());
+        dictionary.put(ISSUE_PLACE_COUNTRY, address != null ? StringUtility.toUpperCase(address.getCountry()) : StringUtils.EMPTY);
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
         dictionary.put(BL_COMMENTS, hblModel.blObject.getHblData().getBlComments());
         dictionary.put(MARKS_AND_NUMBER, hblModel.blObject.getHblData().getMarksAndNumbers());
@@ -671,6 +689,7 @@ public class HblReport extends IReport {
         dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, hblModel.serviceMode);
         dictionary.put(ReportConstants.PPCC, hblModel.paymentTerms);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(hblModel.getCommonContainers()));
+
         dictionary.put(ReportConstants.PRE_CARRIAGE, hblModel.preCarriageVessel != null ? hblModel.preCarriageVessel.getName() : null);
         addPickUpAndDeliveryDetailsTag(hblModel, dictionary);
 
@@ -682,7 +701,25 @@ public class HblReport extends IReport {
 
         addDeliverToTag(hblModel, dictionary);
 
+        if (hblModel.consolidation != null) {
+            this.populateConsolidationReportData(dictionary, null, hblModel.consolidation.getId());
+        }
+
+        if (hblModel.shipment != null) {
+            this.populateShipmentReportData(dictionary, null, hblModel.shipment.getId());
+            this.getContainerDetails(hblModel.getShipment(), dictionary);
+            this.getPackingDetails(hblModel.getShipment(), dictionary);
+        }
+
         return dictionary;
+    }
+
+    private void processAdditionalDetails(HblModel hblModel, Map<String, Object> dictionary) {
+        if (hblModel.consolidation != null) {
+            processHblConsolidation(hblModel, dictionary);
+        } else if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails())) {
+            processShipmentAdditionalDetails(hblModel, dictionary);
+        }
     }
 
     private void setBlObject(HblModel hblModel) {

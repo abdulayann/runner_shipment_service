@@ -104,6 +104,19 @@ class ReferenceNumbersDaoTest {
     }
 
     @Test
+    void findAllWithoutTenantFilter() {
+        Page<ReferenceNumbers> expectedPage = mock(Page.class);
+        Specification<ReferenceNumbers> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(referenceNumbersRepository.findAllWithoutTenantFilter(spec, pageable)).thenReturn(expectedPage);
+
+        Page<ReferenceNumbers> resultPage = referenceNumbersDao.findAllWithoutTenantFilter(spec, pageable);
+
+        assertEquals(expectedPage, resultPage);
+        verify(referenceNumbersRepository).findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Test
     void findById_ValidId_ReturnsOptionalOfReferenceNumbers() {
         Long id = 1L;
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
@@ -233,8 +246,8 @@ class ReferenceNumbersDaoTest {
     void saveEntityFromShipment_ReferenceNumberssListHasElements_ReturnsPopulatedList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
         List<ReferenceNumbers> referenceNumberss = Collections.singletonList(testData);
-        when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(new ReferenceNumbers()));
-        when(referenceNumbersDao.save(any())).thenReturn(new ReferenceNumbers());
+        lenient().when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(new ReferenceNumbers()));
+        lenient().when(referenceNumbersDao.save(any())).thenReturn(new ReferenceNumbers());
         List<ReferenceNumbers> result = referenceNumbersDao.saveEntityFromShipment(referenceNumberss, shipmentId);
         assertNotNull(result);
         assertFalse(result.isEmpty());
@@ -542,5 +555,59 @@ class ReferenceNumbersDaoTest {
         List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
         assertNotNull(referenceNumbersList1);
         assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByReferenceNumberIdsConsolidationId() {
+        List<Long> referenceNumberIds = List.of(1L, 2L);
+        Long consolidationId = 100L;
+        referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByReferenceNumberIdsAndConsolidationId() {
+        List<Long> referenceNumberIds = List.of(3L, 4L);
+        Long consolidationId = 200L;
+        referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByReferenceNumberIdsBookingId() {
+        List<Long> referenceNumberIds = List.of(5L, 6L);
+        Long bookingId = 300L;
+        referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByReferenceNumberIdsAndBookingId() {
+        List<Long> referenceNumberIds = List.of(7L, 8L);
+        Long bookingId = 400L;
+        referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+    }
+
+    @Test
+    void testDeleteAdditionalreferenceNumbersByShipmentId() {
+        List<Long> referenceNumbersIds = List.of(9L, 10L);
+        Long shipmentId = 500L;
+        referenceNumbersDao.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+        verify(referenceNumbersRepository, times(1))
+                .deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByreferenceNumbersIdsAndShipmentId() {
+        List<Long> referenceNumbersIds = List.of(11L, 12L);
+        Long shipmentId = 600L;
+        referenceNumbersDao.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
+        verify(referenceNumbersRepository, times(1))
+                .revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
     }
 }

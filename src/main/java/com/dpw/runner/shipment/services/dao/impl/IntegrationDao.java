@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IIntegrationRespso
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 
 @Repository
@@ -21,6 +22,6 @@ public class IntegrationDao implements IIntegrationResponseDao {
 
     @Override
     public List<IntegrationResponse> getIntegrationResponses(IntegrationResponseRequest request) {
-        return integrationRespsonseRepository.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType()).get();
+        return integrationRespsonseRepository.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType()).orElse(Collections.emptyList());
     }
 }

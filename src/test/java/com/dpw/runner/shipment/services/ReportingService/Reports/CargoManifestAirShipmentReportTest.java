@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -32,6 +33,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -56,7 +58,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,6 +93,9 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private V1ServiceUtil v1ServiceUtil;
 
     @Mock
@@ -98,6 +103,10 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
 
     @Mock
     private IPackingService packingService;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
 
     @BeforeAll
     static void init() throws IOException {
@@ -119,6 +128,12 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void mockVessel() {
@@ -332,6 +347,8 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 
@@ -370,6 +387,8 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 

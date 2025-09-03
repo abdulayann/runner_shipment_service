@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -43,7 +45,11 @@ public class TiTruckDriverDetails extends MultiTenancy {
     private String trailerNumberPlate;
 
     @Column(name = "truck_or_trailer_type")
+    @MasterData(type = MasterDataType.TRUCK_TYPE)
     private String truckOrTrailerType;
 
+    @Column(name = "driver_id")
+    @Size(max=50, message = "max size is 50 for driver_id")
+    private String driverId;
 }
 

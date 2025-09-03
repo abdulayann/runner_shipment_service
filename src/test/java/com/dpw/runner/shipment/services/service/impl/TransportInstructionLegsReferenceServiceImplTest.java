@@ -1,0 +1,289 @@
+package com.dpw.runner.shipment.services.service.impl;
+
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.ITiReferenceDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceListRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsTruckDriverResponse;
+import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.TiReferences;
+import com.dpw.runner.shipment.services.entity.TiTruckDriverDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@Execution(CONCURRENT)
+class TransportInstructionLegsReferenceServiceImplTest {
+    @MockBean
+    private DependentServiceHelper dependentServiceHelper;
+
+    @MockBean
+    private IAuditLogService iAuditLogService;
+
+    @MockBean
+    private ITiReferenceDao iTiReferenceDao;
+
+    @MockBean
+    private ITiLegRepository iTiLegRepository;
+
+    @MockBean
+    private JsonHelper jsonHelper;
+
+    @MockBean
+    private UserContext userContext;
+
+    @InjectMocks
+    private TransportInstructionLegsReferenceServiceImpl transportInstructionLegsReferenceService;
+    @MockBean
+    private MasterDataUtils masterDataUtils;
+    @MockBean
+    ExecutorService executorServiceMasterData;
+    @MockBean
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
+
+    @BeforeEach
+    void setup() {
+        transportInstructionLegsReferenceService.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
+
+    @Test
+    void testCreate() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setReference("ref123");
+        request.setType("BLE");
+        request.setTiLegId(1l);
+        TiReferences tiReferences = new TiReferences();
+        tiReferences.setTiLegId(1l);
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(1l);
+        when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsReferenceResponse.class))).thenReturn(new TransportInstructionLegsReferenceResponse());
+        when(jsonHelper.convertValue(request, TiReferences.class)).thenReturn(new TiReferences());
+        when(iTiReferenceDao.save(any())).thenReturn(new TiReferences());
+        when(iTiLegRepository.findById(anyLong())).thenReturn(Optional.of(tiLegs));
+        TransportInstructionLegsReferenceResponse response = transportInstructionLegsReferenceService.create(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateBulk() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setReference("ref123");
+        request.setType("BLE");
+        request.setTiLegId(1l);
+        TiReferences tiReferences = new TiReferences();
+        tiReferences.setTiLegId(1l);
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(1l);
+        when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsReferenceResponse.class))).thenReturn(new TransportInstructionLegsReferenceResponse());
+        when(jsonHelper.convertValue(request, TiReferences.class)).thenReturn(new TiReferences());
+        when(iTiReferenceDao.saveAll(any())).thenReturn(List.of(new TiReferences()));
+        when(iTiLegRepository.findById(anyLong())).thenReturn(Optional.of(tiLegs));
+        TransportInstructionLegsReferenceListRequest referenceListRequest = new TransportInstructionLegsReferenceListRequest();
+        referenceListRequest.setReferences(List.of(request));
+        TransportInstructionLegsReferenceListResponse response = transportInstructionLegsReferenceService.bulkCreate(referenceListRequest);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdate() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setReference("ref123");
+        request.setType("BLE");
+        request.setTiLegId(1l);
+        request.setId(1l);
+        TiReferences tiReferences = new TiReferences();
+        tiReferences.setTiLegId(1l);
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(1l);
+        when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsReferenceResponse.class))).thenReturn(new TransportInstructionLegsReferenceResponse());
+        when(jsonHelper.convertValue(request, TiReferences.class)).thenReturn(new TiReferences());
+        when(iTiReferenceDao.findById(anyLong())).thenReturn(Optional.of(new TiReferences()));
+        when(iTiReferenceDao.save(any())).thenReturn(new TiReferences());
+        when(iTiLegRepository.findById(anyLong())).thenReturn(Optional.of(tiLegs));
+        TransportInstructionLegsReferenceResponse response = transportInstructionLegsReferenceService.update(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testDelete3() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
+            NoSuchMethodException, InvocationTargetException {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(1l);
+        when(iTiLegRepository.findById(any())).thenReturn(Optional.of(tiLegs));
+        when(iTiReferenceDao.findById(Mockito.<Long>any())).thenReturn(Optional.of(new TiReferences()));
+        doNothing().when(iTiReferenceDao).delete(any());
+        transportInstructionLegsReferenceService.delete(1L);
+        verify(iTiReferenceDao).findById(Mockito.<Long>any());
+    }
+
+
+    /**
+     * Method under test:
+     * {@link TransportInstructionLegsContainersServiceImpl#retrieveById(Long)}
+     */
+    @Test
+    void testRetrieveById() {
+        TransportInstructionLegsReferenceResponse response = TransportInstructionLegsReferenceResponse
+                .builder()
+                .id(1l)
+                .tiLegId(1l)
+                .reference("ref123")
+                .type("BLE").build();
+
+
+        when(jsonHelper.convertValue(Mockito.<TiReferences>any(),
+                Mockito.<Class<TransportInstructionLegsReferenceResponse>>any())).thenReturn(response);
+
+        TiReferences tiReferences = new TiReferences();
+        Optional<TiReferences> ofResult = Optional.of(tiReferences);
+        when(iTiReferenceDao.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        transportInstructionLegsReferenceService.retrieveById(1L);
+        verify(iTiReferenceDao).findById(Mockito.<Long>any());
+        verify(jsonHelper).convertValue(Mockito.<TiTruckDriverDetails>any(),
+                Mockito.<Class<TransportInstructionLegsTruckDriverResponse>>any());
+    }
+
+    @Test
+    void testList2() {
+        TransportInstructionLegsReferenceResponse response = TransportInstructionLegsReferenceResponse
+                .builder()
+                .id(1l)
+                .tiLegId(1l)
+                .reference("ref123")
+                .type("BLE").build();
+
+        when(jsonHelper.convertValue(Mockito.<TiReferences>any(),
+                Mockito.<Class<TransportInstructionLegsReferenceResponse>>any())).thenReturn(response);
+        TiReferences tiReferences = new TiReferences();
+        tiReferences.setTiLegId(1l);
+        tiReferences.setReference("ref123");
+        tiReferences.setType("BLE");
+
+        ArrayList<TiReferences> content = new ArrayList<>();
+        content.add(tiReferences);
+        PageImpl<TiReferences> pageImpl = new PageImpl<>(content);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        when(iTiReferenceDao.findAll(Mockito.<Specification<TiReferences>>any(), Mockito.<Pageable>any()))
+                .thenReturn(pageImpl);
+        TransportInstructionLegsReferenceListResponse actualListResult = transportInstructionLegsReferenceService
+                .list(new ListCommonRequest(), true);
+        verify(iTiReferenceDao).findAll(Mockito.<Specification<TiReferences>>any(), Mockito.<Pageable>any());
+        verify(jsonHelper).convertValue(Mockito.<TiReferences>any(),
+                Mockito.<Class<TransportInstructionLegsReferenceResponse>>any());
+        assertEquals(1, actualListResult.getTotalPages().intValue());
+        assertEquals(1, actualListResult.getTiLegsReferenceResponses().size());
+        assertEquals(1L, actualListResult.getTotalCount().longValue());
+    }
+
+    @Test
+    void testCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setTiLegId(999L);
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.create(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowValidationException_whenReferenceNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setId(123L);
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.update(request));
+        assertEquals("Invalid Transport Instruction Legs reference id123", ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setId(123L);
+        request.setTiLegId(999L);
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.of(new TiReferences()));
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.update(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
+    }
+
+    @Test
+    void testDelete_shouldThrowValidationException_whenReferenceNotFound() {
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.delete(123L));
+        assertEquals("Invalid Ti legs reference Id: 123", ex.getMessage());
+    }
+
+    @Test
+    void testRetrieveById_shouldThrowValidationException_whenReferenceNotFound() {
+        when(iTiReferenceDao.findById(321L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.retrieveById(321L));
+        assertEquals("Invalid Ti legs reference Id: 321", ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest ref = new TransportInstructionLegsReferenceRequest();
+        ref.setTiLegId(999L);
+        TransportInstructionLegsReferenceListRequest request = new TransportInstructionLegsReferenceListRequest();
+        request.setReferences(List.of(ref));
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.bulkCreate(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
+    }
+}

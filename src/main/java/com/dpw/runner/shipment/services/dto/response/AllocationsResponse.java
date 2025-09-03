@@ -37,4 +37,15 @@ public class AllocationsResponse implements IRunnerResponse {
     private String minTempUnit;
     private BigDecimal maxTemp;
     private String maxTempUnit;
+    @JsonSerialize(using = CustomWeightValueSerializer.class)
+    private BigDecimal weightVolume;
+    private String weightVolumeUnit;
+    private Integer packs;
+    private String packsType;
+    private Integer dgPacks;
+    private String dgPacksType;
+    private Integer dgContainerCount;
+    private Integer containerCount;
+    private BigDecimal teuCount;
+    private Integer slacCount;
 }

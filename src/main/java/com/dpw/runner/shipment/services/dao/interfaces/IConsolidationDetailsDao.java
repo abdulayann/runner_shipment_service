@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
@@ -36,6 +37,7 @@ public interface IConsolidationDetailsDao {
     String getConsolidationNumberFromId(Long id);
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
     List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
+    List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
     ConsolidationDetails findConsolidationsById(Long id);
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
@@ -48,5 +50,25 @@ public interface IConsolidationDetailsDao {
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(List<Long> consolidationIDs);
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
+    ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange);
+    ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange);
 
+    void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId);
+
+    void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId);
+
+    String getBookingNumberFromConsol(Long consolidationId);
+    Boolean getAllowAttachMentFromConsol(Long consolidationId);
+
+    void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
+
+    ConsolidationDetails save(ConsolidationDetails consolidationDetails);
+
+    void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

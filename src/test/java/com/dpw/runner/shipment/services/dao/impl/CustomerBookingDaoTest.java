@@ -8,17 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.VersionContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -37,18 +32,14 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidationsV3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,6 +76,9 @@ class CustomerBookingDaoTest {
     private CustomerBookingValidations customValidations;
 
     @Mock
+    private CustomerBookingValidationsV3 customValidationsV3;
+
+    @Mock
     private CustomerBooking customerBookingMock;
 
     @Mock
@@ -107,6 +101,7 @@ class CustomerBookingDaoTest {
         TenantContext.setCurrentTenant(1);
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(new HashMap<>()).build()); // Set up a mock user for testing
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        VersionContext.setVersionFromPath("/api/v2/");
     }
 
     @Test
@@ -250,14 +245,7 @@ class CustomerBookingDaoTest {
         expectedBooking.setGuid(guid);
         expectedBooking.setId(101L);
 
-        String serialized = new ObjectMapper().writeValueAsString(expectedBooking);
-
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("cache::booking:guid:" + guid);
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(mockCache.get("cache::booking:guid:" + guid, String.class)).thenReturn(serialized);
-        when(objectMapper.readValue(serialized, CustomerBooking.class)).thenReturn(expectedBooking);
-
+        when(customerBookingRepository.findByGuid(any())).thenReturn(Optional.of(expectedBooking));
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertTrue(result.isPresent());
@@ -270,22 +258,11 @@ class CustomerBookingDaoTest {
         CustomerBooking expectedBooking = new CustomerBooking();
         expectedBooking.setGuid(guid);
         expectedBooking.setId(202L);
-
-        String serialized = new ObjectMapper().writeValueAsString(expectedBooking);
-
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
-        when(mockCache.get("guidKey", String.class)).thenReturn(null); // Cache miss
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(expectedBooking));
-        when(objectMapper.writeValueAsString(expectedBooking)).thenReturn(serialized);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, expectedBooking.getId())).thenReturn("idKey");
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertTrue(result.isPresent());
-        verify(mockCache).put("idKey", serialized);
-        verify(mockCache).put("guidKey", serialized);
     }
 
 
@@ -296,10 +273,8 @@ class CustomerBookingDaoTest {
         expected.setGuid(guid);
         expected.setId(303L);
 
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(null); // cache is null
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(expected));
 //        when(objectMapper.writeValueAsString(expected)).thenReturn("dummy-json");
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
 //        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, expected.getId())).thenReturn("idKey");
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
@@ -311,17 +286,11 @@ class CustomerBookingDaoTest {
     @Test
     void findByGuid_shouldReturnEmpty_whenNotFoundInCacheOrDB() throws JsonProcessingException {
         UUID guid = UUID.randomUUID();
-
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING)).thenReturn(mockCache);
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenReturn("guidKey");
-        when(mockCache.get("guidKey", String.class)).thenReturn(null); // cache miss
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.empty());
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
 
         assertFalse(result.isPresent());
-        verify(mockCache, never()).put(any(), any()); // Should not cache anything
     }
 
     @Test
@@ -331,7 +300,6 @@ class CustomerBookingDaoTest {
         fallbackBooking.setGuid(guid);
         fallbackBooking.setId(404L);
 
-        when(keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, guid)).thenThrow(new RuntimeException("boom!"));
         when(customerBookingRepository.findByGuid(guid)).thenReturn(Optional.of(fallbackBooking));
 
         Optional<CustomerBooking> result = customerBookingDao.findByGuid(guid);
@@ -438,6 +406,18 @@ class CustomerBookingDaoTest {
     }
 
     @Test
+    void SaveV2Success() {
+        VersionContext.setVersionFromPath("/api/v2/");
+        CustomerBooking customerBooking = CustomerBooking.builder().bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT).build();
+        customerBooking.setId(1L);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.of(customerBooking));
+        doNothing().when(customValidations).onSave(any(),any());
+        customerBookingDao.save(customerBooking);
+        verify(customValidations, times(1)).onSave(any(), any());
+    }
+
+    @Test
     void SaveEntityNotPresent() {
         HashSet<String> error = new HashSet<>();
 
@@ -497,5 +477,109 @@ class CustomerBookingDaoTest {
         assertThrows(RunnerException.class, () -> {
             customerBookingDao.updateEntityFromShipmentConsole(customerBooking);
         });
+    }
+
+    @Test
+    void SaveErrorV3() {
+        VersionContext.setVersionFromPath("/api/v3/");
+        HashSet<String> error = new HashSet<>();
+        error.add("An Error Occured");
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(ValidationException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void SaveEntityNotPresentV3() {
+        VersionContext.setVersionFromPath("/api/v3/");
+        HashSet<String> error = new HashSet<>();
+
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void SaveEntityIdNullV3() {
+        VersionContext.setVersionFromPath("/api/v3/");
+        HashSet<String> error = new HashSet<>();
+
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+
+        when(customerBookingRepository.findByBookingNumber(any())).thenReturn(Optional.of(customerBooking));
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(ValidationException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void updateEntityFromShipmentConsoleEntityNotPresentV3() {
+        VersionContext.setVersionFromPath("/api/v3/");
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void SaveV3Success() {
+        VersionContext.setVersionFromPath("/api/v3/");
+        CustomerBooking customerBooking = CustomerBooking.builder().bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT).build();
+        customerBooking.setId(1L);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.of(customerBooking));
+        doNothing().when(customValidationsV3).onSave(any(),any());
+        customerBookingDao.save(customerBooking);
+        verify(customValidationsV3, times(1)).onSave(any(), any());
+    }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PARTIAL");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(23L);
+        when(customerBookingRepository.findAllByMigratedStatuses(statuses, tenantId)).thenReturn(expected);
+        List<Long> result = customerBookingDao.findAllByMigratedStatuses(statuses, tenantId);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findAllByMigratedStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testFindCustomerBookingByIds() {
+        Set<Long> ids = Set.of(201L, 202L);
+        List<CustomerBooking> expected = List.of(new CustomerBooking(), new CustomerBooking());
+        when(customerBookingRepository.findCustomerBookingByIds(ids)).thenReturn(expected);
+        List<CustomerBooking> result = customerBookingDao.findCustomerBookingByIds(ids);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findCustomerBookingByIds(ids);
+    }
+
+    @Test
+    void testDeleteCustomerBookingIds() {
+        Set<Long> ids = Set.of(301L, 302L);
+        customerBookingDao.deleteCustomerBookingIds(ids);
+        verify(customerBookingRepository, times(1)).deleteCustomerBookingIds(ids);
+    }
+
+    @Test
+    void testFindAllCustomerBookingIdsByTenantId() {
+        Integer tenantId = 3;
+        Set<Long> expected = Set.of(401L, 402L);
+        when(customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId)).thenReturn(expected);
+        Set<Long> result = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findAllCustomerBookingIdsByTenantId(tenantId);
     }
 }

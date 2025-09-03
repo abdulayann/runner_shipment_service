@@ -1,5 +1,21 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -11,6 +27,7 @@ import com.dpw.runner.shipment.services.commons.constants.HblConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -25,7 +42,13 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblLockSettings;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -41,6 +64,15 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,19 +81,13 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -186,7 +212,7 @@ class HblServiceTest extends CommonMocks {
         HblCargoDto hblCargoWithoutContainerNumber = new HblCargoDto();
         hblCargoWithoutContainerNumber.setBlContainerContainerNumber(null);
         hblObject.setHblCargo(List.of(hblCargoWithoutContainerNumber));
-
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
         assertThrows(ValidationException.class, () ->
                 hblService.validateHblContainerNumberCondition(hblObject),
             "Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment."
@@ -1369,5 +1395,95 @@ class HblServiceTest extends CommonMocks {
 
         shipment.setConsolidationList(Set.of(consolidationDetails));
     }
+
+    @Test
+     void testValidateSealNumberWarning_ShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+        Exception exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            hblService.validateSealNumberWarning(shipmentId);
+        });
+        assertEquals("Shipment not found", exception.getMessage());
+    }
+    @Test
+    void testValidateSealNumberWarning_containersMissingSeals() {
+        Long shipmentId = 4L;
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setDirection(Constants.DIRECTION_EXP);
+
+        Containers container1 = new Containers();
+        container1.setContainerNumber("CONT001");
+        container1.setCarrierSealNumber(null);
+        container1.setCustomsSealNumber(null);
+        container1.setShipperSealNumber(null);
+        container1.setVeterinarySealNumber(null);
+        // All seals empty
+
+        Containers container2 = new Containers();
+        container2.setContainerNumber("CONT002");
+        container2.setCarrierSealNumber("SealX"); // Has at least one seal
+
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container1, container2)));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(shipmentId);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(responseBody.getWarning());
+        assertTrue(responseBody.getWarning().contains("CONT001"));
+        assertFalse(responseBody.getWarning().contains("CONT002"));
+    }
+
+    @Test
+    void testValidateSealNumberWarning_AllContainersHaveSeals() {
+        Containers container = new Containers();
+        container.setContainerNumber("CTN789");
+        container.setCarrierSealNumber("SEAL789");
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(shipment.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container)));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNull(responseBody.getWarning()); // No warning expected
+    }
+@Test
+    void testNegativeCasesForSelaVal() {
+        Containers container = new Containers();
+        container.setContainerNumber("CTN000");
+        // IMPORT direction
+        ShipmentDetails importShipment = mock(ShipmentDetails.class);
+        when(importShipment.getTransportMode()).thenReturn("SEA");
+        when(importShipment.getDirection()).thenReturn("IMP");
+        importShipment.setContainersList(new HashSet<>(Arrays.asList(container)));
+    // No containers
+    ShipmentDetails emptyShipment = mock(ShipmentDetails.class);
+    when(emptyShipment.getTransportMode()).thenReturn("SEA");
+    when(emptyShipment.getDirection()).thenReturn("EXP");
+    when(emptyShipment.getContainersList()).thenReturn(Collections.emptySet());
+    //  Null containers
+    ShipmentDetails nullShipment = mock(ShipmentDetails.class);
+    when(nullShipment.getTransportMode()).thenReturn("SEA");
+    when(nullShipment.getDirection()).thenReturn("EXP");
+    when(nullShipment.getContainersList()).thenReturn(null);
+    // Common mock
+    when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mock(ShipmentDetails.class)));
+    // Execute and verify all negative cases
+    Arrays.asList( importShipment, emptyShipment, nullShipment).forEach(shipment -> {
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(1L);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+        assertEquals(200, response.getStatusCodeValue());
+        assertNull(responseBody.getWarning());
+    });
+}
 
 }

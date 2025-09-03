@@ -1,0 +1,4 @@
+ALTER TABLE IF EXISTS shipment_details ADD COLUMN IF NOT EXISTS slac INTEGER;
+ALTER TABLE shipment_details ALTER COLUMN additional_terms TYPE VARCHAR(50000);
+ALTER TABLE IF EXISTS shipment_details ADD COLUMN IF NOT EXISTS dg_packs_count INTEGER;
+ALTER TABLE IF EXISTS shipment_details ADD COLUMN IF NOT EXISTS dg_packs_unit VARCHAR(20);

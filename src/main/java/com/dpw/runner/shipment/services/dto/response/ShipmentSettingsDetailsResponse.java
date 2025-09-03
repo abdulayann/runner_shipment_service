@@ -190,4 +190,6 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean preAlertEmailAndLogs;
     private Boolean isAmrAirFreightEnabled;
     private Boolean isExternalFileTransferEnabled;
+    private Boolean enableDomesticMawbMblValidations;
+    private Boolean allowUnassignedBlInvGeneration;
 }

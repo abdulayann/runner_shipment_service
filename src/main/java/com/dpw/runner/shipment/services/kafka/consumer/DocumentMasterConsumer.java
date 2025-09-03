@@ -25,13 +25,14 @@ import org.springframework.stereotype.Service;
 public class DocumentMasterConsumer {
 
     private ObjectMapper objectMapper;
+
+    @Autowired
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private final RetryTemplate retryTemplate;
 
     @Autowired
-    DocumentMasterConsumer(ObjectMapper objectMapper, BookingIntegrationsUtility bookingIntegrationsUtility, RetryTemplate retryTemplate) {
+    DocumentMasterConsumer(ObjectMapper objectMapper, RetryTemplate retryTemplate) {
         this.objectMapper = objectMapper;
-        this.bookingIntegrationsUtility = bookingIntegrationsUtility;
         this.retryTemplate = retryTemplate;
     }
 

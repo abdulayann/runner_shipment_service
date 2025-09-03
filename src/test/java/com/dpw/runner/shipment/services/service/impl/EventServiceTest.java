@@ -1,24 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -33,30 +14,15 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -74,17 +40,6 @@ import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -107,6 +62,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -191,8 +159,8 @@ class EventServiceTest extends CommonMocks {
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
-        testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
-        testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
+        testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
+        testConsolRequest = objectMapperTest.convertValue(testConsol , ConsolidationDetailsRequest.class);
         testShipment = jsonTestUtility.getTestShipment();
         testConsolidation = jsonTestUtility.getTestConsolidation();
         testEventsRequestV2 = jsonTestUtility.getTestEventsRequestV2();
@@ -1186,13 +1154,13 @@ class EventServiceTest extends CommonMocks {
     void populateBranchNames_shouldReturnEarly_whenV1ServiceReturnsNull() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(null);
+        when(v1Service.listCousinBranches(any())).thenReturn(null);
 
         // Act
         eventService.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verify(v1Service).listCousinBranches(any());
         verifyNoInteractions(jsonHelper);
     }
 
@@ -1204,13 +1172,13 @@ class EventServiceTest extends CommonMocks {
         V1DataResponse response = new V1DataResponse();
         response.setEntities(null);
 
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(response);
+        when(v1Service.listCousinBranches(any())).thenReturn(response);
 
         // Act
         eventService.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verify(v1Service).listCousinBranches(any());
         verifyNoInteractions(jsonHelper);
     }
 
@@ -1218,13 +1186,13 @@ class EventServiceTest extends CommonMocks {
     void populateBranchNames_shouldHandleV1ServiceExceptionGracefully() {
         // Arrange
         List<EventsResponse> responses = List.of(new EventsResponse());
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenThrow(new V1ServiceException("failed"));
+        when(v1Service.listCousinBranches(any())).thenThrow(new V1ServiceException("failed"));
 
         // Act
         eventService.populateBranchNames(responses);
 
         // Assert
-        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verify(v1Service).listCousinBranches(any());
     }
 
     @Test
@@ -1234,7 +1202,7 @@ class EventServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(new Object())); // raw data
 
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class)))
                 .thenThrow(new RuntimeException("conversion failed"));
 
@@ -1267,7 +1235,7 @@ class EventServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(tenant1, tenant2));
 
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
                 .thenReturn(List.of(tenant1, tenant2));
 
@@ -1292,7 +1260,7 @@ class EventServiceTest extends CommonMocks {
         V1DataResponse dataResponse = new V1DataResponse();
         dataResponse.setEntities(List.of(tenant));
 
-        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(v1Service.listCousinBranches(any())).thenReturn(dataResponse);
         when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
                 .thenReturn(List.of(tenant));
 

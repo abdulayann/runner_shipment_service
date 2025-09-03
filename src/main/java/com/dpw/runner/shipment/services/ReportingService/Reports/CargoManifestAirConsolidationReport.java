@@ -1,5 +1,26 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_RECEIVING_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_RECEIVING_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_SENDING_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_SENDING_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_TOTAL_PACKS_AND_UNITS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_AIRCRAFT_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_FIRST_FLIGHT_AND_DAY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_FLIGHT_CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CURRENT_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IS_CONSOL_SECURITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_DATA_NOT_AVAILABLE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RECEIVING_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RECEIVING_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SCI;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SENDING_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SENDING_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_GROSS_WEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAirConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -18,16 +39,16 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
 @Slf4j
@@ -124,6 +145,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         try{ dictionary.put(RECEIVING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent())); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         dictionary.put(SCI, cargoManifestAirConsolidationModel.getConsolidationModel().getSci());
         populateConsolidationCargoManifestParty(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
+        this.populateConsolidationReportData(dictionary, null, cargoManifestAirConsolidationModel.getConsolidationModel().getId());
         return dictionary;
     }
 

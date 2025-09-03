@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.TenantProductsDto;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -55,6 +57,11 @@ class ShipmentSettingsSyncTest {
     private EmailServiceUtility emailServiceUtility;
     @Mock
     private ISyncService syncService;
+
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
 
     /**
      * Method under test: {@link ContainersSync#sync(List, Page)}

@@ -14,6 +14,9 @@ public interface IReferenceNumbersDao {
     ReferenceNumbers save(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> saveAll(List<ReferenceNumbers> referenceNumbersList);
     Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable);
+
+    Page<ReferenceNumbers> findAllWithoutTenantFilter(Specification<ReferenceNumbers> spec, Pageable pageable);
+
     Optional<ReferenceNumbers> findById(Long id);
     void delete(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws RunnerException;
@@ -26,4 +29,16 @@ public interface IReferenceNumbersDao {
     List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId);
     List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Map<Long, ReferenceNumbers> hashMap);
     List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws RunnerException;
+
+    void deleteAdditionalDataByReferenceNumberIdsConsolidationId(List<Long> referenceNumberIds, Long consolidationId);
+
+    void revertSoftDeleteByReferenceNumberIdsAndConsolidationId(List<Long> referenceNumberIds, Long consolidationId);
+
+    void deleteAdditionalDataByReferenceNumberIdsBookingId(List<Long> referenceNumberIds, Long bookingId);
+
+    void revertSoftDeleteByReferenceNumberIdsAndBookingId(List<Long> referenceNumberIds, Long bookingId);
+
+    void deleteAdditionalreferenceNumbersByShipmentId(List<Long> referenceNumbersIds, Long shipmentId);
+
+    void revertSoftDeleteByreferenceNumbersIdsAndShipmentId(List<Long> referenceNumbersIds, Long shipmentId);
 }

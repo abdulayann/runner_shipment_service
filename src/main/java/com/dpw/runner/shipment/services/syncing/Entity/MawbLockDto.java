@@ -194,4 +194,108 @@ public class MawbLockDto implements IRunnerRequest {
     private Boolean PackingCommodityLock;
     @JsonProperty("PackingHsCodeLock")
     private Boolean PackingHsCodeLock;
+    @JsonProperty("ShipperAddressLine2Lock")
+    private Boolean ShipperAddressLine2Lock;
+    @JsonProperty("ShipperCityLock")
+    private Boolean ShipperCityLock;
+    @JsonProperty("ShipperStateCode")
+    private Boolean ShipperStateCode;
+    @JsonProperty("ShipperZipCode")
+    private Boolean ShipperZipCode;
+    @JsonProperty("ShipperCountyCodeLock")
+    private Boolean ShipperCountyCodeLock;
+    @JsonProperty("ShipperCountryNameLock")
+    private Boolean ShipperCountryNameLock;
+    @JsonProperty("ShipperPhoneNumberLock")
+    private Boolean ShipperPhoneNumberLock;
+    @JsonProperty("ShipperTAXNumberLock")
+    private Boolean ShipperTAXNumberLock;
+    @JsonProperty("ShipperAccountNumber")
+    private Boolean ShipperAccountNumber;
+    @JsonProperty("ConsigneeAddressLine2Lock")
+    private Boolean ConsigneeAddressLine2Lock;
+    @JsonProperty("ConsigneeCityLock")
+    private Boolean ConsigneeCityLock;
+    @JsonProperty("ConsigneeStateCode")
+    private Boolean ConsigneeStateCode;
+    @JsonProperty("ConsigneeZipCode")
+    private Boolean ConsigneeZipCode;
+    @JsonProperty("ConsigneeCountyCodeLock")
+    private Boolean ConsigneeCountyCodeLock;
+    @JsonProperty("ConsigneeCountryNameLock")
+    private Boolean ConsigneeCountryNameLock;
+    @JsonProperty("ConsigneeContactNameLock")
+    private Boolean ConsigneeContactNameLock;
+    @JsonProperty("ConsigneePhoneNumberLock")
+    private Boolean ConsigneePhoneNumberLock;
+    @JsonProperty("ConsigneeTAXNumberLock")
+    private Boolean ConsigneeTAXNumberLock;
+    @JsonProperty("ConsigneeAccountNumber")
+    private Boolean ConsigneeAccountNumber;
+    @JsonProperty("NotifyAddressLine2Lock")
+    private Boolean NotifyAddressLine2Lock;
+    @JsonProperty("NotifyCityLock")
+    private Boolean NotifyCityLock;
+    @JsonProperty("NotifyStateCode")
+    private Boolean NotifyStateCode;
+    @JsonProperty("NotifyZipCode")
+    private Boolean NotifyZipCode;
+    @JsonProperty("NotifyCountyCodeLock")
+    private Boolean NotifyCountyCodeLock;
+    @JsonProperty("NotifyCountryNameLock")
+    private Boolean NotifyCountryNameLock;
+    @JsonProperty("NotifyContactNameLock")
+    private Boolean NotifyContactNameLock;
+    @JsonProperty("NotifyPhoneNumberLock")
+    private Boolean NotifyPhoneNumberLock;
+    @JsonProperty("NotifyTAXNumberLock")
+    private Boolean NotifyTAXNumberLock;
+    @JsonProperty("IssuingAgentAddressLine2Lock")
+    private Boolean IssuingAgentAddressLine2Lock;
+    @JsonProperty("IssuingAgentCityLock")
+    private Boolean IssuingAgentCityLock;
+    @JsonProperty("IssuingAgentStateCode")
+    private Boolean IssuingAgentStateCode;
+    @JsonProperty("IssuingAgentZipCode")
+    private Boolean IssuingAgentZipCode;
+    @JsonProperty("IssuingAgentCountyCodeLock")
+    private Boolean IssuingAgentCountyCodeLock;
+    @JsonProperty("IssuingAgentCountryNameLock")
+    private Boolean IssuingAgentCountryNameLock;
+    @JsonProperty("IssuingAgentContactNameLock")
+    private Boolean IssuingAgentContactNameLock;
+    @JsonProperty("IssuingAgentPhoneNumberLock")
+    private Boolean IssuingAgentPhoneNumberLock;
+    @JsonProperty("IssuingAgentTAXNumberLock")
+    private Boolean IssuingAgentTAXNumberLock;
+    @JsonProperty("SpecifiedAddressLocation")
+    private Boolean SpecifiedAddressLocation;
+    @JsonProperty("CassCode")
+    private Boolean CassCode;
+    @JsonProperty("AccountNumber")
+    private Boolean AccountNumber;
+    @JsonProperty("OtherInformationCodeLock")
+    private Boolean OtherInformationCodeLock;
+    @JsonProperty("OverrideAutoUpdateLock")
+    private Boolean OverrideAutoUpdateLock;
+    @JsonProperty("CountryCodeLock")
+    private Boolean CountryCodeLock;
+    @JsonProperty("RaNumberLock")
+    private Boolean RaNumberLock;
+    @JsonProperty("RaExpiryDateLock")
+    private Boolean RaExpiryDateLock;
+    @JsonProperty("ScreeningStatusLock")
+    private Boolean ScreeningStatusLock;
+    @JsonProperty("ScreeningTimeLock")
+    private Boolean ScreeningTimeLock;
+    @JsonProperty("ScreenerNameLock")
+    private Boolean ScreenerNameLock;
+    @JsonProperty("GrossVolumeLock")
+    private Boolean GrossVolumeLock;
+    @JsonProperty("GrossVolumeUnitLock")
+    private Boolean GrossVolumeUnitLock;
+    @JsonProperty("DimensionsLock")
+    private Boolean DimensionsLock;
+    @JsonProperty("VersionLock")
+    private Boolean VersionLock;
 }

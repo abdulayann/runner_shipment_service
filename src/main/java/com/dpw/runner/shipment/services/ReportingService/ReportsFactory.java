@@ -55,6 +55,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.SHIPPING_INSTRUCTION, shippingInstructionReport);
         reportsMap.put(ReportConstants.BOOKING_CONFIRMATION, bookingConfirmationReport);
         reportsMap.put(ReportConstants.DELIVERY_ORDER, deliveryOrderReport);
+        reportsMap.put(ReportConstants.DELIVERY_ORDER_V3, deliveryOrderReport);
         reportsMap.put(ReportConstants.HOUSE_BILL, hblReport);
         reportsMap.put(ReportConstants.HAWB, hawbReport);
         reportsMap.put(ReportConstants.MAWB, mawbReport);
@@ -69,6 +70,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.AWB_LABEL, awbLabelReport);
         reportsMap.put(ReportConstants.SHIPPING_REQUEST_AIR, shippingRequestAirReport);
         reportsMap.put(ReportConstants.PICKUP_ORDER, pickupOrderReport);
+        reportsMap.put(ReportConstants.PICKUP_ORDER_V3, pickupOrderReport);
         reportsMap.put(ReportConstants.PROOF_OF_DELIVERY, proofOfDeliveryReport);
         reportsMap.put(ReportConstants.PACKING_LIST, packingListReport);
         reportsMap.put(ReportConstants.SHIPMENT_CAN_DOCUMENT, shipmentCANReport);
@@ -83,6 +85,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.SHIP_TRUCK_DRIVER_PROOF, shipTruckDriverProof);
         reportsMap.put(ReportConstants.CONS_TRUCK_DRIVER_PROOF, consTruckDriverProof);
         reportsMap.put(ReportConstants.TRANSPORT_ORDER, transportOrderReport);
+        reportsMap.put(ReportConstants.TRANSPORT_ORDER_V3, transportOrderReport);
         reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, cargoManifestAirShipmentReport);
         reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, cargoManifestAirShipmentReport);
         reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, cargoManifestAirConsolidationReport);

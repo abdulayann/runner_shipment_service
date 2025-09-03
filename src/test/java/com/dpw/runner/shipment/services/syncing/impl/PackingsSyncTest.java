@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -7,6 +8,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -39,6 +41,11 @@ class PackingsSyncTest {
     @Mock
     private ISyncService syncService;
 
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
+
     /**
      * Method under test: {@link PackingsSync#sync(List, String)}
      */
@@ -47,8 +54,9 @@ class PackingsSyncTest {
         var inputPacking = new Packing();
         inputPacking.setGuid(UUID.randomUUID());
         inputPacking.setContainerId(11L);
-
-        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Containers())));
+        var container = new Containers();
+        container.setGuid(UUID.randomUUID());
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(container)));
         when(syncEntityConversionService.packingsV2ToV1(any(), any(), any(), any())).thenReturn(List.of(new PackingRequestV2()));
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
 

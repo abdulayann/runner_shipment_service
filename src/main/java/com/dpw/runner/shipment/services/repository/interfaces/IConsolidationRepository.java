@@ -63,6 +63,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE id IN ?1", nativeQuery = true)
     List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
 
+    @Query(value = "SELECT id FROM consolidation_details WHERE migration_status IN (:statuses) AND tenant_id = :tenantId AND is_deleted = false", nativeQuery = true)
+    List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     ConsolidationDetails getConsolidationFromId(Long id);
 
@@ -137,4 +140,68 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
 
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.terminalCutoff = :terminalCutoff,
+                s.verifiedGrossMassCutoff = :verifiedGrossMassCutoff,
+                s.shipInstructionCutoff = :shipInstructionCutoff,
+                s.hazardousBookingCutoff = :hazardousBookingCutoff,
+                s.reeferCutoff = :reeferCutoff,
+                s.earliestEmptyEquPickUp = :earliestEmptyEquPickUp,
+                s.latestFullEquDeliveredToCarrier = :latestFullEquDeliveredToCarrier,
+                s.earliestDropOffFullEquToCarrier = :earliestDropOffFullEquToCarrier
+            WHERE s.id = :consolidationId
+            """)
+    void updateSailingScheduleRelatedInfo(
+            @Param("consolidationId") Long consolidationId,
+            @Param("terminalCutoff") LocalDateTime terminalCutoff,
+            @Param("verifiedGrossMassCutoff") LocalDateTime verifiedGrossMassCutoff,
+            @Param("shipInstructionCutoff") LocalDateTime shipInstructionCutoff,
+            @Param("hazardousBookingCutoff") LocalDateTime hazardousBookingCutoff,
+            @Param("reeferCutoff") LocalDateTime reeferCutoff,
+            @Param("earliestEmptyEquPickUp") LocalDateTime earliestEmptyEquPickUp,
+            @Param("latestFullEquDeliveredToCarrier") LocalDateTime latestFullEquDeliveredToCarrier,
+            @Param("earliestDropOffFullEquToCarrier") LocalDateTime earliestDropOffFullEquToCarrier
+    );
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.latDate = :latDate
+            WHERE s.id = :consolidationId
+            """)
+    void updateSailingScheduleRelatedInfoForAir(@Param("consolidationId") Long consolidationId, @Param("latDate") LocalDateTime latDate);
+
+    @Query(value = "SELECT bookingNumber FROM ConsolidationDetails WHERE id = :consolidationId")
+    String getBookingNumberFromConsol(@Param("consolidationId") Long consolidationId);
+
+    @Query(value = "SELECT openForAttachment FROM ConsolidationDetails WHERE id = :consolidationId")
+    Boolean getAllowAttachMentFromConsol(@Param("consolidationId") Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.openForAttachment = :enableFlag
+            WHERE s.id = :consolidationId
+            """)
+    void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE consolidation_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE consolidation_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM triangulation_partner_consolidation WHERE consolidation_id = ?1", nativeQuery = true)
+    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

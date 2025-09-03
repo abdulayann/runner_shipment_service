@@ -334,4 +334,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean countryAirCargoSecurity;
     @JsonProperty("AmrAirFreight")
     private Boolean isAmrAirFreightEnabled;
+    @JsonProperty("ShipmentServiceV3Enabled")
+    private Boolean shipmentServiceV3Enabled;
 }

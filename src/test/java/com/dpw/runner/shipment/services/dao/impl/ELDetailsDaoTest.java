@@ -206,4 +206,22 @@ class ELDetailsDaoTest {
         when(jsonHelper.convertToJson(any())).thenThrow(new RuntimeException());
         assertEquals(new ArrayList<>(), dao.updateEntityFromShipment(new ArrayList<>(), 5L, elDetailsList));
     }
+
+    @Test
+    void testDeleteAdditionalElDetailsByShipmentId() {
+        List<Long> elDetailsIds = List.of(1L, 2L, 3L);
+        Long shipmentId = 100L;
+        dao.deleteAdditionalElDetailsByShipmentId(elDetailsIds, shipmentId);
+        verify(elDetailsRepository, times(1))
+                .deleteAdditionalElDetailsByShipmentId(elDetailsIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByElDetailsIdsAndShipmentId() {
+        List<Long> elDetailsIds = List.of(4L, 5L);
+        Long shipmentId = 200L;
+        dao.revertSoftDeleteByElDetailsIdsAndShipmentId(elDetailsIds, shipmentId);
+        verify(elDetailsRepository, times(1))
+                .revertSoftDeleteByElDetailsIdsAndShipmentId(elDetailsIds, shipmentId);
+    }
 }
