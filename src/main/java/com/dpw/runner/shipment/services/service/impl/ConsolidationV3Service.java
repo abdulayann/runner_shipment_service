@@ -3979,7 +3979,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException("No containers found for detachment from shipment: " + shipmentDetails);
         }
 
-        containerV3Service.bulkUnAssign(shipmentDetails, containerIds, shipmentPackings, isFCLDelete, isForcedDetach);
+        containerV3Service.bulkUnAssign(shipmentDetails, containerIds, shipmentPackings, isFCLDelete, isForcedDetach, Boolean.FALSE);
 
     }
 
