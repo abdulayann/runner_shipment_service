@@ -9,16 +9,19 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesV3Service;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.v3.PartiesValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +49,9 @@ public class PartiesV3Service implements IPartiesV3Service {
 
     @Autowired
     private PartiesValidationUtil partiesValidationUtil;
+
+    @Autowired @Lazy
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Override
     @Transactional
@@ -110,10 +116,9 @@ public class PartiesV3Service implements IPartiesV3Service {
     }
 
     @Override
-    public PartiesResponse get(PartiesRequest partiesRequest) {
-        String orgCode = partiesRequest.getOrgCode();
-        Parties party = partiesDao.findByOrgCode(orgCode);
-        return jsonHelper.convertValue(party, PartiesResponse.class);
+    public PartiesResponse get(PartiesOrgAddressRequest request) {
+        bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getParty(), request.getAddressCode(), request.getOrgCode());
+        return jsonHelper.convertValue(request.getParty(), PartiesResponse.class);
     }
 
     @Override

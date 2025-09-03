@@ -29,9 +29,6 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
 
     List<Parties> findByIdIn(List<Long> ids);
 
-    @Query(value = "Select * from parties where org_code = ?1 and is_deleted = false limit 1", nativeQuery = true)
-    Parties findByOrgCode(String orgCode);
-
     @Modifying
     @Transactional
     @Query(value = "UPDATE parties SET is_deleted = true WHERE id NOT IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
