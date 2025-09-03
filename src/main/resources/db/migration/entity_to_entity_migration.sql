@@ -1787,6 +1787,34 @@ WHERE pnt.id = snt.id AND snt.source_branch_id = __TENANT_ID__;
 
 
 
+UPDATE public.network_transfer SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
+UPDATE public.network_transfer AS pnt
+SET
+    created_at = snt.created_at,
+    created_by = snt.created_by,
+    guid = snt.guid,
+    updated_at = snt.updated_at,
+    updated_by = snt.updated_by,
+    is_deleted = snt.is_deleted, -- Overwrites previous is_deleted
+    tenant_id = snt.tenant_id,
+    entity_type = snt.entity_type,
+    entity_number = snt.entity_number,
+    entity_id = snt.entity_id,
+    created_entity_id = snt.created_entity_id,
+    transport_mode = snt.transport_mode,
+    source_branch_id = snt.source_branch_id,
+    status = snt.status,
+    job_type = snt.job_type,
+    entity_payload = snt.entity_payload,
+    is_inter_branch_entity = snt.is_inter_branch_entity,
+    entity_guid = snt.entity_guid,
+    is_hidden = snt.is_hidden,
+    transferred_date = snt.transferred_date,
+    "source" = snt."source",
+    migration_status = snt.migration_status
+FROM __SCHEMA__.network_transfer AS snt
+WHERE pnt.id = snt.id AND snt.tenant_id = __TENANT_ID__;
+
 -- Table: public.carrier_details
 UPDATE public.carrier_details SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
 UPDATE public.carrier_details AS pcd
