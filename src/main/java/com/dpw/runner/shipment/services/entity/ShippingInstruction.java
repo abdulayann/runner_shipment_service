@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.ReferenceNumberRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -66,7 +69,7 @@ public class ShippingInstruction extends MultiTenancy {
     private String carrierBookingNo;
 
     @Column(name = "entity_type", length = 50)
-    private String entityType;
+    private ShippingInstructionEntityType entityType;
 
     @Column(name = "entity_id")
     private Long entityId;
@@ -125,4 +128,11 @@ public class ShippingInstruction extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
     private List<CommonContainers> commonContainersList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
+    private List<ReferenceNumbers> referenceNumbers;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")
+    private SailingInformation sailingInformation;
 }
