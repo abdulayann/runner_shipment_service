@@ -73,7 +73,7 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "booking_comment", length = 10000)
     private String bookingComment;
 
-    @Column(name = "carrier_comment", length = 10000)
+    @Column(name = "carrier_comment")
     private String carrierComment;
 
     @Column(name = "internal_emails", columnDefinition = "TEXT")

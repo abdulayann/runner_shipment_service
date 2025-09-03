@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingServic
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
@@ -83,9 +84,10 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final CommonUtils commonUtils;
     private final INotificationService notificationService;
     private final IV1Service iv1Service;
+    private final CarrierBookingUtil carrierBookingUtil;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingValidationUtil = carrierBookingValidationUtil;
@@ -93,6 +95,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.commonUtils = commonUtils;
         this.notificationService = notificationService;
         this.iv1Service = iv1Service;
+        this.carrierBookingUtil = carrierBookingUtil;
     }
 
     @Override
@@ -144,10 +147,14 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public CarrierBookingResponse findById(Long id) {
+    public CarrierBookingResponse retrieveById(Long id) {
         log.info("CarrierBookingService.getById() called with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
         CarrierBooking carrierBooking = carrierBookingDao.findById(id).orElseThrow(() -> new ValidationException("Invalid id : " + id));
+        // truncate carrier_comments from intraa
+        carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
+
+        // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
