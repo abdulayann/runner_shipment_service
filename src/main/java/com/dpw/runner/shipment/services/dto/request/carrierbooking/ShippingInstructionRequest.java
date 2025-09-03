@@ -1,12 +1,15 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.*;
 import java.util.List;
 
 @Data
@@ -14,11 +17,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShippingInstructionRequest {
-
     private String status;
     private String mblNo;
     private String carrierBookingNo;
-    private String entityType;
+    private ShippingInstructionEntityType entityType;
     private Long entityId;
     private String entityNumber;
     private String blComments;
@@ -32,7 +34,7 @@ public class ShippingInstructionRequest {
     private List<FreightDetailRequest> freightDetails;
     private List<CommonPackageRequest> commonPackages;
     private List<CommonContainerRequest> commonContainers;
-    private List<SailingInformationRequest> sailingInformation;
     private List<ReferenceNumberRequest> referenceNumberRequests;
+    private SailingInformationRequest sailingInformationRequest;
 }
 
