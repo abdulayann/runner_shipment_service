@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
+import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataRestoreService;
@@ -12,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +29,15 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
     private final List<RestoreServiceHandler> restoreHandlers;
     private final EmailServiceUtility emailServiceUtility;
     private final HelperExecutor trxExecutor;
+    private final ShipmentSettingsDao shipmentSettingsDao;
 
     @Override
-    public ResponseEntity<String> restoreTenantDataAsync(Integer tenantId, Integer count) {
+    public ResponseEntity<String> restoreTenantDataAsync(Integer tenantId, Integer count) throws RunnerException {
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkRestoreRunning();
+        if (shipmentSettingsDetails.isPresent()){
+            throw new RunnerException("Another restore is in progress. Please try again later.");
+        }
+        shipmentSettingsDao.updateIsRestoreRunningFlag(true, tenantId);
 
         trxExecutor.runInAsync(() ->  {
             try {
@@ -35,9 +45,11 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
                 restoreTenantData(tenantId, count);
                 log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, "completed successfully : " + (System.currentTimeMillis()-startTime), "Restore From V3 to V2",  false);
+                shipmentSettingsDao.updateIsRestoreRunningFlag(false, tenantId);
             } catch (Exception e) {
                 log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Restore From V3 to V2", true);
+                shipmentSettingsDao.updateIsRestoreRunningFlag(false, tenantId);
                 throw new IllegalArgumentException(e);
             }
             return null;
