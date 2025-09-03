@@ -14,7 +14,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AOM_FREE_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AS_AGREED;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATA_OR_ETA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED_VALUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOOKING_ORDER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_NAME;
@@ -33,8 +36,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_UNIT1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WEIGHT_DECIMAL_PLACES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLASS_DIVISION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADDRESS_CITY;
@@ -94,6 +99,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CREDITOR_AGENT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CTO_FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CURRENCY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
@@ -331,6 +337,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_DISPLAY_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_INITIALS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_PHONE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VALUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSELS_NAME_FLIGHT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
@@ -412,6 +419,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -1749,6 +1757,64 @@ public abstract class IReport {
                 }
                 dict.put(CHARGEABLE_WT, chargeableWt);
             }
+        }
+    }
+
+    public void populateFreightsAndCharges(Map<String, Object> dictionary, Hbl hbl) {
+
+        if (Objects.nonNull(hbl) && Objects.nonNull(hbl.getShipmentId())) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
+
+            if (!shipmentDetails.isPresent() || Objects.isNull(shipmentDetails.get().getAdditionalDetails()))
+                return;
+            if (Boolean.TRUE.equals(shipmentDetails.get().getAdditionalDetails().getIsRatedBL())) {
+                List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
+
+                // Validate First Row of freight and charges is mandate if Rated BL is true
+                populateFreightsAndChargesValidation(hblFreightsAndCharges);
+            } else {
+                dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
+            }
+
+            // Process Freight and Charges and add List into Dictionary
+            List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
+            if (Objects.nonNull(hblFreightsAndCharges) && !hblFreightsAndCharges.isEmpty()) {
+                processFreightsAndCharges(hblFreightsAndCharges, dictionary);
+            }
+        }
+    }
+
+    private void processFreightsAndCharges(List<HblFreightsAndCharges> hblFreightsAndCharges,
+                                           Map<String, Object> dictionary) {
+        List<Map<String, Object>> freightChargesList = new ArrayList<>();
+
+        for (HblFreightsAndCharges freightAndCharges : hblFreightsAndCharges) {
+            Map<String, Object> currFreightAndCharges = new HashMap<>();
+            currFreightAndCharges.put(CHARGES, freightAndCharges.getCharges());
+            currFreightAndCharges.put(VALUE, freightAndCharges.getValue());
+            currFreightAndCharges.put(CURRENCY, freightAndCharges.getCurrency());
+            currFreightAndCharges.put(CHARGE_TYPE, freightAndCharges.getChargeType());
+
+            freightChargesList.add(currFreightAndCharges);
+        }
+
+        dictionary.put(BL_CHARGES, freightChargesList);
+    }
+
+
+    private void populateFreightsAndChargesValidation(List<HblFreightsAndCharges> hblFreightsAndCharges) {
+        if (Objects.isNull(hblFreightsAndCharges) || hblFreightsAndCharges.isEmpty()) {
+            throw new ValidationException("At least one Freight & Charges row is mandatory when Rated BL is true.");
+        }
+
+        HblFreightsAndCharges firstFreightAndCharges = hblFreightsAndCharges.get(0);
+
+        if (Objects.isNull(firstFreightAndCharges.getCharges()) ||
+                Objects.isNull(firstFreightAndCharges.getValue()) ||
+                Objects.isNull(firstFreightAndCharges.getCurrency()) ||
+                Objects.isNull(firstFreightAndCharges.getChargeType())) {
+
+            throw new ValidationException("The first Freight & Charges row must have Charges, Value, Currency, and Type filled.");
         }
     }
 
