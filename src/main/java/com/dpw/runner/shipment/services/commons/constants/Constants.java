@@ -641,7 +641,6 @@ public class Constants {
     public static final String NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE = "You are not allowed to view this consolidation as this tenant is not part of receiving agent or triangulation partner.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
-
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
