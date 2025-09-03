@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -59,6 +60,15 @@ public class PartiesV3Controller {
         log.info("Received Party Update request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
         return ResponseHelper.buildSuccessResponse(partiesService.update(partiesRequest));
 
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = MyResponseClass.class, message = PartiesConstants.PARTY_GET_SUCCESSFUL, responseContainer = PartiesConstants.PARTY_GET_SUCCESSFUL)
+    })
+    @GetMapping(ApiConstants.API_GET)
+    public ResponseEntity<IRunnerResponse> get(@RequestBody PartiesOrgAddressRequest partiesRequest) {
+        PartiesResponse party = partiesService.get(partiesRequest);
+        return ResponseHelper.buildSuccessResponse(party);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PartiesConstants.PARTIES_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
