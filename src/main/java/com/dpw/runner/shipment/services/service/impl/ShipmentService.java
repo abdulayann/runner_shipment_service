@@ -3938,6 +3938,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isTeslaShipment(ShipmentDetails shipmentDetails) {
+        if (StringUtility.isEmpty(shipmentDetails.getBookingReference())){
+            return false;
+        }
         String integrationSource = customerBookingDao.findCustomerBookingIntegrationSourceByBookingNumber(shipmentDetails.getBookingReference());
         return Constants.TESLA.equalsIgnoreCase(integrationSource);
     }
