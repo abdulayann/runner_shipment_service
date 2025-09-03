@@ -515,7 +515,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         Map<String, Object> entityPayload = new HashMap<>(getNetworkTransferEntityPayload(entityTransferPayload));
-        entityPayload.put("TransferInitiatedUser", UserContext.getUser().getEmail());
+        entityPayload.put("TransferInitiatedUser", UserContext.getUser().getWorkEmail());
         prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
     }
 

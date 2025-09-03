@@ -86,5 +86,6 @@ public class UsersDto implements Serializable {
     public String AgentCASSCode;
     public Integer SyncTenantId;
     public String LanguageCode;
+    public String WorkEmail;
 
 }
