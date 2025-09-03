@@ -251,7 +251,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
-                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, false));
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, false, false));
     }
 
     @Test
@@ -282,7 +282,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
-                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, true));
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, true, false));
     }
 
 

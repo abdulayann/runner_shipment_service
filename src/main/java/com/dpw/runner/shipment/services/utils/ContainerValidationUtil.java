@@ -269,7 +269,7 @@ public class ContainerValidationUtil {
         if(Constants.SHIPMENT.equals(module) &&
                 (!Constants.CARGO_TYPE_FCL.equals(shipment.getShipmentType()) &&
                         !Constants.CARGO_TYPE_FTL.equals(shipment.getShipmentType()))) {
-            throw new ValidationException("Only FCL/FTL operations are allowed for consolidation. Please use consolidation screen to perform this operation.");
+            throw new ValidationException("Only FCL/FTL operations are allowed for shipment. Please use consolidation screen to perform this operation.");
         }
     }
 
