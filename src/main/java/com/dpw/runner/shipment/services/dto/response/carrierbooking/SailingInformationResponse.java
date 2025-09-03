@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -22,7 +23,6 @@ public class SailingInformationResponse implements IRunnerResponse {
     private String carrier;
     private String vesselName;
     private String voyageNo;
-
     private LocalDateTime eta;
     private LocalDateTime etd;
     private LocalDateTime earliestDepartureDate;
@@ -34,4 +34,5 @@ public class SailingInformationResponse implements IRunnerResponse {
     private LocalDateTime reeferCutoff;
     private LocalDateTime emptyContainerPickupCutoff;
     private LocalDateTime loadedContainerGateInCutoff;
+    private Map<String, Object> unlocationData;
 }
