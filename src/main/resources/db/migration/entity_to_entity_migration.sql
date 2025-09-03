@@ -1178,7 +1178,7 @@ SET
     transport_info_status = ssd.transport_info_status,
     dg_packs_count = ssd.dg_packs_count,
     dg_packs_unit = ssd.dg_packs_unit,
-    is_migrated_to_v3 = ssd.is_migrated_to_v3
+    migration_status=ssd.migration_status
 FROM __SCHEMA__.shipment_details AS ssd
 WHERE psd.id = ssd.id AND ssd.tenant_id = __TENANT_ID__;
 
@@ -1621,7 +1621,7 @@ SET
     borrowed_from_organization_id = scd.borrowed_from_organization_id,
     reefer = scd.reefer,
     incoterms = scd.incoterms,
-    is_migrated_to_v3 = scd.is_migrated_to_v3
+    migration_status=scd.migration_status
 FROM __SCHEMA__.consolidation_details AS scd
 WHERE pcd.id = scd.id AND scd.tenant_id = __TENANT_ID__;
 
@@ -1746,7 +1746,7 @@ SET
     delivery_at_destination = scb.delivery_at_destination,
     cargo_delivery_date = scb.cargo_delivery_date,
     co_load_carrier_name = scb.co_load_carrier_name,
-    is_migrated_to_v3 = scb.is_migrated_to_v3
+    migration_status=scb.migration_status
 FROM __SCHEMA__.customer_booking AS scb
 WHERE pcb.id = scb.id AND scb.tenant_id = __TENANT_ID__;
 
@@ -1780,7 +1780,7 @@ SET
     is_hidden = snt.is_hidden,
     transferred_date = snt.transferred_date,
     "source" = snt."source",
-    is_migrated_to_v3 = snt.is_migrated_to_v3
+    migration_status = snt.migration_status
 FROM __SCHEMA__.network_transfer AS snt
 WHERE pnt.id = snt.id AND snt.source_branch_id = __TENANT_ID__;
 
