@@ -3106,4 +3106,113 @@ public class CommonUtils {
         }
         return null;
     }
+    public LocalDateTime convertToLocalDateTimeFromInttra(String dateValue, String dateFormat) {
+        if (dateValue == null || dateValue.trim().isEmpty()) {
+            return null;
+        }
+
+        if (dateFormat == null || dateFormat.trim().isEmpty()) {
+            log.error("Date format cannot be null or empty");
+            return null;
+        }
+
+        dateValue = dateValue.trim();
+        dateFormat = dateFormat.trim().toUpperCase();
+
+        try {
+            if ("CCYYMMDDHHMM".equals(dateFormat)) {
+                return parseCCYYMMDDHHMM(dateValue);
+            } else if ("CCYYMMDD".equals(dateFormat)) {
+                return parseCCYYMMDD(dateValue);
+            } else {
+                log.error("Unsupported date format: {}", dateFormat);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Error parsing date value: {} with format: {} - {}", dateValue, dateFormat, e.getMessage());
+            return null;
+        }
+    }
+
+    private LocalDateTime parseCCYYMMDDHHMM(String dateValue) {
+        if (dateValue.length() != 12) {
+            log.error("Date value length must be 12 for CCYYMMDDHHMM format, but was {}, value: {}",
+                    dateValue.length(), dateValue);
+            return null;
+        }
+
+        // Parse CCYYMMDDHHMM format: 202008281530
+        String year = dateValue.substring(0, 4);    // 2020
+        String month = dateValue.substring(4, 6);   // 08
+        String day = dateValue.substring(6, 8);     // 28
+        String hour = dateValue.substring(8, 10);   // 15
+        String minute = dateValue.substring(10, 12); // 30
+
+        // Validate and convert
+        int yearInt = Integer.parseInt(year);
+        int monthInt = Integer.parseInt(month);
+        int dayInt = Integer.parseInt(day);
+        int hourInt = Integer.parseInt(hour);
+        int minuteInt = Integer.parseInt(minute);
+
+        if (!isValidDate(yearInt, monthInt, dayInt) || !isValidTime(hourInt, minuteInt)) {
+            return null;
+        }
+
+        return LocalDateTime.of(yearInt, monthInt, dayInt, hourInt, minuteInt);
+    }
+
+    private LocalDateTime parseCCYYMMDD(String dateValue) {
+        if (dateValue.length() != 8) {
+            log.error("Date value length must be 8 for CCYYMMDD format, but was {}, value: {}",
+                    dateValue.length(), dateValue);
+            return null;
+        }
+
+        // Parse CCYYMMDD format: 20200828
+        String year = dateValue.substring(0, 4);    // 2020
+        String month = dateValue.substring(4, 6);   // 08
+        String day = dateValue.substring(6, 8);     // 28
+
+        // Validate and convert
+        int yearInt = Integer.parseInt(year);
+        int monthInt = Integer.parseInt(month);
+        int dayInt = Integer.parseInt(day);
+
+        if (!isValidDate(yearInt, monthInt, dayInt)) {
+            return null;
+        }
+
+        // Default time to start of day (00:00)
+        return LocalDateTime.of(yearInt, monthInt, dayInt, 0, 0);
+    }
+
+    private boolean isValidDate(int year, int month, int day) {
+        if (month < 1 || month > 12) {
+            log.error("Invalid month: {}", month);
+            return false;
+        }
+        if (day < 1 || day > 31) {
+            log.error("Invalid day: {}", day);
+            return false;
+        }
+
+        // Additional validation for days in month could be added here
+        // For now, basic range validation is sufficient
+
+        return true;
+    }
+
+    private boolean isValidTime(int hour, int minute) {
+        if (hour < 0 || hour > 23) {
+            log.error("Invalid hour: {}", hour);
+            return false;
+        }
+        if (minute < 0 || minute > 59) {
+            log.error("Invalid minute: {}", minute);
+            return false;
+        }
+        return true;
+    }
+
 }

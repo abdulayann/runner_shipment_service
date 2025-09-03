@@ -4,11 +4,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Setter
-public class HaulagePoint implements Serializable {
-    private HaulageParty haulageParty;
-    private List<HaulageDate> dates;
+public class HaulagePartyDto implements Serializable {
+   private HaulageParty haulageParty;
+   private LocalDateTime containerCutOff;
 }

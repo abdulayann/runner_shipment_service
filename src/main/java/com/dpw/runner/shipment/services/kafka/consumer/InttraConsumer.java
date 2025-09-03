@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
-import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraEventResponse;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
-import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,18 +41,20 @@ public class InttraConsumer {
             autoStartup = "#{'${bridge.inttra.consumer-auto-startup}'}",
             containerFactory = "bridgeServiceContainerFactory")
     public void consume(@Payload String message,
-            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-            @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset,
-            @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
-            @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String transactionId,
-            Acknowledgment acknowledgment) {
+                        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+                        @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+                        @Header(KafkaHeaders.OFFSET) long offset,
+                        @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
+                        @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String transactionId,
+                        Acknowledgment acknowledgment) {
 
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);
         try {
-            InttraEventResponse inttraEventResponse = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), InttraEventResponse.class);
-
-            log.info("{} | Passed", LoggerEvent.BRIDGE_SERVICE_INTTRA_INTEGRATION);
+            InttraEventDto inttraEventDto = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), InttraEventDto.class);
+            if ("CarrierBooking".equals(inttraEventDto.getEntityType())) {
+                carrierBookingService.updateCarrierDataToBooking(inttraEventDto.getCarrierBooking());
+            }
+            log.info("{} entityType: {}| Passed", inttraEventDto.getEntityType(), LoggerEvent.BRIDGE_SERVICE_INTTRA_INTEGRATION);
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.BRIDGE_SERVICE_INTTRA_INTEGRATION, message, ex.getLocalizedMessage());
         } finally {
