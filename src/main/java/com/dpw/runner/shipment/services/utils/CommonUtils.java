@@ -42,6 +42,9 @@ import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -2859,6 +2862,8 @@ public class CommonUtils {
         } else if (value instanceof Packing) {
             // Handle single Packing object
             return modelMapper.map(value, PackingResponse.class);
+        } else if (value instanceof SailingInformation) {
+            return modelMapper.map(value, SailingInformationResponse.class);
         } else if (value instanceof List<?>) {
             return mapListToDTO(value);
         } else if (value instanceof Set) {
@@ -2997,6 +3002,12 @@ public class CommonUtils {
             }.getType());
         } else if (firstElement instanceof ShipmentOrder) {
             return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof CarrierRouting) {
+            return modelMapper.map(value, new TypeToken<List<CarrierRoutingResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof CommonContainers) {
+            return modelMapper.map(value, new TypeToken<List<CommonContainerResponse>>() {
             }.getType());
         }
         return checkForTriangulationPartnerList(value, list);

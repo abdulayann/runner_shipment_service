@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
@@ -44,6 +46,8 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
@@ -51,6 +55,8 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -61,11 +67,14 @@ import org.springframework.util.CollectionUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -87,9 +96,11 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final INotificationService notificationService;
     private final IV1Service iv1Service;
     private final CarrierBookingUtil carrierBookingUtil;
+    private final MasterDataUtils masterDataUtils;
+    private final ExecutorService executorServiceMasterData;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
@@ -98,6 +109,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.notificationService = notificationService;
         this.iv1Service = iv1Service;
         this.carrierBookingUtil = carrierBookingUtil;
+        this.masterDataUtils = masterDataUtils;
+        this.executorServiceMasterData = executorServiceMasterData;
     }
 
     @Override
@@ -111,10 +124,14 @@ public class CarrierBookingService implements ICarrierBookingService {
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
             //read only fields
             SailingInformation sailingInformation = carrierBookingEntity.getSailingInformation();
+            if (Objects.isNull(sailingInformation)) {
+                sailingInformation = new SailingInformation();
+            }
             sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
             sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
             sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
             sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            carrierBookingEntity.setSailingInformation(sailingInformation);
         }
         carrierBookingEntity.setCarrierRoutingList(null);// we will get it from carrier
         carrierBookingEntity.setLoadedContainerDropOffDetails(null); // we will get it from carrier
@@ -136,7 +153,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         if (StringUtility.isNotEmpty(v1TenantSettingsResponse.getBookingPrefix())) {
             prefix = v1TenantSettingsResponse.getBookingPrefix();
         }
-        if (v1TenantSettingsResponse.getBookingNumberGeneration() == CarrierBookingGenerationType.Serial.getValue()) {
+        if (v1TenantSettingsResponse.getBookingNumberGeneration() != null && v1TenantSettingsResponse.getBookingNumberGeneration() == CarrierBookingGenerationType.Serial.getValue()) {
             //get total count of carrier booking for that tenant + 1, prefix+count
             Long totalCarrierBookings = carrierBookingDao.getTotalCarrierBookings();
             carrierBookingEntity.setBookingNo(prefix + totalCarrierBookings + 1);
@@ -297,6 +314,50 @@ public class CarrierBookingService implements ICarrierBookingService {
         setCarrierRoutings(inttraCarrierBookingEventDto, carrierBooking);
         setContainerEmptyAndDropOffLocationDetails(inttraCarrierBookingEventDto, carrierBooking);
         carrierBookingDao.save(carrierBooking);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getAllMasterData(Long carrierBookingId) {
+        String responseMsg;
+        try {
+            Optional<CarrierBooking> carrierBookingOptional = carrierBookingDao.findById(carrierBookingId);
+            if (carrierBookingOptional.isEmpty()) {
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            CarrierBooking carrierBooking = carrierBookingOptional.get();
+            long start = System.currentTimeMillis();
+            List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(CarrierBooking.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
+            includeColumns.addAll(CarrierBookingConstants.LIST_INCLUDE_COLUMNS);
+            CarrierBookingResponse carrierBookingResponse = (CarrierBookingResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new CarrierBookingResponse());
+            log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
+            Map<String, Object> response = fetchAllMasterDataByKey(carrierBookingResponse);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
+        FieldClassDto fieldClassDto = new FieldClassDto();
+        fieldClassDto.setClazz(clazz);
+        fieldClassDto.setFieldRef(parentref);
+        return fieldClassDto;
+    }
+
+    public Map<String, Object> fetchAllMasterDataByKey(CarrierBookingResponse carrierBookingResponse) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllMasterDataInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllUnlocationDataInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllCarrierDataInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllCommodityTypesInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllContainerTypesInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carrierBookingMasterDataHelper.addAllVesselDataInSingleCall(carrierBookingResponse, masterDataResponse)), executorServiceMasterData);
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, commodityTypesFuture, containerTypeFuture, vesselsFuture).join();
+
+        return masterDataResponse;
     }
 
     private void setCarrierRoutings(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
