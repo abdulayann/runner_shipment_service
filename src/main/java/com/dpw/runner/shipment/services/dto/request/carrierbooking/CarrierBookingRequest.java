@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -26,7 +27,7 @@ public class CarrierBookingRequest implements Serializable {
     @NotBlank(message = "Entity type can not be empty")
     private String entityType;
     @NotNull(message = "Entity Id can not be null")
-    @Size(min = 1, message = "Entity id can not be zero/negative")
+    @Min(value = 1, message = "Entity id can not be zero/negative")
     private Long entityId;
     @NotBlank(message = "Entity Number can not be empty")
     private String entityNumber;
@@ -55,7 +56,7 @@ public class CarrierBookingRequest implements Serializable {
     private PartiesRequest forwardingAgent;
     private PartiesRequest pickupFrom;
     private PartiesRequest deliveryTo;
-    private SailingInformationRequest sailingInformationRequest;
+    private SailingInformationRequest sailingInformation;
     private List<PartiesRequest> additionalParties;
     private List<CommonContainerRequest> containersList;
     private List<ReferenceNumberRequest> referenceNumbersList;

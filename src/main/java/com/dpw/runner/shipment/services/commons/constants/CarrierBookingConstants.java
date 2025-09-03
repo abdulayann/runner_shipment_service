@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,8 @@ public class CarrierBookingConstants {
     public static final String EMPTY_PICKUP_DATE = "EmptyPickupDate";
     public static final String HAULAGE_PARTY = "haulageParty";
     public static final String MAIN_CARRIAGE = "MainCarriage";
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation

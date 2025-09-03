@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommonContainerResponse {
+public class CommonContainerResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy / BaseEntity
 

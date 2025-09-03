@@ -44,5 +44,7 @@ public interface ICarrierBookingService {
     void delete(Long id);
 
     void updateCarrierDataToBooking(InttraCarrierBookingEventDto inttraCarrierBookingEventDto);
+
+    ResponseEntity<IRunnerResponse> getAllMasterData(Long shipmentId);
 }
 

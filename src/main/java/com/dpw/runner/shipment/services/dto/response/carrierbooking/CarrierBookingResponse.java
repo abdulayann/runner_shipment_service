@@ -45,8 +45,8 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private PartiesResponse forwardingAgent;
     private PartiesResponse pickupFrom;
     private PartiesResponse deliveryTo;
-    private SailingInformationResponse sailingInformationResponse;
-    private ShippingInstructionResponse shippingInstructionResponse;
+    private SailingInformationResponse sailingInformation;
+    private ShippingInstructionResponse shippingInstruction;
     private List<PartiesResponse> additionalParties;
     private List<CommonContainerResponse> containersList;
     private List<ReferenceNumberResponse> referenceNumbersList;
