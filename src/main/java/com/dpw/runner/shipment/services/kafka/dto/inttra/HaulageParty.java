@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class Party implements Serializable {
+public class HaulageParty implements Serializable {
     private String partyRole;
     private String partyINTTRACompanyId;
     private String partyAlias;

@@ -12,15 +12,29 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBooki
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.DateInfo;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.Equipment;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.Haulage;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.HaulageDate;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.HaulageParty;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.HaulagePartyDto;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.HaulagePoint;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -38,11 +52,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
@@ -216,6 +236,231 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingDao.delete(id);
         log.info("CarrierBookingService.delete() successful with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
+    }
+
+    @Override
+    public void updateCarrierDataToBooking(InttraCarrierBookingEventDto inttraCarrierBookingEventDto) {
+        //update the details from response to carrier booking
+        Map<String, Reference> references = createReferenceMap(inttraCarrierBookingEventDto.getReferences());
+        Reference reference = references.get(CarrierBookingConstants.CR_BOOKING_ID);
+        if (Objects.isNull(reference)) {
+            log.info("Received empty cr booking id from inttra");
+            return;
+        }
+        CarrierBooking carrierBooking = carrierBookingDao.findByBookingNo(reference.getReferenceValue());
+        if (Objects.isNull(carrierBooking)) {
+            log.info("Received invalid carrier booking no from intrra {}", reference.getReferenceValue());
+            return;
+        }
+        String bookingResponseType = inttraCarrierBookingEventDto.getBookingResponseType();
+        if (StringUtility.isNotEmpty(bookingResponseType)) {
+            CarrierBookingStatus carrierBookingStatus = getCarrierBookingStatus(bookingResponseType);
+            carrierBooking.setStatus(carrierBookingStatus);
+        }
+        carrierBooking.setCarrierBookingNo(inttraCarrierBookingEventDto.getCarrierReferenceNumber());
+        DateInfo vgmDueDate = inttraCarrierBookingEventDto.getVgmDueDate();
+        if (Objects.nonNull(vgmDueDate)) {
+            String dueDate = vgmDueDate.getDateValue();
+            carrierBooking.getSailingInformation().setVerifiedGrossMassCutoff(commonUtils.convertToLocalDateTimeFromInttra(dueDate, vgmDueDate.getDateFormat()));
+        } else {
+            carrierBooking.getSailingInformation().setVerifiedGrossMassCutoff(null);
+        }
+        DateInfo siDueDate = inttraCarrierBookingEventDto.getSiDueDate();
+        if (Objects.nonNull(siDueDate)) {
+            String dueDate = siDueDate.getDateValue();
+            carrierBooking.getSailingInformation().setShipInstructionCutoff(commonUtils.convertToLocalDateTimeFromInttra(dueDate, siDueDate.getDateFormat()));
+        } else {
+            carrierBooking.getSailingInformation().setShipInstructionCutoff(null);
+        }
+        List<String> generalComments = inttraCarrierBookingEventDto.getGeneralComments();
+        if (!CollectionUtils.isEmpty(generalComments)) {
+            carrierBooking.setCarrierComment(generalComments.get(0));
+        } else {
+            carrierBooking.setCarrierComment(null);
+        }
+        Reference carrierBlNo = references.get(CarrierBookingConstants.CARRIER_BL_NO);
+        if (Objects.nonNull(carrierBlNo)) {
+            carrierBooking.setCarrierBlNo(carrierBlNo.getReferenceValue());
+        } else {
+            carrierBooking.setCarrierBlNo(null);
+        }
+        setCarrierRoutings(inttraCarrierBookingEventDto, carrierBooking);
+        setContainerEmptyAndDropOffLocationDetails(inttraCarrierBookingEventDto, carrierBooking);
+        carrierBookingDao.save(carrierBooking);
+    }
+
+    private void setCarrierRoutings(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
+        List<TransportLeg> transportLegs = inttraCarrierBookingEventDto.getTransportLegs();
+        if (!CollectionUtils.isEmpty(transportLegs)) {
+            List<CarrierRouting> carrierRoutings = new ArrayList<>();
+            populateMainCarriageDataToCarrierBooking(transportLegs, carrierBooking);
+
+            int sequence = 1;
+            for (TransportLeg transportLeg : transportLegs) {
+                CarrierRouting carrierRouting = new CarrierRouting();
+                carrierRouting.setSequence(sequence);
+                carrierRouting.setCarriageType(getRoutingCarriage(transportLeg.getStage()));
+                carrierRouting.setTransportMode(getTransportMode(transportLeg.getMode()));
+                carrierRouting.setVesselName(transportLeg.getVesselName());
+                carrierRouting.setVoyageNo(transportLeg.getConveyanceNumber());
+                Location startLocation = transportLeg.getStartLocation();
+                Location endLocation = transportLeg.getEndLocation();
+                if (Objects.nonNull(startLocation)) {
+                    carrierRouting.setPol(startLocation.getIdentifierValue());
+                }
+                if (Objects.nonNull(endLocation)) {
+                    carrierRouting.setPod(endLocation.getIdentifierValue());
+                }
+                List<LocationDate> startLocationLocationDates = startLocation.getLocationDates();
+                List<LocationDate> endLocationLocationDates = endLocation.getLocationDates();
+
+                carrierRouting.setEta(getETA(endLocationLocationDates));
+                carrierRouting.setEtd(getETD(startLocationLocationDates));
+                carrierRoutings.add(carrierRouting);
+                sequence++;
+            }
+            carrierBooking.setCarrierRoutingList(carrierRoutings);
+        } else {
+            carrierBooking.setCarrierRoutingList(new ArrayList<>());
+        }
+    }
+
+    private void setContainerEmptyAndDropOffLocationDetails(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
+        Map<String, Object> loadedContainerDropOff = new HashMap<>();
+        Map<String, Object> emptyContainerPickup = new HashMap<>();
+        List<Equipment> equipments = inttraCarrierBookingEventDto.getEquipments();
+        if (!CollectionUtils.isEmpty(equipments)) {
+            Equipment equipment = equipments.get(0);
+            Haulage haulage = equipment.getHaulage();
+            if (Objects.nonNull(haulage)) {
+                List<HaulagePoint> haulagePoints = haulage.getPoints();
+                if (!CollectionUtils.isEmpty(haulagePoints)) {
+                    setEmptyAndDropOffLocations(haulagePoints, loadedContainerDropOff, emptyContainerPickup);
+                }
+            }
+        }
+        carrierBooking.setLoadedContainerDropOffDetails(loadedContainerDropOff);
+        carrierBooking.setEmptyContainerPickupDetails(emptyContainerPickup);
+    }
+
+    private void setEmptyAndDropOffLocations(List<HaulagePoint> haulagePoints, Map<String, Object> loadedContainerDropOff, Map<String, Object> emptyContainerPickup) {
+        for (HaulagePoint haulagePoint : haulagePoints) {
+            HaulageParty haulageParty = haulagePoint.getHaulageParty();
+            HaulagePartyDto haulagePartyDto = new HaulagePartyDto();
+            if (CarrierBookingConstants.FULL_DROP_OFF.equalsIgnoreCase(haulageParty.getPartyName())) {
+                haulagePartyDto.setHaulageParty(haulageParty);
+                List<HaulageDate> haulageDates = haulagePoint.getDates();
+                Optional<HaulageDate> closingDate = haulageDates.stream()
+                        .filter(haulageDate -> CarrierBookingConstants.CLOSING_DATE.equalsIgnoreCase(haulageDate.getHaulageDateType()))
+                        .findFirst();
+                closingDate.ifPresent(haulageDate -> haulagePartyDto.setContainerCutOff(commonUtils.convertToLocalDateTimeFromInttra(haulageDate.getDateValue(), haulageDate.getDateFormat())));
+                loadedContainerDropOff.put(CarrierBookingConstants.HAULAGE_PARTY, haulagePartyDto);
+            } else if (CarrierBookingConstants.EMPTY_PICK_UP.equalsIgnoreCase(haulageParty.getPartyName())) {
+                haulagePartyDto.setHaulageParty(haulageParty);
+                List<HaulageDate> haulageDates = haulagePoint.getDates();
+                Optional<HaulageDate> emptyPickupDate = haulageDates.stream()
+                        .filter(haulageDate -> CarrierBookingConstants.EMPTY_PICKUP_DATE.equalsIgnoreCase(haulageDate.getHaulageDateType()))
+                        .findFirst();
+                emptyPickupDate.ifPresent(haulageDate -> haulagePartyDto.setContainerCutOff(commonUtils.convertToLocalDateTimeFromInttra(haulageDate.getDateValue(), haulageDate.getDateFormat())));
+                emptyContainerPickup.put(CarrierBookingConstants.HAULAGE_PARTY, haulagePartyDto);
+            }
+        }
+    }
+
+    private void populateMainCarriageDataToCarrierBooking(List<TransportLeg> transportLegs, CarrierBooking carrierBooking) {
+        List<TransportLeg> mainCarriageList = transportLegs.stream()
+                .filter(routing -> CarrierBookingConstants.MAIN_CARRIAGE.equalsIgnoreCase(routing.getStage()))
+                .toList();
+        TransportLeg firstLeg = mainCarriageList.get(0);
+        TransportLeg lastLeg = mainCarriageList.get(mainCarriageList.size() - 1);
+        carrierBooking.getSailingInformation().setVesselName(firstLeg.getVesselName());
+        carrierBooking.getSailingInformation().setVoyageNo(firstLeg.getConveyanceNumber());
+
+        Location startLocation = firstLeg.getStartLocation();
+        if (Objects.nonNull(startLocation)) {
+            carrierBooking.getSailingInformation().setPol(startLocation.getIdentifierValue());
+            List<LocationDate> etd = startLocation.getLocationDates();
+            carrierBooking.getSailingInformation().setEtd(getETD(etd));
+        }
+
+        Location endLocation = lastLeg.getEndLocation();
+        if (Objects.nonNull(endLocation)) {
+            carrierBooking.getSailingInformation().setPod(endLocation.getIdentifierValue());
+            List<LocationDate> eta = endLocation.getLocationDates();
+            carrierBooking.getSailingInformation().setEtd(getETD(eta));
+        }
+    }
+
+
+    private LocalDateTime getETD(List<LocationDate> startLocationLocationDates) {
+        if (CollectionUtils.isEmpty(startLocationLocationDates)) {
+            return null;
+        }
+        return startLocationLocationDates.stream()
+                .filter(ld -> "EstimatedDepartureDate".equals(ld.getType()))
+                .map(ld -> commonUtils.convertToLocalDateTimeFromInttra(ld.getDateValue(), ld.getDateFormat()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private LocalDateTime getETA(List<LocationDate> endLocationLocationDates) {
+        if (CollectionUtils.isEmpty(endLocationLocationDates)) {
+            return null;
+        }
+        return endLocationLocationDates.stream()
+                .filter(ld -> "EstimatedArrivalDate".equals(ld.getType()))
+                .map(ld -> commonUtils.convertToLocalDateTimeFromInttra(ld.getDateValue(), ld.getDateFormat()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public CarrierBookingStatus getCarrierBookingStatus(String type) {
+        return switch (type) {
+            case "ConditionallyAccepted" -> CarrierBookingStatus.ConditionallyAccepted;
+            case "Rejected" -> CarrierBookingStatus.RejectedByINTTRA;
+            case "Accepted" -> CarrierBookingStatus.AcceptedByINTTRA;
+            case "Confirmed" -> CarrierBookingStatus.ConfirmedByCarrier;
+            case "Declined" -> CarrierBookingStatus.DeclinedByCarrier;
+            case "Replaced" -> CarrierBookingStatus.ReplacedByCarrier;
+            case "Cancelled", "Canceled" -> CarrierBookingStatus.CancelledByCarrier;
+            case "ChangeBookingRequested" -> CarrierBookingStatus.Changed;
+            case "NewBookingRequested" -> CarrierBookingStatus.Requested;
+            default -> CarrierBookingStatus.PendingFromCarrier;
+        };
+    }
+
+    public RoutingCarriage getRoutingCarriage(String stage) {
+        return switch (stage) {
+            case "MainCarriage" -> RoutingCarriage.MAIN_CARRIAGE;
+            case "PreCarriage" -> RoutingCarriage.PRE_CARRIAGE;
+            case "OnCarriage" -> RoutingCarriage.ON_CARRIAGE;
+            default -> null;
+        };
+    }
+
+    public String getTransportMode(String stage) {
+        return switch (stage) {
+            case "MaritimeTransport" -> CarrierBookingConstants.TRANSPORT_MODE_SEA;
+            case "RailTransport" -> CarrierBookingConstants.TRANSPORT_MODE_RAIL;
+            case "RoadTransport" -> CarrierBookingConstants.TRANSPORT_MODE_ROAD;
+            case "InlandWaterTransport" -> CarrierBookingConstants.TRANSPORT_MODE_INLAND_WATER;
+            case "Rail_WaterTransport" -> CarrierBookingConstants.TRANSPORT_MODE_RAIL_WATER;
+            case "Road_WaterTransport" -> CarrierBookingConstants.TRANSPORT_MODE_ROAD_WATER;
+            default -> null;
+        };
+    }
+
+    public Map<String, Reference> createReferenceMap(List<Reference> references) {
+        if (references == null) {
+            return new HashMap<>();
+        }
+
+        return references.stream()
+                .collect(Collectors.toMap(
+                        Reference::getReferenceType,
+                        Function.identity(),
+                        (existing, replacement) -> replacement  // Handle duplicates by keeping the last one
+                ));
     }
 
     private void sendNotification(CarrierBooking carrierBooking) {

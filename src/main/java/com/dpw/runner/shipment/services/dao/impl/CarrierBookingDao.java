@@ -47,4 +47,14 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     public Long getTotalCarrierBookings() {
         return carrierBookingRepository.getTotalCarrierBookings(TenantContext.getCurrentTenant().longValue());
     }
+
+    @Override
+    public CarrierBooking save(CarrierBooking carrierBooking) {
+        return carrierBookingRepository.save(carrierBooking);
+    }
+
+    @Override
+    public CarrierBooking findByBookingNo(String bookingNo) {
+        return carrierBookingRepository.findByBookingNo(bookingNo);
+    }
 }

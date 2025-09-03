@@ -5,6 +5,21 @@ import java.util.List;
 import java.util.Map;
 
 public class CarrierBookingConstants {
+    public static final String CR_BOOKING_ID = "ShipmentID";
+    public static final String CARRIER_BL_NO = "BillOfLadingNumber";
+    public static final String TRANSPORT_MODE_SEA = "Sea";
+    public static final String TRANSPORT_MODE_ROAD = "Road";
+    public static final String TRANSPORT_MODE_RAIL = "Rail";
+    public static final String TRANSPORT_MODE_INLAND_WATER = "Inland";
+    public static final String TRANSPORT_MODE_RAIL_WATER = "Rail Water";
+    public static final String TRANSPORT_MODE_ROAD_WATER = "Road Water";
+    public static final String FULL_DROP_OFF = "FullDropOFF";
+    public static final String EMPTY_PICK_UP = "EmptyPickUp";
+    public static final String CLOSING_DATE = "ClosingDate";
+    public static final String EMPTY_PICKUP_DATE = "EmptyPickupDate";
+    public static final String HAULAGE_PARTY = "haulageParty";
+    public static final String MAIN_CARRIAGE = "MainCarriage";
+
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation
     }

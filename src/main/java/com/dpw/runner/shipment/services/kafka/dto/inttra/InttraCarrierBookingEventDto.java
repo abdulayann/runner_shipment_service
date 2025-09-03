@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class InttraEventResponse implements Serializable {
+public class InttraCarrierBookingEventDto implements Serializable {
     private String bookingState;
     private String senderID;
     private String payloadID;
@@ -29,7 +29,7 @@ public class InttraEventResponse implements Serializable {
     private List<String> generalComments;
     private List<String> carrierTermsAndConditions;
     private List<Reference> references;
-    private List<Party> parties;
+    private List<HaulageParty> parties;
     private List<TransportLeg> transportLegs;
     private List<PackageDetail> packageDetails;
     private List<Equipment> equipments;

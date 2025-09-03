@@ -15,6 +15,8 @@ public interface ICarrierBookingDao {
     CarrierBooking update(Long id, CarrierBooking request);
     void delete(Long id);
     Long getTotalCarrierBookings();
+    CarrierBooking save(CarrierBooking carrierBooking);
+    CarrierBooking findByBookingNo(String referenceValue);
 }
 
 
