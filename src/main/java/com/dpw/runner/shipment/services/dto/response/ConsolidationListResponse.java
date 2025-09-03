@@ -144,4 +144,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private Boolean reefer = false;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

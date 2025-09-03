@@ -721,6 +721,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         consolidationValidationV3Util.checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
+        consolidationValidationV3Util.validateControlledFields(consolidationDetails);
 
         if(consolidationDetails.getCarrierDetails() != null) {
             if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
@@ -2552,6 +2553,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setJobType(console.getConsolidationType());
         shipmentDetails.setBookingAgent(console.getBookingAgent());
         serviceTypeAutoPopulation(console, shipmentDetails);
+        shipmentDetails.setControlled(console.getControlled());
+        shipmentDetails.setControlledReferenceNumber(console.getControlledReferenceNumber());
 
         if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
