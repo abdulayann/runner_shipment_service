@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -71,4 +72,19 @@ public class ShippingInstructionsController {
         service.deleteShippingInstructions(id);
         return ResponseHelper.buildSuccessResponse();
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) service.getAllMasterData(shipmentId);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error retrieving master data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }
