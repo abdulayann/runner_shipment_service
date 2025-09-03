@@ -2068,8 +2068,9 @@ public class MasterDataUtils{
     }
 
     public String getVesselName(String code) {
-        if (StringUtility.isEmpty(code))
+        if (StringUtility.isEmpty(code)) {
             return null;
+        }
         var resp = fetchInBulkVessels(Set.of(code));
         return resp.containsKey(code) ? resp.get(code).getName() : null;
     }
