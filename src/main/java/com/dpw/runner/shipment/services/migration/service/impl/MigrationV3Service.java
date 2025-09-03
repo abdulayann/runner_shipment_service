@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -35,10 +37,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepo
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -113,6 +112,9 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private MDMServiceAdapter mdmServiceAdapter;
 
+    @Autowired
+    private ShipmentSettingsDao shipmentSettingsDao;
+
 
     private Map<String, BigDecimal> initCodeTeuMap() {
         return migrationUtil.initCodeTeuMap();
@@ -120,15 +122,22 @@ public class MigrationV3Service implements IMigrationV3Service {
 
 
     @Override
-    public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId, Integer count) {
+    public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId, Integer count) throws RunnerException {
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
+        if (shipmentSettingsDetails.isPresent()){
+            throw new RunnerException("Another migration is in progress. Please try again later.");
+        }
+        shipmentSettingsDao.updateMigrationRunningFlag(true, tenantId);
 
         trxExecutor.runInAsync(() -> {
             try {
                 var response = migrateV2ToV3(tenantId, consolId, bookingId, count);
                 log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V2 to V3", false);
+                shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
             } catch (Exception e) {
                 log.error("Migration V2 to V3 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
+                shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Migration From V2 to V3", true);
                 throw new IllegalArgumentException(e);
             }
@@ -138,16 +147,23 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count) {
+    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count) throws RunnerException {
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
+        if (shipmentSettingsDetails.isPresent()){
+            throw new RunnerException("Another migration is in progress. Please try again later.");
+        }
+        shipmentSettingsDao.updateMigrationRunningFlag(true, tenantId);
 
         trxExecutor.runInAsync(() -> {
             try {
                 var response = migrateV3ToV2(tenantId, bookingId, count);
                 log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
+                shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
             } catch (Exception e) {
                 log.error("Migration V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Migration From V3 to V2", true);
+                shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
                 throw new IllegalArgumentException(e);
             }
             return null;

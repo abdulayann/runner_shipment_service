@@ -6,7 +6,9 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,4 +31,20 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
 
     @Query(value = "SELECT customised_sequence FROM shipment_setting LIMIT 1", nativeQuery = true)
     Boolean getCustomisedSequence();
+
+    @Query(value = "SELECT * FROM shipment_setting WHERE is_migration_running = true FOR UPDATE", nativeQuery = true)
+    Optional<ShipmentSettingsDetails> checkMigrationRunning();
+
+    @Query(value = "SELECT * FROM shipment_setting WHERE is_restore_running = true FOR UPDATE", nativeQuery = true)
+    Optional<ShipmentSettingsDetails> checkRestoreRunning();
+
+    @Transactional
+    @Modifying
+    @Query(value = "Update shipment_setting Set is_migration_running = ?1 where tenant_id=?2", nativeQuery = true)
+    void updateIsMigrationRunningFlag(Boolean isMigrationRunning, Integer tenantId);
+
+    @Transactional
+    @Modifying
+    @Query(value = "Update shipment_setting Set is_restore_running = ?1 where tenant_id=?2", nativeQuery = true)
+    void updateIsRestoreRunningFlag(Boolean isMigrationRunning, Integer tenantId);
 }
