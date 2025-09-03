@@ -23,7 +23,7 @@ public interface ICarrierBookingService {
      * @param id booking id
      * @return CarrierBookingResponse
      */
-    CarrierBookingResponse findById(Long id);
+    CarrierBookingResponse retrieveById(Long id);
 
     ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
 
