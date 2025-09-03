@@ -1,24 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER_INTERNAL_CALL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -31,36 +12,16 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.response.AttachedShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerBeforeSaveRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -78,12 +39,7 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
@@ -93,39 +49,10 @@ import com.dpw.runner.shipment.services.service_bus.model.ContainerUpdateRequest
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
@@ -140,6 +67,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -502,6 +448,12 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
+        return deleteBulk(containerRequestList, module, false);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList, String module, boolean isForceDelete) throws RunnerException {
         // Validate that the request contains valid and necessary container IDs
         containerValidationUtil.validateDeleteBulkRequest(containerRequestList);
 
@@ -521,7 +473,18 @@ public class ContainerV3Service implements IContainerV3Service {
         containerValidationUtil.validateOpenForAttachment(containersToDelete);
 
         // Validate that the containers are not assigned to any active shipment or packing before deletion
-         validateNoAssignments(containerIds, module);
+        if(!isForceDelete)
+            validateNoAssignments(containerIds, module);
+        else {
+            List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
+            if(!listIsNullOrEmpty(shipmentsContainersMappingList)) {
+                List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentsContainersMappingList.stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toSet()));
+                // Validate shipment type for container operation
+                containerValidationUtil.validateShipmentTypeForContainerOperation(containersToDelete, shipmentDetails, shipmentsContainersMappingList, module);
+                List<Packing> packings = packingDao.findByContainerIdIn(containerIds);
+                bulkUnAssign(shipmentDetails, containerIds, packings, Boolean.FALSE, Boolean.TRUE);
+            }
+        }
 
         // Collect all unique shipment IDs that are associated with the containers to delete
         List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
@@ -563,6 +526,77 @@ public class ContainerV3Service implements IContainerV3Service {
         return BulkContainerResponse.builder()
                 .message(prepareBulkDeleteMessage(containersToDelete))
                 .build();
+    }
+
+    @Override
+    public void bulkUnAssign(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Packing> shipmentPackings,
+                             boolean isFCLDelete, boolean isForcedDetach) throws RunnerException {
+        // Process each container using the internal methods of unAssignContainers one by one
+        // Collect all results for batch processing
+        Map<String, List<Containers>> containersToSaveMap = new HashMap<>();
+        List<List<Long>> allShipmentIdsForDetachment = new ArrayList<>();
+        List<UnAssignContainerParams> unAssignContainerParamsList =  new ArrayList<>();
+
+        for (Long containerId : containerIds) {
+            // Create UnAssignContainerRequest for this container
+            UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
+            unAssignRequest.setContainerId(containerId);
+
+            // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
+            Map<Long, List<Long>> shipmentPackIds = getShipmentPackIds(shipmentDetails, containerId, shipmentPackings);
+
+            unAssignRequest.setShipmentPackIds(shipmentPackIds);
+            // Step 2: Create UnAssignContainerParams for this operation
+            UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+            self.unAssignContainers(unAssignRequest, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap,
+                                    allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
+        }
+        self.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isFCLDelete);
+        updateShipmentSummary(unAssignContainerParamsList);
+    }
+
+    private static Map<Long, List<Long>> getShipmentPackIds(List<ShipmentDetails> shipmentDetails, Long containerId, List<Packing> shipmentPackings) {
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        for (ShipmentDetails ship : shipmentDetails) {
+            List<Long> shipContIds = ship.getContainersList().stream()
+                    .filter(container -> container != null && container.getId() != null)
+                    .map(Containers::getId).toList();
+            if (shipContIds.contains(containerId)) {
+                shipmentPackIds.put(ship.getId(), new ArrayList<>());
+            }
+        }
+        for (Packing packing : shipmentPackings) {
+            if (packing.getContainerId().equals(containerId)) {
+                Long shipmentId = packing.getShipmentId();
+                if (shipmentPackIds.containsKey(shipmentId)) {
+                    shipmentPackIds.get(shipmentId).add(packing.getId());
+                }
+            }
+        }
+        return shipmentPackIds;
+    }
+
+    private void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
+        if (unAssignContainerParamsList == null || unAssignContainerParamsList.isEmpty()) {
+            return;
+        }
+        for(UnAssignContainerParams unAssignContainerParams: unAssignContainerParamsList) {
+            Set<Long> shipmentIds = unAssignContainerParams.getFclOrFtlShipmentIds();
+            Map<Long, ShipmentDetails> shipmentDetailsMap = unAssignContainerParams.getShipmentDetailsMap();
+
+            if (shipmentIds == null || shipmentIds.isEmpty() ||
+                    shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
+                continue;
+            }
+
+            for (Long shipmentId : shipmentIds) {
+
+                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
+                if (shipmentDetails != null) {
+                    shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+                }
+            }
+        }
     }
 
     private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
@@ -649,7 +683,8 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void validateAndProcessDGConsolidation(List<ContainerV3Request> containerRequestList, ConsolidationDetails consolidationDetails) throws RunnerException {
+    private void validateAndProcessDGConsolidation(List<ContainerV3Request> containerRequestList,
+                                                   ConsolidationDetails consolidationDetails) throws RunnerException {
         if (TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             consolidationDetails.setHazardous(true);
             if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
@@ -2056,7 +2091,8 @@ public class ContainerV3Service implements IContainerV3Service {
                 )));
         Containers container = fetchDataForUnAssignContainer(request, unAssignContainerParams);
         containerValidationUtil.validateBeforeUnAssignContainer(unAssignContainerParams, request, module, isForcedDetach);
-        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams, unassignedContainersToSave, isForcedDetach);
+        List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, unAssignContainerParams,
+                                                                                    unassignedContainersToSave, isForcedDetach);
         if (Boolean.TRUE.equals(allowPackageReassignment) || Boolean.TRUE.equals(isForcedDetach)) {
             unassignedContainersToSave.computeIfAbsent("containersToSave", k -> new ArrayList<>()).add(container);
             shipmentIdsForDetachmentList.add(shipmentIdsForDetachment);
@@ -2110,7 +2146,10 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, UnAssignContainerParams unAssignContainerParams, Map<String, List<Containers>> unassignedContainersToSave,Boolean isForcedDetach) throws RunnerException {
+    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container,
+                                                             UnAssignContainerParams unAssignContainerParams,
+                                                             Map<String, List<Containers>> unassignedContainersToSave,
+                                                             Boolean isForcedDetach) throws RunnerException {
         List<Long> shipmentIdsForDetachment = new ArrayList<>();
 
         for (Map.Entry<Long, ShipmentDetails> entry : unAssignContainerParams.getShipmentDetailsMap().entrySet()) {
@@ -2118,7 +2157,8 @@ public class ContainerV3Service implements IContainerV3Service {
             ShipmentDetails shipmentDetails = entry.getValue();
             List<Packing> packingList = unAssignContainerParams.getShipmentPackingMap().get(shipmentId);
             if (request.getShipmentPackIds().containsKey(shipmentId)) { // Shipment came for some/all packs detachment
-                detachPacksAndShipmentFromContainer(request, container, packingList, shipmentIdsForDetachment, shipmentDetails, unAssignContainerParams, unassignedContainersToSave, isForcedDetach);
+                detachPacksAndShipmentFromContainer(request, container, packingList, shipmentIdsForDetachment, shipmentDetails,
+                                                    unAssignContainerParams, unassignedContainersToSave, isForcedDetach);
             } else { // Shipment and its packages remains intact i.e. not being detached
                 addExistingShipmentAndPackagesToContainer(shipmentDetails, container, packingList);
             }
@@ -2126,18 +2166,25 @@ public class ContainerV3Service implements IContainerV3Service {
         containerV3Util.setContainerNetWeight(container); // set container net weight from gross weight and tare weight
         return shipmentIdsForDetachment;
     }
-    private void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container, List<Packing> packingList, List<Long> shipmentIdsForDetachment,
-                                                     ShipmentDetails shipmentDetails, UnAssignContainerParams unAssignContainerParams, Map<String, List<Containers>> unassignedContainersToSave, Boolean isForcedDetach) throws RunnerException {
+
+    private void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container, List<Packing> packingList,
+                                                     List<Long> shipmentIdsForDetachment, ShipmentDetails shipmentDetails,
+                                                     UnAssignContainerParams unAssignContainerParams,
+                                                     Map<String, List<Containers>> unassignedContainersToSave, Boolean isForcedDetach) throws RunnerException {
         Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentDetails.getId()));
         // we are removing all the packages from this shipment, hence container will be detached from shipment (but not for FCL/FTL shipment)
         if (Objects.equals(removePackIds.size(), packingList.size())) {
-            handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment, packingList, removePackIds, unassignedContainersToSave, isForcedDetach);
+            handleUnAssignmentLogicWhenAllPacksAreRemoved(unAssignContainerParams, container, shipmentDetails, shipmentIdsForDetachment,
+                                                            packingList, removePackIds, unassignedContainersToSave, isForcedDetach);
         } else { // only some packages are being removed from container
             handleUnAssignmentLogicWhenOnlyFewPacksAreRemoved(unAssignContainerParams, container, packingList, removePackIds);
         }
     }
-    private void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container, ShipmentDetails shipmentDetails,
-                                                               List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds, Map<String, List<Containers>> unassignedContainersToSave,Boolean isForcedDetach) {
+
+    private void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container,
+                                                               ShipmentDetails shipmentDetails, List<Long> shipmentIdsForDetachment,
+                                                               List<Packing> packingList, Set<Long> removePackIds,
+                                                               Map<String, List<Containers>> unassignedContainersToSave,Boolean isForcedDetach) {
         Long shipmentId = shipmentDetails.getId();
         //add isForceDetach flag
         if(commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()) ) {
@@ -2145,8 +2192,6 @@ public class ContainerV3Service implements IContainerV3Service {
                 shipmentIdsForDetachment.add(shipmentId);
                 unassignedContainersToSave.computeIfAbsent("FCLContainersToRemove", k -> new ArrayList<>()).add(container);
             }else {
-
-
                 container.setGrossWeight(unAssignContainerParams.getOldContainersEntity().getGrossWeight());
                 container.setGrossWeightUnit(unAssignContainerParams.getOldContainersEntity().getGrossWeightUnit());
                 container.setGrossVolume(unAssignContainerParams.getOldContainersEntity().getGrossVolume());
@@ -2169,6 +2214,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         packingList.forEach(e -> e.setContainerId(null));
     }
+
     private void handleUnAssignmentLogicWhenOnlyFewPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container,
                                                                    List<Packing> packingList, Set<Long> removePackIds) throws RunnerException {
         unAssignContainerParams.getRemoveAllPackingIds().addAll(removePackIds);
@@ -2181,6 +2227,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
     }
+
     private void addExistingShipmentAndPackagesToContainer(ShipmentDetails shipmentDetails, Containers container, List<Packing> packingList) throws RunnerException {
         if (Objects.equals(shipmentDetails.getContainerAssignedToShipmentCargo(), container.getId())) { // container linked to this shipment Cargo
             addShipmentCargoToContainer(container, shipmentDetails);
@@ -2191,6 +2238,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
     }
+
     private Containers saveUnAssignContainerResults(List<Long> shipmentIdsForDetachment, Containers container,
                                                     UnAssignContainerParams unAssignContainerParams) {
         if (!listIsNullOrEmpty(unAssignContainerParams.getShipmentIdsForCargoDetachment()))

@@ -140,7 +140,7 @@ class ContainerV3ControllerTest {
 
     Mockito.when(containerV3Service.deleteBulk(requestList, "CONSOLIDATION")).thenReturn(response);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList, false);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
@@ -153,7 +153,7 @@ class ContainerV3ControllerTest {
 
     Mockito.when(containerV3Service.deleteBulk(requestList, "SHIPMENT")).thenReturn(response);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulkFromShipment(requestList);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulkFromShipment(requestList, false);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
