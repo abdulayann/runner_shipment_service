@@ -20,10 +20,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException;
@@ -32,6 +32,8 @@ public interface IContainerV3Service {
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module) throws RunnerException;
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module, boolean isForceDelete) throws RunnerException;
+    void bulkUnAssign(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Packing> shipmentPackings, boolean isFCLDelete, boolean isForcedDetach) throws RunnerException;
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
 

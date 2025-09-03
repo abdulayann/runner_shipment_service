@@ -51,17 +51,7 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -105,24 +95,11 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
@@ -280,6 +257,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.*;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static java.util.stream.Collectors.toMap;
 
 @SuppressWarnings("ALL")
 @Service
@@ -3976,51 +3979,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException("No containers found for detachment from shipment: " + shipmentDetails);
         }
 
-        // Process each container using the internal methods of unAssignContainers one by one
-        // Collect all results for batch processing
-        Map<String, List<Containers>> containersToSaveMap = new HashMap<>();
-        List<List<Long>> allShipmentIdsForDetachment = new ArrayList<>();
-        List<UnAssignContainerParams> unAssignContainerParamsList =  new ArrayList<>();
+        containerV3Service.bulkUnAssign(shipmentDetails, containerIds, shipmentPackings, isFCLDelete, isForcedDetach);
 
-        for (Long containerId : containerIds) {
-            // Create UnAssignContainerRequest for this container
-            UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
-            unAssignRequest.setContainerId(containerId);
-
-            // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
-            Map<Long, List<Long>> shipmentPackIds = getShipmentPackIds(shipmentDetails, containerId, shipmentPackings);
-
-            unAssignRequest.setShipmentPackIds(shipmentPackIds);
-            // Step 2: Create UnAssignContainerParams for this operation
-            UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
-            containerV3Service.unAssignContainers(unAssignRequest, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
-        }
-        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isFCLDelete);
-        updateShipmentSummary(unAssignContainerParamsList);
-
-
-    }
-
-    private static Map<Long, List<Long>> getShipmentPackIds(List<ShipmentDetails> shipmentDetails, Long containerId, List<Packing> shipmentPackings) {
-        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-        for (ShipmentDetails ship : shipmentDetails) {
-            List<Long> shipContIds =  ship.getContainersList().stream()
-                    .filter(container -> container != null && container.getId() != null)
-                    .map(Containers::getId)
-                    .collect(Collectors.toList());
-            if (shipContIds.contains(containerId)) {
-                shipmentPackIds.put(ship.getId(), new ArrayList<>());
-            }
-        }
-        for (Packing packing : shipmentPackings) {
-            if (packing.getContainerId().equals(containerId)) {
-                Long shipmentId = packing.getShipmentId();
-                if (shipmentPackIds.containsKey(shipmentId)) {
-                    shipmentPackIds.get(shipmentId).add(packing.getId());
-                }
-            }
-        }
-        return shipmentPackIds;
     }
 
     private static void extractContainerAndShipmentIds(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Long> shipmentIds) {
@@ -4041,29 +4001,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             // Collect shipment IDs for batch processing
             shipmentIds.add(shipmentDetail.getId());
-        }
-    }
-
-    private void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
-        if (unAssignContainerParamsList == null || unAssignContainerParamsList.isEmpty()) {
-            return;
-        }
-        for(UnAssignContainerParams unAssignContainerParams: unAssignContainerParamsList) {
-            Set<Long> shipmentIds = unAssignContainerParams.getFclOrFtlShipmentIds();
-            Map<Long, ShipmentDetails> shipmentDetailsMap = unAssignContainerParams.getShipmentDetailsMap();
-
-            if (shipmentIds == null || shipmentIds.isEmpty() ||
-                    shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
-                continue;
-            }
-
-            for (Long shipmentId : shipmentIds) {
-
-                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
-                if (shipmentDetails != null) {
-                    shipmentV3Service.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
-                }
-            }
         }
     }
 
