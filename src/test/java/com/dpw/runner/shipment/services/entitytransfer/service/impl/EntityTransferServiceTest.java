@@ -2512,7 +2512,7 @@ class EntityTransferServiceTest extends CommonMocks {
             Set<String> toEmailIds = invocation.getArgument(0);
             toEmailIds.add("toEmail@example.com");
             return null;
-        }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt(), anyBoolean());
+        }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt());
 
         Map<Integer, Object> mockV1Map = new HashMap<>();
         mockV1Map.put(123, new Object());
