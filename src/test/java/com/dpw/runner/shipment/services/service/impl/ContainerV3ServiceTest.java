@@ -1081,7 +1081,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
-        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false);
         assertNotNull(response);
     }
 
@@ -1089,7 +1089,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDeleteBulk2(){
         when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>());
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
-        assertThrows(IllegalArgumentException.class, () ->containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () ->containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1124,7 +1124,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         // Act + Assert
         assertThrows(IllegalArgumentException.class,
-                () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+                () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1137,7 +1137,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getPacks()).thenReturn("2");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToPacking(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1149,7 +1149,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToShipmentCargo(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1162,7 +1162,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToShipment(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
