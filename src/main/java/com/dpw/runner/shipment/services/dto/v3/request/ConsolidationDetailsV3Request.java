@@ -180,4 +180,6 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String incoterms;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }
