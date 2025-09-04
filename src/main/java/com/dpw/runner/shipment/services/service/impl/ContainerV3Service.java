@@ -5,7 +5,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER_INTERNAL_CALL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
@@ -1132,9 +1131,10 @@ public class ContainerV3Service implements IContainerV3Service {
         if (shipmentId == null && consolidationId == null) {
             throw new RunnerException("Please provide shipmentId and consolidationId for containers summary");
         }
+        boolean canFetchDetailsWithoutTenantCheck = CommonUtils.canFetchDetailsWithoutTenantFilter(xSource);
         if (shipmentId != null) {
             List<Containers> containers;
-            if (Objects.equals(xSource, NETWORK_TRANSFER))
+            if (canFetchDetailsWithoutTenantCheck)
                 containers = containerDao.findByShipmentIdWithoutTenantFilter(shipmentId);
             else
                 containers = containerDao.findByShipmentId(shipmentId);
@@ -1142,7 +1142,7 @@ public class ContainerV3Service implements IContainerV3Service {
             return getContainerSummaryResponse(containersList, true, xSource);
         }
         List<Containers> containers;
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (canFetchDetailsWithoutTenantCheck)
             containers = containerDao.findByConsolidationIdWithoutTenantFilter(consolidationId);
         else
             containers = containerDao.findByConsolidationId(consolidationId);
@@ -1206,7 +1206,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .toList();
         if (!CollectionUtils.isEmpty(containersId)) {
             List<Packing> packs;
-            if (Objects.equals(xSource, NETWORK_TRANSFER))
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
                 packs = packingDao.findByContainerIdInWithoutTenantFilter(containersId);
             else
                 packs = packingDao.findByContainerIdIn(containersId);
@@ -1292,7 +1292,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
             if (!isShipment) {
                 List<ShipmentsContainersMapping> shipmentsContainersMappings;
-                if (Objects.equals(xSource, NETWORK_TRANSFER))
+                if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
                     shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdInWithoutTenantFilter(containersList.stream().map(BaseEntity::getId).toList());
                 else
                     shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containersList.stream().map(BaseEntity::getId).toList());
@@ -1509,7 +1509,7 @@ public class ContainerV3Service implements IContainerV3Service {
             // construct specifications for filter request
 
             Page<Containers> containersPage;
-            if (Objects.equals(xSource, NETWORK_TRANSFER))
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
                 containersPage = containerDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
             else
                 containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());

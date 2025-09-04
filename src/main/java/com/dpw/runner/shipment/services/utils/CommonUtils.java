@@ -148,6 +148,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
@@ -4079,4 +4080,15 @@ public class CommonUtils {
         return innerPredicate;
     }
 
+    public static boolean canFetchDetailsWithoutTenantFilter(String xSource) {
+        if (Objects.equals(xSource, NETWORK_TRANSFER)) {
+            return true;
+        }
+
+        return Objects.equals(xSource, CROSS_TENANT_SOURCE) &&
+               Optional.ofNullable(UserContext.getUser())
+                .map(UsersDto::getPermissions)
+                .map(permissions -> Boolean.TRUE.equals(permissions.get(CAN_VIEW_ALL_BRANCH_SHIPMENTS)))
+                .orElse(false);
+    }
 }

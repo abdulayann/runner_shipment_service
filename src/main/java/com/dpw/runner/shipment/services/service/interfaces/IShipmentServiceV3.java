@@ -97,7 +97,7 @@ public interface IShipmentServiceV3 {
     void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate);
 
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
-    Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException;
+    Optional<ShipmentDetails> retrieveShipmentByIdWithQuery(CommonGetRequest request, String xSource) throws RunnerException, AuthenticationException;
 
     ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData,
             boolean fromNte) throws AuthenticationException;

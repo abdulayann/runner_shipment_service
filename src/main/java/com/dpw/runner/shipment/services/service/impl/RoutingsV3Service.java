@@ -83,7 +83,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -597,7 +596,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> routingsPage;
-            if (Objects.equals(xSource, NETWORK_TRANSFER))
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
                 routingsPage = routingsDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
             else
                 routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -661,7 +660,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new RunnerException(RoutingConstants.ID_GUID_NULL_ERROR);
         }
         Optional<Routings> routings;
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             routings = routingsDao.findByIdWithQuery(request.getId());
         else
             routings = routingsDao.findById(request.getId());
@@ -956,7 +955,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource) {
         Long id = commonRequestModel.getId();
         Optional<Routings> routings;
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             routings = routingsDao.findByIdWithQuery(id);
         else
             routings = routingsDao.findById(id);
