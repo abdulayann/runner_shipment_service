@@ -505,6 +505,7 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
+    public static final String CARRIER_PORTAL = "Carrier Portal";
     public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
