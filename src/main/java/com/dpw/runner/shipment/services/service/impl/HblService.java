@@ -605,9 +605,9 @@ public class HblService implements IHblService {
                 if (line.isEmpty()) continue;
 
                 if (components.getAddressLine1() == null) {
-                    components.setAddressLine1(line);
+                    components.setAddressLine1(line.toUpperCase());
                 } else if (components.getAddressLine2() == null) {
-                    components.setAddressLine2(line);
+                    components.setAddressLine2(line.toUpperCase());
                 } else {
                     // Try to extract components from the line
                     extractComponentsFromLine(line, components);
@@ -625,10 +625,16 @@ public class HblService implements IHblService {
                 line = line.replace(zipMatcher.group(), "").trim();
             }
 
-            // Check for country code
-            Matcher countryMatcher = Pattern.compile("\\b[A-Z]{2,3}\\b").matcher(line);
+            Matcher countryMatcher = Pattern
+                    .compile("\\b[A-Z]{2,3}\\b")
+                    .matcher(line);
             if (countryMatcher.find() && components.getCountry() == null) {
-                components.setCountry(countryMatcher.group());
+                String code = countryMatcher.group();
+                // If it's a 3-letter code and mapping exists, convert to 2-letter
+                if (code.length() == 3) {
+                    code = CountryListHelper.ISO3166.getAlpha2IfAlpha3(code);// fallback if unknown
+                }
+                components.setCountry(code);
                 line = line.replace(countryMatcher.group(), "").trim();
             }
 
@@ -641,7 +647,7 @@ public class HblService implements IHblService {
 
             // Remaining text is city
             if (!line.isEmpty() && components.getCity() == null) {
-                components.setCity(line);
+                components.setCity(line.toUpperCase());
             }
         }
 
@@ -671,7 +677,7 @@ public class HblService implements IHblService {
                 }
                 // Parse origin agent address
                 if (originAgent.getAddressData() != null) {
-                    String formattedAddress = constructAddress(originAgent.getAddressData());
+                    String formattedAddress = constructAddress(originAgent.getAddressData()).toUpperCase();
                     BLAddressDto parsedAddress = parseAddressToComponents(null, formattedAddress);
                     addressDto.setAddressLine1(parsedAddress.getAddressLine1());
                     addressDto.setAddressLine2(parsedAddress.getAddressLine2());
@@ -721,7 +727,7 @@ public class HblService implements IHblService {
                 hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
             if (!Objects.isNull(broker.getAddressData())) {
-                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()));
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()).toUpperCase());
             }
         }
     }
