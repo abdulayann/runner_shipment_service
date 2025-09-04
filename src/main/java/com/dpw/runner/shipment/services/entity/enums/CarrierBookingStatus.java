@@ -21,12 +21,7 @@ public enum CarrierBookingStatus {
     ChangeDraft(11, "Change Draft", List.of("INTTRA")),
     CancelledByCarrier(12, "Cancelled By Carrier", List.of("INTTRA")),
     AmendRejected(13, "Amend Rejected By INTTRA", List.of("INTTRA"));
-
-//    Requested(1, "Booking Requested")
-//    ConfirmedByCarrier(4, "Confirmed By Carrier")
-//    DeclinedByCarrier(5, "Declined By Carrier")
-//    ConditionallyAccepted(6, "Confirmed - Conditionally Accepted")
-//    Cancelled(8, "Cancelled")
+    
     private final int value;
     private final String description;
     private final List<String> allowedTypes;
