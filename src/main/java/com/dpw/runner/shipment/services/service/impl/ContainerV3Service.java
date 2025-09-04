@@ -448,7 +448,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
-        return deleteBulk(containerRequestList, module, false);
+        return self.deleteBulk(containerRequestList, module, false);
     }
 
     @Override
