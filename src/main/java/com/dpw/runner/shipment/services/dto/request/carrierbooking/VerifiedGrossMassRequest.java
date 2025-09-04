@@ -18,10 +18,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierBookingRequest implements Serializable {
+public class VerifiedGrossMassRequest implements Serializable {
     private Long id;
     private String status;
-    private String bookingNo;
     private String carrierBookingNo;
     private String carrierBlNo;
     @NotBlank(message = "Entity type can not be empty")
@@ -31,31 +30,12 @@ public class CarrierBookingRequest implements Serializable {
     private Long entityId;
     @NotBlank(message = "Entity Number can not be empty")
     private String entityNumber;
-    @NotBlank(message = "Service type can not be empty")
-    private String serviceType;
-    private String bookingOffice;
-    private LocalDateTime pickupFromReqEmptyPositioningDate;
-    private LocalDateTime pickupFromReqFullPickupDate;
-    private String pickupFromContactName;
-    private String pickupFromContactNo;
-    private LocalDateTime deliveryToReqEmptyPositioningDate;
-    private LocalDateTime deliveryToReqFullPickupDate;
-    private String deliveryToContactName;
-    private String deliveryToContactNo;
-    @Size(max = 10000, message = "Booking Comment cannot exceed 10,000 characters")
-    private String bookingComment;
-    @Size(max = 10000, message = "Carrier Comment cannot exceed 10,000 characters")
-    private String carrierComment;
     private String internalEmails;
     private String externalEmails;
     @NotNull(message = "Requester can not be null")
     private PartiesRequest requester;
-    @NotNull(message = "Shipper can not be null")
-    private PartiesRequest shipper;
-    private PartiesRequest consignee;
-    private PartiesRequest forwardingAgent;
-    private PartiesRequest pickupFrom;
-    private PartiesRequest deliveryTo;
+    private PartiesRequest authorised;
+    private PartiesRequest responsible;
     private SailingInformationRequest sailingInformation;
     private List<PartiesRequest> additionalParties;
     private List<CommonContainerRequest> containersList;

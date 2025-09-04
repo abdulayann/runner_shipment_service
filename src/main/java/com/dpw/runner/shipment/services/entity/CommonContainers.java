@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -15,8 +16,12 @@ import org.hibernate.annotations.Where;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "common_containers")
@@ -86,9 +91,47 @@ public class CommonContainers extends MultiTenancy {
     @Column(name = "seal_number")
     private String sealNumber;
 
+    @Column(name = "shipper_seal_number")
+    @Size(max = 100, message = "max size is 100 for shipper_seal_number")
+    private String shipperSealNumber;
+
+    @Column(name = "veterinary_seal_number")
+    @Size(max = 100, message = "max size is 100 for veterinary_seal_number")
+    private String veterinarySealNumber;
+
+    @Column(name = "customs_seal_number")
+    @Size(max = 100, message = "max size is 100 for customs_seal_number")
+    private String customsSealNumber;
+
+    @Column(name = "approval_signature")
+    private String approvalSignature;
+
+    @Column(name = "approval_date")
+    private LocalDateTime approvalDate;
+
+    @Column(name = "vgm_weight")
+    private BigDecimal vgmWeight;
+
+    @Column(name = "vgm_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
+    private String vgmWeightUnit;
+
+    @Column(name = "weight_determination_method")
+    @Enumerated(EnumType.STRING)
+    private WeightDeterminationMethodType weightDeterminationMethod;
+
+    @Column(name = "weight_determination_location")
+    private String weightDeterminationLocation;
+
+    @Column(name = "vgm_status")
+    private String vgmStatus;
+
     @Column(name = "carrier_booking_id")
     private Long carrierBookingId;
 
     @Column(name = "shipping_instruction_id")
     private Long shippingInstructionId;
+
+    @Column(name = "verified_gross_mass_id")
+    private Long verifiedGrossMassId;
 }

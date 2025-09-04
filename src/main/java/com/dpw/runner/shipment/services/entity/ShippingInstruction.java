@@ -69,6 +69,7 @@ public class ShippingInstruction extends MultiTenancy {
     private String carrierBookingNo;
 
     @Column(name = "entity_type", length = 50)
+    @Enumerated(EnumType.STRING)
     private ShippingInstructionEntityType entityType;
 
     @Column(name = "entity_id")
