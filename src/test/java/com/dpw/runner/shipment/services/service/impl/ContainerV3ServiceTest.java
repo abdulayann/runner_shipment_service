@@ -1166,6 +1166,48 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testDeleteBulk6() throws RunnerException {
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testDeleteBulk7() throws RunnerException {
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(shipmentsContainersMapping)));
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testDeleteBulk8() throws RunnerException {
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainersList(Set.of(testContainer));
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(shipmentsContainersMapping)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        testPacking.setContainerId(testContainer.getId());
+        testPacking.setShipmentId(testShipment.getId());
+        when(packingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
+    }
+
+    @Test
     void calculateContainerSummaryTest() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
