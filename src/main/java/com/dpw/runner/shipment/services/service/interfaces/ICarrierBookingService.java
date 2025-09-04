@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.springframework.http.ResponseEntity;
 
 public interface ICarrierBookingService {
@@ -26,7 +27,7 @@ public interface ICarrierBookingService {
      */
     CarrierBookingResponse retrieveById(Long id);
 
-    ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData) throws JsonMappingException;
 
     /**
      * Update an existing Carrier Booking.
