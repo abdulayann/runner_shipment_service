@@ -528,6 +528,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max = 50, message = "max size is 50 for controlled reference number")
     private String controlledReferenceNumber;
 
+    @Column(name = "si_status")
+    private String siStatus;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
