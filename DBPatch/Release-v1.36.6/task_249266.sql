@@ -96,7 +96,7 @@ set
     client_dps_address_id = 108718,
     updated_at = NOW()
 where
-    id=83994
+    id=83994;
 
 
 
@@ -199,4 +199,4 @@ set
     client_dps_address_id = 107687,
     updated_at = NOW()
 where
-    id=95109
+    id=95109;
