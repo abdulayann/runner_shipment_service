@@ -576,7 +576,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return shipmentPackIds;
     }
 
-    private void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
+    public void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
         if (unAssignContainerParamsList == null || unAssignContainerParamsList.isEmpty()) {
             return;
         }
@@ -584,8 +584,7 @@ public class ContainerV3Service implements IContainerV3Service {
             Set<Long> shipmentIds = unAssignContainerParams.getFclOrFtlShipmentIds();
             Map<Long, ShipmentDetails> shipmentDetailsMap = unAssignContainerParams.getShipmentDetailsMap();
 
-            if (shipmentIds == null || shipmentIds.isEmpty() ||
-                    shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
+            if (setIsNullOrEmpty(shipmentIds) || shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
                 continue;
             }
 

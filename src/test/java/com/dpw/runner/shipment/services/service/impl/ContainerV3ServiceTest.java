@@ -3030,4 +3030,34 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
         assertEquals(1, params.getFclOrFtlShipmentIds().size());
     }
+
+    @Test
+    void testUpdateShipmentSummary() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setFclOrFtlShipmentIds(Set.of(1L));
+        unAssignContainerParamsList.add(unAssignContainerParams);
+        unAssignContainerParams.setShipmentDetailsMap(Map.of(1L, testShipment));
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
+    @Test
+    void testUpdateShipmentSummary1() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setFclOrFtlShipmentIds(null);
+        unAssignContainerParamsList.add(unAssignContainerParams);
+        unAssignContainerParams.setShipmentDetailsMap(Map.of(1L, testShipment));
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
+    @Test
+    void testUpdateShipmentSummary2() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
 }
