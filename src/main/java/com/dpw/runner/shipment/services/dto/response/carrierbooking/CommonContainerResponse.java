@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -15,7 +17,6 @@ import java.math.BigDecimal;
 public class CommonContainerResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy / BaseEntity
-
     private String containerCode;
     private Integer count;
     private String goodsDescription;
@@ -33,6 +34,17 @@ public class CommonContainerResponse implements IRunnerResponse {
     private BigDecimal tareWeight;
     private String tareWeightUnit;
     private String sealNumber;
+    private String shipperSealNumber;
+    private String veterinarySealNumber;
+    private String customsSealNumber;
+    private String approvalSignature;
+    private LocalDateTime approvalDate;
+    private BigDecimal vgmWeight;
+    private String vgmWeightUnit;
+    private WeightDeterminationMethodType weightDeterminationMethod;
+    private String weightDeterminationLocation;
+    private String vgmStatus;
     private Long carrierBookingId;
     private Long shippingInstructionId;
+    private Long verifiedGrossMassId;
 }

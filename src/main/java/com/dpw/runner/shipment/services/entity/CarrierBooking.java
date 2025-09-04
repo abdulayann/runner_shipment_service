@@ -153,6 +153,10 @@ public class CarrierBooking extends MultiTenancy {
     private ShippingInstruction shippingInstruction;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "verified_gross_mass_id", referencedColumnName = "id")
+    private VerifiedGrossMass verifiedGrossMass;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")
     private SailingInformation sailingInformation;
 
