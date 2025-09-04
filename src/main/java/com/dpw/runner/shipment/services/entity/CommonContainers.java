@@ -33,7 +33,7 @@ public class CommonContainers extends MultiTenancy {
     private String containerCode;
 
     @Column(name = "count")
-    private Integer count;
+    private Long count;
 
     @Column(name = "goods_description", columnDefinition = "TEXT")
     private String goodsDescription;

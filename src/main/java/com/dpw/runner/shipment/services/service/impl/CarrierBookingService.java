@@ -10,11 +10,14 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
@@ -102,7 +105,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     public CarrierBookingResponse create(CarrierBookingRequest request) {
         log.info("CarrierBookingService.create() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         carrierBookingValidationUtil.validateServiceType(request);
-        Object entity = carrierBookingValidationUtil.validateRequest(request);
+        Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
@@ -151,11 +154,11 @@ public class CarrierBookingService implements ICarrierBookingService {
         log.info("CarrierBookingService.getById() called with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
         CarrierBooking carrierBooking = carrierBookingDao.findById(id).orElseThrow(() -> new ValidationException("Invalid id : " + id));
-        // truncate carrier_comments from intraa
-        carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
 
+        carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
         // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
+        mismatchDetection(carrierBooking, carrierBookingResponse);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
@@ -205,7 +208,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         log.info("CarrierBookingService.update() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBooking existingCarrierBooking = carrierBookingDao.findById(request.getId()).orElseThrow(() -> new ValidationException("Invalid carrier booking Id"));
         carrierBookingValidationUtil.validateServiceType(request);
-        Object entity = carrierBookingValidationUtil.validateRequest(request);
+        Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
@@ -506,6 +509,23 @@ public class CarrierBookingService implements ICarrierBookingService {
             return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
         }
         return new ArrayList<>();
+    }
+
+    private void mismatchDetection(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
+        Object entity = carrierBookingValidationUtil.validateRequest(
+                carrierBooking.getEntityType(), carrierBooking.getEntityId());
+
+        if (carrierBooking.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            List<Containers> consoleContainers = consolidationDetails.getContainersList();
+            List<CommonContainers> carrierBookingContainers = carrierBooking.getContainersList();
+
+
+            List<ContainerMisMatchWarning> warnings =  carrierBookingUtil.detectContainerMismatches(consoleContainers, carrierBookingContainers);
+
+            // attach to response or handle as needed
+            carrierBookingResponse.setContainerMismatchWarningList(warnings);
+        }
     }
 }
 
