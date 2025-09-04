@@ -125,7 +125,6 @@ public class HblService implements IHblService {
 
     @Autowired
     private IHblSync hblSync;
-    private AdditionalDetails additionalDetails;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
