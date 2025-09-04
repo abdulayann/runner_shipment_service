@@ -3350,7 +3350,7 @@ public class EntityTransferService implements IEntityTransferService {
         var tenantMap = getTenantMap(sourceTenantIds.stream().toList());
         var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         for(Integer tenantId: tenantIds) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId);
             List<String> importerEmailIds;
             if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
                 importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);

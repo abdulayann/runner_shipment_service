@@ -8637,13 +8637,13 @@ public class ShipmentService implements IShipmentService {
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
 
-        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
         ccEmailsList.addAll(new ArrayList<>(toEmailIds));
         ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
         if(consolidationDetails.getCreatedBy() == null) {
             toEmailIds.clear();
             ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
             toEmailList.addAll(new ArrayList<>(toEmailIds));
         }
 

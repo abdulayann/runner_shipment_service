@@ -1822,7 +1822,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
         var tenantMap = getTenantMap(sourceTenantIds.stream().toList());
         for(Integer tenantId: tenantIds) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId);
             List<String> importerEmailIds;
             importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
             List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);

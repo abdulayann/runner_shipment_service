@@ -822,8 +822,10 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setCurrentUserEmail(ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
+        setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+        setRequestedUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -874,7 +876,7 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -989,7 +991,7 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1010,8 +1012,9 @@ public class CommonUtils {
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
+        setRequestedUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1032,8 +1035,9 @@ public class CommonUtils {
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
+        setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1054,8 +1058,9 @@ public class CommonUtils {
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
+        setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1077,7 +1082,7 @@ public class CommonUtils {
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1225,16 +1230,13 @@ public class CommonUtils {
             emailIds.add(UserContext.getUser().getEmail());
     }
 
-    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
+    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId) {
         if (v1TenantSettingsMap.containsKey(tenantId)) {
             V1TenantSettingsResponse settings = v1TenantSettingsMap.get(tenantId);
-            if (isShipment) {
-                addEmails(toEmailIds, settings.getShipmentAttachDefaultToMailId());
-                addEmails(ccEmailIds, settings.getShipmentAttachDefaultCCMailId());
-            } else {
-                addEmails(toEmailIds, settings.getConsolidationAttachDefaultToMailId());
-                addEmails(ccEmailIds, settings.getConsolidationAttachDefaultCCMailId());
-            }
+            addEmails(toEmailIds, settings.getShipmentAttachDefaultToMailId());
+            addEmails(toEmailIds, settings.getConsolidationAttachDefaultToMailId());
+            addEmails(ccEmailIds, settings.getShipmentAttachDefaultCCMailId());
+            addEmails(ccEmailIds, settings.getConsolidationAttachDefaultCCMailId());
         }
     }
 
