@@ -16,16 +16,16 @@ public class CarrierBookingValidationUtil {
     @Autowired
     private IConsolidationV3Service consolidationV3Service;
 
-    public Object validateRequest(CarrierBookingRequest request) {
-        if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
-            return consolidationV3Service.findById(request.getEntityId()).orElseThrow(() -> new ValidationException("Invalid Consolidation id"));
+    public Object validateRequest(String entityType, Long entityId) {
+        if (Constants.CONSOLIDATION.equalsIgnoreCase(entityType)) {
+            return consolidationV3Service.findById(entityId).orElseThrow(() -> new ValidationException("Invalid Consolidation id"));
         }
         throw new ValidationException("Invalid entity Type");
     }
 
     public void validateServiceType(CarrierBookingRequest request) {
         if (!CarrierBookingConstants.serviceTypes.contains(request.getServiceType())) {
-            throw new ValidationException("Invalid service type");
+            throw new ValidationException("Unsupported service type. Please select one of: P2P, F2P, P2F, F2F.");
         }
     }
 
