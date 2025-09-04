@@ -628,4 +628,10 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "allow_unassigned_bl_inv_generation")
     private Boolean allowUnassignedBlInvGeneration;
 
+    @Column(name = "is_migration_running")
+    private Boolean isMigrationRunning;
+
+    @Column(name = "is_restore_running")
+    private Boolean isRestoreRunning;
+
 }
