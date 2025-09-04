@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.BLAddressDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
@@ -57,24 +58,16 @@ import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -132,6 +125,7 @@ public class HblService implements IHblService {
 
     @Autowired
     private IHblSync hblSync;
+    private AdditionalDetails additionalDetails;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -500,9 +494,18 @@ public class HblService implements IHblService {
         response.setNotifyParties(hbl.getHblNotifyParty());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
+        // Set the BL address fields
+        setBLAddressFields(response, hbl);
         return response;
     }
-
+    // Method to set BL address fields using data from the original entity
+    private void setBLAddressFields(HblResponse response, Hbl hbl) {
+        HblDataDto hblData = hbl.getHblData();
+        response.setBlNewShipper(parseAddressToComponents(hblData.getConsignorName(), hblData.getConsignorAddress()));
+        response.setBlNewConsignee(parseAddressToComponents(hblData.getConsigneeName(), hblData.getConsigneeAddress()));
+        response.setBlForwarder(getForwarderAddressComponents(hbl.getShipmentId()));
+        response.setBlDelivery(parseAddressToComponents(hblData.getDeliveryAgent(), hblData.getDeliveryAgentAddress()));
+    }
 
     private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
@@ -574,6 +577,116 @@ public class HblService implements IHblService {
         return hblData;
     }
 
+        BLAddressDto parseAddressToComponents(String name, String address) {
+            BLAddressDto addressDto = new BLAddressDto();
+            addressDto.setName(name != null ? name.toUpperCase().trim() : "");
+
+            if (isStringNullOrEmpty(address)) {
+                return addressDto;
+            }
+
+            AddressComponents components = extractAddressComponents(address);
+
+            addressDto.setAddressLine1(components.getAddressLine1());
+            addressDto.setAddressLine2(components.getAddressLine2());
+            addressDto.setCity(components.getCity());
+            addressDto.setState(components.getState());
+            addressDto.setCountry(components.getCountry());
+            addressDto.setPinCode(components.getPinCode());
+
+            return addressDto;
+        }
+
+        private AddressComponents extractAddressComponents(String address) {
+            AddressComponents components = new AddressComponents();
+            String[] lines = address.split("\r\n");
+
+            for (String line : lines) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                if (components.getAddressLine1() == null) {
+                    components.setAddressLine1(line);
+                } else if (components.getAddressLine2() == null) {
+                    components.setAddressLine2(line);
+                } else {
+                    // Try to extract components from the line
+                    extractComponentsFromLine(line, components);
+                }
+            }
+
+            return components;
+        }
+
+        private void extractComponentsFromLine(String line, AddressComponents components) {
+            // Check for zip code
+            Matcher zipMatcher = Pattern.compile("\\b\\d{4,6}\\b").matcher(line);
+            if (zipMatcher.find() && components.getPinCode() == null) {
+                components.setPinCode(zipMatcher.group());
+                line = line.replace(zipMatcher.group(), "").trim();
+            }
+
+            // Check for country code
+            Matcher countryMatcher = Pattern.compile("\\b[A-Z]{2,3}\\b").matcher(line);
+            if (countryMatcher.find() && components.getCountry() == null) {
+                components.setCountry(countryMatcher.group());
+                line = line.replace(countryMatcher.group(), "").trim();
+            }
+
+            // Check for state code
+            Matcher stateMatcher = Pattern.compile("\\b[A-Z]{2}\\b").matcher(line);
+            if (stateMatcher.find() && components.getState() == null) {
+                components.setState(stateMatcher.group());
+                line = line.replace(stateMatcher.group(), "").trim();
+            }
+
+            // Remaining text is city
+            if (!line.isEmpty() && components.getCity() == null) {
+                components.setCity(line);
+            }
+        }
+
+        @Data
+        class AddressComponents {
+            private String addressLine1;
+            private String addressLine2;
+            private String city;
+            private String state;
+            private String country;
+            private String pinCode;
+        }
+    private BLAddressDto getForwarderAddressComponents(Long shipmentId) {
+        BLAddressDto addressDto = new BLAddressDto();
+
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        if (shipmentDetails.isPresent()) {
+            AdditionalDetails additionalDetails = shipmentDetails.get().getAdditionalDetails();
+            if (additionalDetails != null && additionalDetails.getExportBroker() != null) {
+                Parties originAgent = additionalDetails.getExportBroker();
+                // Set origin agent name
+                if (originAgent.getOrgData() != null && originAgent.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
+                    String name = StringUtility.convertToString(originAgent.getOrgData().get(PartiesConstants.FULLNAME));
+                    if (!isStringNullOrEmpty(name)) {
+                        addressDto.setName(name.toUpperCase().trim());
+                    }
+                }
+                // Parse origin agent address
+                if (originAgent.getAddressData() != null) {
+                    String formattedAddress = constructAddress(originAgent.getAddressData());
+                    BLAddressDto parsedAddress = parseAddressToComponents(null, formattedAddress);
+                    addressDto.setAddressLine1(parsedAddress.getAddressLine1());
+                    addressDto.setAddressLine2(parsedAddress.getAddressLine2());
+                    addressDto.setCity(parsedAddress.getCity());
+                    addressDto.setState(parsedAddress.getState());
+                    addressDto.setCountry(parsedAddress.getCountry());
+                    addressDto.setPinCode(parsedAddress.getPinCode());
+                }
+            }
+        }
+
+        return addressDto;
+    }
+
     private void mapVoyageVesselFromRouting(Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
         if (Objects.nonNull(routing)) {
             hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
@@ -605,25 +718,32 @@ public class HblService implements IHblService {
     private void mapDeliveryDataInHbl(AdditionalDetails additionalDetails, HblDataDto hblData) {
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
-            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
-                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Objects.isNull(broker.getAddressData()) )
+            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
+                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
+            }
+            if (!Objects.isNull(broker.getAddressData())) {
                 hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()));
+            }
         }
     }
-
     private void mapConsignerConsigneeToHbl(ShipmentDetails shipmentDetail, HblDataDto hblData) {
         if(shipmentDetail.getConsigner() != null) {
-            if (shipmentDetail.getConsigner().getOrgData() != null)
-                hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
-            if (shipmentDetail.getConsigner().getAddressData() != null)
+            if (shipmentDetail.getConsigner().getOrgData() != null) {
+                hblData.setConsignorName(StringUtility.convertToString(
+                        shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
+            }
+            if (shipmentDetail.getConsigner().getAddressData() != null) {
                 hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
+            }
         }
         if(shipmentDetail.getConsignee() != null ) {
-            if (shipmentDetail.getConsignee().getOrgData() != null)
-                hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
-            if (shipmentDetail.getConsignee().getAddressData() != null)
+            if (shipmentDetail.getConsignee().getOrgData() != null) {
+                hblData.setConsigneeName(StringUtility.convertToString(
+                        shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
+            }
+            if (shipmentDetail.getConsignee().getAddressData() != null) {
                 hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+            }
         }
     }
 
@@ -638,6 +758,8 @@ public class HblService implements IHblService {
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
         if (addressData.containsKey(PartiesConstants.COUNTRY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
+        if (addressData.containsKey(PartiesConstants.STATE))
+            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.STATE)));
         if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
         if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))

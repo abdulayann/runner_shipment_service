@@ -81,4 +81,8 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
+    private BLAddressDto blNewShipper;
+    private BLAddressDto blNewConsignee;
+    private BLAddressDto blForwarder;
+    private BLAddressDto blDelivery;
 }

@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.BLAddressDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
@@ -1485,5 +1486,36 @@ class HblServiceTest extends CommonMocks {
         assertNull(responseBody.getWarning());
     });
 }
+    @Test
+    void testParseAddressComponents_WithEmptyAddress() {
+        String name = "Test Company";
+        String address = "";
+
+        BLAddressDto result = hblService.parseAddressToComponents(name, address);
+
+        assertEquals("TEST COMPANY", result.getName());
+        assertEquals("", result.getAddressLine1());
+        assertEquals("", result.getAddressLine2());
+        assertEquals("", result.getCity());
+        assertEquals("", result.getState());
+        assertEquals("", result.getCountry());
+        assertEquals("", result.getPinCode());
+    }
+
+    @Test
+    void testParseAddressComponents_WithNullAddress() {
+        String name = "Test Company";
+
+        BLAddressDto result = hblService.parseAddressToComponents(name, null);
+
+        assertEquals("TEST COMPANY", result.getName());
+        assertEquals("", result.getAddressLine1());
+        assertEquals("", result.getAddressLine2());
+        assertEquals("", result.getCity());
+        assertEquals("", result.getState());
+        assertEquals("", result.getCountry());
+        assertEquals("", result.getPinCode());
+    }
+
 
 }
