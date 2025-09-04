@@ -7,8 +7,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
@@ -99,9 +101,10 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final CarrierBookingUtil carrierBookingUtil;
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
+    private final IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingValidationUtil = carrierBookingValidationUtil;
@@ -112,6 +115,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.carrierBookingUtil = carrierBookingUtil;
         this.masterDataUtils = masterDataUtils;
         this.executorServiceMasterData = executorServiceMasterData;
+        this.consolidationDetailsDao = consolidationDetailsDao;
     }
 
     @Override
@@ -264,6 +268,33 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingDao.delete(id);
         log.info("CarrierBookingService.delete() successful with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
+    }
+
+    @Override
+    public void syncCarrierBookingToService(SyncBookingToService syncBookingToService) {
+        if(!CarrierBookingConstants.CARRIER_BOOKING.equalsIgnoreCase(syncBookingToService.getEntityType())){
+            throw new ValidationException("Invalid entity Type : " + syncBookingToService.getEntityType());
+        }
+        CarrierBooking carrierBooking = carrierBookingDao.findById(syncBookingToService.getEntityId())
+                .orElseThrow(()-> new ValidationException("Invalid carrier Booking Id:" + syncBookingToService.getEntityId()));
+
+        Object entity = carrierBookingValidationUtil.validateRequest(carrierBooking.getEntityType(), carrierBooking.getEntityId());
+        if(Constants.CONSOLIDATION.equalsIgnoreCase(carrierBooking.getEntityType())){
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            setCarrierBookingSyncFields(consolidationDetails, carrierBooking);
+            consolidationDetailsDao.save(consolidationDetails);
+        }
+
+    }
+
+    private void setCarrierBookingSyncFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) {
+            consolidationDetails.setMawb(carrierBooking.getCarrierBlNo());
+            consolidationDetails.setBookingStatus(carrierBooking.getStatus().name());
+            consolidationDetails.setBookingId(carrierBooking.getBookingNo());
+            consolidationDetails.setCarrierBookingRef(carrierBooking.getCarrierBookingNo());
+            if(carrierBooking.getShippingInstruction() != null) {
+                consolidationDetails.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
+            }
     }
 
     @Override

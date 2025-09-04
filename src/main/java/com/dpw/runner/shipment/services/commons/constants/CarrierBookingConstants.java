@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -35,9 +34,12 @@ public class CarrierBookingConstants {
     public static final String CARRIER_BOOKING_LIST_SUCCESSFUL = "Successful Carrier Booking Data List Retrieval";
     public static final String CARRIER_BOOKING_DELETE_SUCCESSFUL = "Successful Carrier Booking Delete";
     public static final String CARRIER_BOOKING_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Carrier Booking Data Retrieval By Id";
+    public static final String CARRIER_BOOKING_SYNC_SUCCESSFUL = "Carrier Booking successfully sync to consolidation";
+
 
     public static final String CARRIER_BOOKING_ID = "Carrier Booking Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String CARRIER_BOOKING = "CARRIER_BOOKING";
 
     public static final String CARRIER_BOOKING_RETRIEVE_ERROR = "Carrier Booking is null for Id {} with Request Id {}";
     public static final String CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";

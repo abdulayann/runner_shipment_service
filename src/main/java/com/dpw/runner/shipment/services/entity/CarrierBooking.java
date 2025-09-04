@@ -44,13 +44,13 @@ public class CarrierBooking extends MultiTenancy {
     private CarrierBookingStatus status;
 
     @Column(name = "booking_no", length = 100, unique = true)
-    private String bookingNo;
+    private String bookingNo; // carrier Booking Id
 
     @Column(name = "carrier_booking_no", length = 100)
     private String carrierBookingNo;
 
     @Column(name = "carrier_bl_no", length = 100)
-    private String carrierBlNo;
+    private String carrierBlNo; // mbl
 
     @Column(name = "entity_type", length = 50)
     private String entityType;

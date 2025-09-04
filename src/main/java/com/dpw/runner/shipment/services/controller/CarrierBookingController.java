@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -113,6 +113,18 @@ public class CarrierBookingController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = CarrierBookingConstants.CARRIER_BOOKING_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<IRunnerResponse> syncCarrierBookingToService(@RequestBody @Valid SyncBookingToService syncBookingToService) {
+        log.info("Received Carrier Booking Sync request with RequestId: {} and body: {}", LoggerHelper.getRequestIdFromMDC(), syncBookingToService);
+        carrierBookingService.syncCarrierBookingToService(syncBookingToService);
+        log.info("Carrier Booking Sync successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), syncBookingToService);
+        return ResponseHelper.buildSuccessResponse();
     }
 
 }
