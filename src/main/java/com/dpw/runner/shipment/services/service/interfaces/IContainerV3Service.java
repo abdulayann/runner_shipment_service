@@ -20,10 +20,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException;
@@ -32,6 +32,9 @@ public interface IContainerV3Service {
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module) throws RunnerException;
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module, boolean isForceDelete) throws RunnerException;
+    void bulkUnAssign(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Packing> shipmentPackings,
+                      boolean isFCLDelete, boolean isForcedDetach, boolean fromDelete) throws RunnerException;
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
 
@@ -53,7 +56,8 @@ public interface IContainerV3Service {
     ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
                                          Map<String, List<Containers>> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
                                            List<UnAssignContainerParams> unAssignContainerParamsList, Boolean allowPackageReassignment, Boolean isForcedDetach) throws RunnerException;
-    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, Map<String, List<Containers>> containersToSaveMap, List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isFCLDelete);
+    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, Map<String, List<Containers>> containersToSaveMap,
+                                           List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isFCLDelete, boolean fromDelete);
     Containers setAssignContainerParams(AssignContainerRequest request, String module, AssignContainerParams assignContainerParams) throws RunnerException;
     ContainerResponse calculateAndSaveAssignContainerResults(Containers container, AssignContainerParams assignContainerParams, AssignContainerRequest request, String module) throws RunnerException;
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
