@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS common_containers (
     is_deleted boolean DEFAULT false,
     tenant_id integer,
     container_code VARCHAR(100),
-    count INTEGER,
+    count BIGINT,
     goods_description TEXT,
     hs_code VARCHAR(20),
     commodity_code VARCHAR(100),
