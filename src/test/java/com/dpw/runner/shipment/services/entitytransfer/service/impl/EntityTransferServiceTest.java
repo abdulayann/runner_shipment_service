@@ -549,7 +549,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
         Map<String, BigDecimal> codeTeuMap = new HashMap<>();
-        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap))).thenReturn(consolidationDetails);
+        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap),any(), any())).thenReturn(consolidationDetails);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(ConsolidationDetailsResponse.builder().build());
