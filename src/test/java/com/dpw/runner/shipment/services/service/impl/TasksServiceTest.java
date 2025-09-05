@@ -156,15 +156,15 @@ class TasksServiceTest {
         ShipmentDetails mockShipmentDetails = new ShipmentDetails();
         mockShipmentDetails.setId(shipmentId);
 
-        when(imdmServiceAdapter.getTask(uuid)).thenReturn(mockMdmResponse);
+        when(imdmServiceAdapter.getTask(uuid, 1L)).thenReturn(mockMdmResponse);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipmentDetails));
 
         // Act
-        ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveMDMTask(uuid);
+        ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveMDMTask(uuid,1L );
 
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        verify(imdmServiceAdapter).getTask(uuid);
+        verify(imdmServiceAdapter).getTask(uuid, 1L);
     }
 
     @Test
@@ -177,12 +177,12 @@ class TasksServiceTest {
                 .entityGuid(entityGuid)
                 .build();
 
-        when(imdmServiceAdapter.getTask(uuid)).thenReturn(mockMdmResponse);
+        when(imdmServiceAdapter.getTask(uuid, 1L)).thenReturn(mockMdmResponse);
         lenient().when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(RuntimeException.class,
-                () -> tasksService.retrieveMDMTask(uuid));
+                () -> tasksService.retrieveMDMTask(uuid, 1L));
 
     }
 

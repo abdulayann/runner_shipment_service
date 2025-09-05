@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 public interface ITasksService extends ICommonService{
     ResponseEntity<IRunnerResponse> createTaskForHbl(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> retrieveTask(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid) throws RunnerException;
+    ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid, Long id) throws RunnerException;
     ResponseEntity<IRunnerResponse> updateTask(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> createTask(CommonRequestModel commonRequestModel);
 }
