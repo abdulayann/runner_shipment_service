@@ -369,9 +369,9 @@ public class HblService implements IHblService {
 
             String warningMsg;
             if (hasContainerNumber) {
-                warningMsg = "Seal Number not entered against the Container Number - " + String.join(", ", containerIdentifiers);
+                warningMsg = Constants.SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER + String.join(", ", containerIdentifiers);
             } else {
-                warningMsg = "Seal Number not entered against the Container Code - " + String.join(", ", containerIdentifiers);
+                warningMsg = Constants.SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE + String.join(", ", containerIdentifiers);
             }
             return ResponseEntity.ok(
                 RunnerResponse.builder().success(true).warning(warningMsg).build());

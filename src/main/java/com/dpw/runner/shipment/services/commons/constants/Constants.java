@@ -723,6 +723,8 @@ public class Constants {
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
     public static final String TENANTS = "Tenants";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
     private Constants() {
     }
 
