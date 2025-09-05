@@ -133,11 +133,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
+        List<Containers> originalConsolContainers = consolFromDb.getContainersList();
+
         // Step 3: Convert V2 console + its attached shipments into V3 structure
         ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
-        // Step 4: Save all containers separately first, as they must be saved before referencing in packings
+        // Step 4: detach old containers from consolidation
+        for(Containers containers: originalConsolContainers) {
+            containers.setConsolidationId(null);
+        }
+        containerRepository.saveAll(originalConsolContainers);
+
+        // Step 5: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> updatedContainersList = console.getContainersList();
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         log.info("Saved {} updated container(s) for Consolidation [id={}]", savedUpdatedContainersList.size(), consolidationId);
@@ -449,10 +457,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             UUID originalGuid = container.getGuid();
             Long count = container.getContainerCount();
 
-            // If count is null or <= 1, keep container as-is (no splitting needed)
-            if (count == null || count <= 1) {
-                resultContainers.add(container);
-                continue;
+            // If count is null or < 1 set the count as 1
+            if (count == null || count < 1) {
+                count = 1L;
             }
 
             log.info("Splitting container [guid={}] with count={}", originalGuid, count);
@@ -463,11 +470,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             distributeMultiCountContainer(container, count, tempContainers);
 
             // Step 2: For each newly generated container, propagate shipment links from original
+            List<UUID> shipmentUuids = containerGuidToShipments.remove(originalGuid);
             for (Containers tempContainer : tempContainers) {
                 setTeuInContainers(codeTeuMap, tempContainer);
                 // Only copy mapping if it's a new, unsaved container and not already mapped
                 if (tempContainer.getId() == null && !containerGuidToShipments.containsKey(tempContainer.getGuid())) {
-                    List<UUID> shipmentUuids = containerGuidToShipments.get(originalGuid);
                     if (shipmentUuids != null) {
                         containerGuidToShipments.put(tempContainer.getGuid(), shipmentUuids);
                         log.info("Mapped split container [guid={}] to shipments {}", tempContainer.getGuid(), shipmentUuids);
@@ -513,48 +520,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         BigDecimal baseNetWeight = netWeightParts[0];
         BigDecimal netWeightRemainder = netWeightParts[1];
 
-        // Step 1: Convert original container into a 1-count container with base values
-        original.setContainerCount(1L);
-        original.setGrossWeight(baseWeight);
-        if(weightRemainder.intValue() >= 1) {
-            original.setGrossWeight(baseWeight.add(BigDecimal.valueOf(1)));
-            weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
-        }
-        original.setGrossVolume(baseVolume);
-        if(volumeRemainder.intValue() >= 1) {
-            original.setGrossVolume(baseVolume.add(BigDecimal.valueOf(1)));
-            volumeRemainder = volumeRemainder.subtract(BigDecimal.valueOf(1));
-        }
-        int packsCount = basePacks.intValue();
-        if(packsRemainder.intValue() >= 1) {
-            packsCount += 1;
-            packsRemainder = packsRemainder.subtract(BigDecimal.valueOf(1));
-        }
-        original.setPacks(String.valueOf(packsCount));
-
-        original.setTareWeight(baseTareWeight);
-        if(tareWeightRemainder.intValue() >= 1) {
-            original.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
-            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.valueOf(1));
-        }
-
-        original.setNetWeight(baseNetWeight);
-        if(netWeightRemainder.intValue() >= 1) {
-            original.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
-            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.valueOf(1));
-        }
-
-        resultContainers.add(original);
-
-        // Step 2: Generate new containers for remaining (count - 1)
-        for (int i = 1; i < count; i++) {
-
-            resultContainers.add(
-                    createDistributedCopy(
-                            original, baseWeight, baseVolume, weightRemainder, volumeRemainder,
-                            basePacks, packsRemainder, baseTareWeight, tareWeightRemainder, baseNetWeight, netWeightRemainder
-                    )
+        // Step 1: Generate new containers for remaining (count)
+        for (int i = 0; i < count; i++) {
+            Containers newContainer = createDistributedCopy(original, baseWeight, baseVolume, weightRemainder, volumeRemainder,
+                    basePacks, packsRemainder, baseTareWeight, tareWeightRemainder, baseNetWeight, netWeightRemainder
             );
+
+            newContainer.setBookingId(null);
+            newContainer.setConsolidationId(original.getConsolidationId());
+            resultContainers.add(newContainer);
             if(weightRemainder.intValue() >= 1) {
                 weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
             }
@@ -601,11 +575,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         newContainer.setTareWeight(baseTareWeight);
         if(tareWeightRemainder.intValue() >= 1) {
-            newContainer.setTareWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
         }
         newContainer.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
-            newContainer.setNetWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
         }
 
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
