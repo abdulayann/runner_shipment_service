@@ -282,6 +282,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         clonedConsole.setOpenForAttachment(true);
         clonedConsole.setTriggerMigrationWarning(true);
         clonedConsole.setIsLocked(false);
+        clonedConsole.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
         return clonedConsole;
     }
@@ -426,6 +427,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             finalContainers.addAll(shipmentContainers);
         }
         console.setContainersList(new ArrayList<>(finalContainers));
+        setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V3);
 
         return console;
     }
@@ -524,13 +526,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         original.setContainerCount(1L);
         original.setGrossWeight(baseWeight);
         if(weightRemainder.intValue() >= 1) {
-            original.setGrossWeight(baseWeight.add(BigDecimal.valueOf(1)));
-            weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = weightRemainder.remainder(BigDecimal.ONE);
+            original.setGrossWeight(baseWeight.add(BigDecimal.ONE).add(fractionalPart));
+            weightRemainder = weightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        } else{
+            original.setGrossWeight(baseWeight.add(weightRemainder));
+            weightRemainder = BigDecimal.ZERO;
         }
+
         original.setGrossVolume(baseVolume);
         if(volumeRemainder.intValue() >= 1) {
-            original.setGrossVolume(baseVolume.add(BigDecimal.valueOf(1)));
-            volumeRemainder = volumeRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = volumeRemainder.remainder(BigDecimal.ONE);
+            original.setGrossVolume(baseVolume.add(BigDecimal.ONE).add(fractionalPart));
+            volumeRemainder = volumeRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setGrossVolume(baseVolume.add(volumeRemainder));
+            volumeRemainder = BigDecimal.ZERO;
         }
         int packsCount = basePacks.intValue();
         if(packsRemainder.intValue() >= 1) {
@@ -541,14 +552,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         original.setTareWeight(baseTareWeight);
         if(tareWeightRemainder.intValue() >= 1) {
-            original.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
-            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = tareWeightRemainder.remainder(BigDecimal.ONE);
+            original.setTareWeight(baseTareWeight.add(BigDecimal.ONE).add(fractionalPart));
+            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setTareWeight(baseTareWeight.add(tareWeightRemainder));
+            tareWeightRemainder = BigDecimal.ZERO;
         }
 
         original.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
-            original.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
-            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = netWeightRemainder.remainder(BigDecimal.ONE);
+            original.setNetWeight(baseTareWeight.add(BigDecimal.ONE).add(fractionalPart));
+            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setNetWeight(baseNetWeight.add(netWeightRemainder));
+            netWeightRemainder = BigDecimal.ZERO;
         }
 
         resultContainers.add(original);

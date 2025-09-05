@@ -348,7 +348,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
-
+        shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         return shipmentDetails;
     }
 
