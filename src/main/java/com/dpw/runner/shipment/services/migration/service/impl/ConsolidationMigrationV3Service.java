@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -133,11 +134,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
+        List<Containers> originalConsolContainers = consolFromDb.getContainersList();
+
         // Step 3: Convert V2 console + its attached shipments into V3 structure
         ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
-        // Step 4: Save all containers separately first, as they must be saved before referencing in packings
+        // Step 4: detach old containers from consolidation
+        for(Containers containers: originalConsolContainers) {
+            containers.setConsolidationId(null);
+        }
+        containerRepository.saveAll(originalConsolContainers);
+
+        // Step 5: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> updatedContainersList = console.getContainersList();
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         log.info("Saved {} updated container(s) for Consolidation [id={}]", savedUpdatedContainersList.size(), consolidationId);
@@ -471,11 +480,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     log.info("Mapped split container [guid={}] to shipments {}", tempContainer.getGuid(), shipmentUuids);
                 }
             }
-            container.setConsolidationId(null);
 
             resultContainers.addAll(tempContainers);
         }
-        containerRepository.saveAll(inputContainers);
 
         log.info("Finished container splitting. Input: {}, Output: {}", inputContainers.size(), resultContainers.size());
         return resultContainers;
