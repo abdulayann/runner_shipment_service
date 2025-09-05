@@ -1352,7 +1352,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                "username", null);
+                "username", null, false);
         assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
@@ -1374,7 +1374,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1399,7 +1399,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1439,7 +1439,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1474,7 +1474,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1498,7 +1498,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1520,7 +1520,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1559,7 +1559,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1593,7 +1593,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1629,7 +1629,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, tenantModelMap);
+                null, tenantModelMap, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1666,7 +1666,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, tenantModelMap);
+                null, tenantModelMap, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1691,7 +1691,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1713,7 +1713,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null,false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1754,7 +1754,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1790,7 +1790,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1815,7 +1815,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1837,7 +1837,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1878,7 +1878,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1914,7 +1914,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1938,7 +1938,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1960,7 +1960,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2000,7 +2000,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2035,7 +2035,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2060,7 +2060,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2095,7 +2095,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2128,7 +2128,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2223,7 +2223,7 @@ class CommonUtilsTest {
         CommonUtils spyService = spy(commonUtils);
         when(masterDataUtils.withMdc(any())).thenReturn(mockRunnable());
         spyService.sendRejectionEmailsExplicitly(List.of(ShipmentDetails.builder().build()), List.of(ConsoleShipmentMapping.builder().build()),
-                new HashSet<>(), List.of(ConsolidationDetails.builder().build()));
+                new HashSet<>(), List.of(ConsolidationDetails.builder().build()), false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2708,7 +2708,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2730,7 +2730,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2770,7 +2770,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2805,7 +2805,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 

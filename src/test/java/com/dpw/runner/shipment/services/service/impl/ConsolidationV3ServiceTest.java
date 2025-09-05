@@ -5126,7 +5126,7 @@ if (unitConversionUtilityMockedStatic != null) {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
         when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
         spyService.sendEmailsForPushRequestAccept(testConsol, List.of(1L), new HashSet<>(), new ArrayList<>());
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -5136,7 +5136,7 @@ if (unitConversionUtilityMockedStatic != null) {
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
         when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
         spyService.sendEmailForPushRequestReject(consolidationDetails, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
   @Test
