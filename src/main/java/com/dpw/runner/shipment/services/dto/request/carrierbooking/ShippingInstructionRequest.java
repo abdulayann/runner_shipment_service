@@ -18,12 +18,16 @@ import java.util.List;
 @AllArgsConstructor
 public class ShippingInstructionRequest {
     private String status;
-    private String mblNo;
+    private String carrierBlNo;
     private String carrierBookingNo;
     private ShippingInstructionEntityType entityType;
     private Long entityId;
     private String entityNumber;
     private String blComments;
+    private Integer noOfFreightCopies;
+    private Integer noOfUnFreightCopies;
+    private Integer nonNegoFreightCopies;
+    private Integer nonNegoUnFreightCopies;
 
     private PartiesRequest contract;
     private PartiesRequest shipper;
