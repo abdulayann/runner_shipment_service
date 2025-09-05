@@ -296,10 +296,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     private void updateContainerDataFromV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
         List<Containers> containersList = containerDao.findByBookingIdIn(List.of(customerBooking.getId()));
-        for(Containers containers: containersList) {
+        List<Containers> updatedContainersList = createCopyForContainers(containersList);
+        for(Containers containers: updatedContainersList) {
             if(!Objects.isNull(containers.getGrossWeight())) {
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
-                containers.setGrossWeight(new BigDecimal(containers.getContainerCount()).multiply(containers.getCargoWeightPerContainer()));
+                if(containers.getContainerCount()!=null)
+                    containers.setGrossWeight(new BigDecimal(containers.getContainerCount()).multiply(containers.getCargoWeightPerContainer()));
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
                 containers.setContainerWeightUnit(containers.getGrossWeightUnit());
@@ -308,7 +310,18 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        containerRepository.saveAll(containersList);
+
+        containerRepository.saveAll(updatedContainersList);
+    }
+
+    private List<Containers> createCopyForContainers(List<Containers> containersList) {
+        List<Containers> newContainerList = jsonHelper.convertValueToList(containersList, Containers.class);
+        for(Containers container: newContainerList) {
+            container.setId(null); // Ensure new identity
+            container.setGuid(UUID.randomUUID());
+            container.setConsolidationId(null);
+        }
+        return newContainerList;
     }
 
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
@@ -346,8 +359,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updateWeight(Packing packing) {
         if (packing.getWeight() != null) {
             packing.setCargoWeightPerPack(packing.getWeight());
-            BigDecimal totalWeight = BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getCargoWeightPerPack());
-            packing.setWeight(totalWeight);
+            if(packing.getPacks()!=null) {
+                BigDecimal totalWeight = BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getCargoWeightPerPack());
+                packing.setWeight(totalWeight);
+            }
         }
     }
 
@@ -355,10 +370,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         if (isDimensionsPresent(packing)) {
             BigDecimal volumePerPack = packing.getLength().multiply(packing.getWidth()).multiply(packing.getHeight());
             packing.setVolumePerPack(volumePerPack);
-            packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(volumePerPack));
+            if(packing.getPacks()!=null)
+                packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(volumePerPack));
         } else if (packing.getVolume() != null) {
             packing.setVolumePerPack(packing.getVolume());
-            packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getVolumePerPack()));
+            if(packing.getPacks()!=null)
+                packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getVolumePerPack()));
         }
     }
 
