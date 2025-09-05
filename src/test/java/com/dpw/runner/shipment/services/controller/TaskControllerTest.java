@@ -93,9 +93,9 @@ class TaskControllerTest {
     @Test
     void mdmretrieve() throws RunnerException {
         // Mock
-        when(tasksService.retrieveMDMTask(any(), )).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(tasksService.retrieveMDMTask(any(),any() )).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = taskController.retrieveMDMTask("123");
+        var responseEntity = taskController.retrieveMDMTask("123", 1L);
         // Assert
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -103,9 +103,9 @@ class TaskControllerTest {
     @Test
     void mdmretrieve2() throws RunnerException {
         // Mock
-        when(tasksService.retrieveMDMTask(any(), )).thenThrow(new RuntimeException());
+        when(tasksService.retrieveMDMTask(any(), any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = taskController.retrieveMDMTask("123");
+        var responseEntity = taskController.retrieveMDMTask("123", 1L);
         // Assert
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -113,9 +113,9 @@ class TaskControllerTest {
     @Test
     void mdmretrieve3() throws RunnerException {
         // Mock
-        when(tasksService.retrieveMDMTask(any(), )).thenThrow(new RuntimeException("RuntimeException"));
+        when(tasksService.retrieveMDMTask(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = taskController.retrieveMDMTask("123");
+        var responseEntity = taskController.retrieveMDMTask("123", 1L);
         // Assert
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
