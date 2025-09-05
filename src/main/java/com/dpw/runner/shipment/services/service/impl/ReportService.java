@@ -2846,7 +2846,7 @@ public class ReportService implements IReportService {
                     docType = DocumentConstants.HBL;
                     break;
                 case SEAWAY_BILL:
-                    filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    filename = SEAWAY_BILL + DocumentConstants.DASH + StringUtility.convertToString(reportRequest.getPrintType()) + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
                     docType = DocumentConstants.SEA_WAYBILL;
                     break;
@@ -2915,7 +2915,7 @@ public class ReportService implements IReportService {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else if (SEAWAY_BILL.equalsIgnoreCase(docType)) {
                     if (DRAFT.equalsIgnoreCase(childType))
-                        customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                        customFileName = baseDocName + "_" + DRAFT + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                     else
                         customFileName = StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else if (Objects.equals(docType, TRANSPORT_INSTRUCTIONS)) {
