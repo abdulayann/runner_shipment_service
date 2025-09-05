@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
@@ -11,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -22,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Slf4j
 @Component
@@ -33,6 +35,9 @@ public class ContainerValidationUtil {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private IContainerDao containerDao;
 
     /**
      * Validates a bulk update request for containers.
@@ -163,8 +168,8 @@ public class ContainerValidationUtil {
         return commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
     }
 
-    public void validateBeforeUnAssignContainer(UnAssignContainerParams unAssignContainerParams, UnAssignContainerRequest request, String module) {
-        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module))
+    public void validateBeforeUnAssignContainer(UnAssignContainerParams unAssignContainerParams, UnAssignContainerRequest request, String module, Boolean isForcedDetach) {
+        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), unAssignContainerParams.getShipmentDetailsMap(), module) && !Boolean.TRUE.equals(isForcedDetach))
             throw new ValidationException("Use Shipment screen to unassign value to FCL container.");
         validateOpenForAttachment(unAssignContainerParams.getConsolidationId(), unAssignContainerParams.getConsolidationDetails());
     }
@@ -235,6 +240,36 @@ public class ContainerValidationUtil {
         if (ObjectUtils.isNotEmpty(consolidationsByIds) &&
                 consolidationsByIds.stream().anyMatch(cd -> cd != null && !Boolean.TRUE.equals(cd.getOpenForAttachment()))) {
             throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
+        }
+    }
+
+    public void validateShipmentTypeForContainerOperation(List<Containers> containersList, List<ShipmentDetails> shipmentDetailsList,
+                                                          List<ShipmentsContainersMapping> shipmentsContainersMappingList, String module) {
+        for(Containers container: containersList) {
+            List<Long> shipmentIds = shipmentsContainersMappingList.stream().filter(i -> i.getContainerId().equals(container.getId()))
+                                                                                .map(ShipmentsContainersMapping::getShipmentId).toList();
+            if(!listIsNullOrEmpty(shipmentIds)) {
+                for(ShipmentDetails shipment: shipmentDetailsList) {
+                    if(shipmentIds.contains(shipment.getId())) {
+                        validateShipmentTypeForContainerOperation(shipment, module);
+                    }
+                }
+            }
+        }
+    }
+
+    private void validateShipmentTypeForContainerOperation(ShipmentDetails shipment, String module) {
+        // only LCL/LTL - non FCL/FTL operations are allowed for consolidation
+        if(Constants.CONSOLIDATION.equals(module) &&
+                (Constants.CARGO_TYPE_FCL.equals(shipment.getShipmentType()) ||
+                        Constants.CARGO_TYPE_FTL.equals(shipment.getShipmentType()))) {
+            throw new ValidationException("Only LCL/LTL operations are allowed for consolidation. Please use shipment screen to perform this operation.");
+        }
+        // only FCL/FTL operations are allowed for shipment
+        if(Constants.SHIPMENT.equals(module) &&
+                (!Constants.CARGO_TYPE_FCL.equals(shipment.getShipmentType()) &&
+                        !Constants.CARGO_TYPE_FTL.equals(shipment.getShipmentType()))) {
+            throw new ValidationException("Only FCL/FTL operations are allowed for shipment. Please use consolidation screen to perform this operation.");
         }
     }
 

@@ -1,5 +1,13 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
@@ -13,20 +21,16 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -281,6 +285,31 @@ public class ConsolidationValidationV3Util {
                         throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
                 }
             }
+        }
+    }
+
+    public void validateControlledFields(ConsolidationDetails newConsol) {
+        if (newConsol == null) {
+            throw new ValidationException("Consolidation details cannot be null");
+        }
+
+        String transportMode = newConsol.getTransportMode();
+        Boolean newControlled = newConsol.getControlled();
+        String newControlledRefNumber = newConsol.getControlledReferenceNumber();
+
+        // Validation 1: Controlled fields allowed only for SEA mode
+        if (!Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                && (newControlled != null || StringUtility.isNotEmpty(newControlledRefNumber))) {
+            throw new ValidationException(
+                    "Controlled and Controlled Reference Number can be selected for Sea Transport Mode only"
+            );
+        }
+
+        // Validation 2: Controlled requires Controlled Reference Number
+        if (newControlled != null && StringUtility.isEmpty(newControlledRefNumber)) {
+            throw new ValidationException(
+                    "If value in Controlled is selected, please enter a value in Controlled Reference Number"
+            );
         }
     }
 

@@ -119,6 +119,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -172,6 +180,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ShipmentDetailsMapper shipmentDetailsMapper;
     @Autowired
     private INotesDao notesDao;
+    @Autowired
+    private EntityManager entityManager;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -757,6 +767,138 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
         }
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException {
+        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
+            throw new ValidationException("Include columns can not be empty");
+        }
+        if (listCommonRequest.getPageNo() == null || listCommonRequest.getPageNo() < 1) {
+            throw new ValidationException("PageSize should be greater than 1");
+        }
+        listCommonRequest.getIncludeColumns().add("id");
+        long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+        int pageNo = listCommonRequest.getPageNo();
+        int pageSize = Optional.ofNullable(listCommonRequest.getPageSize()).orElse(25);
+        int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+        List<String> includeColumns = commonUtils.refineIncludeColumns(listCommonRequest.getIncludeColumns());
+
+        // Step 1: Read requested columns
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+//
+//
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Step 6: Build CriteriaQuery<Object[]>
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+        // Step 3: Parse filterCriteria into predicates
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
+
+        // Step 4: Parse sortRequest
+        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, listCommonRequest);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>();
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  commonUtils.extractSortFieldFromPayload(listCommonRequest));
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add where
+        if (!predicates.isEmpty()) {
+            cq.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        // Add sorting
+        if (sortOrder != null) {
+            cq.orderBy(sortOrder);
+        }
+        long start = System.currentTimeMillis();
+        // Step 7: Execute paginated query
+        List<Object[]> results = entityManager.createQuery(cq)
+                .setFirstResult((pageNo - 1) * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
+        log.info("Time taken in executing query: {} ms, filterCriteria: {}", (System.currentTimeMillis()-start), listCommonRequest.getFilterCriteria().toString());
+        // Step 8: Convert flat to nested map with array support
+        List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
+        List<ShipmentDetails> shiplist = new ArrayList<>();
+        for( Map<String, Object> curr : nestedList) {
+            ShipmentDetails ship = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
+            shiplist.add(ship);
+        }
+
+        List<IRunnerResponse> shipmentListResponses = new ArrayList<>();
+        for( ShipmentDetails curr : shiplist) {
+            IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentDetailsResponse());
+            shipmentListResponses.add(shipmentListResponse);
+        }
+   return ResponseHelper.buildListSuccessResponse(
+                shipmentListResponses,
+                totalPages,
+                totalCount);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
+        List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
+        // Step 1: Read requested columns
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>(); // to store column names in order
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  null);
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add filter by id if provided
+        if (commonGetRequest.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
+            cq.where(idPredicate);
+        } else if(commonGetRequest.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
+            cq.where(idPredicate);
+        }
+
+        TypedQuery<Object[]> query = entityManager.createQuery(cq);
+        long start = System.currentTimeMillis();
+        List<Object[]> results = query.getResultList();
+        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", (System.currentTimeMillis()-start), commonGetRequest.getId(), commonGetRequest.getGuid());
+        // Convert result list to List<Map<String, Object>>
+        List<Map<String, Object>> finalResult = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> rowMap = new LinkedHashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowMap.put(columnOrder.get(i), row[i]);
+            }
+            finalResult.add(rowMap);
+        }
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
+        ShipmentDetails shipDetails = new ShipmentDetails();
+        for( Map<String, Object> curr : nestedList) {
+            shipDetails = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
+
+        }
+        IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
+       return ResponseHelper.buildSuccessResponse(shipmentListResponse);
+    }
+
 
     private void setCounterCountAndTeuCount(ShipmentRetrieveLiteResponse response, Set<Containers> containersList) {
         long shipmentCont = containersList.stream()
@@ -2186,8 +2328,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach) {
         for (ShipmentDetails detachedShipment : detachedShipments) {
+            if(Boolean.TRUE.equals(isForcedDetach) && detachedShipment.getContainersList() != null){
+                detachedShipment.setContainersList(new HashSet<>());
+            }
             if (detachedShipment.getCarrierDetails() != null) {
                 detachedShipment.getCarrierDetails().setEta(null);
                 detachedShipment.getCarrierDetails().setEtd(null);
@@ -3318,6 +3463,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
                 .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
+        request.setShipmentGuid(shipmentDetails.getGuid().toString());
 
         if (Constants.IMP.equals(shipmentDetails.getDirection())) {
             return "DG approval not required for Import Shipment";
@@ -3874,7 +4020,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         try {
-            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PULL_ACCEPTED, null, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, requestedUsername, null);
+            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PULL_ACCEPTED, null, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, requestedUsername, null, true);
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL);
         }
@@ -3884,9 +4030,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 try {
                     if (finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId())) {
                         if (consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, true);
                         else
-                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, true);
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -3904,6 +4050,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
 
         // fetching other consolidations
         List<Long> otherConsoleIds = new ArrayList<>();
@@ -3921,6 +4070,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
         for (ConsolidationDetails consolidationDetails1 : consolidationDetailsPage.getContent()) {
             userNames.add(consolidationDetails1.getCreatedBy());
+            if (consolidationDetails1.getAssignedTo() != null) {
+                userNames.add(consolidationDetails1.getAssignedTo());
+            }
             tenantIds.add(consolidationDetails1.getTenantId());
             otherConsoles.add(consolidationDetails1);
         }
@@ -3944,6 +4096,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsMap.put(consolidationDetails.getId(), consolidationDetails);
             tenantIds.add(consolidationDetails.getTenantId());
             userNames.add(consolidationDetails.getCreatedBy());
+            if (consolidationDetails.getAssignedTo() != null) {
+                userNames.add(consolidationDetails.getAssignedTo());
+            }
         }
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
@@ -3963,7 +4118,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         for (Long consoleId : consoleIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetailsMap.get(consoleId), SHIPMENT_PULL_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, consoleRequestUserMap.get(consoleId), null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetailsMap.get(consoleId), SHIPMENT_PULL_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, consoleRequestUserMap.get(consoleId), null, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -3993,7 +4148,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, tenantsDataFuture, userEmailsFuture).join();
         for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -4006,6 +4161,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
                 tenantIds.add(consolidationDetails1.getTenantId());
                 userNames.add(consolidationDetails1.getCreatedBy());
+                if (consolidationDetails1.getAssignedTo() != null) {
+                    userNames.add(consolidationDetails1.getAssignedTo());
+                }
             }
         }
     }
@@ -4117,6 +4275,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
         tenantIds.add(consolidationDetails.getTenantId());
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
@@ -4127,7 +4288,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         try {
-            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PUSH_REQUESTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, null, null);
+            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PUSH_REQUESTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, null, null, true);
         } catch (Exception e) {
             log.error("Error while sending email");
         }
@@ -4145,10 +4306,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                                                                   List<EmailTemplatesRequest> emailTemplates) {
         var emailTemplateModel = emailTemplates.stream().findFirst().orElse(new EmailTemplatesRequest());
 
-        List<String> toEmailList = new ArrayList<>();
-        List<String> ccEmailsList = new ArrayList<>();
+        Set<String> toEmailList = new HashSet<>();
+        Set<String> ccEmailsList = new HashSet<>();
         if (consolidationDetails.getCreatedBy() != null)
             toEmailList.add(consolidationDetails.getCreatedBy());
+
+        if (consolidationDetails.getAssignedTo() != null) {
+            ccEmailsList.add(consolidationDetails.getAssignedTo());
+        }
 
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -4167,18 +4332,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         CompletableFuture.allOf(carrierFuture, locationsFuture, toAndCcEmailIdsFuture).join();
 
-        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
-        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
-        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
+        ccEmailsList.addAll(toEmailIds);
+        ccEmailsList.addAll(ccEmailIds);
+        commonUtils.setCurrentUserEmail(ccEmailsList);
         if (consolidationDetails.getCreatedBy() == null) {
             toEmailIds.clear();
             ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
             toEmailList.addAll(new ArrayList<>(toEmailIds));
         }
 
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carriersMap, locationsMap);
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, ccEmailsList);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, new ArrayList<>(toEmailList), new ArrayList<>(ccEmailsList));
         return ResponseHelper.buildSuccessResponse();
     }
 

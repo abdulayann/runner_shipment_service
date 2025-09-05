@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Journey;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.LocationHistory;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -53,6 +54,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,6 +66,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -525,6 +528,66 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     // WILL REMOVE AFTER EVENTS TESTING
     // IGNORE THE COMMENTED SECTION
 
+    @Nullable
+    private static String getFldrEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventType)
+                && safeDescription.equalsIgnoreCase("Flight Departure")) {
+            log.info("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
+            return EventConstants.FLDR;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getFlarEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventType)
+                && safeDescription.equalsIgnoreCase("Flight Arrival")) {
+            log.info("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
+            return EventConstants.FLAR;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getCacoEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.AT_ORIGIN_PICKUP.equalsIgnoreCase(safeEventType)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched AT_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.CACO);
+            return EventConstants.CACO;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getIntrEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.IN_TRANSIT.equalsIgnoreCase(safeEventType)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched IN_TRANSIT and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.INTR);
+            return EventConstants.INTR;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getCafsEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.AT_DESTINATION_DELIVERY.equalsIgnoreCase(safeEventType)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched AT_DESTINATION_DELIVERY and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.CAFS);
+            return EventConstants.CAFS;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getPRDEEventCode(String safeEventType, String safeDescription) {
+        if (EventConstants.DEPARTED_DESTINATION_DELIVERY.equalsIgnoreCase(safeEventType)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched DEPARTED_DESTINATION_DELIVERY and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.PRDE);
+            return EventConstants.PRDE;
+        }
+        return null;
+    }
+
     @SuppressWarnings("java:S125")
 //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
@@ -585,21 +648,39 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
         log.info("Converting event code '{}' with location role '{}'", safeEventType, safeLocationRole);
 
-        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventType)
-                && safeDescription.equalsIgnoreCase("Flight Arrival")) {
-            log.info("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
-            return EventConstants.FLAR;
+        String prde = getPRDEEventCode(safeEventType, safeDescription);
+        if (prde != null) {
+            return prde;
         }
 
-        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventType)
-                && safeDescription.equalsIgnoreCase("Flight Departure")) {
-            log.info("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
-            return EventConstants.FLDR;
+        String cafs = getCafsEventCode(safeEventType, safeDescription);
+        if (cafs != null) {
+            return cafs;
         }
 
-        String shortCode = getShortCode(safeEventType, safeDescription);
-        if (shortCode != null) {
-            return shortCode;
+        String intr = getIntrEventCode(safeEventType, safeDescription);
+        if (intr != null) {
+            return intr;
+        }
+
+        String caco = getCacoEventCode(safeEventType, safeDescription);
+        if (caco != null) {
+            return caco;
+        }
+
+        String flar = getFlarEventCode(safeEventType, safeDescription);
+        if (flar != null) {
+            return flar;
+        }
+
+        String fldr = getFldrEventCode(safeEventType, safeDescription);
+        if (fldr != null) {
+            return fldr;
+        }
+
+        String trcfTnfdTrcsEventCode = getTrcfTnfdTrcsEventCode(safeEventType, safeDescription);
+        if (trcfTnfdTrcsEventCode != null) {
+            return trcfTnfdTrcsEventCode;
         }
 
         String ecpk = getECPKEventCode(safeEventType, safeLocationRole);
@@ -607,7 +688,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return ecpk;
         }
 
-        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole);
+        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole, safeDescription);
         if (fcgi != null) {
             return fcgi;
         }
@@ -636,7 +717,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return safeEventType;
     }
 
-    private String getShortCode(String safeEventCode, String safeDescription) {
+    private String getTrcfTnfdTrcsEventCode(String safeEventCode, String safeDescription) {
         if (EventConstants.LITERAL.equalsIgnoreCase(safeEventCode)) {
             String shortCode = null;
 
@@ -657,20 +738,27 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            log.info("Matched GATE_OUT_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
         return null;
     }
 
-    private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
+    private String getFCGIEventCode(String safeEventCode, String safeLocationRole, String safeDescription) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.info("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
+
+        if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeDescription)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
+            return EventConstants.FCGI;
+        }
+
         return null;
     }
 
@@ -800,7 +888,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .flightName(StringUtility.convertToString(transport.getOperatorName())));
 
                                         // Build and return the event
-                                        return eventBuilder.build();
+                                        Events eventBuild = eventBuilder.build();
+                                        fillLongLatForINTR(eventBuild, container);
+                                        return eventBuild;
                                     })
                                     .toList();
 
@@ -814,5 +904,31 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             customThreadPool.shutdown();
         }
         return trackingEvents;
+    }
+
+    private void fillLongLatForINTR(Events eventBuilder, Container container) {
+        if (eventBuilder == null || container == null) {
+            return;
+        }
+
+        // Only proceed if event code is "INTR"
+        if (!EventConstants.INTR.equalsIgnoreCase(eventBuilder.getEventCode())) {
+            return;
+        }
+
+        List<LocationHistory> locationHistory = container.getLocationHistory();
+        LocationHistory latest = getLatestDriverAppLocationHistory(locationHistory);
+
+        if (latest != null && latest.getLongitude() != null && latest.getLatitude() != null) {
+            eventBuilder.setLongitude(String.valueOf(latest.getLongitude()));
+            eventBuilder.setLatitude(String.valueOf(latest.getLatitude()));
+        }
+    }
+
+    public LocationHistory getLatestDriverAppLocationHistory(List<LocationHistory> historyList) {
+        return historyList.stream().filter(Objects::nonNull)
+                .filter(locationHistory -> EventConstants.DRIVER_APP.equalsIgnoreCase(locationHistory.getSource()))
+                .max(Comparator.comparing(LocationHistory::getLocationUpdateTime))
+                .orElse(null);
     }
 }

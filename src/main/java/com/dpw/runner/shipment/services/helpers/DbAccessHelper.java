@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -561,5 +563,32 @@ public class DbAccessHelper {
         } catch (ParseException e) {
             return null;
         }
+    }
+       /**
+     * Generic method to build JPA sort order for any entity that extends MultiTenancy.
+     *
+     * Usage examples:
+     * - For ShipmentDetails: buildSortOrder(cb, shipmentRoot, payload)
+     * - For ConsolidationDetails: buildSortOrder(cb, consolidationRoot, payload)
+     *
+     * @param cb CriteriaBuilder instance
+     * @param root Root entity (must extend MultiTenancy)
+     * @param payload Request payload containing sort criteria
+     * @return JPA Order for sorting, or null if no sort criteria provided
+     */
+    public static <T> Order buildSortOrder(CriteriaBuilder cb,
+                                 Root<T> root,
+                                           ListCommonRequest payload) {
+        SortRequest sortRequest =  payload.getSortRequest();
+        if (sortRequest != null) {
+            String fieldName = sortRequest.getFieldName();
+            String order = sortRequest.getOrder();
+            if ("DESC".equalsIgnoreCase(order)) {
+                return cb.desc(root.get(fieldName));
+            } else {
+                return cb.asc(root.get(fieldName));
+            }
+        }
+        return null;
     }
 }

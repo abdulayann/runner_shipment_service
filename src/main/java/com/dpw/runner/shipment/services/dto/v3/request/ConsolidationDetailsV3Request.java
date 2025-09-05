@@ -37,6 +37,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     @Size(max=100, message = "max size is 100 for container_category")
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     @Size(max=20, message = "max size is 20 for service_level")
@@ -179,4 +180,6 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String incoterms;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

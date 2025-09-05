@@ -131,7 +131,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -152,9 +151,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION_PORT_LOC_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN_PORT_LOC_CODE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -215,6 +215,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
+            Map.entry("notifyPartyOrgCode", RunnerEntityMapping.builder().tableName("notifyParty").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
+            Map.entry("customerAddressCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry("notifyPartyAddressCode", RunnerEntityMapping.builder().tableName("notifyParty").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("origin").build()),
             Map.entry("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destination").build()),
             Map.entry("originPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originPort").build()),
@@ -222,11 +227,51 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("bookingNumber").isContainsText(true).build()),
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingStatus.class).fieldName("bookingStatus").build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("createdBy").build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("createdBy").isContainsText(true).build()),
             Map.entry("contractId", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("contractId").build()),
+            Map.entry("parentContractId", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("parentContractId").build()),
             Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentId").isContainsText(true).build()),
             Map.entry("source", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingSource.class).fieldName("source").build()),
-            Map.entry("shipmentReferenceNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentReferenceNumber").build())
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
+            Map.entry("incoterms", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("incoterms").isContainsText(true).build()),
+            Map.entry("serviceMode", RunnerEntityMapping.builder().tableName(CUSTOMER_BOOKING).dataType(String.class).fieldName("serviceMode").isContainsText(true).build()),
+            Map.entry("shipmentReferenceNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentReferenceNumber").build()),
+            Map.entry("transportMode", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("transportType").isContainsText(true).build()),
+            Map.entry(DIRECTION, RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("direction").isContainsText(true).build()),
+            Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("additionalTerms").isContainsText(true).build()),
+            Map.entry("description", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("description").isContainsText(true).build()),
+            Map.entry("cargoType", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("cargoType").isContainsText(true).build()),
+            Map.entry("originLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originLocCode").build()),
+            Map.entry("destinationLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationLocCode").build()),
+            Map.entry(ORIGIN_PORT_LOC_CODE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
+            Map.entry(DESTINATION_PORT_LOC_CODE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
+            Map.entry(Constants.SHIPPING_LINE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.SHIPPING_LINE).isContainsText(true).build()),
+            Map.entry(Constants.FLIGHT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.FLIGHT_NUMBER).build()),
+            Map.entry(Constants.VESSEL, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.VESSEL).build()),
+            Map.entry(Constants.VOYAGE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(Constants.VOYAGE).build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
+            Map.entry("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("eta").build()),
+            Map.entry("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("etd").build()),
+            Map.entry("ata", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("ata").build()),
+            Map.entry("atd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).fieldName("atd").build()),
+            Map.entry("carrierBookingNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("carrierBookingNumber").isContainsText(true).build()),
+            Map.entry("cargoReadinessDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("cargoReadinessDate").build()),
+            Map.entry("deliveryAtDestinationDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("deliveryAtDestinationDate").build()),
+            Map.entry("estimatedDeliveryAtDestinationDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("estimatedDeliveryAtDestinationDate").build()),
+            Map.entry("grossWeight", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BigDecimal.class).fieldName("grossWeight").build()),
+            Map.entry("grossWeightUnit", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("grossWeightUnit").build()),
+            Map.entry("volume", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BigDecimal.class).fieldName("volume").build()),
+            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("volumeUnit").build()),
+            Map.entry("weightVolume", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BigDecimal.class).fieldName("weightVolume").build()),
+            Map.entry("weightVolumeUnit", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("weightVolumeUnit").build()),
+            Map.entry("chargeable", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BigDecimal.class).fieldName("chargeable").build()),
+            Map.entry("chargeableUnit", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("chargeableUnit").build()),
+            Map.entry("packages", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Integer.class).fieldName("packages").build()),
+            Map.entry("packageType", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("packageType").build()),
+            Map.entry("isReefer", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Boolean.class).fieldName("isReefer").build()),
+            Map.entry("isDg", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Boolean.class).fieldName("isDg").build())
     );
 
     @Autowired
@@ -2079,7 +2124,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
-        } else {
+        }
+        else {
             boolean hasAirDGPermission = UserContext.isAirDgUser();
             if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
                 throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");

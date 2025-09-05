@@ -9,18 +9,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -33,20 +23,12 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
@@ -72,19 +54,8 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
@@ -97,12 +68,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.*;
-import org.apache.tomcat.util.bcel.Const;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -118,6 +83,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -281,6 +250,21 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Qualifier("executorServiceMasterData")
   private ExecutorService executorServiceMasterData;
 
+    @Mock
+    private EntityManager entityManager;
+
+    @Mock
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock
+    private CriteriaQuery<Object[]> criteriaQuery;
+
+    @Mock
+    private Root<ConsolidationDetails> root;
+
+    @Mock
+    private TypedQuery<Object[]> typedQuery;
+
   @InjectMocks
   private ConsolidationV3Service consolidationV3Service;
 
@@ -320,6 +304,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").enableRouteMaster(true).build());
     TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
     testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+    testConsol.setAssignedTo("AssignedToUser");
     testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
     consolidationDetailsV3Request = objectMapperTest.convertValue(testConsol , ConsolidationDetailsV3Request.class);
     consolidationEtV3Request = objectMapperTest.convertValue(testConsol ,ConsolidationEtV3Request.class);
@@ -328,6 +313,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     shipmentDetails = jsonTestUtility.getCompleteShipment();
     consolidationDetails = new ConsolidationDetails();
     consolidationDetails.setConsolidationType(CONSOLIDATION_TYPE_CLD);
+    consolidationDetails.setAssignedTo("assignedToUser");
     shipmentSettingsDetails = new ShipmentSettingsDetails();
     customerBookingV3Request = new CustomerBookingV3Request();
     testShipment = jsonTestUtility.getTestShipment();
@@ -2701,6 +2687,7 @@ if (unitConversionUtilityMockedStatic != null) {
     request.setShipmentIds(Set.of(1L,2L));
     request.setConsolidationId(1L);
 
+
     shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
     shipmentDetails.setEventsList(List.of(Events.builder().build()));
     shipmentDetails.setContainersList(new HashSet<>());
@@ -2736,6 +2723,229 @@ if (unitConversionUtilityMockedStatic != null) {
     ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
     assertNotNull(response);
   }
+    @Test
+    void detachShipments_Success1() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.TRUE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = shipmentDetails;
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
+        Containers container = new Containers();
+        container.setId(1L);
+        Set<Containers> containersList = Set.of(container);
+        shipmentDetails1.setContainersList(containersList);
+
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+    @Test
+    void detachShipments_Success2() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.TRUE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = shipmentDetails;
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
+        Containers container = new Containers();
+        container.setId(1L);
+
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        assertThrows(RunnerException.class, () -> {
+            spyService.detachShipments(request);
+        });
+    }
+
+    @Test
+    void detachShipments_Success3() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.TRUE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = shipmentDetails;
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
+        Containers container = new Containers();
+        container.setId(1L);
+        Set<Containers> containersList = Set.of(container);
+        shipmentDetails1.setContainersList(containersList);
+
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = new Packing();
+        packing.setContainerId(1L);
+        List<Packing> packingList = List.of(packing);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void detachShipments_Success4() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.TRUE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = shipmentDetails;
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
+        Containers container = new Containers();
+        container.setId(1L);
+        Set<Containers> containersList = Set.of(container);
+        shipmentDetails1.setContainersList(containersList);
+
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = new Packing();
+        packing.setContainerId(1L);
+        packing.setShipmentId(1L);
+        List<Packing> packingList = List.of(packing);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+
+
 
   @Test
   void fetchAllMasterDataByKey_Success(){
@@ -4374,6 +4584,7 @@ if (unitConversionUtilityMockedStatic != null) {
     // setup
     shipmentDetails = ShipmentDetails.builder().build();
     consolidationDetails = ConsolidationDetails.builder().build();
+    consolidationDetails.setAssignedTo("assignedToUser");
     List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
@@ -4915,7 +5126,7 @@ if (unitConversionUtilityMockedStatic != null) {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
         when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
         spyService.sendEmailsForPushRequestAccept(testConsol, List.of(1L), new HashSet<>(), new ArrayList<>());
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -4925,7 +5136,7 @@ if (unitConversionUtilityMockedStatic != null) {
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
         when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
         spyService.sendEmailForPushRequestReject(consolidationDetails, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
   @Test
@@ -5003,6 +5214,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendEmailFOrPullRequestWithdraw() {
       consolidationDetails = new ConsolidationDetails();
       consolidationDetails.setId(1L);
+      consolidationDetails.setAssignedTo("assignedToUser");
       boolean isSuccess = true;
       when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
       when(masterDataUtils.withMdc(any())).thenReturn(this :: mockRunnable);
@@ -6215,4 +6427,222 @@ if (unitConversionUtilityMockedStatic != null) {
         assertNull(response.getSendingAgent());
         assertNull(response.getOriginBranch());
     }
+    @Test
+    void testFetchShipments_NullIncludeColumns_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(null);
+
+        // When & Then
+        assertThatThrownBy(() -> consolidationV3Service.fetchConsolidation(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Include columns can not be empty");
+    }
+
+    @Test
+    void testFetchShipments_EmptyIncludeColumns_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(new ArrayList<>());
+
+        // When & Then
+        assertThatThrownBy(() -> consolidationV3Service.fetchConsolidation(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Include columns can not be empty");
+    }
+
+    @Test
+    void testFetchShipments_NullPageNo_ThrowsValidationException() {
+        // Given
+        ListCommonRequest validRequest=  new ListCommonRequest();
+        validRequest.setIncludeColumns(List.of("id"));
+        validRequest.setPageNo(0);
+
+        // When & Then
+        assertThatThrownBy(() -> consolidationV3Service.fetchConsolidation(validRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("PageSize should be greater than 1");
+    }
+
+    @Test
+    void testFetchConsol_SuccessWithDefaultPageSize() throws RunnerException {
+        // Arrange
+        ListCommonRequest request = new ListCommonRequest();
+        List<String> includeColumns = new ArrayList<>(Arrays.asList("column1", "column2"));
+        request.setIncludeColumns(includeColumns);
+        request.setPageNo(1);
+        request.setPageSize(25); // Should default to 25
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        when(mockFilterCriteria.toString()).thenReturn("mockFilterCriteria");
+        request.setFilterCriteria(List.of(mockFilterCriteria));
+
+        setupMocksForSuccessfulExecution();
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = consolidationV3Service.fetchConsolidation(request);
+
+        // Assert
+        assertNotNull(response);
+        verify(typedQuery).setFirstResult(0); // (1-1) * 25
+        verify(typedQuery).setMaxResults(25);
+    }
+
+
+    private void setupMocksForSuccessfulExecution() throws RunnerException {
+//
+        // Mock EntityManager and CriteriaBuilder
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Object[].class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(ConsolidationDetails.class)).thenReturn(root);
+
+        // Mock method chaining for CriteriaQuery
+        when(criteriaQuery.multiselect(anyList())).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
+        lenient().when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
+        lenient().when(criteriaQuery.orderBy(any(Order.class))).thenReturn(criteriaQuery);
+
+        lenient().when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
+        lenient().when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
+        lenient().when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
+
+        // Use any() matcher instead of eq(request) since request is modified
+        lenient().when(commonUtils.fetchTotalCount(any(ListCommonRequest.class), eq(ConsolidationDetails.class))).thenReturn(100L);
+        lenient().when(commonUtils.refineIncludeColumns(anyList())).thenReturn(new ArrayList<>(Arrays.asList("column1", "column2", "id")));
+        lenient().when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(new HashMap<>());
+        lenient().when(commonUtils.detectCollectionRelationships(any(), eq(ConsolidationDetails.class))).thenReturn(new HashSet<>());
+        lenient().when(commonUtils.buildPredicatesFromFilters(any(), any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(commonUtils.extractSortFieldFromPayload(any(ListCommonRequest.class))).thenReturn("defaultSortField");
+
+        // Mock buildJoinsAndSelections
+//        lenient().doAnswer(invocation -> {
+//            List<Selection<?>> selections = invocation.getArgument(1);
+//            List<String> columnOrder = invocation.getArgument(2);
+//            selections.add(mock(Selection.class));
+//            columnOrder.add("mockColumn");
+//            return null;
+//        }).when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), anyString());
+        // Create real List objects for the test
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>();
+
+// Add mock selections to the real lists
+        selections.add(mock(Selection.class));
+        columnOrder.add("mockColumn");
+
+// Don't mock buildJoinsAndSelections at all - let it execute
+// Or mock it to do nothing:
+        doNothing().when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), eq("consolidationDetails"), anyString());
+
+        // Mock query results
+        List<Object[]> queryResults = new ArrayList<>();
+        queryResults.add(new Object[]{"value1", "value2", 1L});
+        when(typedQuery.getResultList()).thenReturn(queryResults);
+
+        // Mock data transformation
+        List<Map<String, Object>> flatList = Arrays.asList(createMockFlatMap());
+        lenient().when(commonUtils.buildFlatList(eq(queryResults), anyList())).thenReturn(flatList);
+
+        List<Map<String, Object>> nestedList = Arrays.asList(createMockNestedMap());
+        lenient().when(commonUtils.convertToNestedMapWithCollections(eq(flatList), anySet(), anyString())).thenReturn(nestedList);
+
+        // Mock ShipmentDetails conversion
+        ConsolidationDetails mockShipment = new ConsolidationDetails();
+        lenient().when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(mockShipment);
+
+        // Mock response conversion
+        ConsolidationDetailsResponse mockResponse = new ConsolidationDetailsResponse();
+        lenient().when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(mockResponse);
+    }
+    private Map<String, Object> createMockFlatMap() {
+        Map<String, Object> flatMap = new HashMap<>();
+        flatMap.put("column1", "value1");
+        flatMap.put("column2", "value2");
+        flatMap.put("id", 1L);
+        return flatMap;
+    }
+
+    private Map<String, Object> createMockNestedMap() {
+        Map<String, Object> nestedMap = new HashMap<>();
+        Map<String, Object> consolData = new HashMap<>();
+        consolData.put("column1", "value1");
+        consolData.put("column2", "value2");
+        consolData.put("id", 1L);
+        nestedMap.put(Constants.CONSOLIDATION_ROOT_KEY_NAME, consolData);
+        return nestedMap;
+    }
+
+    @Test
+    void testGetConsolDetails_WithValidId_ReturnsShipmentDetails() throws RunnerException {
+        // Arrange
+        CommonGetRequest request = new CommonGetRequest();
+        request.setId(123L);
+        request.setIncludeColumns(Arrays.asList("id", "consolidationNumber", "status"));
+
+        // Mock EntityManager and CriteriaBuilder chain
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Object[].class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(ConsolidationDetails.class)).thenReturn(root);
+        when(criteriaQuery.multiselect(anyList())).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
+        when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
+        when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
+        Predicate predicate = mock(Predicate.class, withSettings().lenient());
+
+        // Mock predicate creation for ID filtering
+        when(criteriaBuilder.equal(any(), eq(123L))).thenReturn(predicate);
+        when(root.get("id")).thenReturn(mock(Path.class));
+
+        // Mock CommonUtils methods
+        when(commonUtils.refineIncludeColumns(anyList()))
+                .thenReturn(Arrays.asList("id", "consoleNumber", "status"));
+
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipment", Arrays.asList("id", "consoleNumber", "status"));
+        when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(requestedColumns);
+        when(commonUtils.detectCollectionRelationships(any(), eq(ConsolidationDetails.class)))
+                .thenReturn(new HashSet<>());
+
+        // Mock buildJoinsAndSelections - simplified to avoid ClassCastException
+        doNothing().when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), any());
+
+        // Mock query results
+        List<Object[]> queryResults = new ArrayList<>();
+        queryResults.add(new Object[]{123L, "SHIP-001", "DELIVERED"});
+        when(typedQuery.getResultList()).thenReturn(queryResults);
+
+        // Mock data transformation
+        List<Map<String, Object>> nestedList = new ArrayList<>();
+        Map<String, Object> nestedMap = new HashMap<>();
+        Map<String, Object> shipmentData = new HashMap<>();
+        shipmentData.put("id", 123L);
+        shipmentData.put("status", "DELIVERED");
+        nestedMap.put(Constants.CONSOLIDATION_ROOT_KEY_NAME, shipmentData);
+        nestedList.add(nestedMap);
+
+        when(commonUtils.convertToNestedMapWithCollections(anyList(), anySet(), anyString()))
+                .thenReturn(nestedList);
+
+        // Mock ShipmentDetails conversion
+        ConsolidationDetails mockShipment = new ConsolidationDetails();
+        mockShipment.setId(123L);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(mockShipment);
+
+        // Mock response conversion
+        ConsolidationDetailsResponse mockResponse = new ConsolidationDetailsResponse();
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = consolidationV3Service.getConsolidationDetails(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // Verify key interactions
+        verify(criteriaBuilder).equal(any(), eq(123L));
+        verify(criteriaQuery).where(predicate);
+        verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
+        verify(typedQuery).getResultList();
+    }
+
 }

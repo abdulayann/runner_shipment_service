@@ -40,6 +40,7 @@ public class ApiConstants {
 
     public static final String API_UPDATE = "/update";
     public static final String API_UPDATE_BULK = "/update/bulk";
+    public static final String API_PATCH_UPDATE_BULK = "/patch/update/bulk";
 
     public static final String API_RETRIEVE = "/retrieve";
 
@@ -211,4 +212,8 @@ public class ApiConstants {
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
     public static final String API_UPDATE_PARTIES = "/update/parties";
+
+    // Dynamic endpoints
+    public static final String API_DYNAMIC_LIST = "/dynamic/list";
+    public static final String API_DYNAMIC_RETRIEVE = "/dynamic/retrieve";
 }

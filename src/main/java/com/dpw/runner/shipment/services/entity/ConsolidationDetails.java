@@ -57,6 +57,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "is_domestic")
     private Boolean isDomestic;
 
+    @Column(name = "assigned_to")
+    private String assignedTo;
+
     @Column(name = "mawb")
     private String mawb;
 
@@ -517,6 +520,13 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "trigger_migration_warning")
     private Boolean triggerMigrationWarning = false;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 50, message = "max size is 50 for controlled reference number")
+    private String controlledReferenceNumber;
 
     @Override
     public boolean equals(Object o) {

@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
@@ -9,6 +13,8 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -18,13 +24,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {EventsController.class})
 @ExtendWith(MockitoExtension.class)
@@ -224,11 +223,11 @@ class EventsControllerTest {
     }
 
     @Test
-    void listEventsV2() throws RunnerException {
+    void listEventsV2() {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(eventService.listWithoutTenantFilter(any(), any())).thenReturn(List.of());
         // Test
         var responseEntity = eventsController.listEventsV2(request);
         // Assert
@@ -236,11 +235,11 @@ class EventsControllerTest {
     }
 
     @Test
-    void listEventsV2ReturnBadRequest() throws RunnerException {
+    void listEventsV2ReturnBadRequest() {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any())).thenThrow(new RuntimeException());
+        when(eventService.listWithoutTenantFilter(any(), any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = eventsController.listEventsV2(request);
         // Assert
@@ -252,7 +251,7 @@ class EventsControllerTest {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(eventService.listWithoutTenantFilter(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = eventsController.listEventsV2(request);
         // Assert
