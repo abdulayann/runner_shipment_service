@@ -515,6 +515,11 @@ public class EntityTransferService implements IEntityTransferService {
 
         EntityTransferV3ConsolidationDetails v2Payload = null;
         EntityTransferV3ConsolidationDetails v3Payload = null;
+        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+
+        Integer weightDecimalPlace = getWeightDecimalPlace(tenantSettingsResponse);
+        Integer volumeDecimalPlace = getVolumeDecimalPlace(tenantSettingsResponse);
+
 
         for (Map.Entry<Integer, Boolean> entry : v2V3Map.entrySet()) {
             Integer tenantId = entry.getKey();
@@ -528,7 +533,8 @@ public class EntityTransferService implements IEntityTransferService {
                     ConsolidationDetails v2Consol = jsonHelper.convertValue(consol, ConsolidationDetails.class);
                     setNotesInConsol(v2Consol);
                     Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, new HashMap<>());
+
+                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, new HashMap<>(), weightDecimalPlace, volumeDecimalPlace);
                     var entityTransferConsolePayload = prepareConsolidationPayload(v3ConsolidationDetails, sendConsolidationRequest, true);
                     entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
                     setPackingVsContainerGuid(entityTransferConsolePayload, packingVsContainerGuid);
@@ -546,6 +552,14 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         return v2V3TaskPayloadMap;
+    }
+
+    private int getVolumeDecimalPlace(V1TenantSettingsResponse tenantSettingsResponse) {
+        return tenantSettingsResponse != null && tenantSettingsResponse.getVolumeDecimalPlace() != null ? tenantSettingsResponse.getVolumeDecimalPlace() : 2;
+    }
+
+    private int getWeightDecimalPlace(V1TenantSettingsResponse tenantSettingsResponse) {
+        return tenantSettingsResponse != null && tenantSettingsResponse.getWeightDecimalPlace() != null ? tenantSettingsResponse.getWeightDecimalPlace() : 2;
     }
 
     private void setNotesInConsol(ConsolidationDetails v2Consol) {

@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -117,7 +118,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Transactional
     @Override
-    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap) {
+    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
 
         log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
@@ -134,7 +135,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Step 3: Convert V2 console + its attached shipments into V3 structure
-        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap, weightDecimal, volumeDecimal);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
         // Step 4: Removed linkage of containers with booking as new Containers are created in booking
@@ -196,7 +197,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param packingVsContainerGuid map to record packing-to-container association during transformation
      * @return transformed V3-compatible consolidation
      */
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
 
         if(codeTeuMap.isEmpty()){
             codeTeuMap = migrationUtil.initCodeTeuMap();
@@ -244,7 +245,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         log.info("Prepared shipment ↔ container mappings for [{}] container(s)", containerGuidToShipments.size());
 
         // Step 4: Distribute multi-count containers into individual container instances
-        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap);
+        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap, weightDecimal, volumeDecimal);
         clonedConsole.setContainersList(splitContainers);
         for(Containers updatedContainer: splitContainers) {
             updatedContainer.setBookingId(null);
@@ -451,7 +452,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param containerGuidToShipments   Mapping of original container GUID to shipment GUIDs (used to reattach new containers)
      * @return A list of containers where each has containerCount == 1
      */
-    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments, Map<String, BigDecimal> codeTeuMap) {
+    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         List<Containers> resultContainers = new ArrayList<>();
 
         for (Containers container : inputContainers) {
@@ -469,7 +470,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             List<Containers> tempContainers = new ArrayList<>();
 
             // Step 1: Split container by duplicating with distributed weight/volume
-            distributeMultiCountContainer(container, count, tempContainers);
+            distributeMultiCountContainer(container, count, tempContainers, weightDecimal, volumeDecimal);
 
             // Step 2: For each newly generated container, propagate shipment links from original
             for (Containers tempContainer : tempContainers) {
@@ -497,7 +498,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
     }
 
-    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) { //NOSONAR
+    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers, Integer weightDecimal, Integer volumeDecimal) { //NOSONAR
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
         BigDecimal tareWeight = safeBigDecimal(original.getTareWeight());
@@ -513,14 +514,18 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         BigDecimal baseWeight = weightParts[0];
         BigDecimal weightRemainder = weightParts[1];
+        weightRemainder = weightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
         BigDecimal baseVolume = volumeParts[0];
         BigDecimal volumeRemainder = volumeParts[1];
+        volumeRemainder = volumeRemainder.setScale(volumeDecimal, RoundingMode.HALF_UP);
         BigDecimal basePacks = packsParts[0];
         BigDecimal packsRemainder = packsParts[1];
         BigDecimal baseTareWeight = tareWeightParts[0];
         BigDecimal tareWeightRemainder = tareWeightParts[1];
+        tareWeightRemainder = tareWeightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
         BigDecimal baseNetWeight = netWeightParts[0];
         BigDecimal netWeightRemainder = netWeightParts[1];
+        netWeightRemainder = netWeightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
 
         // Step 1: Convert original container into a 1-count container with base values
         original.setContainerCount(1L);
