@@ -139,9 +139,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Step 4: Removed linkage of containers with booking as new Containers are created in booking
         List<Containers> updatedContainersList = console.getContainersList();
-        for(Containers updatedContainer: updatedContainersList) {
-            updatedContainer.setBookingId(null);
-        }
 
         // Step 5: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
@@ -220,7 +217,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         setConsolidationFields(clonedConsole);
 
         // Extract shipments from the cloned clonedConsole object
-        List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList().stream().toList();
+        List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList() == null
+                ? new ArrayList<>() : clonedConsole.getShipmentsList().stream().toList();
         log.info("Cloned Consolidation has {} shipment(s) [guid={}]", shipmentDetailsList.size(), consolGuid);
 
         // Step 2: Prepare shipment <→> container mappings
@@ -248,6 +246,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Step 4: Distribute multi-count containers into individual container instances
         List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap);
         clonedConsole.setContainersList(splitContainers);
+        for(Containers updatedContainer: splitContainers) {
+            updatedContainer.setBookingId(null);
+        }
+
 
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
         log.info("Distributed containers. Total after split: {}", splitContainers.size());
@@ -606,11 +608,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         newContainer.setTareWeight(baseTareWeight);
         if(tareWeightRemainder.intValue() >= 1) {
-            newContainer.setTareWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
         }
         newContainer.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
-            newContainer.setNetWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
         }
 
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
