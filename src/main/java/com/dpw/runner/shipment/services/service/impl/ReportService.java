@@ -2917,7 +2917,7 @@ public class ReportService implements IReportService {
                     if (DRAFT.equalsIgnoreCase(childType))
                         customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                     else
-                        customFileName = StringUtility.toUpperCase(childType) + suffix + DocumentConstants.DOT_PDF;
+                        customFileName = StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else if (Objects.equals(docType, TRANSPORT_INSTRUCTIONS)) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + suffix + DocumentConstants.DOT_PDF;
                 }else {
