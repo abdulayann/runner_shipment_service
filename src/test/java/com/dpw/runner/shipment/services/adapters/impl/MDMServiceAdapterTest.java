@@ -276,4 +276,10 @@ class MDMServiceAdapterTest {
         var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
         assertEquals(0, response.size());
     }
+
+    @Test
+    void getTask_Failure(){
+        when(restTemplate.getForEntity(any(), any())).thenThrow(new RuntimeException("ex"));
+        assertThrows(RunnerException.class , () -> mdmServiceAdapter.getTask(null, 1L));
+    }
 }
