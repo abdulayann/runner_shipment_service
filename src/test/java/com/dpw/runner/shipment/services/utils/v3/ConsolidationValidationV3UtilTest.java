@@ -1,5 +1,15 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
@@ -13,20 +23,19 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ConsolidationValidationV3UtilTest {
@@ -456,5 +465,69 @@ class ConsolidationValidationV3UtilTest {
             List.of(1L), 1L, List.of(shipment), true)
     );
   }
+
+  @Test
+  void testValidateControlledFields_whenConsolIsNull_thenThrowsException() {
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(null));
+    assertEquals("Consolidation details cannot be null", ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenNonSeaAndControlledSet_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode("AIR");  // non-SEA
+    consol.setControlled(true);
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("Controlled and Controlled Reference Number can be selected for Sea Transport Mode only",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenNonSeaAndRefNumberSet_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode("RAIL");  // non-SEA
+    consol.setControlledReferenceNumber("REF123");
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("Controlled and Controlled Reference Number can be selected for Sea Transport Mode only",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaControlledWithoutRefNumber_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consol.setControlled(true);
+    consol.setControlledReferenceNumber(null);  // missing
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("If value in Controlled is selected, please enter a value in Controlled Reference Number",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaControlledWithRefNumber_thenDoesNotThrow() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consol.setControlled(true);
+    consol.setControlledReferenceNumber("REF123");
+
+    assertDoesNotThrow(() -> validationUtil.validateControlledFields(consol));
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaAndNoControlledFields_thenDoesNotThrow() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+    assertDoesNotThrow(() -> validationUtil.validateControlledFields(consol));
+  }
+
+
 }
 
