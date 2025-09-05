@@ -146,4 +146,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean reefer = false;
     private Boolean controlled;
     private String controlledReferenceNumber;
+    private String incoterms;
 }
