@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataRestoreService;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import lombok.Generated;
@@ -22,7 +23,7 @@ public class RestoreController {
     private TenantDataRestoreService restoreService;
 
     @PostMapping
-    public ResponseEntity<String> backupTenantData(@RequestParam Integer tenantId, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey, @RequestParam Integer count) {
+    public ResponseEntity<String> backupTenantData(@RequestParam Integer tenantId, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey, @RequestParam Integer count) throws RunnerException {
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         return restoreService.restoreTenantDataAsync(tenantId, count);
     }
