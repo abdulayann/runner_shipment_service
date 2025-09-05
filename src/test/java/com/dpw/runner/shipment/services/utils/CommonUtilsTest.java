@@ -4376,6 +4376,12 @@ class CommonUtilsTest {
 
     }
 
+    @Test
+    void getTaskIdHyperLinkV2MDM_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2MDM("SH", "TA");
+        assertNotNull(result);
+    }
+
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setShipmentId("SHIP123");

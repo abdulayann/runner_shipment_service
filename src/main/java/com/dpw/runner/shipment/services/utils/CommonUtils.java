@@ -1417,7 +1417,7 @@ public class CommonUtils {
     }
 
     public String getTaskIdHyperLinkV2MDM(String shipmentId, String taskGuid) {
-        String link = baseUrl + "/v2/manage/tasks/" + taskGuid;
+        String link = baseUrl + "/v2/shipments/tasks/" + taskGuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
