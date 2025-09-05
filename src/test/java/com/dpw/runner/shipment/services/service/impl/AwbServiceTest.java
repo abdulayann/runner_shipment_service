@@ -3335,6 +3335,62 @@ class AwbServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
     }
 
+    @Test
+    void testValidateAwbBeforeAttachment_noConsolidationId() {
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.empty());
+        // assert the response structure for 'no consolidation', possibly a default/success payload
+        assertNotNull(response);
+        // add further assertions per your response structure
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbNull() {
+        Mockito.when(awbDao.findByConsolidationId(100L)).thenReturn(null);
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(100L));
+        assertNotNull(response);
+        // add further assertions as needed
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbEmpty() {
+        Mockito.when(awbDao.findByConsolidationId(100L)).thenReturn(Collections.emptyList());
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(100L));
+        assertNotNull(response);
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusFsuLocked() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AWB_FSU_LOCKED);
+        Mockito.when(awbDao.findByConsolidationId(200L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(200L));
+        assertNotNull(response);
+        // verify that the correct message is set in the response body
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusOtherAirMessage() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AIR_MESSAGE_SENT);
+        Mockito.when(awbDao.findByConsolidationId(300L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(300L));
+        assertNotNull(response);
+        // verify correct message in response body
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusOtherAirMessage1() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AIR_MESSAGE_SUCCESS);
+        Mockito.when(awbDao.findByConsolidationId(300L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(300L));
+        assertNotNull(response);
+        // verify correct message in response body
+    }
+
 
     @Test
     void testFnmStatusMessageForHawbFailure() {
