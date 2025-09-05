@@ -353,7 +353,13 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
         }
         // Find containers missing all seals
-        List<String> containersWithoutSeals = shipment.getContainersList().stream().filter(this::isSealEmpty).map(Containers::getContainerNumber).filter(Objects::nonNull).collect(Collectors.toList());
+        List<String> containersWithoutSeals = shipment.getContainersList().stream()
+            .filter(this::isSealEmpty)
+            .map(c -> Objects.nonNull(c.getContainerNumber()) && !c.getContainerNumber().isEmpty()
+                ? c.getContainerNumber()
+                : c.getContainerCode())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
         // Return warning only if containers are missing seals
         if (!containersWithoutSeals.isEmpty()) {
             return ResponseEntity.ok(
