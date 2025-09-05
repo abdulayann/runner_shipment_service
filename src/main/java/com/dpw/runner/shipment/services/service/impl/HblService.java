@@ -57,11 +57,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -86,6 +82,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 
 @Slf4j
@@ -352,18 +349,32 @@ public class HblService implements IHblService {
         if (!isSeaExportShipment(shipment) || shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) {
             return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
         }
+
         // Find containers missing all seals
-        List<String> containersWithoutSeals = shipment.getContainersList().stream()
-            .filter(this::isSealEmpty)
-            .map(c -> Objects.nonNull(c.getContainerNumber()) && !c.getContainerNumber().isEmpty()
-                ? c.getContainerNumber()
-                : c.getContainerCode())
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+        List<Containers> containersWithoutSeals = shipment.getContainersList().stream()
+                .filter(this::isSealEmpty).toList();
+
         // Return warning only if containers are missing seals
         if (!containersWithoutSeals.isEmpty()) {
+            boolean hasContainerNumber = containersWithoutSeals.stream()
+                    .anyMatch(c -> Objects.nonNull(c.getContainerNumber()) && !c.getContainerNumber().isEmpty());
+
+            // Preparing list of  missing all seals
+            List<String> containerIdentifiers = containersWithoutSeals.stream()
+                    .map(c -> Objects.nonNull(c.getContainerNumber()) && !c.getContainerNumber().isEmpty()
+                            ? c.getContainerNumber()
+                            : c.getContainerCode())
+                    .filter(s -> Objects.nonNull(s) && !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            String warningMsg;
+            if (hasContainerNumber) {
+                warningMsg = "Seal Number not entered against the Container Number - " + String.join(", ", containerIdentifiers);
+            } else {
+                warningMsg = "Seal Number not entered against the Container Code - " + String.join(", ", containerIdentifiers);
+            }
             return ResponseEntity.ok(
-                    RunnerResponse.builder().success(true).warning("Seal Number not entered against the Container Number - " + String.join(", ", containersWithoutSeals)).build());
+                RunnerResponse.builder().success(true).warning(warningMsg).build());
         }
         return ResponseHelper.buildSuccessResponse(RunnerResponse.builder().build());
     }
