@@ -27,12 +27,16 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private PartiesResponse forwardingAgent;
     private List<PartiesResponse> additionalParties;
 
-    private String mblNo;
+    private String carrierBlNo;
     private String carrierBookingNo;
     private String entityType;
     private Long entityId;
     private String entityNumber;
     private String blComments;
+    private Integer noOfFreightCopies;
+    private Integer noOfUnFreightCopies;
+    private Integer nonNegoFreightCopies;
+    private Integer nonNegoUnFreightCopies;
 
     private List<FreightDetailResponse> freightDetails;
     private List<CommonPackageResponse> commonPackages;

@@ -45,15 +45,27 @@ public class ShippingInstructionsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = MyResponseClass.class)
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody ShippingInstructionRequest info) {
-        ShippingInstructionResponse response = service.createShippingInstruction(info);
-        return ResponseHelper.buildSuccessResponse(response);
+        try {
+            ShippingInstructionResponse response = service.createShippingInstruction(info);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error creating Shipping Instruction";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     @GetMapping("/{id}")
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShippingInstructionsConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     public ResponseEntity<IRunnerResponse> getById(@PathVariable Long id) {
-        ShippingInstructionResponse response = service.getShippingInstructionsById(id);
-        return ResponseHelper.buildSuccessResponse(response);
+        try {
+            ShippingInstructionResponse response = service.getShippingInstructionsById(id);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving Shipping Instruction by ID";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     @PutMapping
@@ -62,15 +74,27 @@ public class ShippingInstructionsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     public ResponseEntity<IRunnerResponse> update(@RequestBody ShippingInstructionRequest info) {
-        ShippingInstructionResponse response = service.updateShippingInstructions(info);
-        return ResponseHelper.buildSuccessResponse(response);
+        try {
+            ShippingInstructionResponse response = service.updateShippingInstructions(info);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error updating Shipping Instruction";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     @DeleteMapping("/{id}")
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.DELETE_SUCCESSFUL, response = MyResponseClass.class)})
     public ResponseEntity<IRunnerResponse> delete(@PathVariable Long id) {
-        service.deleteShippingInstructions(id);
-        return ResponseHelper.buildSuccessResponse();
+        try {
+            service.deleteShippingInstructions(id);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error deleting Shipping Instruction";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
