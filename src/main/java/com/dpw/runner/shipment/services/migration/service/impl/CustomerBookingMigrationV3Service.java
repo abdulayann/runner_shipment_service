@@ -296,7 +296,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     private void updateContainerDataFromV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
         List<Containers> containersList = containerDao.findByBookingIdIn(List.of(customerBooking.getId()));
-        for(Containers containers: containersList) {
+        List<Containers> updatedContainersList = createCopyForContainers(containersList);
+        for(Containers containers: updatedContainersList) {
             if(!Objects.isNull(containers.getGrossWeight())) {
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
                 containers.setGrossWeight(new BigDecimal(containers.getContainerCount()).multiply(containers.getCargoWeightPerContainer()));
@@ -308,7 +309,18 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        containerRepository.saveAll(containersList);
+
+        containerRepository.saveAll(updatedContainersList);
+    }
+
+    private List<Containers> createCopyForContainers(List<Containers> containersList) {
+        List<Containers> newContainerList = jsonHelper.convertValueToList(containersList, Containers.class);
+        for(Containers container: newContainerList) {
+            container.setId(null); // Ensure new identity
+            container.setGuid(UUID.randomUUID());
+            container.setConsolidationId(null);
+        }
+        return newContainerList;
     }
 
     private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {

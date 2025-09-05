@@ -182,21 +182,22 @@ public class MigrationV3Service implements IMigrationV3Service {
             backupService.backupTenantData(tenantId);
         Map<String, Integer> map = new HashMap<>();
 
-        if ((count & 4) > 0)
-            map.putAll(this.migrateConsolidation(tenantId,codeTeuMap));
+        if ((count & 4) > 0) {
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
+            map.putAll(bookingStats);
+        }
 
         if ((count & 8) > 0)
+            map.putAll(this.migrateConsolidation(tenantId,codeTeuMap));
+
+        if ((count & 16) > 0)
             map.putAll(this.migrateShipment(tenantId));
 
-        if ((count & 16) > 0) {
+        if ((count & 32) > 0) {
             Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap);
             map.putAll(nteStats);
         }
 
-        if ((count & 32) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
-            map.putAll(bookingStats);
-        }
         return map;
     }
 
@@ -207,23 +208,23 @@ public class MigrationV3Service implements IMigrationV3Service {
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
         if ((count & 2) > 0) {
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId);
+            result.putAll(bookingStats);
+        }
+
+        if ((count & 4) > 0) {
             Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsV3ToV2ForTenant(tenantId);
             result.putAll(consolidationStats);
         }
 
-        if ((count & 4) > 0) {
+        if ((count & 8) > 0) {
             Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsV3ToV2ForTenant(tenantId);
             result.putAll(shipmentStats);
         }
 
-        if ((count & 8) > 0) {
+        if ((count & 16) > 0) {
             Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV3ToV2ForTenant(tenantId);
             result.putAll(nteStats);
-        }
-
-        if ((count & 16) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId);
-            result.putAll(bookingStats);
         }
 
         log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);

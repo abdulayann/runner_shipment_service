@@ -137,8 +137,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
-        // Step 4: Save all containers separately first, as they must be saved before referencing in packings
+        // Step 4: Removed linkage of containers with booking as new Containers are created in booking
         List<Containers> updatedContainersList = console.getContainersList();
+        for(Containers updatedContainer: updatedContainersList) {
+            updatedContainer.setBookingId(null);
+        }
+
+        // Step 5: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         log.info("Saved {} updated container(s) for Consolidation [id={}]", savedUpdatedContainersList.size(), consolidationId);
 
