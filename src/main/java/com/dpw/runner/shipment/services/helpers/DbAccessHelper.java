@@ -254,10 +254,7 @@ public class DbAccessHelper {
         } else if (tableNames.get(input.getFieldName()).getParentTable() != null) {
             RunnerEntityMapping tableNameMapValue = tableNames.get(input.getFieldName());
             String mapKey = tableNameMapValue.getParentTable() + "." + tableNameMapValue.getTableName();
-            if ((root.getJoins() == null && root.getFetches() == null) ||
-                (root.getJoins().isEmpty() && root.getFetches().isEmpty()) ||
-                (map.get(mapKey) == null) ||
-                (!root.getJoins().contains(map.get(mapKey)) && !root.getFetches().contains(map.get(mapKey)))) { //NOSONAR
+            if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().isEmpty() && root.getFetches().isEmpty()) || (map.get(mapKey) == null) || (!root.getJoins().contains(map.get(mapKey)) && !root.getFetches().contains(map.get(mapKey)))) { //NOSONAR
                 join = root.join(tableNameMapValue.getParentTable(), JoinType.LEFT).join(tableNameMapValue.getTableName(), JoinType.LEFT);
                 map.put(mapKey, join);
                 path = join;
