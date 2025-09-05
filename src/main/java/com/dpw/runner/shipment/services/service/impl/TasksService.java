@@ -104,8 +104,8 @@ public class TasksService implements ITasksService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid) throws RunnerException {
-        MDMTaskRetrieveResponse mdmTaskRetrieveResponse = imdmServiceAdapter.getTask(uuid);
+    public ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid, Long id) throws RunnerException {
+        MDMTaskRetrieveResponse mdmTaskRetrieveResponse = imdmServiceAdapter.getTask(uuid, id);
         String entityGuid = mdmTaskRetrieveResponse.getEntityGuid();
         ShipmentDetails shipmentDetails = shipmentDao.findByGuid(UUID.fromString(entityGuid))
                 .orElseThrow(() -> new RuntimeException("Shipment not present with guid: " + entityGuid));

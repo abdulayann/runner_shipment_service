@@ -29,6 +29,6 @@ public interface IMDMServiceAdapter {
 
     List<Map<String, Object>> getTaskList(String entityUuid, String entityType, String status, String taskType);
 
-    MDMTaskRetrieveResponse getTask(String taskUuid) throws RunnerException;
+    MDMTaskRetrieveResponse getTask(String taskUuid, Long id) throws RunnerException;
 
 }

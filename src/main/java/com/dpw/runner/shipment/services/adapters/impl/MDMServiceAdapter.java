@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -256,8 +257,11 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     }
 
     @Override
-    public MDMTaskRetrieveResponse getTask(String taskUuid) throws RunnerException {
+    public MDMTaskRetrieveResponse getTask(String taskUuid, Long id) throws RunnerException {
         String url = baseUrl + getTaskUrl + "?uuid=" + taskUuid;
+        if(StringUtility.isEmpty(taskUuid)){
+            url = baseUrl + getTaskUrl + "?id=" + id;
+        }
         try {
             log.info("Calling MDM Get Task api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC());
             ResponseEntity<DependentServiceResponse> response =  restTemplate.getForEntity(url, DependentServiceResponse.class);
