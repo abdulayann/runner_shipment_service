@@ -122,7 +122,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
 
     @Override
-    public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId, Integer count) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> migrateV2Tov3Async(Integer tenantId, Long consolId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
         if (shipmentSettingsDetails.isPresent()){
             throw new RunnerException("Another migration is in progress. Please try again later.");
@@ -131,7 +131,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         trxExecutor.runInAsync(() -> {
             try {
-                var response = migrateV2ToV3(tenantId, consolId, bookingId, count);
+                var response = migrateV2ToV3(tenantId, consolId, bookingId, count, weightDecimal, volumeDecimal);
                 log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V2 to V3", false);
                 shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
@@ -147,7 +147,7 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
         if (shipmentSettingsDetails.isPresent()){
             throw new RunnerException("Another migration is in progress. Please try again later.");
@@ -156,7 +156,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         trxExecutor.runInAsync(() -> {
             try {
-                var response = migrateV3ToV2(tenantId, bookingId, count);
+                var response = migrateV3ToV2(tenantId, bookingId, count, weightDecimal, volumeDecimal);
                 log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
                 shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
@@ -173,7 +173,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
 
     @Override
-    public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId, Integer count) {
+    public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) {
 
         // Taking json backup for respective tenantID.
         v1Service.setAuthContext();
@@ -183,18 +183,18 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, Integer> map = new HashMap<>();
 
         if ((count & 4) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
             map.putAll(bookingStats);
         }
 
         if ((count & 8) > 0)
-            map.putAll(this.migrateConsolidation(tenantId,codeTeuMap));
+            map.putAll(this.migrateConsolidation(tenantId,codeTeuMap, weightDecimal, volumeDecimal));
 
         if ((count & 16) > 0)
             map.putAll(this.migrateShipment(tenantId));
 
         if ((count & 32) > 0) {
-            Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap);
+            Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
             map.putAll(nteStats);
         }
 
@@ -202,13 +202,13 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
     @Override
-    public Map<String, Integer> migrateV3ToV2(Integer tenantId, Long bookingId, Integer count) {
+    public Map<String, Integer> migrateV3ToV2(Integer tenantId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) {
         Map<String, Integer> result = new HashMap<>();
 
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
         if ((count & 2) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId);
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId, weightDecimal, volumeDecimal);
             result.putAll(bookingStats);
         }
 
@@ -285,7 +285,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         return map;
     }
 
-    private Map<String, Integer> migrateConsolidation(Integer tenantId, Map<String, BigDecimal> codeTeuMap) {
+    private Map<String, Integer> migrateConsolidation(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         // Step 1: Fetch all V2 consolidations for tenant
         Map<String, Integer> map = new HashMap<>();
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
@@ -305,7 +305,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id, codeTeuMap);
+                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id, codeTeuMap, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Consolidation [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
