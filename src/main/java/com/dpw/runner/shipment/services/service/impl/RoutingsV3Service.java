@@ -696,11 +696,20 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Transactional
     public BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         if (module.equalsIgnoreCase(Constants.SHIPMENT)) {
-            for (RoutingsRequest routingsRequest : request.getRoutings()) {
-                routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest);
+            List<RoutingsRequest> mainCarriageList = request.getRoutings().stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getId() == null)
+                    .toList();
+            if (!CollectionUtils.isEmpty(mainCarriageList)) {
+                routingValidationUtil.checkIfMainCarriageAllowed(mainCarriageList.get(0));
             }
         }
-        return this.updateBulk(request, module);
+        BulkRoutingResponse bulkRoutingResponse = this.updateBulk(request, module);
+        List<RoutingsResponse> mainCarriageList = bulkRoutingResponse.getRoutingsResponseList().stream()
+                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+        String validationMessage = routingValidationUtil.getWarningMessage(mainCarriageList);
+        bulkRoutingResponse.setWarningMessage(validationMessage);
+        return bulkRoutingResponse;
     }
 
     @Override
