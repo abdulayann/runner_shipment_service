@@ -9,12 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -293,6 +288,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             consolidationDetails.getSendingAgent().setCountryCode(consolidationDetails.getSendingAgentCountry());
         if(consolidationDetails.getReceivingAgent() != null)
             consolidationDetails.getReceivingAgent().setCountryCode(consolidationDetails.getReceivingAgentCountry());
+        if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
+            for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
+                if(consolidationAddress.getOrgData()!=null && consolidationAddress.getOrgData().get("Country")!=null)
+                    consolidationAddress.setCountryCode((String) consolidationAddress.getOrgData().get("Country"));
+            }
+        }
     }
 
     private void relinkContainerToShipment(Map<UUID, List<UUID>> containerGuidToShipments, Map<UUID, ShipmentDetails> guidToShipment, Map<UUID, Containers> guidVsContainer) {
