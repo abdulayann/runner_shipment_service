@@ -670,7 +670,7 @@ class RoutingValidationUtilTest {
         String result = routingValidationUtil.getWarningMessage(routingsResponses);
 
         assertNotNull(result);
-        String[] lines = result.split("\n");
+        String[] lines = result.split("###");
         assertEquals(2, lines.length);
         assertEquals("ETD (of Leg No. 2) should be greater than ETA (of Leg No. 1)", lines[0]);
         assertEquals("ETD (of Leg No. 3) should be greater than ETA (of Leg No. 2)", lines[1]);
