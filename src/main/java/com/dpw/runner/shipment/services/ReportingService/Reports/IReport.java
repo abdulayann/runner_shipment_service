@@ -1694,9 +1694,7 @@ public abstract class IReport {
             dict.put(CHARGEABLE, chargeableString);
             dict.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, shipmentModel.getChargeableUnit()));
             dict.put(CHARGEABLE_AND_UNIT, dict.get(CHARGABLE_AND_UNIT));
-            var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, shipmentModel.getPacksUnit());
-            var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : shipmentModel.getPacksUnit();
-            dict.put(ReportConstants.PACKS_UNIT,  PackingConstants.PKG.equalsIgnoreCase(shipmentModel.getPacksUnit()) ?  StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
+            dict.put(ReportConstants.PACKS_UNIT, getPackTypeDesc(shipmentModel.getPacksUnit()));
             shipAwbDataList.add(dict);
         }
         if(dictionary == null)
@@ -5338,11 +5336,8 @@ public abstract class IReport {
             dict.put(ReportConstants.C_C_DGCONTAINER, aq.getDgContainerCount());
             dict.put(ReportConstants.C_C_DGPACKAGES, aq.getDgPacks());
             dict.put(ReportConstants.C_C_SLACCOUNT, aq.getSlacCount());
-            var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, aq.getPacksType());
-            var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : aq.getPacksType();
-
             dict.put(ReportConstants.C_PACK, formatIfPositive(BigDecimal.valueOf(aq.getPacks() != null ? aq.getPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
-            dict.put(ReportConstants.C_PACK_TYPE, PackingConstants.PKG.equalsIgnoreCase(aq.getPacksType()) ? StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
+            dict.put(ReportConstants.C_PACK_TYPE, getPackTypeDesc(aq.getPacksType()));
         }
     }
 
@@ -5550,10 +5545,8 @@ public abstract class IReport {
     }
 
     private void addShipmentCargoSummary(Map<String, Object> dictionary, ShipmentDetails details) {
-        var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, details.getPacksUnit());
-        String packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : details.getPacksUnit();
         dictionary.put(ReportConstants.S_PACK, formatIfPositive(BigDecimal.valueOf(details.getNoOfPacks() != null ? details.getNoOfPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
-        dictionary.put(ReportConstants.S_PACK_TYPE, PackingConstants.PKG.equalsIgnoreCase(details.getPacksUnit()) ? StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
+        dictionary.put(ReportConstants.S_PACK_TYPE, getPackTypeDesc(details.getPacksUnit()));
     }
 
     private Map<String, String> extractOrderDpwMap(Map<String, Object> masterDataMap) {
@@ -5802,5 +5795,11 @@ public abstract class IReport {
                 }
             }
         }
+    }
+
+    private String getPackTypeDesc(String packType) {
+        var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, packType);
+        var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : packType;
+        return PackingConstants.PKG.equalsIgnoreCase(packType) ?  StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription);
     }
 }
