@@ -326,6 +326,6 @@ public class RoutingValidationUtil {
             return null;
         }
 
-        return String.join("\n", errors);
+        return String.join("###", errors);
     }
 }
