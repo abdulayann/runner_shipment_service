@@ -252,20 +252,7 @@ public class DbAccessHelper {
         if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
             path = root;
         } else if (tableNames.get(input.getFieldName()).getParentTable() != null) {
-            RunnerEntityMapping tableNameMapValue = tableNames.get(input.getFieldName());
-            String mapKey = tableNameMapValue.getParentTable() + "." + tableNameMapValue.getTableName();
-            if ((root.getJoins() == null && root.getFetches() == null) ||
-                (root.getJoins().isEmpty() && root.getFetches().isEmpty()) ||
-                (map.get(mapKey) == null) ||
-                (!root.getJoins().contains(map.get(mapKey)) && !root.getFetches().contains(map.get(mapKey))) //NOSONAR
-            ) {
-                join = root.join(tableNameMapValue.getParentTable(), JoinType.LEFT).join(tableNameMapValue.getTableName(), JoinType.LEFT);
-                map.put(mapKey, join);
-                path = join;
-                query.distinct(true);
-            } else {
-                path = map.get(mapKey);
-            }
+            return getPathIfParentTableNameExists(input, map, tableNames, root, query);
         } else {
             if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().isEmpty() && root.getFetches().isEmpty()) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
                     (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {//NOSONAR
@@ -276,6 +263,27 @@ public class DbAccessHelper {
             } else {
                 path = map.get(tableNames.get(input.getFieldName()).getTableName());
             }
+        }
+        return path;
+    }
+
+    private static <T> Path<T> getPathIfParentTableNameExists(Criteria input, Map<String, Join<Class<T>, T>> map, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query) {
+        Join<Class<T>, T> join;
+        Path<T> path;
+        RunnerEntityMapping tableNameMapValue = tableNames.get(input.getFieldName());
+        String mapKey = tableNameMapValue.getParentTable() + "." + tableNameMapValue.getTableName();
+        if ((root.getJoins() == null && root.getFetches() == null) ||
+                (root.getJoins().isEmpty() && root.getFetches().isEmpty()) ||
+                (map.get(mapKey) == null) ||
+                (!root.getJoins().contains(map.get(mapKey)) && !root.getFetches().contains(map.get(mapKey))) //NOSONAR
+        ) {
+            join = root.join(tableNameMapValue.getParentTable(), JoinType.LEFT)
+                    .join(tableNameMapValue.getTableName(), JoinType.LEFT);
+            map.put(mapKey, join);
+            path = join;
+            query.distinct(true);
+        } else {
+            path = map.get(mapKey);
         }
         return path;
     }
