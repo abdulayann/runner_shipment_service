@@ -219,7 +219,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating v3 to v2 Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
-                            CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap, weightDecimal, volumeDecimal);
+                            CustomerBooking response = migrateBookingV3ToV2(booking, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
@@ -256,7 +256,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return booking;
     }
 
-    public CustomerBooking mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
+    public void mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         //update serviceType based on the transport type
         String transportMode = customerBooking.getTransportType();
         String serviceTypeV2 = customerBooking.getServiceMode();
@@ -268,27 +268,24 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         //Update CargoSummary
         customerBookingV3Util.updateCargoInformation(customerBooking, codeTeuMap, null, true);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
-
-        return null;
     }
 
     @Override
-    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Integer weightDecimal, Integer volumeDecimal) {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
             throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
-        mapBookingV3ToV2(booking, codeTeuMap, weightDecimal, volumeDecimal);
+        mapBookingV3ToV2(booking, weightDecimal, volumeDecimal);
         customerBookingRepository.save(booking);
         return booking;
     }
 
-    public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    public void mapBookingV3ToV2(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) {
         updateContainerDataFromV3ToV2(customerBooking, weightDecimal);
         updatePackingDataFromV3ToV2(customerBooking, weightDecimal, volumeDecimal);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
-        return null;
     }
 
     private void updateContainerDataFromV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
