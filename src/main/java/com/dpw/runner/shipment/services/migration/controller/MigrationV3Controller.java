@@ -41,7 +41,7 @@ public class MigrationV3Controller {
         log.info("Received migration request from V3 to V2 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId(), request.getCount());
+        return migrationV3Service.migrateV3ToV2Async(request.getTenantId(), request.getBookingId(), request.getCount(), request.getWeightDecimal(), request.getVolumeDecimal());
     }
 
 }

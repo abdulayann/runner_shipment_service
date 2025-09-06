@@ -147,7 +147,7 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> migrateV3ToV2Async(Integer tenantId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
         if (shipmentSettingsDetails.isPresent()){
             throw new RunnerException("Another migration is in progress. Please try again later.");
@@ -156,7 +156,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         trxExecutor.runInAsync(() -> {
             try {
-                var response = migrateV3ToV2(tenantId, bookingId, count);
+                var response = migrateV3ToV2(tenantId, bookingId, count, weightDecimal, volumeDecimal);
                 log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", tenantId, response);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
                 shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
@@ -183,7 +183,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, Integer> map = new HashMap<>();
 
         if ((count & 4) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
             map.putAll(bookingStats);
         }
 
@@ -202,13 +202,13 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
     @Override
-    public Map<String, Integer> migrateV3ToV2(Integer tenantId, Long bookingId, Integer count) {
+    public Map<String, Integer> migrateV3ToV2(Integer tenantId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) {
         Map<String, Integer> result = new HashMap<>();
 
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
         if ((count & 2) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId);
+            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId, weightDecimal, volumeDecimal);
             result.putAll(bookingStats);
         }
 

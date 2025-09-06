@@ -157,13 +157,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
 
     @Override
-    public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         Map<String, Integer> map = new HashMap<>();
         List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
         map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
         log.info("fetched {} bookingIds for Migrations", bookingIds.size());
-        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -176,7 +175,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         try {
 
                             log.info("Migrating Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
-                            CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap);
+                            CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
@@ -202,7 +201,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     @Override
-    public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId, Integer weightDecimal, Integer volumeDecimal) {
         Map<String, Integer> map = new HashMap<>();
         List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V2.name(), MigrationStatus.CREATED_IN_V3.name()), tenantId);
         map.put("Total Bookings", bookingIds.size());
@@ -220,7 +219,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating v3 to v2 Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
-                            CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap);
+                            CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
@@ -246,26 +245,25 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     @Override
-    public CustomerBooking migrateBookingV2ToV3(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+    public CustomerBooking migrateBookingV2ToV3(Long bookingId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
             throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
-        mapBookingV2ToV3(booking, codeTeuMap);
+        mapBookingV2ToV3(booking, codeTeuMap, weightDecimal, volumeDecimal);
         customerBookingRepository.save(booking);
         return booking;
     }
 
-    @Override
-    public CustomerBooking mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+    public CustomerBooking mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         //update serviceType based on the transport type
         String transportMode = customerBooking.getTransportType();
         String serviceTypeV2 = customerBooking.getServiceMode();
         String v3Key = transportMode + "_" + serviceTypeV2;
         customerBooking.setServiceMode(v2ToV3ServiceTypeMap.getOrDefault(v3Key, serviceTypeV2));
         updateContainerDataFromV2ToV3(customerBooking, codeTeuMap);
-        updatePackingDataFromV2ToV3(customerBooking);
+        updatePackingDataFromV2ToV3(customerBooking, weightDecimal, volumeDecimal);
 
         //Update CargoSummary
         customerBookingV3Util.updateCargoInformation(customerBooking, codeTeuMap, null, true);
@@ -275,21 +273,20 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     @Override
-    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Map<String, BigDecimal> codeTeuMap) {
+    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
             throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
-        mapBookingV3ToV2(booking, codeTeuMap);
+        mapBookingV3ToV2(booking, codeTeuMap, weightDecimal, volumeDecimal);
         customerBookingRepository.save(booking);
         return booking;
     }
 
-    @Override
-    public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        updateContainerDataFromV3ToV2(customerBooking);
-        updatePackingDataFromV3ToV2(customerBooking);
+    public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+        updateContainerDataFromV3ToV2(customerBooking, weightDecimal);
+        updatePackingDataFromV3ToV2(customerBooking, weightDecimal, volumeDecimal);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         return null;
     }
@@ -324,11 +321,11 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return newContainerList;
     }
 
-    private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
+    private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking, Integer weightDecimal) {
         List<Containers> containersList = customerBooking.getContainersList();
         for(Containers containers: containersList) {
             if(!Objects.isNull(containers.getGrossWeight()) && !Objects.isNull(containers.getContainerCount())) {
-                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), 3, RoundingMode.HALF_UP));
+                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), weightDecimal, RoundingMode.HALF_UP));
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
@@ -338,7 +335,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         containerRepository.saveAll(containersList);
     }
 
-    private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking) throws RunnerException {
+    private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         List<Packing> packingList = packingDao.findByBookingIdIn(List.of(customerBooking.getId()));
 
         if (!packingList.isEmpty()) {
@@ -348,7 +345,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 updateUnits(packing);
             }
         } else if (Boolean.TRUE.equals(customerBooking.getIsPackageManual())) {
-            Packing packing = createPackingFromBooking(customerBooking);
+            Packing packing = createPackingFromBooking(customerBooking, weightDecimal, volumeDecimal);
             packingList.add(packing);
             customerBooking.setIsPackageManual(Boolean.FALSE);
         }
@@ -388,7 +385,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         }
     }
 
-    private Packing createPackingFromBooking(CustomerBooking booking) throws RunnerException {
+    private Packing createPackingFromBooking(CustomerBooking booking, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Packing packing = new Packing();
         if(!Objects.isNull(booking.getQuantity())) {
             packing.setPacks(String.valueOf(booking.getQuantity()));
@@ -400,7 +397,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         packing.setWeight(booking.getGrossWeight());
         packing.setWeightUnit(weightUnit);
         if(!Objects.isNull(booking.getQuantity())) {
-            packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
+            packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), weightDecimal, RoundingMode.HALF_UP));
         }
         packing.setPackWeightUnit(weightUnit);
 
@@ -409,7 +406,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         packing.setVolume(booking.getVolume());
         packing.setVolumeUnit(volumeUnit);
         if(!Objects.isNull(booking.getQuantity())) {
-            packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), 3, RoundingMode.HALF_UP));
+            packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), volumeDecimal, RoundingMode.HALF_UP));
         }
         packing.setVolumePerPackUnit(volumeUnit);
         VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
@@ -426,15 +423,15 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return packing.getLength()!= null && packing.getWidth()!= null && packing.getHeight()!= null;
     }
 
-    private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking) {
+    private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) {
         List<Packing> packingList = customerBooking.getPackingList();
         for(Packing packing: packingList) {
             if(!Objects.isNull(packing.getWeight()) && !Objects.isNull(packing.getPacks())) {
-                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
+                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()), weightDecimal, RoundingMode.HALF_UP));
                 packing.setCargoWeightPerPack(packing.getWeight());
             }
             if(!Objects.isNull(packing.getVolume()) && !Objects.isNull(packing.getPacks())) {
-                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()), 3, RoundingMode.HALF_UP));
+                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()), volumeDecimal, RoundingMode.HALF_UP));
                 packing.setVolumePerPack(packing.getVolume());
             }
             if(!Objects.isNull(packing.getWeightUnit())) {
