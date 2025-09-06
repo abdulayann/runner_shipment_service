@@ -336,9 +336,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
-        doNothing().when(routingValidationUtil).checkIfMainCarriageAllowed(routingsRequest);
-        routingsService.bulkUpdateWithValidateWrapper(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+        doNothing().when(routingValidationUtil).checkIfMainCarriageAllowed(routingsRequest1);
+        BulkRoutingResponse result = routingsService.bulkUpdateWithValidateWrapper(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
 
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());

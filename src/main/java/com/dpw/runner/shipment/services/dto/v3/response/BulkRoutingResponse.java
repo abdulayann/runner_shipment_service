@@ -20,4 +20,5 @@ import java.util.List;
 public class BulkRoutingResponse implements IRunnerResponse {
     List<RoutingsResponse> routingsResponseList;
     String message;
+    String warningMessage;
 }
