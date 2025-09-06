@@ -304,8 +304,15 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-
+        detachOldContainersFromBooking(containersList);
         containerRepository.saveAll(updatedContainersList);
+    }
+
+    private void detachOldContainersFromBooking(List<Containers> oldContainers) {
+        for(Containers container: oldContainers) {
+            container.setBookingId(null);
+        }
+        containerRepository.saveAll(oldContainers);
     }
 
     private List<Containers> createCopyForContainers(List<Containers> containersList) {
@@ -351,6 +358,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private void updateWeight(Packing packing) {
+        if (Objects.isNull(packing.getShipmentId())) {
+            return;
+        }
+
         if (packing.getWeight() != null) {
             packing.setCargoWeightPerPack(packing.getWeight());
             if(packing.getPacks()!=null) {
@@ -361,6 +372,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private void updateVolume(Packing packing) {
+        if (Objects.isNull(packing.getShipmentId())) {
+            return;
+        }
+
         if (isDimensionsPresent(packing)) {
             BigDecimal volumePerPack = packing.getLength().multiply(packing.getWidth()).multiply(packing.getHeight());
             packing.setVolumePerPack(volumePerPack);

@@ -568,7 +568,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         original.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
             BigDecimal fractionalPart = netWeightRemainder.remainder(BigDecimal.ONE);
-            original.setNetWeight(baseTareWeight.add(BigDecimal.ONE).add(fractionalPart));
+            original.setNetWeight(baseNetWeight.add(BigDecimal.ONE).add(fractionalPart));
             netWeightRemainder = netWeightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
         }else{
             original.setNetWeight(baseNetWeight.add(netWeightRemainder));
