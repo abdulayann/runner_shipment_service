@@ -386,6 +386,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -1693,6 +1694,9 @@ public abstract class IReport {
             dict.put(CHARGEABLE, chargeableString);
             dict.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, shipmentModel.getChargeableUnit()));
             dict.put(CHARGEABLE_AND_UNIT, dict.get(CHARGABLE_AND_UNIT));
+            var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, shipmentModel.getPacksUnit());
+            var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : shipmentModel.getPacksUnit();
+            dict.put(ReportConstants.PACKS_UNIT,  PackingConstants.PKG.equalsIgnoreCase(shipmentModel.getPacksUnit()) ?  StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
             shipAwbDataList.add(dict);
         }
         if(dictionary == null)
@@ -5323,15 +5327,23 @@ public abstract class IReport {
         }
 
         // Add achieved quantities section if available
+        this.addConsoleCargoSummary(dict, details);
+        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
+    }
+
+    private void addConsoleCargoSummary(Map<String, Object> dict, ConsolidationDetails details) {
         AchievedQuantities aq = details.getAchievedQuantities();
         if (aq != null) {
             dict.put(ReportConstants.C_C_DGPACKAGESTYPE, aq.getDgPacksType());
             dict.put(ReportConstants.C_C_DGCONTAINER, aq.getDgContainerCount());
             dict.put(ReportConstants.C_C_DGPACKAGES, aq.getDgPacks());
             dict.put(ReportConstants.C_C_SLACCOUNT, aq.getSlacCount());
-        }
+            var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, aq.getPacksType());
+            var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : aq.getPacksType();
 
-        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
+            dict.put(ReportConstants.C_PACK, formatIfPositive(BigDecimal.valueOf(aq.getPacks() != null ? aq.getPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
+            dict.put(ReportConstants.C_PACK_TYPE, PackingConstants.PKG.equalsIgnoreCase(aq.getPacksType()) ? StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
+        }
     }
 
     // Adds reference numbers into the map using their type as a key suffix
@@ -5534,6 +5546,14 @@ public abstract class IReport {
         addPartnerFields(dictionary, details, orderDpwMap, orgMap);
         addCutoffFields(dictionary, details);
         addAdditionalFields(dictionary, details);
+        addShipmentCargoSummary(dictionary, details);
+    }
+
+    private void addShipmentCargoSummary(Map<String, Object> dictionary, ShipmentDetails details) {
+        var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, details.getPacksUnit());
+        String packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : details.getPacksUnit();
+        dictionary.put(ReportConstants.S_PACK, formatIfPositive(BigDecimal.valueOf(details.getNoOfPacks() != null ? details.getNoOfPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
+        dictionary.put(ReportConstants.S_PACK_TYPE, PackingConstants.PKG.equalsIgnoreCase(details.getPacksUnit()) ? StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription));
     }
 
     private Map<String, String> extractOrderDpwMap(Map<String, Object> masterDataMap) {

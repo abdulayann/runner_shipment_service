@@ -1551,4 +1551,8 @@ public class ReportConstants {
 
     public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
 
+    public static final String C_PACK = "C_Pack";
+    public static final String C_PACK_TYPE = "C_PackType";
+    public static final String S_PACK = "S_Pack";
+    public static final String S_PACK_TYPE = "S_PackType";
 }
