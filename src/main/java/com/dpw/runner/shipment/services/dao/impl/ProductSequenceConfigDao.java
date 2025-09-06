@@ -22,9 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
-import javax.persistence.LockTimeoutException;
 import javax.persistence.PersistenceContext;
-import javax.persistence.PessimisticLockException;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -187,32 +185,6 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Override
     public ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
-        int attempt = 0;
-
-        // Retry loop to handle database lock contention
-        while (true) {
-            try {
-                // Try to fetch and lock a row
-                return doFindAndLock(spec, pageable);
-            } catch (LockTimeoutException | PessimisticLockException ex) {
-                // If the lock fails, retry up to MAX_RETRIES
-                if (attempt++ >= MAX_RETRIES) {
-                    throw ex; // Give up after max retries
-                }
-                try {
-                    // Linear backoff: wait a bit before retrying
-                    // Could also add random jitter to reduce contention
-                    Thread.sleep(BACKOFF_MS * attempt);
-                } catch (InterruptedException ie) {
-                    // Restore interrupt status and propagate original exception
-                    Thread.currentThread().interrupt();
-                    throw ex;
-                }
-            }
-        }
-    }
-
-    private ProductSequenceConfig doFindAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
         // Step 1: Get a CriteriaBuilder to construct a type-safe query
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 
@@ -228,7 +200,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
             cq.where(predicate);
         }
 
-        // Step 5: Disable DISTINCT because PostgreSQL does not allow DISTINCT with FOR UPDATE
+        // Step 5: Disable DISTINCT because PostgresSQL does not allow DISTINCT with FOR UPDATE
         cq.distinct(false);
 
         // Step 6: Apply sorting from Pageable (ORDER BY)
@@ -261,7 +233,6 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         // Only the first matching row is locked
         List<ProductSequenceConfig> results = query.getResultList();
         return results.isEmpty() ? null : results.get(0);
+
     }
-
-
 }
