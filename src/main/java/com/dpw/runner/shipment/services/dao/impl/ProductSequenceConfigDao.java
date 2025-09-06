@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
@@ -9,6 +12,25 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.nimbusds.jose.util.Pair;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.LockTimeoutException;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PessimisticLockException;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -16,16 +38,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceContext;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -35,6 +47,9 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
     private IProductSequenceConfigRepository productSequenceConfigRepository;
     @PersistenceContext
     EntityManager entityManager;
+
+    private static final int MAX_RETRIES = 2; // how many times to retry
+    private static final long BACKOFF_MS = 100L; // base backoff in ms
 
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
@@ -172,16 +187,81 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Override
     public ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
-        Page<ProductSequenceConfig> page = findAll(spec, pageable);
-        ProductSequenceConfig result = null;
-        if(!page.isEmpty()) {
-            // Acquire lock on this result row
-            result = page.getContent().get(0);
-            entityManager.lock(result, LockModeType.PESSIMISTIC_WRITE, Map.ofEntries(
-                Map.entry("javax.persistence.lock.timeout", 2000))
-            );
+        int attempt = 0;
+
+        // Retry loop to handle database lock contention
+        while (true) {
+            try {
+                // Try to fetch and lock a row
+                return doFindAndLock(spec, pageable);
+            } catch (LockTimeoutException | PessimisticLockException ex) {
+                // If the lock fails, retry up to MAX_RETRIES
+                if (attempt++ >= MAX_RETRIES) {
+                    throw ex; // Give up after max retries
+                }
+                try {
+                    // Linear backoff: wait a bit before retrying
+                    // Could also add random jitter to reduce contention
+                    Thread.sleep(BACKOFF_MS * attempt);
+                } catch (InterruptedException ie) {
+                    // Restore interrupt status and propagate original exception
+                    Thread.currentThread().interrupt();
+                    throw ex;
+                }
+            }
         }
-        return result;
     }
+
+    private ProductSequenceConfig doFindAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
+        // Step 1: Get a CriteriaBuilder to construct a type-safe query
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Step 2: Create a CriteriaQuery for ProductSequenceConfig
+        CriteriaQuery<ProductSequenceConfig> cq = cb.createQuery(ProductSequenceConfig.class);
+
+        // Step 3: Define the root entity (FROM clause)
+        Root<ProductSequenceConfig> root = cq.from(ProductSequenceConfig.class);
+
+        // Step 4: Convert Specification into a WHERE clause (dynamic filtering)
+        Predicate predicate = spec.toPredicate(root, cq, cb);
+        if (predicate != null) {
+            cq.where(predicate);
+        }
+
+        // Step 5: Disable DISTINCT because PostgreSQL does not allow DISTINCT with FOR UPDATE
+        cq.distinct(false);
+
+        // Step 6: Apply sorting from Pageable (ORDER BY)
+        List<Order> orders = new ArrayList<>();
+        pageable.getSort().forEach(order ->
+                orders.add(order.isAscending() ?
+                        cb.asc(root.get(order.getProperty())) : // Ascending sort
+                        cb.desc(root.get(order.getProperty()))  // Descending sort
+                ));
+        if (!orders.isEmpty()) {
+            cq.orderBy(orders);
+        }
+
+        // Step 7: Build the executable query
+        TypedQuery<ProductSequenceConfig> query = entityManager.createQuery(cq);
+
+        // Step 8: Acquire a PESSIMISTIC_WRITE lock (FOR UPDATE)
+        // This ensures no other transaction can modify the row until our transaction commits
+        query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+        // Step 9: Set lock timeout (milliseconds)
+        // If the row is already locked by another transaction, wait up to 2 seconds
+        query.setHint("javax.persistence.lock.timeout", 2000);
+
+        // Step 10: Apply pagination (offset + page size)
+        query.setFirstResult((int) pageable.getOffset()); // skip rows
+        query.setMaxResults(pageable.getPageSize());     // limit number of rows
+
+        // Step 11: Execute query and return the first row or null
+        // Only the first matching row is locked
+        List<ProductSequenceConfig> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
+
 
 }
