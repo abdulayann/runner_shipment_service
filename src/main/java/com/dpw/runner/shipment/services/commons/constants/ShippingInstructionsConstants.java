@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+
 import java.util.List;
+import java.util.Map;
 
 public class ShippingInstructionsConstants {
     public ShippingInstructionsConstants() {
@@ -14,5 +17,6 @@ public class ShippingInstructionsConstants {
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Instruction Update";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
     public static final String DATA_NOT_FOUND = "Shipping Instructions Not Found {}";
-    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("freightDetailList","commonPackagesList","commonContainersList","referenceNumbers","sailingInformation");
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
 }

@@ -139,9 +139,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             long start = System.currentTimeMillis();
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShippingInstruction.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
             includeColumns.addAll(ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS);
-            ShippingInstructionResponse carrierBookingResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new ShippingInstructionResponse());
+            ShippingInstructionResponse shippingInstructionResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new ShippingInstructionResponse());
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
-            Map<String, Object> response = fetchAllMasterDataByKey(carrierBookingResponse);
+            Map<String, Object> response = fetchAllMasterDataByKey(shippingInstructionResponse);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -162,12 +162,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
         }
 
-        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, CarrierBookingConstants.tableNames);
+        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
         Page<ShippingInstruction> carrierBookingPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()));
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData, new HashSet<>(listCommonRequest.getIncludeColumns()));
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
@@ -271,7 +271,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> shippingInstructionMasterDataHelper.addAllCarrierDataInSingleCall(shippingInstructionResponse, masterDataResponse)), executorServiceMasterData);
         var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> shippingInstructionMasterDataHelper.addAllVesselDataInSingleCall(shippingInstructionResponse, masterDataResponse)), executorServiceMasterData);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, vesselsFuture).join();
-
         return masterDataResponse;
     }
 
