@@ -105,7 +105,7 @@ public class RoutingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION_API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> consolidationUpdateBulk(@RequestBody BulkUpdateRoutingsRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.CONSOLIDATION));
+        return ResponseHelper.buildSuccessResponse(routingService.bulkUpdateWithValidateWrapper(request, Constants.CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_DELETE_SUCCESSFUL, response = BulkRoutingResponse.class)})
