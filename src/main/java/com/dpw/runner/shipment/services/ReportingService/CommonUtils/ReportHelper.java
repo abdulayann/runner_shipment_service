@@ -115,13 +115,13 @@ public class ReportHelper {
     public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode) {
         List<String> lines = new ArrayList<>();
 
-        if (name != null && !name.isBlank()) {
+        if (name != null) {
             lines.add(name);
         }
-        if (address1 != null && !address1.isBlank()) {
+        if (address1 != null) {
             lines.add(address1);
         }
-        if (address2 != null && !address2.isBlank()) {
+        if (address2 != null) {
             lines.add(address2);
         }
         StringBuilder locationDetails = new StringBuilder();
@@ -142,7 +142,6 @@ public class ReportHelper {
         }
         // Convert 3-letter country code to 2-letter if needed
         String formattedCountryCode = formatCountryCode(countryCode);
-
         if (!Strings.isNullOrEmpty(formattedCountryCode)) {
             if (!locationDetails.isEmpty()) {
                 locationDetails.append(" ");

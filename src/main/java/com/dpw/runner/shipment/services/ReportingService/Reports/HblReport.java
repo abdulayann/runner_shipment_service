@@ -769,8 +769,8 @@ public class HblReport extends IReport {
         List<String> deliveryAgent = null;
         List<String> forwardAgent = null;
 
-        deliveryAgent = getShipmentDeliveryAgent(hblModel, deliveryAgent, dictionary);
-        deliveryAgent = getShipmentForwardAgent(hblModel, deliveryAgent, dictionary);
+        deliveryAgent = getShipmentDeliveryAgent(hblModel, deliveryAgent);
+        forwardAgent = getShipmentForwardAgent(hblModel, forwardAgent);
         dictionary.put(BL_DELIVERY, (deliveryAgent != null && !deliveryAgent.isEmpty()) ? deliveryAgent : Collections.emptyList());
         dictionary.put(BL_DELIVERY_IN_CAPS, deliveryAgent != null ? deliveryAgent.stream().map(String::toUpperCase).toList() : null);
         dictionary.put(BL_FORWARDER, forwardAgent);
@@ -778,7 +778,7 @@ public class HblReport extends IReport {
             dictionary.put(BL_FORWARDER_IN_CAPS, forwardAgent.stream().map(String::toUpperCase).collect(Collectors.toList()));
     }
 
-    private List<String> getShipmentDeliveryAgent(HblModel hblModel, List<String> deliveryAgent, Map<String, Object> dictionary) {
+    private List<String> getShipmentDeliveryAgent(HblModel hblModel, List<String> deliveryAgent) {
         PartiesModel shipmentDelivery = hblModel.shipment.getAdditionalDetails().getImportBroker();
         if (shipmentDelivery != null) {
             Map<String, Object> deliveryAgentAddress = shipmentDelivery.getAddressData();
@@ -791,7 +791,7 @@ public class HblReport extends IReport {
         }
         return deliveryAgent;
     }
-    private List<String> getShipmentForwardAgent(HblModel hblModel, List<String> forwardAgent, Map<String, Object> dictionary) {
+    private List<String> getShipmentForwardAgent(HblModel hblModel, List<String> forwardAgent) {
         PartiesModel shipmentForward = hblModel.shipment.getAdditionalDetails().getExportBroker();
         if (shipmentForward != null) {
             Map<String, Object> forwardAgentAddress = shipmentForward.getAddressData();
