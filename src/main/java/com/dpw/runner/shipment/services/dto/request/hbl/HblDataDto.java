@@ -23,7 +23,6 @@ public class HblDataDto {
     private String consignorAddress;
     private String consignorTaxId;
     private String consignorReferenceNumber;
-    private String consigneeName;
     private String consigneeAddress;
     private String consigneeReferenceNumber;
     private String purchaseOrderNumber;
@@ -69,6 +68,8 @@ public class HblDataDto {
     private String cargoTerms;
     private String deliveryAgentAddress;
     private String deliveryAgent;
+    private String forwardingAgent;
+    private String forwardingAgentAddress;
     private String quantityCode;
     private String invoiceNumbers;
     private String jsonFiled;
@@ -81,8 +82,36 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
-    private BLAddressDto blNewShipper;
-    private BLAddressDto blNewConsignee;
-    private BLAddressDto blForwarder;
-    private BLAddressDto blDelivery;
+    public String shipperName;
+    public String shipperAddressLine1;
+    public String shipperAddressLine2;
+    public String shipperCity;
+    public String shipperState;
+    public String shipperZipCode;
+    public String shipperCountry;
+    // Consignee fields
+    private String consigneeName;
+    public String consigneeAddressLine1;
+    public String consigneeAddressLine2;
+    public String consigneeCity;
+    public String consigneeState;
+    public String consigneeZipCode;
+    public String consigneeCountry;
+    // Forwarding Agent (Origin Agent) fields
+    public String forwarderName;
+    public String forwarderAddressLine1;
+    public String forwarderAddressLine2;
+    public String forwarderCity;
+    public String forwarderState;
+    public String forwarderZipCode;
+    public String forwarderCountry;
+    // Delivery Agent (Destination Agent) fields
+    public String deliveryAgentName;
+    public String deliveryAgentAddressLine1;
+    public String deliveryAgentAddressLine2;
+    public String deliveryAgentCity;
+    public String deliveryAgentState;
+    public String deliveryAgentZipCode;
+    public String deliveryAgentCountry;
+
 }

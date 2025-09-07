@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -111,6 +112,63 @@ public class ReportHelper {
             list.add(pincode);
         return list;
     }
+    public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode) {
+        List<String> lines = new ArrayList<>();
+
+        if (name != null && !name.isBlank()) {
+            lines.add(name);
+        }
+        if (address1 != null && !address1.isBlank()) {
+            lines.add(address1);
+        }
+        if (address2 != null && !address2.isBlank()) {
+            lines.add(address2);
+        }
+        StringBuilder locationDetails = new StringBuilder();
+        if (!Strings.isNullOrEmpty(city)) {
+            locationDetails.append(city);
+        }
+        if (!Strings.isNullOrEmpty(stateCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(" ");
+            }
+            locationDetails.append(stateCode);
+        }
+        if (!Strings.isNullOrEmpty(pinCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(" ");
+            }
+            locationDetails.append(pinCode);
+        }
+        // Convert 3-letter country code to 2-letter if needed
+        String formattedCountryCode = formatCountryCode(countryCode);
+
+        if (!Strings.isNullOrEmpty(formattedCountryCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(" ");
+            }
+            locationDetails.append(formattedCountryCode);
+        }
+
+        if (!locationDetails.isEmpty()) {
+            lines.add(locationDetails.toString());
+        }
+
+        return lines;
+    }
+    private static String formatCountryCode(String countryCode) {
+        if (Strings.isNullOrEmpty(countryCode)) {
+            return null;
+        }
+        if (countryCode.length() == 2) {
+            return countryCode.toUpperCase();
+        }
+        if (countryCode.length() == 3) {
+            return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
+        }
+        return countryCode;
+    }
+
 
     public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
     {
