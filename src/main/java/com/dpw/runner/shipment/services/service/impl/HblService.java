@@ -606,7 +606,7 @@ public class HblService implements IHblService {
                 hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
                 hblData.setDeliveryAgentName(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
-            if (additionalDetails.getExportBroker().getAddressData() != null) {
+            if (additionalDetails.getImportBroker().getAddressData() != null) {
                 hblData.setDeliveryAgentAddress(constructAddress(additionalDetails.getImportBroker().getAddressData()));
                 Map<String, String> addressComponents = extractAddressComponents(additionalDetails.getImportBroker().getAddressData());
                 hblData.setDeliveryAgentAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());

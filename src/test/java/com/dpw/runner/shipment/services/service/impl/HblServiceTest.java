@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.HblConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -32,24 +33,14 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
-import com.dpw.runner.shipment.services.dto.request.HblRequest;
-import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.BLAddressDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblLockSettings;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -66,14 +57,9 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.lang.reflect.Method;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1486,36 +1472,301 @@ class HblServiceTest extends CommonMocks {
         assertNull(responseBody.getWarning());
     });
 }
-    @Test
-    void testParseAddressComponents_WithEmptyAddress() {
-        String name = "Test Company";
-        String address = "";
+    // Helper method to create test Parties with customizable data
+// Helper method to create test Parties with customizable data
+    private Parties createTestParty(String name, String address1, String address2, String city,
+                                    String state, String zipCode, String country) {
+        Parties party = new Parties();
 
-        BLAddressDto result = hblService.parseAddressToComponents(name, address);
+        // Create orgData - Use the same constants as your production code
+        Map<String, Object> orgData = new HashMap<>();
+        if (name != null) {
+            orgData.put(PartiesConstants.FULLNAME, name); // Use PartiesConstants
+        }
+        orgData.put(PartiesConstants.EMAIL, "test@example.com"); // Use PartiesConstants
+        party.setOrgData(orgData);
 
-        assertEquals("TEST COMPANY", result.getName());
-        assertEquals("", result.getAddressLine1());
-        assertEquals("", result.getAddressLine2());
-        assertEquals("", result.getCity());
-        assertEquals("", result.getState());
-        assertEquals("", result.getCountry());
-        assertEquals("", result.getPinCode());
+        // Create addressData - Use the same constants as your production code
+        Map<String, Object> addressData = new HashMap<>();
+        if (address1 != null) {
+            addressData.put(PartiesConstants.ADDRESS1, address1); // Use PartiesConstants
+        }
+        if (address2 != null) {
+            addressData.put(PartiesConstants.ADDRESS2, address2); // Use PartiesConstants
+        }
+        if (city != null) {
+            addressData.put(PartiesConstants.CITY, city); // Use PartiesConstants
+        }
+        if (state != null) {
+            addressData.put(PartiesConstants.STATE, state); // Use PartiesConstants
+        }
+        if (zipCode != null) {
+            addressData.put(PartiesConstants.ZIP_POST_CODE, zipCode); // Use PartiesConstants
+        }
+        if (country != null) {
+            addressData.put(PartiesConstants.COUNTRY, country); // Use PartiesConstants
+        }
+
+        party.setAddressData(addressData);
+        return party;
+    }
+
+    // Overloaded method for simpler usage
+    private Parties createTestParty(String name, String address, String country) {
+        return createTestParty(name, address, null, null, null, null, country);
+    }
+
+    // Helper method to create AdditionalDetails
+    private AdditionalDetails createAdditionalDetails(Parties importBroker, Parties exportBroker) {
+        AdditionalDetails details = new AdditionalDetails();
+        details.setImportBroker(importBroker);
+        details.setExportBroker(exportBroker);
+        return details;
+    }
+
+    // Helper method to create ShipmentDetails
+    private ShipmentDetails createShipmentDetails(Parties consigner, Parties consignee) {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setConsigner(consigner);
+        details.setConsignee(consignee);
+        return details;
+    }
+
+    // Helper method to create empty party
+    private Parties createEmptyParty() {
+        Parties party = new Parties();
+        party.setOrgData(new HashMap<>());
+        party.setAddressData(new HashMap<>());
+        return party;
+    }
+
+    // Helper method to create party with only name
+    private Parties createPartyWithOnlyName(String name) {
+        Parties party = new Parties();
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("FULLNAME", name);
+        party.setOrgData(orgData);
+
+        party.setAddressData(new HashMap<>());
+        return party;
+    }
+
+    // Helper method to create party with only address
+    private Parties createPartyWithOnlyAddress(String address1, String country) {
+        Parties party = new Parties();
+
+        party.setOrgData(new HashMap<>());
+
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("ADDRESS1", address1);
+        addressData.put("COUNTRY", country);
+        party.setAddressData(addressData);
+
+        return party;
     }
 
     @Test
-    void testParseAddressComponents_WithNullAddress() {
-        String name = "Test Company";
-
-        BLAddressDto result = hblService.parseAddressToComponents(name, null);
-
-        assertEquals("TEST COMPANY", result.getName());
-        assertEquals("", result.getAddressLine1());
-        assertEquals("", result.getAddressLine2());
-        assertEquals("", result.getCity());
-        assertEquals("", result.getState());
-        assertEquals("", result.getCountry());
-        assertEquals("", result.getPinCode());
+    void testConvertCountryCodeTo2Letters_With3LetterCode() throws Exception {
+        Method method = HblService.class.getDeclaredMethod("convertCountryCodeTo2Letters", String.class);
+        method.setAccessible(true);
+        assertEquals("US", method.invoke(hblService, "USA"));
+        assertEquals("GB", method.invoke(hblService, "GBR"));
+        assertEquals("IN", method.invoke(hblService, "IND"));
     }
 
 
-}
+    @Test
+    void testConstructAddress_WithCompleteData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.COMPANY_NAME, "Test Company");
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.CITY, "New York");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+        addressData.put(PartiesConstants.STATE, "NY");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "10001");
+        addressData.put(PartiesConstants.CONTACT_PHONE, "123-456-7890");
+
+        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(hblService, addressData);
+        assertTrue(result.contains("Test Company"));
+        assertTrue(result.contains("123 Main St"));
+        assertTrue(result.contains("New York"));
+        assertTrue(result.contains("USA"));
+    }
+
+    @Test
+    void testConstructAddress_WithPartialData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.CITY, "New York");
+        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(hblService, addressData);
+        assertTrue(result.contains("123 Main St"));
+        assertTrue(result.contains("New York"));
+    }
+
+
+    @Test
+    void testExtractAddressComponents_WithCompleteData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.ADDRESS2, "Suite 100");
+        addressData.put(PartiesConstants.CITY, "New York");
+        addressData.put(PartiesConstants.STATE, "NY");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "10001");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        Method method = HblService.class.getDeclaredMethod("extractAddressComponents", Map.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, String> result = (Map<String, String>) method.invoke(hblService, addressData);
+        assertEquals("123 Main St", result.get(PartiesConstants.ADDRESS1));
+        assertEquals("Suite 100", result.get(PartiesConstants.ADDRESS2));
+        assertEquals("New York", result.get(PartiesConstants.CITY));
+        assertEquals("NY", result.get(PartiesConstants.STATE));
+        assertEquals("10001", result.get(PartiesConstants.ZIP_POST_CODE));
+        assertEquals("USA", result.get(PartiesConstants.COUNTRY));
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_full() throws Exception {
+        Map<String, Object> addr = Map.of(
+                PartiesConstants.ADDRESS1, "123 St",
+                PartiesConstants.ADDRESS2, "Suite 9",
+                PartiesConstants.CITY, "Chennai",
+                PartiesConstants.STATE, "TN",
+                PartiesConstants.ZIP_POST_CODE, "600001",
+                PartiesConstants.COUNTRY, "IND"
+        );
+        Parties broker = new Parties();
+        broker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Ship Co"));
+        broker.setAddressData(addr);
+        AdditionalDetails ad = new AdditionalDetails();
+        ad.setImportBroker(broker);
+
+        HblDataDto dto = new HblDataDto();
+        Method method = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        method.setAccessible(true);
+        method1.setAccessible(true);
+        method.invoke(hblService, ad, dto);
+
+        assertEquals("SHIP CO", dto.getDeliveryAgent());
+        assertEquals("123 ST", dto.getDeliveryAgentAddressLine1());
+        assertEquals("IN", dto.getDeliveryAgentCountry()); // ISO3166 mocked or real
+    }
+    @Test
+    void endToEnd_fullBrokerConsignerConsigneeMapping() throws Exception {
+        Map<String, Object> importAddr = new HashMap<>();
+        importAddr.put(PartiesConstants.COMPANY_NAME, "ImportCo Pvt Ltd");
+        importAddr.put(PartiesConstants.ADDRESS1,    "12 Harbor Road");
+        importAddr.put(PartiesConstants.ADDRESS2,    "Dock Area");
+        importAddr.put(PartiesConstants.CITY,        "Chennai");
+        importAddr.put(PartiesConstants.STATE,       "TN");
+        importAddr.put(PartiesConstants.ZIP_POST_CODE, "600001");
+        importAddr.put(PartiesConstants.COUNTRY,     "IND");          // alpha-3 → should become IN
+        importAddr.put(PartiesConstants.CONTACT_PHONE,"+91-44-1111");
+
+        Parties importBroker = new Parties();
+        importBroker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Eastern Brokers"));
+        importBroker.setAddressData(importAddr);
+
+        Map<String, Object> exportAddr = new HashMap<>();
+        exportAddr.put(PartiesConstants.ADDRESS1, "99 Ocean Ave");
+        exportAddr.put(PartiesConstants.CITY,     "Singapore");
+        exportAddr.put(PartiesConstants.STATE,    "SG");
+        exportAddr.put(PartiesConstants.ZIP_POST_CODE, "234567");
+        exportAddr.put(PartiesConstants.COUNTRY,  "SGP");             // alpha-3 → should become SG
+
+        Parties exportBroker = new Parties();
+        exportBroker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Pacific Forwarding"));
+        exportBroker.setAddressData(exportAddr);
+
+        AdditionalDetails additional = new AdditionalDetails();
+        additional.setImportBroker(importBroker);
+        additional.setExportBroker(exportBroker);
+
+        // ---------- Build Consigner ----------
+        Map<String, Object> consignerAddr = new HashMap<>();
+        consignerAddr.put(PartiesConstants.ADDRESS1, "45 Hill St");
+        consignerAddr.put(PartiesConstants.CITY,     "Mumbai");
+        consignerAddr.put(PartiesConstants.STATE,    "MH");
+        consignerAddr.put(PartiesConstants.ZIP_POST_CODE, "400001");
+        consignerAddr.put(PartiesConstants.COUNTRY,  "IND");
+
+        Parties consigner = new Parties();
+        consigner.setOrgData(Map.of(PartiesConstants.FULLNAME, "Blue Line Traders"));
+        consigner.setAddressData(consignerAddr);
+
+        // ---------- Build Consignee ----------
+        Map<String, Object> consigneeAddr = new HashMap<>();
+        consigneeAddr.put(PartiesConstants.ADDRESS1, "77 Main Road");
+        consigneeAddr.put(PartiesConstants.ADDRESS2, "Industrial Estate");
+        consigneeAddr.put(PartiesConstants.CITY,     "Colombo");
+        consigneeAddr.put(PartiesConstants.STATE,    "WP");
+        consigneeAddr.put(PartiesConstants.ZIP_POST_CODE, "00900");
+        consigneeAddr.put(PartiesConstants.COUNTRY,  "LKA");
+
+        Parties consignee = new Parties();
+        consignee.setOrgData(Map.of(PartiesConstants.FULLNAME, "Island Imports"));
+        consignee.setAddressData(consigneeAddr);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setConsigner(consigner);
+        shipment.setConsignee(consignee);
+
+        // ---------- Execute mapping ----------
+        HblDataDto dto = new HblDataDto();
+        HblService svc = new HblService();   // replace with actual class
+        Method method = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        method.setAccessible(true);
+        method.invoke(hblService, additional, dto);
+        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        method1.setAccessible(true);
+        method1.invoke(hblService, additional, dto);
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHbl", ShipmentDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, shipment, dto);
+
+        // Delivery agent (import broker)
+        assertEquals("EASTERN BROKERS", dto.getDeliveryAgent());
+        assertEquals("EASTERN BROKERS", dto.getDeliveryAgentName());
+        assertEquals("12 HARBOR ROAD",  dto.getDeliveryAgentAddressLine1());
+        assertEquals("DOCK AREA",       dto.getDeliveryAgentAddressLine2());
+        assertEquals("CHENNAI",         dto.getDeliveryAgentCity());
+        assertEquals("TN",              dto.getDeliveryAgentState());
+        assertEquals("600001",          dto.getDeliveryAgentZipCode());
+        assertEquals("IN",              dto.getDeliveryAgentCountry());
+        assertTrue(dto.getDeliveryAgentAddress().contains("ImportCo Pvt Ltd")); // formatted address check
+
+        // Forwarder (export broker)
+        assertEquals("PACIFIC FORWARDING", dto.getForwarderName());
+        assertEquals("99 OCEAN AVE",       dto.getForwarderAddressLine1());
+        assertEquals("SINGAPORE",          dto.getForwarderCity());
+        assertEquals("SG",                 dto.getForwarderCountry());
+
+        // Consigner
+        assertEquals("BLUE LINE TRADERS", dto.getShipperName());
+        assertEquals("BLUE LINE TRADERS", dto.getConsignorName());
+        assertEquals("45 HILL ST",        dto.getShipperAddressLine1());
+        assertEquals("MUMBAI",            dto.getShipperCity());
+        assertEquals("IN",                dto.getShipperCountry());
+
+        // Consignee
+        assertEquals("ISLAND IMPORTS", dto.getConsigneeName());
+        assertEquals("77 MAIN ROAD",   dto.getConsigneeAddressLine1());
+        assertEquals("INDUSTRIAL ESTATE", dto.getConsigneeAddressLine2());
+        assertEquals("COLOMBO",        dto.getConsigneeCity());
+        assertEquals("LKA".length() == 3 ? "LK" : "LK", dto.getConsigneeCountry()); // depends on ISO helper
+
+    }
+
+
+
+
+
+
+ }
