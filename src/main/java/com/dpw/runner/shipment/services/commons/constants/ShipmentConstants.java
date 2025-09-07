@@ -46,14 +46,11 @@ public class ShipmentConstants {
     public static final String DESTINATION = "destination";
     public static final String DESTINATION_PORT_LOC_CODE = "destinationPortLocCode";
     public static final String CONSOLIDATION_NUMBER = "consolidationNumber";
-    public static final String TRANSPORTER_DETAIL = "transporterDetail";
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.NOTIFY_PARTY_ORG_CODE, RunnerEntityMapping.builder().parentTable(Constants.ADDITIONAL_DETAILS).tableName("notifyParty").dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry("pickupTransporterOrgCode", RunnerEntityMapping.builder().parentTable(Constants.PICKUP_DETAILS).tableName(TRANSPORTER_DETAIL).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry("deliveryTransporterOrgCode", RunnerEntityMapping.builder().parentTable(Constants.DELIVERY_DETAILS).tableName(TRANSPORTER_DETAIL).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CLIENT_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
@@ -187,6 +184,7 @@ public class ShipmentConstants {
     public static final String ACHIEVED_QUANTITIES = "achievedQuantities";
     public static final String SHIPMENT_DETAILS = "shipmentDetails";
     public static final String CONSOLIDATION_DETAILS = "consolidationDetails";
+    public static final String TRANSPORTER_DETAIL = "transporterDetail";
     private static final String CONSOLIDATION_DETAILS_SET = "consolidationList";
     public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
             Map.entry(SHIPMENT_DETAILS, ShipmentDetails.class),
