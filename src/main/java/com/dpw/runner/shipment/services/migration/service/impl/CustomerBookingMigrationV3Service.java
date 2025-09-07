@@ -359,7 +359,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private void updateWeight(Packing packing) {
-        if (Objects.isNull(packing.getShipmentId())) {
+        if (!Objects.isNull(packing.getShipmentId())) {
             return;
         }
 
@@ -373,7 +373,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     private void updateVolume(Packing packing) {
-        if (Objects.isNull(packing.getShipmentId())) {
+        if (!Objects.isNull(packing.getShipmentId())) {
             return;
         }
 
