@@ -54,7 +54,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,7 +185,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) throws JsonMappingException {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         if (listCommonRequest == null) {
             log.error(CARRIER_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
@@ -210,12 +209,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
-                                                             Set<String> includeColumns) throws JsonMappingException {
+                                                             Set<String> includeColumns) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<CarrierBookingListResponse> carrierBookingListResponses = new ArrayList<>();
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
-            CarrierBookingListResponse carrierBookingListResponse = carrierBookingUtil.setListFields(carrierBooking);
+            CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
             carrierBookingListResponses.add(carrierBookingListResponse);
         }
 
