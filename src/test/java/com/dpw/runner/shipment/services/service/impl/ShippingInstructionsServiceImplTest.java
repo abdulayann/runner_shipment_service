@@ -1,49 +1,98 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.controller.ShippingInstructionsController;
+import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class ShippingInstructionsServiceImplTest {
 
     @InjectMocks
     private ShippingInstructionsServiceImpl service;
 
-    @Mock private IShippingInstructionDao repository;
-    @Mock private ICarrierBookingDao carrierBookingDao;
-    @Mock private IConsolidationDetailsDao consolidationDetailsDao;
-    @Mock private JsonHelper jsonHelper;
-    @Mock private MasterDataUtils masterDataUtils;
-    @Mock private ExecutorService executorServiceMasterData;
-    @Mock private CommonUtils commonUtils;
-    @Mock private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+    @Mock
+    private ShippingInstructionDao repository;
+    @Mock
+    private ICarrierBookingDao carrierBookingDao;
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private JsonHelper jsonHelper;
+    @Mock
+    private MasterDataUtils masterDataUtils;
+    @Mock
+    private ExecutorService executorServiceMasterData;
+    @Mock
+    private CommonUtils commonUtils;
+    @Mock
+    private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+    @InjectMocks
+    private ShippingInstructionsController controller;
+    private static ShippingInstruction testSI;
+    private static ObjectMapper objectMapper;
+
+    private static JsonTestUtility jsonTestUtility;
+
+    @BeforeAll
+    static void init() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
+        objectMapper = JsonTestUtility.getMapper();
+    }
 
     // --- Helpers to create simple domain objects we need ---
 
@@ -58,6 +107,13 @@ class ShippingInstructionsServiceImplTest {
                 .sailingInformationRequest(SailingInformationRequest.builder().build())
                 .build();
     }
+
+    @BeforeEach
+    void setUp() {
+        testSI = jsonTestUtility.getTestShippingInstruction();
+        service.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
+
 
     private ShippingInstruction buildSimpleEntity() {
         ShippingInstruction si = new ShippingInstruction();
@@ -94,6 +150,7 @@ class ShippingInstructionsServiceImplTest {
                 .carrierBookingNo("CB-001")
                 .carrierBlNo("BL-001")
                 .build();
+
 
         CarrierBooking cb = buildCarrierBooking();
         // convert request -> entity
@@ -252,8 +309,6 @@ class ShippingInstructionsServiceImplTest {
         verifyNoInteractions(repository);
     }
 
-    // ========== REPOSITORY NEGATIVE ==========
-
     @Test
     void getShippingInstructionsById_ShouldThrow_WhenNotFound() {
         when(repository.findById(999L)).thenReturn(Optional.empty());
@@ -262,23 +317,75 @@ class ShippingInstructionsServiceImplTest {
                 .hasMessageContaining(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
     }
 
-//    // ========== LIST endpoint positive smoke (minimal) ==========
-//    // We don't start Spring; this is just to show no NPE with minimal mocks.
-//    @Test
-//    void list_ShouldReturnPagedResponse_WhenSpecAndPageableProvided() {
-//        CommonRequestModel crm = new CommonRequestModel();
-//        ListCommonRequest lcr = new ListCommonRequest();
-//        lcr.setIncludeColumns(List.of("id")); // satisfies service validation
-//        crm.setData(lcr);
-//
-//        // DbAccessHelper.fetchData is static; if you keep it static, avoid this test or use Mockito-inline static mocking.
-//        // Here we'll assume repository.findAll(spec, pageable) is called; we just mock it directly.
-//        Page<ShippingInstruction> page = new PageImpl<>(List.of(buildSimpleEntity()), PageRequest.of(0, 10), 1);
-//        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
-//
-//        // commonUtils.setIncludedFieldsToResponse is used in getAllMasterData, not here.
-//        ResponseEntity<IRunnerResponse> resp = service.list(crm, false);
-//        assertThat(resp).isNotNull();
-//        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-//    }
+    @Test
+    void getAllMasterDataForShippingInstruction() {
+        Long id = 1L;
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
+        boolean isShipment = true;
+
+        ShippingInstruction mockSI = testSI;
+        ShippingInstructionResponse mockAwbResponse = objectMapper.convertValue(mockSI, ShippingInstructionResponse.class);
+
+        when(repository.findById(id)).thenReturn(Optional.ofNullable(mockSI));
+
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+
+        var res = service.getAllMasterData(commonRequestModel.getId());
+
+        assertNotNull(res);
+        assertEquals(HttpStatus.OK, res.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataFailsOnNoAwbPresent() {
+        Long id = 1L;
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        var res = service.getAllMasterData(commonRequestModel.getId());
+
+        Assertions.assertNotNull(res);
+        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    }
+
+    @Test
+    void listShippingInstruction() {
+        // Arrange: Build ListCommonRequest
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("id", "containersList"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        // Mock a ShippingInstruction entity
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(1L);
+        shippingInstruction.setCarrierBlNo("CX");
+
+        Page<ShippingInstruction> resultPage = new PageImpl<>(List.of(shippingInstruction));
+
+        // Mock repository behavior
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(resultPage);
+
+        // Mock convertEntityListToDtoList behavior
+        ShippingInstructionResponse mockResponse = new ShippingInstructionResponse();
+        mockResponse.setCarrierBlNo("CX");
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(mockResponse);
+
+        // Act: Call service
+        ResponseEntity<IRunnerResponse> response = service.list(commonRequestModel, true);
+
+        // Assert: Verify response
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        // Verify repository interaction
+        verify(repository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
 }
