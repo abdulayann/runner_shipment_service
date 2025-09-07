@@ -3,63 +3,20 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.CarrierRouting;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -81,20 +38,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -232,7 +181,14 @@ public class MasterDataUtils{
     }
 
     private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+       if(!CollectionUtils.isEmpty(response.getCarrierRoutingList())) {
+           for(CarrierRoutingResponse carrierRouting: response.getCarrierRoutingList()) {
+               locCodes.addAll(createInBulkUnLocationsRequest(carrierRouting, CarrierRouting.class, fieldNameKeyMap, CarrierRouting.class.getSimpleName() + carrierRouting.getId(), cacheMap));
+           }
+       }
+
         locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));
+
     }
 
     private void addLocCodesFromCarrierDetailsResponse(CarrierDetailResponse carrierDetails, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -307,6 +263,9 @@ public class MasterDataUtils{
         else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
         }
+        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation()!= null && StringUtility.isNotEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
+            carriers.addAll(createInBulkCarriersRequest(carrierBookingListResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId(), cacheMap));
+        }
     }
 
     private void setCarriersMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -362,6 +321,12 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
             vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
+        }
+        else if (response instanceof CarrierBookingResponse carrierBookingResponse && carrierBookingResponse.getCarrierRoutingList() != null ) {
+            for(CarrierRoutingResponse carrierRoutingResponse : carrierBookingResponse.getCarrierRoutingList()){
+                vessels.addAll(createInBulkVesselsRequest(carrierRoutingResponse, CarrierRouting.class, fieldNameKeyMap, CarrierRouting.class.getSimpleName() + carrierRoutingResponse.getId(), cacheMap));
+            }
+
         }
     }
 
@@ -492,6 +457,9 @@ public class MasterDataUtils{
         }
         if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null || notificationListResponse.getReassignedFromBranchId() != null)) {
             tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
+        }
+        if (response instanceof CarrierBookingListResponse carrierBookingListResponse && (carrierBookingListResponse.getTenantId() != null)) {
+            tenantIdList.addAll(createInBulkTenantsRequest(carrierBookingListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + carrierBookingListResponse.getId(), cacheMap));
         }
     }
 
