@@ -367,7 +367,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during networkTransferFutures setup [id={}]", nteId, e);
-                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -411,7 +411,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
                     networkTransferBackupRepository.deleteBackupByTenantIdAndNetworkTransferId(nteId, tenantId);
-                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

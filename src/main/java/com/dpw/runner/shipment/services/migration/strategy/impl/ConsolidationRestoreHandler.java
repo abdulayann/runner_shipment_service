@@ -114,7 +114,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                                 Constants.CONSOLIDATION,
                                 IntegrationType.RESTORE_DATA_SYNC,
                                 Status.FAILED,
-                                e.getLocalizedMessage()
+                                Arrays.toString(e.getStackTrace())
                         );
                         throw new IllegalArgumentException(e);
                     } finally {
@@ -129,6 +129,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
+
             log.info("Started processing of consol id : {}", consolidationId);
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
             if (Objects.isNull(consolidationBackupDetails)) {

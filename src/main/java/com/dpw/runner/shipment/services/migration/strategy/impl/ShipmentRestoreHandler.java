@@ -354,7 +354,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                     } catch (Exception e) {
                         log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
                         migrationUtil.saveErrorResponse(id, Constants.SHIPMENT,
-                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                         throw new IllegalArgumentException(e);
                     } finally {
                         v1Service.clearAuthContext();

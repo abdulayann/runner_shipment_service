@@ -312,6 +312,6 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
-    @Query(value = "UPDATE shipment_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    @Query(value = "UPDATE shipment_details SET is_deleted = true WHERE id NOT IN (?1) and migration_status != 'CREATED_IN_V2' and tenant_id = ?2", nativeQuery = true)
     void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
 }
