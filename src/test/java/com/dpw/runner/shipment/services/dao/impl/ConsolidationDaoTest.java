@@ -446,6 +446,7 @@ class ConsolidationDaoTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType("EXP");
+        consolidationDetails.setMawb(consolidationDetails.getBol());
         MawbStocks mawbStocks = jsonTestUtility.getMawbStock();
 
         var spyService = Mockito.spy(consolidationsDao);
@@ -484,8 +485,13 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationDetails.setMawb("MAST77777770");
         consolidationDetails.setShipmentType("IMP");
 
+        ConsolidationDetails oldConsolidationDetails = objectMapperTest.convertValue(testConsol, ConsolidationDetails.class);
+        oldConsolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        oldConsolidationDetails.setMawb(consolidationDetails.getBol());
+        oldConsolidationDetails.setShipmentType("IMP");
+
         var spyService = Mockito.spy(consolidationsDao);
-        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(Optional.of(oldConsolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
 
         mockShipmentSettings();

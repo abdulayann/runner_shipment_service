@@ -825,12 +825,12 @@ class ShipmentDaoTest extends CommonMocks {
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
         PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
-        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+        lenient().when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
 
         MawbStocks mawbStocks = MawbStocks.builder().build();
         mawbStocks.setId(1L);
-        when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
-        when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
+        lenient().when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
+        lenient().when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
 
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
