@@ -47,6 +47,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private String dpwDateFormat;
     private String weightChargeableUnit;
     private String volumeChargeableUnit;
+    private String defaultPackUnit;
     private String measurementChargeableUnit;
     private String temperatureUnit;
     private String defaultTransportMode;
