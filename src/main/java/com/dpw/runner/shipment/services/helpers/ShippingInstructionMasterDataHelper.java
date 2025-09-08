@@ -5,6 +5,9 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.entity.CarrierRouting;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -87,6 +90,12 @@ public class ShippingInstructionMasterDataHelper {
                     masterDataUtils.createInBulkMasterListRequest(response, ShippingInstruction.class,
                             fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
 
+            if (Objects.nonNull(response.getSailingInformation()))
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+
+            if (Objects.nonNull(response.getCommonContainersList())) {
+                response.getCommonContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName() + r.getId(), cacheMap)));
+            }
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
             masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
@@ -110,6 +119,10 @@ public class ShippingInstructionMasterDataHelper {
             Set<String> locationCodes = new HashSet<>(masterDataUtils.createInBulkUnLocationsRequest(response,
                     ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
 
+            if (Objects.nonNull(response.getSailingInformation())) {
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap)));
+            }
+
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes,
                     EntityTransferConstants.LOCATION_SERVICE_GUID);
 
@@ -125,10 +138,10 @@ public class ShippingInstructionMasterDataHelper {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-
-            Set<String> carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(response,
-                    ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
-
+            Set<String> carrierList = new HashSet<>();
+            if (!Objects.isNull(response.getSailingInformation())) {
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+            }
             if (CollectionUtils.isEmpty(carrierList)) {
                 return;
             }
@@ -147,10 +160,10 @@ public class ShippingInstructionMasterDataHelper {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-
-            Set<String> vesselList = new HashSet<>(masterDataUtils.createInBulkVesselsRequest(response,
-                    ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
-
+            Set<String> vesselList = new HashSet<>();
+            if (Objects.nonNull(response.getSailingInformation())) {
+                vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap)));
+            }
             Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels(), cacheMap);
 
