@@ -175,4 +175,9 @@ public class ShipmentListResponse implements IRunnerResponse {
     private MigrationStatus migrationStatus;
     private List<Packing> packingList;
     private List<Parties> shipmentAddresses;
+
+    private String contractId;
+    private String parentContractId;
+    private String destinationContractId;
+    private String destinationParentContractId;
 }
