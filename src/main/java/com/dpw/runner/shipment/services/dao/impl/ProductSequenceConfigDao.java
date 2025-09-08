@@ -46,9 +46,6 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
     @PersistenceContext
     EntityManager entityManager;
 
-    private static final int MAX_RETRIES = 2; // how many times to retry
-    private static final long BACKOFF_MS = 100L; // base backoff in ms
-
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
         long start = System.currentTimeMillis();
