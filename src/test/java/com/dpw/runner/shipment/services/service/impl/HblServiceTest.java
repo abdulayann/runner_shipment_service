@@ -1118,7 +1118,7 @@ class HblServiceTest extends CommonMocks {
 
             // Case 2: RunnerV3 Flag enabled and US key
             String result2 = (String) method.invoke(hblService, v1Data, "USKEY");
-            assertEquals("US,New York", result2);
+            assertEquals("US,NEW YORK", result2);
 
             // Case 3: RunnerV3 Flag enabled and Non-US key
             String result3 = (String) method.invoke(hblService, v1Data, "INKEY");

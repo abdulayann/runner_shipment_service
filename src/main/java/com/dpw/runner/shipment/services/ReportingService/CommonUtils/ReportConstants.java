@@ -354,8 +354,6 @@ public class ReportConstants {
     public static final String PICK_UP_FROM = "PickUpFrom";
     public static final String PICK_UP_ADDRESS = "PickupAddress";
     public static final String PRE_CARRIAGE = "PreCarriage";
-    public static final String BL_PRE_CARRIAGE_VOYAGE = "BL_PreCarriageVoyage";
-    public static final String BL_PRE_CARRIAGE_VESSEL = "BL_PreCarriageVessel";
     public static final String INVNO = "INVNO";
     public static final String EXPORTER_TAX_ID = "ExporterTaxID";
     public static final String CONSIGNEE_TAX_ID = "ConsigneeTaxID";

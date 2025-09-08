@@ -1194,9 +1194,7 @@ public class HblService implements IHblService {
                 break;
             case "PlaceOfReceipt":
                 if (!Objects.isNull(additionalDetails)) {
-                    log.info("Place of Supply loc code: {}", additionalDetails.getPlaceOfSupply());
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
-                    log.info("Place of Supply loc code22: {}", additionalDetails.getPlaceOfSupply());
                 }
                 break;
             case "All":

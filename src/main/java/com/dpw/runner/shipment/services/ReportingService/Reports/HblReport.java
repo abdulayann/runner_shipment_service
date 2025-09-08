@@ -242,7 +242,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.impl.HblService;
-import com.dpw.runner.shipment.services.service.impl.RoutingsV3Service;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -278,8 +277,6 @@ public class HblReport extends IReport {
     private HblService hblService;
     @Autowired
     private CommonUtils commonUtils;
-    @Autowired
-    private RoutingsV3Service routingsV3Service;
 
     @Override
     public Map<String, Object> getData(Long id) {
