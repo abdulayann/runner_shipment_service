@@ -298,8 +298,7 @@ public class ReportHelper {
         // Convert 3-letter country code to 2-letter if needed
         String formattedCountryCode = formatCountryCode(countryCode);
         if (!Strings.isNullOrEmpty(formattedCountryCode)) {
-            if (StringUtility.isNotEmpty(countryCode))
-                sb.append(countryCode).append(" ");
+            sb.append(formattedCountryCode).append(" ");
         }
         if (StringUtility.isNotEmpty(sb.toString()))
             list.add(sb.toString());
