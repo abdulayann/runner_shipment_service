@@ -1,5 +1,18 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -11,6 +24,16 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,18 +49,8 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-
-import javax.persistence.EntityManager;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -221,14 +234,49 @@ class ProductSequenceConfigDaoTest {
     }
 
     @Test
-    void findAndLock() {
-        List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
-        Mockito.when(productSequenceConfigRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl(productSequenceConfigList));
+    void findAndLock_shouldReturnLockedEntity() {
+        // Arrange
         Specification<ProductSequenceConfig> spec = mock(Specification.class);
         Pageable pageable = mock(Pageable.class);
-        var productSequenceConfig = productSequenceConfigDao.findAndLock(spec, pageable);
 
-        verify(entityManager, times(1)).lock(any(), any(), any());
-        assertEquals(testProductSequenceConfig, productSequenceConfig);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        CriteriaQuery<ProductSequenceConfig> cq = mock(CriteriaQuery.class);
+        Root<ProductSequenceConfig> root = mock(Root.class);
+        TypedQuery<ProductSequenceConfig> query = mock(TypedQuery.class);
+
+        // Mock pageable
+        when(pageable.getOffset()).thenReturn(0L);
+        when(pageable.getPageSize()).thenReturn(1);
+        when(pageable.getSort()).thenReturn(Sort.unsorted());
+
+        // Mock EntityManager and Criteria setup
+        when(entityManager.getCriteriaBuilder()).thenReturn(cb);
+        when(cb.createQuery(ProductSequenceConfig.class)).thenReturn(cq);
+        when(cq.from(ProductSequenceConfig.class)).thenReturn(root);
+        when(entityManager.createQuery(cq)).thenReturn(query);
+
+        // Mock query result
+        when(query.setLockMode(any())).thenReturn(query);
+        when(query.setHint(anyString(), any())).thenReturn(query);
+        when(query.setFirstResult(anyInt())).thenReturn(query);
+        when(query.setMaxResults(anyInt())).thenReturn(query);
+        when(query.getResultList()).thenReturn(List.of(testProductSequenceConfig));
+
+        // Act
+        ProductSequenceConfig result = productSequenceConfigDao.findAndLock(spec, pageable);
+
+        // Assert
+        assertEquals(testProductSequenceConfig, result);
+
+        // Verify lock applied
+        verify(query, times(1)).setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+        // Verify pagination applied
+        verify(query, times(1)).setFirstResult(0);
+        verify(query, times(1)).setMaxResults(1);
+
+        // Verify execution
+        verify(query, times(1)).getResultList();
     }
+
 }
