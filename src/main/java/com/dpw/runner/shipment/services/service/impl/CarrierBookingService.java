@@ -131,17 +131,19 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (Objects.isNull(sailingInformation)) {
                 sailingInformation = new SailingInformation();
             }
-            sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
-            sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
-            sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
-            sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            if(consolidationDetails.getCarrierDetails() != null) {
+                sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
+                sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+                sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+                sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            }
             carrierBookingEntity.setSailingInformation(sailingInformation);
         }
         carrierBookingEntity.setCarrierRoutingList(null);// we will get it from carrier
         carrierBookingEntity.setLoadedContainerDropOffDetails(null); // we will get it from carrier
         carrierBookingEntity.setEmptyContainerPickupDetails(null); // we will get it from carrier
         carrierBookingEntity.setCarrierComment(null); //we will get it from carrier
-        generateBookingNumber(carrierBookingEntity);
+        carrierBookingUtil.generateBookingNumber(carrierBookingEntity);
         carrierBookingEntity.setCarrierBlNo(null);
         carrierBookingEntity.setCarrierBookingNo(null);
         carrierBookingEntity.setStatus(CarrierBookingStatus.Draft);
@@ -149,24 +151,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
-    }
-
-    private void generateBookingNumber(CarrierBooking carrierBookingEntity) {
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        var prefix = "";
-        if (StringUtility.isNotEmpty(v1TenantSettingsResponse.getBookingPrefix())) {
-            prefix = v1TenantSettingsResponse.getBookingPrefix();
-        }
-        if (v1TenantSettingsResponse.getBookingNumberGeneration() != null && v1TenantSettingsResponse.getBookingNumberGeneration() == CarrierBookingGenerationType.Serial.getValue()) {
-            //get total count of carrier booking for that tenant + 1, prefix+count
-            Long totalCarrierBookings = carrierBookingDao.getTotalCarrierBookings();
-            carrierBookingEntity.setBookingNo(prefix + totalCarrierBookings + 1);
-        } else {
-            //generate the random number and add prefix
-            String randomBookingNumber = StringUtility.getRandomString(10);
-            carrierBookingEntity.setBookingNo(prefix + randomBookingNumber);
-        }
-
     }
 
     @Override
