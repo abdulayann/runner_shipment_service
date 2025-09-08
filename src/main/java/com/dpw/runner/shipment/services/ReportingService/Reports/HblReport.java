@@ -242,6 +242,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.impl.HblService;
+import com.dpw.runner.shipment.services.service.impl.RoutingsV3Service;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -277,6 +278,8 @@ public class HblReport extends IReport {
     private HblService hblService;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private RoutingsV3Service routingsV3Service;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -606,7 +609,7 @@ public class HblReport extends IReport {
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
-        dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()));
+        dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(processIssuePlaceName(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue())));
         EntityTransferAddress address = commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode());
         dictionary.put(ISSUE_PLACE_COUNTRY, address != null ? StringUtility.toUpperCase(address.getCountry()) : StringUtils.EMPTY);
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
