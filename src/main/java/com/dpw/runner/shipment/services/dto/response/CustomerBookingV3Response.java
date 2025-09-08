@@ -104,6 +104,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Integer tenantId;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime updatedAt;
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
