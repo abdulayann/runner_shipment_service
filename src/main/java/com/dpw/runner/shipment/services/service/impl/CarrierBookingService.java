@@ -223,10 +223,12 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (sailingInformation == null) {
                 sailingInformation = new SailingInformation();
             }
-            sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
-            sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
-            sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
-            sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            if(consolidationDetails.getCarrierDetails() != null) {
+                sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
+                sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+                sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+                sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            }
             carrierBookingEntity.setSailingInformation(sailingInformation);
         }
         carrierBookingEntity.setCarrierRoutingList(existingCarrierBooking.getCarrierRoutingList());// we will get it from carrier
@@ -268,7 +270,6 @@ public class CarrierBookingService implements ICarrierBookingService {
             setCarrierBookingSyncFields(consolidationDetails, carrierBooking);
             consolidationDetailsDao.save(consolidationDetails);
         }
-
     }
 
     private void setCarrierBookingSyncFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) {
