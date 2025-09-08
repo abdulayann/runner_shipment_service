@@ -48,6 +48,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
@@ -289,21 +290,14 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
 
-    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    private boolean isNotAirExport(ShipmentDetails request) {
+        return !(Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()) && DIRECTION_EXP.equals(request.getDirection()));
     }
 
-    private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request) {
+        if(isNotAirExport(request)) {
             return false;
-        return Boolean.TRUE.equals(request.getContainsHazardous());
-    }
-
-    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
-            return false;
+        }
         return !Boolean.TRUE.equals(request.getContainsHazardous());
     }
 
@@ -326,7 +320,7 @@ public class ShipmentDao implements IShipmentDao {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             addCargotSecurityValidationErrors(request, fromV1Sync, errors);
         } else {
-            addNonDgValidationErrors(request, fromV1Sync, shipmentSettingsDetails, errors);
+            addNonDgValidationErrors(request, errors);
         }
         
         // Routings leg no can not be repeated
@@ -367,15 +361,11 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
-    private void addNonDgValidationErrors(ShipmentDetails request, boolean fromV1Sync, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationErrors(ShipmentDetails request, Set<String> errors) {
         // Non dg Shipments can not have dg packs
-        if (checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && checkContainsDGPackage(request)) {
+        if (checkForNonDGShipmentAndAirDGFlag(request) && checkContainsDGPackage(request)) {
             errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
         }
-
-        // Non dg user cannot save dg shipment
-        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
-            errors.add("You don't have permission to update DG Shipment");
     }
 
     private void addRoutingValidationsErrors(ShipmentDetails request, Set<String> errors) {

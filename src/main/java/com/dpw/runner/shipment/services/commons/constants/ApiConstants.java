@@ -16,6 +16,7 @@ public class ApiConstants {
     public static final String API_RETRIEVE = "/retrieve";
 
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
+    public static final String API_RETRIEVE_BY_UUID = "/retrieve/mdm/uuid";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
@@ -130,6 +131,7 @@ public class ApiConstants {
 
     public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
+    public static final String MDM_OCEAN_DG_APPROVAL_RESPONSE = "/MdmDGApprovalResponse";
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 

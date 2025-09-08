@@ -3043,7 +3043,7 @@ public class AwbService implements IAwbService {
     }
 
     private String getResForAirDgCase(List<AwbPackingInfo> awbPackingInfoList, Boolean dgFlag, String res) {
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
+        if (Boolean.TRUE.equals(dgFlag)) {
             Integer packs = getPacksCount(awbPackingInfoList);
             if (packs != 0) {
                 if (!isStringNullOrEmpty(res))
@@ -4020,9 +4020,9 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setCustomOriginCode(getCountryCode(org.getCountry()));
             // Set Executed At
             if (StringUtility.isNotEmpty(address.getCity()))
-                executedAt = setUnLocationDataWithDiarcties(address.getCity());
+                executedAt = address.getCity();
             else if (StringUtility.isNotEmpty(org.getCity()))
-                executedAt = setUnLocationDataWithDiarcties(org.getCity());
+                executedAt = org.getCity();
             else
                 executedAt = null;
         }

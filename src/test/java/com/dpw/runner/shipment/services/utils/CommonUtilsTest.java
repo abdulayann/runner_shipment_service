@@ -2356,7 +2356,7 @@ class CommonUtilsTest {
 
         when(iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
-        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, false);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
@@ -4374,6 +4374,12 @@ class CommonUtilsTest {
         commonUtils.sendExcelFileViaEmail(workbook, filename);
         assertEquals("him@gmail.com", UserContext.getUser().getEmail());
 
+    }
+
+    @Test
+    void getTaskIdHyperLinkV2MDM_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2MDM("SH", "TA");
+        assertNotNull(result);
     }
 
     private ShipmentDetails getMockShipmentDetails() {

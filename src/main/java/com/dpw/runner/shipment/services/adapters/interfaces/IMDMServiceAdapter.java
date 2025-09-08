@@ -2,6 +2,10 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.response.mdm.MDMTaskRetrieveResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
@@ -18,4 +22,13 @@ public interface IMDMServiceAdapter {
     ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel) throws RunnerException;
 
     List<Map<String, Object>> getDepartmentList(String transportMode, String shipmentType, String module);
+
+    MdmTaskCreateResponse createTask(MdmTaskCreateRequest request) throws RunnerException;
+
+    void approveOrRejectTask(MdmTaskApproveOrRejectRequest request) throws RunnerException;
+
+    List<Map<String, Object>> getTaskList(String entityUuid, String entityType, String status, String taskType);
+
+    MDMTaskRetrieveResponse getTask(String taskUuid, Long id) throws RunnerException;
+
 }

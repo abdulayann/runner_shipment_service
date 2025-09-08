@@ -1380,7 +1380,7 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
             }
-            if(checkForAirDGFlag(consolidationDetails) && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
+            if(isAirExport(consolidationDetails) && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
                 anyInterBranchShipment = true;
                 if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                     if(fromConsolidation)
@@ -1396,7 +1396,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void validateAirDgHazardousForConsole(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, boolean fromConsolidation, int existingShipments, boolean anyInterBranchShipment) throws RunnerException {
-        if(checkForAirDGFlag(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
+        if(isAirExport(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
             if(existingShipments + shipmentIds.size() > 1) {
                 if(fromConsolidation)
                     throw new RunnerException(AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT);
@@ -1413,14 +1413,12 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
     }
 
-    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
-            return false;
-        return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
+    private boolean isAirExport(ConsolidationDetails consolidationDetails) {
+        return (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) && DIRECTION_EXP.equals(consolidationDetails.getShipmentType()));
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if(!checkForAirDGFlag(consolidationDetails))
+        if(!isAirExport(consolidationDetails))
             return false;
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
@@ -1794,8 +1792,6 @@ public class ConsolidationService implements IConsolidationService {
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             return false;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
-            return false;
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
         if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
             return true;
