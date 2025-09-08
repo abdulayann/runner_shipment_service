@@ -758,7 +758,7 @@ public class HblReport extends IReport {
                 consigner = ReportHelper.getOrgAddressWithPhoneEmailLine(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
                         getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
                         getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                        getValueFromMap(consignerAddress, "Zip_PostCode"));
+                        getValueFromMap(consignerAddress, ZIP_POSTCODE));
                 dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON));
             }
@@ -786,7 +786,7 @@ public class HblReport extends IReport {
                 deliveryAgent = ReportHelper.getOrgAddressWithPhoneEmailLine(getValueFromMap(deliveryAgentAddress, COMPANY_NAME), getValueFromMap(deliveryAgentAddress, ADDRESS1),
                         getValueFromMap(deliveryAgentAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(deliveryAgentAddress, CITY), getValueFromMap(deliveryAgentAddress, COUNTRY)),
                         getValueFromMap(deliveryAgentAddress, EMAIL), getValueFromMap(deliveryAgentAddress, CONTACT_PHONE),
-                        getValueFromMap(deliveryAgentAddress, "Zip_PostCode"));
+                        getValueFromMap(deliveryAgentAddress, ZIP_POSTCODE));
             }
         }
         return deliveryAgent;
@@ -799,7 +799,7 @@ public class HblReport extends IReport {
                 forwardAgent = ReportHelper.getOrgAddressWithPhoneEmailLine(getValueFromMap(forwardAgentAddress, COMPANY_NAME), getValueFromMap(forwardAgentAddress, ADDRESS1),
                         getValueFromMap(forwardAgentAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(forwardAgentAddress, CITY), getValueFromMap(forwardAgentAddress, COUNTRY)),
                         getValueFromMap(forwardAgentAddress, EMAIL), getValueFromMap(forwardAgentAddress, CONTACT_PHONE),
-                        getValueFromMap(forwardAgentAddress, "Zip_PostCode"));
+                        getValueFromMap(forwardAgentAddress, ZIP_POSTCODE));
             }
         }
         return forwardAgent;
@@ -814,7 +814,7 @@ public class HblReport extends IReport {
                         getValueFromMap(consigneeAddress, ADDRESS2),
                         ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
                         getValueFromMap(consigneeAddress, EMAIL), getValueFromMap(consigneeAddress, CONTACT_PHONE),
-                        getValueFromMap(consigneeAddress, "Zip_PostCode"));
+                        getValueFromMap(consigneeAddress, ZIP_POSTCODE));
                 dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON, getValueFromMap(consigneeAddress, CONTACT_PERSON));
             }

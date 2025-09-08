@@ -1671,10 +1671,80 @@ class HblServiceTest extends CommonMocks {
         assertEquals("LKA".length() == 3 ? "LK" : "LK", dto.getConsigneeCountry()); // depends on ISO helper
 
     }
+    private Parties party(String fullName) {
+        Map<String, Object> org = new HashMap<>();
+        org.put(PartiesConstants.FULLNAME, fullName);
+
+        Map<String, Object> addr = new HashMap<>();
+        addr.put(PartiesConstants.ADDRESS1, "Line1");
+        addr.put(PartiesConstants.ADDRESS2, "Line2");
+        addr.put(PartiesConstants.CITY, "Mumbai");
+        addr.put(PartiesConstants.STATE, "MH");
+        addr.put(PartiesConstants.ZIP_POST_CODE, "400001");
+        addr.put(PartiesConstants.COUNTRY, "INDIA");
+
+        Parties p = new Parties();      // your domain class, not PartiesModel
+        p.setOrgData(org);
+        p.setAddressData(addr);
+        // set other simple fields if you need them in tests
+        return p;
+    }
 
 
 
+    @Test
+    void mapDeliveryData_setsAgentFields() throws Exception {
+        AdditionalDetails addl = new AdditionalDetails();
+        addl.setImportBroker(party("Import Broker"));
 
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, addl, dto);
+        assertEquals("IMPORT BROKER", dto.getDeliveryAgent());
+        assertEquals("IMPORT BROKER", dto.getDeliveryAgentName());
+        assertEquals("LINE1", dto.getDeliveryAgentAddressLine1());
+        assertEquals("MUMBAI", dto.getDeliveryAgentCity());
+        assertEquals("MH", dto.getDeliveryAgentState());
+        assertEquals("400001", dto.getDeliveryAgentZipCode());
+        assertEquals("INDIA", dto.getDeliveryAgentCountry()); // depends on convertCountryCodeTo2Letters
+    }
 
+    @Test
+    void mapForwardData_setsForwarderFields() throws Exception {
+        AdditionalDetails addl = new AdditionalDetails();
+        addl.setExportBroker(party("Forwarder"));
+
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, addl, dto);
+
+        assertEquals("FORWARDER", dto.getForwarderName());
+        assertEquals("LINE1", dto.getForwarderAddressLine1());
+        assertEquals("MUMBAI", dto.getForwarderCity());
+        assertEquals("MH", dto.getForwarderState());
+        assertEquals("400001", dto.getForwarderZipCode());
+        assertEquals("INDIA", dto.getForwarderCountry());
+    }
+
+    @Test
+    void mapConsignerConsignee_setsBothParties() throws Exception {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setConsigner(party("Consignor"));
+        shipment.setConsignee(party("Consignee"));
+
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHbl", ShipmentDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, shipment, dto);
+
+        assertEquals("CONSIGNOR", dto.getShipperName());
+        assertEquals("CONSIGNOR", dto.getConsignorName());
+        assertEquals("CONSIGNEE", dto.getConsigneeName());
+        assertEquals("LINE1", dto.getShipperAddressLine1());
+        assertEquals("LINE1", dto.getConsigneeAddressLine1());
+        assertEquals("MUMBAI", dto.getConsigneeCity());
+    }
 
  }
