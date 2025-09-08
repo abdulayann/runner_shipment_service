@@ -922,6 +922,8 @@ public abstract class IReport {
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
                     shippedOnboardDate, "ddMMMyyyy", false));
+            dictionary.put(SHIPPED_ONBOARD_NEW, ReportConstants.SHIPPED_ONBOARD + ": "+ convertToDPWDateFormat(
+                    shippedOnboardDate, "dd/MMM/yyyy", false));
         }
     }
 
