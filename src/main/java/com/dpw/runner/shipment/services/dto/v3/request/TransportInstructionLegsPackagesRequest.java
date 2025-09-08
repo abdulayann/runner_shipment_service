@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.v3.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.validator.annotations.MaxTotalDigits;
+import com.dpw.runner.shipment.services.validator.annotations.ValidPackageRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@ValidPackageRequest
 public class TransportInstructionLegsPackagesRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
@@ -56,4 +58,15 @@ public class TransportInstructionLegsPackagesRequest implements IRunnerRequest {
     private String hazardLabel;
     @Size(max = 10, message = "max size is 10 for tunnelRestrictionCode")
     private String tunnelRestrictionCode;
+    @Size(max = 63, message = "max size is 63 for proper shipping name")
+    private String properShippingName;
+    @Size(max = 31, message = "max size is 31 for packing group")
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    @Size(max = 3, message = "max size is 3 for minimum flash point unit")
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant;
+    @Size(max = 255, message = "max size is 255 for dg class description")
+    private String dgClassDescription;
+    private String transportMode;
 }
