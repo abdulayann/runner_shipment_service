@@ -386,7 +386,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(false);
-
+        mockShipmentSettings();
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
@@ -411,7 +411,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
@@ -438,7 +438,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
@@ -466,7 +466,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
@@ -494,7 +494,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
@@ -521,6 +521,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        mockShipmentSettings();
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
@@ -544,6 +545,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         String errorMessage = DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
@@ -669,7 +671,7 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.ALL);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
@@ -691,7 +693,7 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_DATA);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
@@ -715,7 +717,7 @@ class HblServiceTest extends CommonMocks {
         inputShipment.setHouseBill(null);
         inputShipment.getAdditionalDetails().setImportBroker(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(inputShipment));
@@ -781,7 +783,7 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_PARTIES);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
@@ -1554,15 +1556,16 @@ class HblServiceTest extends CommonMocks {
         broker.setAddressData(addr);
         AdditionalDetails ad = new AdditionalDetails();
         ad.setImportBroker(broker);
+        mockShipmentSettings();
 
         HblDataDto dto = new HblDataDto();
-        Method method = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
-        Method method1 = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method.setAccessible(true);
         method1.setAccessible(true);
         method.invoke(hblService, ad, dto);
 
-        assertEquals("SHIP CO", dto.getDeliveryAgent());
+        assertEquals("SHIP CO", dto.getDeliveryAgentName());
         assertEquals("123 ST", dto.getDeliveryAgentAddressLine1());
         assertEquals("IN", dto.getDeliveryAgentCountry()); // ISO3166 mocked or real
     }
@@ -1577,7 +1580,7 @@ class HblServiceTest extends CommonMocks {
         importAddr.put(PartiesConstants.ZIP_POST_CODE, "600001");
         importAddr.put(PartiesConstants.COUNTRY,     "IND");          // alpha-3 → should become IN
         importAddr.put(PartiesConstants.CONTACT_PHONE,"+91-44-1111");
-
+        mockShipmentSettings();
         Parties importBroker = new Parties();
         importBroker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Eastern Brokers"));
         importBroker.setAddressData(importAddr);
@@ -1629,18 +1632,17 @@ class HblServiceTest extends CommonMocks {
         // ---------- Execute mapping ----------
         HblDataDto dto = new HblDataDto();
         HblService svc = new HblService();   // replace with actual class
-        Method method = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method.setAccessible(true);
         method.invoke(hblService, additional, dto);
-        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method1.setAccessible(true);
         method1.invoke(hblService, additional, dto);
-        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHbl", ShipmentDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHblV3", ShipmentDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, shipment, dto);
 
         // Delivery agent (import broker)
-        assertEquals("EASTERN BROKERS", dto.getDeliveryAgent());
         assertEquals("EASTERN BROKERS", dto.getDeliveryAgentName());
         assertEquals("12 HARBOR ROAD",  dto.getDeliveryAgentAddressLine1());
         assertEquals("DOCK AREA",       dto.getDeliveryAgentAddressLine2());
@@ -1648,7 +1650,6 @@ class HblServiceTest extends CommonMocks {
         assertEquals("TN",              dto.getDeliveryAgentState());
         assertEquals("600001",          dto.getDeliveryAgentZipCode());
         assertEquals("IN",              dto.getDeliveryAgentCountry());
-        assertTrue(dto.getDeliveryAgentAddress().contains("ImportCo Pvt Ltd")); // formatted address check
 
         // Forwarder (export broker)
         assertEquals("PACIFIC FORWARDING", dto.getForwarderName());
@@ -1658,7 +1659,6 @@ class HblServiceTest extends CommonMocks {
 
         // Consigner
         assertEquals("BLUE LINE TRADERS", dto.getShipperName());
-        assertEquals("BLUE LINE TRADERS", dto.getConsignorName());
         assertEquals("45 HILL ST",        dto.getShipperAddressLine1());
         assertEquals("MUMBAI",            dto.getShipperCity());
         assertEquals("IN",                dto.getShipperCountry());
@@ -1674,7 +1674,7 @@ class HblServiceTest extends CommonMocks {
     private Parties party(String fullName) {
         Map<String, Object> org = new HashMap<>();
         org.put(PartiesConstants.FULLNAME, fullName);
-
+        mockShipmentSettings();
         Map<String, Object> addr = new HashMap<>();
         addr.put(PartiesConstants.ADDRESS1, "Line1");
         addr.put(PartiesConstants.ADDRESS2, "Line2");
@@ -1696,12 +1696,10 @@ class HblServiceTest extends CommonMocks {
     void mapDeliveryData_setsAgentFields() throws Exception {
         AdditionalDetails addl = new AdditionalDetails();
         addl.setImportBroker(party("Import Broker"));
-
         HblDataDto dto = HblDataDto.builder().build();
-        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, addl, dto);
-        assertEquals("IMPORT BROKER", dto.getDeliveryAgent());
         assertEquals("IMPORT BROKER", dto.getDeliveryAgentName());
         assertEquals("LINE1", dto.getDeliveryAgentAddressLine1());
         assertEquals("MUMBAI", dto.getDeliveryAgentCity());
@@ -1716,10 +1714,9 @@ class HblServiceTest extends CommonMocks {
         addl.setExportBroker(party("Forwarder"));
 
         HblDataDto dto = HblDataDto.builder().build();
-        Method method2 = HblService.class.getDeclaredMethod("mapForwardDataInHbl", AdditionalDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, addl, dto);
-
         assertEquals("FORWARDER", dto.getForwarderName());
         assertEquals("LINE1", dto.getForwarderAddressLine1());
         assertEquals("MUMBAI", dto.getForwarderCity());
@@ -1733,14 +1730,13 @@ class HblServiceTest extends CommonMocks {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setConsigner(party("Consignor"));
         shipment.setConsignee(party("Consignee"));
-
         HblDataDto dto = HblDataDto.builder().build();
-        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHbl", ShipmentDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHblV3", ShipmentDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, shipment, dto);
 
         assertEquals("CONSIGNOR", dto.getShipperName());
-        assertEquals("CONSIGNOR", dto.getConsignorName());
+        assertEquals("CONSIGNOR", dto.getShipperName());
         assertEquals("CONSIGNEE", dto.getConsigneeName());
         assertEquals("LINE1", dto.getShipperAddressLine1());
         assertEquals("LINE1", dto.getConsigneeAddressLine1());

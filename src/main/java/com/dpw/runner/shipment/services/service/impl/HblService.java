@@ -1239,17 +1239,23 @@ public class HblService implements IHblService {
 
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null && createNotifyParty) {
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            hblParty.setAddress(constructAddress(party.getAddressData()));
-            Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
-            hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
-            hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
-            hblParty.setCity(toUpperCase(addressComponents.get(PartiesConstants.CITY)));
-            hblParty.setState(toUpperCase(addressComponents.get(PartiesConstants.STATE)));
-            hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
-            hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                hblParty.setIsShipmentCreated(true);
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
+                hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
+                hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
+                hblParty.setCity(toUpperCase(addressComponents.get(PartiesConstants.CITY)));
+                hblParty.setState(toUpperCase(addressComponents.get(PartiesConstants.STATE)));
+                hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
+                hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
+                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            }else {
+                hblParty.setIsShipmentCreated(true);
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                hblParty.setAddress(constructAddress(party.getAddressData()));
+                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            }
             if(hbl.getHblNotifyParty() == null){
                 hbl.setHblNotifyParty(new ArrayList<>());
             }
