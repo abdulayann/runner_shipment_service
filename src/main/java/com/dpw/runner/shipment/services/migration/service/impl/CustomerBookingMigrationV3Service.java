@@ -262,6 +262,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         String serviceTypeV2 = customerBooking.getServiceMode();
         String v3Key = transportMode + "_" + serviceTypeV2;
         customerBooking.setServiceMode(v2ToV3ServiceTypeMap.getOrDefault(v3Key, serviceTypeV2));
+
         updateContainerDataFromV2ToV3(customerBooking, codeTeuMap);
         updatePackingDataFromV2ToV3(customerBooking, weightDecimal, volumeDecimal);
 
