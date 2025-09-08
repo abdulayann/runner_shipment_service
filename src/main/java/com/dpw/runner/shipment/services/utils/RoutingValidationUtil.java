@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingLegWarning;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -264,12 +266,15 @@ public class RoutingValidationUtil {
             validateMainCarriageAdjacencyInIncoming(request.getRoutings());
         }
     }
+
     /**
      * Validates routing legs for ETD/ETA timing conflicts
+     *
      * @param routingsResponses List of routing requests sorted by leg number
+     * @param legsWarning
      * @return List of validation error messages
      */
-    public List<String> validateRoutingLegs(List<RoutingsResponse> routingsResponses) {
+    public List<String> validateRoutingLegs(List<RoutingsResponse> routingsResponses, Map<String, RoutingLegWarning> legsWarning) {
         List<String> validationErrors = new ArrayList<>();
 
         if (routingsResponses == null || routingsResponses.size() <= 1) {
@@ -284,15 +289,32 @@ public class RoutingValidationUtil {
             String errorMessage = validateLegTiming(currentLeg, previousLeg);
             if (errorMessage != null) {
                 validationErrors.add(errorMessage);
+                RoutingLegWarning routingLegWarning = new RoutingLegWarning();
+                routingLegWarning.setEtd(errorMessage);
+                legsWarning.put(currentLeg.getLeg() + Constants.EMPTY_STRING, routingLegWarning);
+                setPreviousLegData(legsWarning, previousLeg, currentLeg);
+
             }
         }
 
         return validationErrors;
     }
 
+    private static void setPreviousLegData(Map<String, RoutingLegWarning> legsWarning, RoutingsResponse previousLeg, RoutingsResponse currentLeg) {
+        RoutingLegWarning routingLegWarning = legsWarning.get(previousLeg.getLeg() + Constants.EMPTY_STRING);
+        if (Objects.isNull(routingLegWarning)) {
+            routingLegWarning = new RoutingLegWarning();
+        }
+        String etaWarning = String.format("ETA (of Leg No. %d) should be lesser than ETD (of Leg No. %d)",
+                previousLeg.getLeg(), currentLeg.getLeg());
+        routingLegWarning.setEta(etaWarning);
+        legsWarning.put(previousLeg.getLeg() + Constants.EMPTY_STRING, routingLegWarning);
+    }
+
     /**
      * Validates timing between current leg and previous leg
-     * @param currentLeg Current routing leg
+     *
+     * @param currentLeg  Current routing leg
      * @param previousLeg Previous routing leg
      * @return Error message if validation fails, null if validation passes
      */
@@ -316,11 +338,13 @@ public class RoutingValidationUtil {
 
     /**
      * Alternative method that returns a single formatted message
+     *
      * @param routingsResponses List of routing requests
+     * @param legsWarning
      * @return Single string with all validation errors, or null if no errors
      */
-    public String getWarningMessage(List<RoutingsResponse> routingsResponses) {
-        List<String> errors = validateRoutingLegs(routingsResponses);
+    public String getWarningMessage(List<RoutingsResponse> routingsResponses, Map<String, RoutingLegWarning> legsWarning) {
+        List<String> errors = validateRoutingLegs(routingsResponses, legsWarning);
 
         if (errors.isEmpty()) {
             return null;
