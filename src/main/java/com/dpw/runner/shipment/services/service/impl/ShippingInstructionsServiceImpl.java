@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -14,24 +17,25 @@ import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IShippingInstructionRepository;
+import com.dpw.runner.shipment.services.kafka.dto.GenericKafkaPayload;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,10 +46,8 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -75,7 +77,16 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private CommonUtils commonUtils;
 
     @Autowired
+    private KafkaProducer producer;
+
+    @Autowired
     ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+
+    //@Value("${booking.queue}")
+    private String bookingQueue = "";
+
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
@@ -83,6 +94,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         shippingInstruction.setStatus(ShippingInstructionStatus.Draft.name());
         ShippingInstruction savedInfo = repository.save(shippingInstruction);
+        //sendDataToKafka(savedInfo);
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
     }
 
@@ -121,6 +133,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(updatedInfo, ShippingInstruction.class);
         validateFetchAndSetSI(shippingInstruction);
         ShippingInstruction information = repository.save(shippingInstruction);
+        sendDataToKafka(information);
         return jsonHelper.convertValue(information, ShippingInstructionResponse.class);
     }
 
@@ -274,4 +287,20 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return masterDataResponse;
     }
 
+    private void sendDataToKafka(ShippingInstruction shippingInstruction) {
+        try {
+            // Convert object to JSON string
+            String jsonPayload = objectMapper.writeValueAsString(shippingInstruction);
+
+            // Wrap it inside your generic payload
+            GenericKafkaPayload genericKafkaMsg =
+                    new GenericKafkaPayload(GenericKafkaMsgType.SI, jsonPayload);
+
+            log.debug("SI Payload sent to kafka with id {}",genericKafkaMsg.getId());
+            producer.produceToKafka(genericKafkaMsg, bookingQueue, genericKafkaMsg.getId());
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error serializing ShippingInstruction", e);
+        }
+    }
 }

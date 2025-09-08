@@ -104,7 +104,7 @@ class ShippingInstructionsServiceImplTest {
                 .nonNegoFreightCopies(2)
                 .noOfUnFreightCopies(2)
                 .nonNegoUnFreightCopies(2)
-                .sailingInformationRequest(SailingInformationRequest.builder().build())
+                .sailingInformation(SailingInformationRequest.builder().build())
                 .build();
     }
 
