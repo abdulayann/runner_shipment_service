@@ -112,49 +112,7 @@ public class ReportHelper {
             list.add(pincode);
         return list;
     }
-    public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode) {
-        List<String> lines = new ArrayList<>();
 
-        if (name != null) {
-            lines.add(name);
-        }
-        if (address1 != null) {
-            lines.add(address1);
-        }
-        if (address2 != null) {
-            lines.add(address2);
-        }
-        StringBuilder locationDetails = new StringBuilder();
-        if (!Strings.isNullOrEmpty(city)) {
-            locationDetails.append(city);
-        }
-        if (!Strings.isNullOrEmpty(stateCode)) {
-            if (!locationDetails.isEmpty()) {
-                locationDetails.append(" ");
-            }
-            locationDetails.append(stateCode);
-        }
-        if (!Strings.isNullOrEmpty(pinCode)) {
-            if (!locationDetails.isEmpty()) {
-                locationDetails.append(" ");
-            }
-            locationDetails.append(pinCode);
-        }
-        // Convert 3-letter country code to 2-letter if needed
-        String formattedCountryCode = formatCountryCode(countryCode);
-        if (!Strings.isNullOrEmpty(formattedCountryCode)) {
-            if (!locationDetails.isEmpty()) {
-                locationDetails.append(" ");
-            }
-            locationDetails.append(formattedCountryCode);
-        }
-
-        if (!locationDetails.isEmpty()) {
-            lines.add(locationDetails.toString());
-        }
-
-        return lines;
-    }
     private static String formatCountryCode(String countryCode) {
         if (Strings.isNullOrEmpty(countryCode)) {
             return null;
@@ -313,6 +271,36 @@ public class ReportHelper {
         if (StringUtility.isNotEmpty(stateCountry))
             sb.append(stateCountry).append(" ");
 
+        if (StringUtility.isNotEmpty(sb.toString()))
+            list.add(sb.toString());
+
+        return list;
+
+    }
+    public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
+    {
+        List<String> list = new ArrayList<>();
+        if(StringUtility.isNotEmpty(name))
+            list.add(name);
+        if(StringUtility.isNotEmpty(address1))
+            list.add(address1);
+        if(StringUtility.isNotEmpty(address2))
+            list.add(address2);
+
+        StringBuilder sb = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city))
+            sb.append(city).append(" ");
+        if (StringUtility.isNotEmpty(stateCode))
+            sb.append(stateCode).append(" ");
+        if (StringUtility.isNotEmpty(pinCode))
+            sb.append(pinCode).append(" ");
+        // Convert 3-letter country code to 2-letter if needed
+        String formattedCountryCode = formatCountryCode(countryCode);
+        if (!Strings.isNullOrEmpty(formattedCountryCode)) {
+            if (StringUtility.isNotEmpty(countryCode))
+                sb.append(countryCode).append(" ");
+        }
         if (StringUtility.isNotEmpty(sb.toString()))
             list.add(sb.toString());
 
