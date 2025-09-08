@@ -1,11 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -17,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -75,6 +71,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -112,6 +109,9 @@ class HblServiceTest extends CommonMocks {
     private ConsolidationService consolidationService;
     @Mock
     private HblService self;
+    private ShipmentDetails shipmentDetail;
+    private HblDataDto hblData;
+    private AdditionalDetails additionalDetails;
 
 
     @BeforeAll
@@ -134,6 +134,9 @@ class HblServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
+        shipmentDetail = new ShipmentDetails();
+        hblData = new HblDataDto();
+        additionalDetails = new AdditionalDetails();
     }
 
     @Test
@@ -1741,6 +1744,182 @@ class HblServiceTest extends CommonMocks {
         assertEquals("LINE1", dto.getShipperAddressLine1());
         assertEquals("LINE1", dto.getConsigneeAddressLine1());
         assertEquals("MUMBAI", dto.getConsigneeCity());
+    }
+    @Test
+    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
+        // Given
+        Hbl hbl = new Hbl();
+        hbl.setHblNotifyParty(new ArrayList<>());
+        Parties party = new Parties();
+        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
+        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
+        HblLockSettings hblLock = new HblLockSettings();
+
+        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        // When
+        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
+        method.setAccessible(true);
+        method.invoke(hblService, party, hbl, hblLock);
+
+        assertNotNull(hbl.getHblNotifyParty());
+        assertFalse(hbl.getHblNotifyParty().isEmpty());
+        assertEquals(1, hbl.getHblNotifyParty().size());
+        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
+        assertEquals("Test Party", hblParty.getName());
+        assertEquals("123 Main St", hblParty.getAddress());
+        assertTrue(hblParty.getIsShipmentCreated());
+    }
+    @Test
+    void testMapShipmentPartiesToHBL_v3Enabled() throws Exception {
+        // Given
+        Parties party = new Parties();
+        party.setOrgData(Map.of(
+                PartiesConstants.FULLNAME, "Test Party",
+                PartiesConstants.EMAIL, "test@party.com"
+        ));
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.ADDRESS2, "Apt 4B");
+        addressData.put(PartiesConstants.CITY, "Anytown");
+        addressData.put(PartiesConstants.STATE, "Anystate");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
+        addressData.put(PartiesConstants.COUNTRY, "US");
+        party.setAddressData(addressData);
+
+        ShipmentSettingsDetails shipmentSettings = new ShipmentSettingsDetails();
+        shipmentSettings.setIsRunnerV3Enabled(true);
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettings);
+
+        // When
+        Method method = HblService.class.getDeclaredMethod("mapShipmentPartiesToHBL", Parties.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<HblPartyDto> result = (List<HblPartyDto>) method.invoke(hblService, party);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        HblPartyDto hblParty = result.get(0);
+        assertTrue(hblParty.getIsShipmentCreated());
+        assertEquals("Test Party", hblParty.getName());
+        assertEquals("123 MAIN ST", hblParty.getAddress1());
+        assertEquals("APT 4B", hblParty.getAddress2());
+        assertEquals("ANYTOWN", hblParty.getCity());
+        assertEquals("ANYSTATE", hblParty.getState());
+        assertEquals("12345", hblParty.getZipCode());
+        assertEquals("US", hblParty.getCountry());
+        assertEquals("test@party.com", hblParty.getEmail());
+    }
+    private Parties createParty(String fullName, String address1, String city, String country) {
+        Parties party = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, fullName);
+        party.setOrgData(orgData);
+
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, address1);
+        addressData.put(PartiesConstants.CITY, city);
+        addressData.put(PartiesConstants.COUNTRY, country);
+        party.setAddressData(addressData);
+
+        return party;
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withFullData() {
+        // Arrange
+        Parties consigner = createParty("Consigner Name", "123 Consigner St", "Consigner City", "USA");
+        Parties consignee = createParty("Consignee Name", "456 Consignee Ave", "Consignee City", "CAN");
+        shipmentDetail.setConsigner(consigner);
+        shipmentDetail.setConsignee(consignee);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Consigner Name", hblData.getConsignorName());
+        assertTrue(hblData.getConsignorAddress().contains("123 Consigner St"));
+        assertEquals("Consignee Name", hblData.getConsigneeName());
+        assertTrue(hblData.getConsigneeAddress().contains("456 Consignee Ave"));
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withNullConsignee() {
+        // Arrange
+        Parties consigner = createParty("Consigner Name", "123 Consigner St", "Consigner City", "USA");
+        shipmentDetail.setConsigner(consigner);
+        shipmentDetail.setConsignee(null);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Consigner Name", hblData.getConsignorName());
+        assertTrue(hblData.getConsignorAddress().contains("123 Consigner St"));
+        assertNull(hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withPartialData() {
+        // Arrange
+        Parties consigner = new Parties();
+        consigner.setOrgData(null); // No org data
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Consigner St");
+        consigner.setAddressData(addressData);
+        shipmentDetail.setConsigner(consigner);
+
+        Parties consignee = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Consignee Name");
+        consignee.setOrgData(orgData);
+        consignee.setAddressData(null); // No address data
+        shipmentDetail.setConsignee(consignee);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertNull(hblData.getConsignorName());
+        assertNotNull(hblData.getConsignorAddress());
+        assertEquals("Consignee Name", hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_withFullData() {
+        // Arrange
+        Parties broker = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Broker Name");
+        broker.setOrgData(orgData);
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "789 Broker Blvd");
+        broker.setAddressData(addressData);
+        additionalDetails.setImportBroker(broker);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+
+        // Assert
+        assertEquals("Broker Name", hblData.getDeliveryAgent());
+        assertTrue(hblData.getDeliveryAgentAddress().contains("789 Broker Blvd"));
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_withNullBroker() {
+        // Arrange
+        additionalDetails.setImportBroker(null);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> {
+            ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+        });
+        assertNull(hblData.getDeliveryAgent());
+        assertNull(hblData.getDeliveryAgentAddress());
     }
 
  }

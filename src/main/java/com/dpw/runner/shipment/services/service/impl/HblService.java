@@ -493,7 +493,6 @@ public class HblService implements IHblService {
         return response;
     }
 
-
     private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
@@ -504,9 +503,9 @@ public class HblService implements IHblService {
             mapDeliveryDataInHblV3(additionalDetails, hblData);
             mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
             mapForwardDataInHblV3(additionalDetails, hblData);
-        } else {
+        } else{
             mapConsignerConsigneeToHbl(shipmentDetail, hblData);
-            mapDeliveryDataInHbl(additionalDetails, hblData);
+        mapDeliveryDataInHbl(additionalDetails, hblData);
     }
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
@@ -871,7 +870,7 @@ public class HblService implements IHblService {
         List<HblPartyDto> hblParties = new ArrayList<>();
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null) {
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())){
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
                 Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
@@ -883,14 +882,13 @@ public class HblService implements IHblService {
                 hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
                 hblParties.add(hblParty);
-            }
-         else {
-                hblParty.setIsShipmentCreated(true);
-                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-                hblParty.setAddress(constructAddress(party.getAddressData()));
-                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-                hblParties.add(hblParty);
-            }
+            }else {
+            hblParty.setIsShipmentCreated(true);
+            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+            hblParty.setAddress(constructAddress(party.getAddressData()));
+            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            hblParties.add(hblParty);
+        }
         }
         return hblParties;
     }
@@ -1250,12 +1248,11 @@ public class HblService implements IHblService {
                 hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
                 hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            }else {
+            }else
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
                 hblParty.setAddress(constructAddress(party.getAddressData()));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            }
             if(hbl.getHblNotifyParty() == null){
                 hbl.setHblNotifyParty(new ArrayList<>());
             }
