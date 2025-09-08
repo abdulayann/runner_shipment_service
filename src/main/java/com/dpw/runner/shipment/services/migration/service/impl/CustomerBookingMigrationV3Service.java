@@ -183,8 +183,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, e.getLocalizedMessage());
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.stream(e.getStackTrace()).toString());
 
                     throw new IllegalArgumentException(e);
                 } finally {
@@ -227,8 +227,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, e.getLocalizedMessage());
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {

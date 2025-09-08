@@ -461,7 +461,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 });
             } catch (Exception e) {
                 log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
-                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                 throw new IllegalArgumentException(e);
             } finally {
                 v1Service.clearAuthContext();

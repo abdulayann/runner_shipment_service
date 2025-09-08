@@ -270,7 +270,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during shipment setup [id={}]", id, e);
-                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     shipmentBackupRepository.deleteBackupByTenantIdAndShipmentId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {
@@ -315,7 +315,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
-                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     consolidationBackupRepository.deleteBackupByTenantIdAndConsolidationId(id, tenantId);
                     throw new IllegalArgumentException(e);
                 } finally {

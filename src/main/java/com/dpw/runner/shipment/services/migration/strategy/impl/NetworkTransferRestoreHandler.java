@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -85,7 +86,7 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
         } catch (Exception e) {
             log.error("Network Transfer migration failed for tenant Id [id={}]: {}", tenantId, e.getMessage(), e);
             migrationUtil.saveErrorResponse(Long.valueOf(tenantId), Constants.NETWORK_TRANSFER,
-                    IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
             throw new IllegalArgumentException(e);
         } finally {
             v1Service.clearAuthContext();
