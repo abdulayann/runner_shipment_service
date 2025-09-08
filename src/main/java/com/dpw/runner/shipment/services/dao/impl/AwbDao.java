@@ -245,8 +245,9 @@ public class AwbDao implements IAwbDao {
                         if (shipmentDetails.isPresent()) {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false, null, includeCSD);
                             // AirMessageSent flag set to SENT
-                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
-                            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
+                            AwbStatus status = setAwbStatus(awb);
+                            this.updateAirMessageStatus(awb.getGuid(), status.name());
+                            awb.setAirMessageStatus(status);
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
                         }
@@ -260,14 +261,22 @@ public class AwbDao implements IAwbDao {
         }
     }
 
+    private AwbStatus setAwbStatus(Awb awb) {
+        AwbStatus status = AwbStatus.AIR_MESSAGE_SENT;
+        if(Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
+            status = AwbStatus.AWB_FSU_LOCKED;
+        return status;
+    }
+
     private void processAirMessagingConsolidation(boolean includeCSD, Awb awb) throws RunnerException {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
         if (consolidationDetails.isPresent()) {
             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
             // AirMessageSent flag set to SENT
-            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
-            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
-            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+            AwbStatus status = setAwbStatus(awb);
+            this.updateAirMessageStatus(awb.getGuid(), status.name());
+            awb.setAirMessageStatus(status);
+            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), status.name());
             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
             var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
@@ -275,7 +284,7 @@ public class AwbDao implements IAwbDao {
                 Awb shipAwb = getHawb(ship.getId());
                 this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()), awb, includeCSD);
                 // AirMessageSent flag set to SENT
-                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                this.updateAirMessageStatus(shipAwb.getGuid(), status.name());
                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                 this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
             }

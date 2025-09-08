@@ -870,11 +870,11 @@ public class AwbUtility {
 
         String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
 
-
+        AwbStatus awbStatus = awb.get().getAirMessageStatus();
         switch (status) {
-            case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
-            case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
-            case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
+            case FAILED -> awbDao.updateAirMessageStatus(guid, Objects.equals(awbStatus, AwbStatus.AWB_FSU_LOCKED)? AwbStatus.AWB_FSU_LOCKED.name() : AwbStatus.AIR_MESSAGE_FAILED.name());
+            case SUBMITTED -> awbDao.updateAirMessageStatus(guid, Objects.equals(awbStatus, AwbStatus.AWB_FSU_LOCKED)? AwbStatus.AWB_FSU_LOCKED.name() : AwbStatus.AIR_MESSAGE_SENT.name());
+            case SUCCESS -> awbDao.updateAirMessageStatus(guid, Objects.equals(awbStatus, AwbStatus.AWB_FSU_LOCKED)? AwbStatus.AWB_FSU_LOCKED.name() : AwbStatus.AIR_MESSAGE_SUCCESS.name());
             default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, status);
         }
         Awb masterAwb = null;
