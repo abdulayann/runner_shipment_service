@@ -105,8 +105,8 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void cloneById_Success() throws RunnerException {
-        when(customerBookingV3Service.cloneBooking(anyLong())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.cloneById(123L);
+        when(customerBookingV3Service.cloneBookingById(any())).thenReturn(new CustomerBookingV3Response());
+        var response = customerBookingV3Controller.cloneBookingById(any());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -280,5 +280,12 @@ class CustomerBookingV3ControllerTest {
         var response = customerBookingV3Controller.getAllMasterData(1L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(customerBookingV3Service).getAllMasterData(1L);
+    }
+
+    @Test
+    void cloneBookingFromShipment_Success() throws RunnerException {
+        when(customerBookingV3Service.cloneBookingFromShipmentIfExist(any())).thenReturn(new CustomerBookingV3Response());
+        var response = customerBookingV3Controller.cloneBookingFromShipment(any());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }
