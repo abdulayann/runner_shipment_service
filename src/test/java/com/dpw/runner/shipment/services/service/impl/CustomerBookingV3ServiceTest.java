@@ -83,6 +83,7 @@ import java.util.concurrent.Executors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -3794,4 +3795,345 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
 
+    @Test
+    void testCloneBookingWhenShipmentIdIsNull() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+
+        assertThatThrownBy(() -> customerBookingService.cloneBookingFromShipmentIfExist(request))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("Shipment Id cannot be null");
+    }
+
+    @Test
+    void testCloneBooking_nullShipmentId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertEquals("Shipment Id cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void testCloneBooking_shipmentNotFound_throwsRunnerException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.empty());
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testCloneBooking_happyPath_allFlagsTrue() throws RunnerException {
+        Long shipmentId = 123L;
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(shipmentId);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setHeader(true);
+        flags.setParty(true);
+        flags.setGeneral(true);
+        flags.setContainers(true);
+        flags.setPackages(true);
+        flags.setCargoSummary(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.findByShipmentId(shipmentId)).thenReturn(List.of(new Packing()));
+        when(containerDao.findByShipmentId(shipmentId)).thenReturn(List.of(new Containers()));
+        doNothing().when(commonUtils).mapIfSelected(anyBoolean(), any(), any());
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNotNull(response);
+        verify(shipmentDao).findById(shipmentId);
+        verify(packingDao).findByShipmentId(shipmentId);
+        verify(containerDao).findByShipmentId(shipmentId);
+    }
+
+    @Test
+    void testCloneBooking_internalException_throwsRunnerException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        when(shipmentDao.findById(anyLong())).thenThrow(new RuntimeException("Simulated internal error"));
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertTrue(exception.getMessage().contains("Simulated internal error") || exception.getMessage().contains(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG));
+    }
+
+    @Test
+    void testSetCargoDetails_allCargoFlagsTrue_methodsCalled() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setCargoSummary(true);
+        flags.setDescription(true);
+        flags.setMarksAndNumbers(true);
+        flags.setAdditionalTerms(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setGoodsDescription("desc");
+        shipmentDetails.setMarksNum("marks");
+        shipmentDetails.setAdditionalTerms("terms");
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        customerBookingService.cloneBookingFromShipmentIfExist(request);
+        verify(commonUtils).mapIfSelected(eq(true), eq("desc"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("marks"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("terms"), any());
+    }
+
+    @Test
+    void testSetPackingDetails_dataExistsAndFlagsTrue_packingListIsSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setPackages(true);
+        flags.setDimensionPerPack(true);
+        request.setFlags(flags);
+        Packing mockPacking = new Packing();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(packingDao.findByShipmentId(123L)).thenReturn(List.of(mockPacking));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertFalse(response.getPackingList().isEmpty());
+        verify(packingDao).findByShipmentId(123L);
+    }
+
+    @Test
+    void testSetPackingDetails_dataExistsButPackagesFlagIsFalse_packingListIsNotSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setPackages(false); // Flag is false
+        request.setFlags(flags);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(packingDao.findByShipmentId(123L)).thenReturn(List.of(new Packing()));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNull(response.getPackingList()); // Assuming it's not initialized if logic is skipped
+    }
+
+    @Test
+    void testSetContainerDetails_dataExistsAndFlagsTrue_containersListIsSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setContainers(true);
+        request.setFlags(flags);
+        Containers mockContainer1 = new Containers();
+        mockContainer1.setContainerCode("20GP");
+        Containers mockContainer2 = new Containers();
+        mockContainer2.setContainerCode("40HC");
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(containerDao.findByShipmentId(123L)).thenReturn(List.of(mockContainer1, mockContainer2));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertFalse(response.getContainersList().isEmpty());
+        verify(containerDao).findByShipmentId(123L);
+    }
+
+    @Test
+    void testCloneBooking_nullCarrierDetails_doesNotThrowException() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(null);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
+        when(containerDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
+        assertDoesNotThrow(() -> customerBookingService.cloneBookingFromShipmentIfExist(request));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCloneBookingById_nullRequestId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setBookingId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                customerBookingService.cloneBookingById(request));
+        assertEquals("Booking Id cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void cloneBookingById_shouldReturnCustomerBookingV3Response_whenBookingExists() throws Exception {
+        CloneRequest request = CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder().header(true).build())
+                .build();
+        CustomerBooking customerBooking = createMockCustomerBooking();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doReturn(customerBooking).when(spyService).getValidatedCustomerBooking(1L);
+        CustomerBookingV3Response response = spyService.cloneBookingById(request);
+        assertNotNull(response);
+        verify(commonUtils, atLeastOnce()).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void cloneBookingById_shouldThrowRunnerException_whenExceptionOccurs() {
+        CloneRequest request = CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder().build())
+                .build();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doThrow(new RuntimeException("Database error")).when(spyService).getValidatedCustomerBooking(1L);
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            spyService.cloneBookingById(request);
+        });
+        assertEquals("Database error", exception.getMessage());
+    }
+
+    @Test
+    void cloneBookingById_shouldReturnResponse_whenBookingIsValid() throws RunnerException {
+        CloneRequest request = createRequestWithAllFlags(true);
+        CustomerBooking booking = createMockCustomerBooking();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doReturn(booking).when(spyService).getValidatedCustomerBooking(request.getBookingId());
+        CustomerBookingV3Response response = spyService.cloneBookingById(request);
+        assertNotNull(response);
+        assertNotNull(response.getCarrierDetails());
+        verify(commonUtils, atLeastOnce()).mapIfSelected(eq(true), any(), any());
+    }
+
+    @Test
+    void cloneBookingById_shouldHandleExceptionGracefully() {
+        CloneRequest request = createRequestWithAllFlags(true);
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doThrow(new RuntimeException("Database error")).when(spyService).getValidatedCustomerBooking(request.getBookingId());
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            spyService.cloneBookingById(request);
+        });
+        assertTrue(exception.getMessage().contains("Database error"));
+    }
+
+    @Test
+    void getValidatedCustomerBooking_shouldReturnBooking_whenExists() {
+        Long bookingId = 1L;
+        CustomerBooking mockBooking = createMockCustomerBooking();
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(mockBooking));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+        CustomerBooking result = customerBookingService.getValidatedCustomerBooking(bookingId);
+        assertNotNull(result);
+        assertEquals(mockBooking.getTransportType(), result.getTransportType());
+    }
+
+    @Test
+    void getValidatedCustomerBooking_shouldThrowException_whenNotFound() {
+        Long bookingId = 1L;
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingService.getValidatedCustomerBooking(bookingId);
+        });
+    }
+
+    @Test
+    void testSetCBPackingDetails_withFlagsEnabled_shouldMapFields() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .packages(true)
+                        .dimensionPerPack(true)
+                        .volumePerPack(true)
+                        .volume(true)
+                        .cargoWeightPerPack(true)
+                        .cargoWeight(true)
+                        .packageCommodityCategory(true)
+                        .build())
+                .build();
+        Packing packing = new Packing();
+        packing.setPacks("100");
+        packing.setPacksType("Box");
+        packing.setVolumePerPack(BigDecimal.valueOf(1.5));
+        packing.setVolumePerPackUnit("CBM");
+        packing.setVolume(BigDecimal.valueOf(150.0));
+        packing.setVolumeUnit("L");
+        packing.setCargoWeightPerPack(BigDecimal.valueOf(50.0));
+        packing.setPackWeightUnit("KG");
+        packing.setWeight(BigDecimal.valueOf(500.0));
+        packing.setWeightUnit("KG");
+        packing.setCommodityGroup("Group1");
+        packing.setLength(BigDecimal.valueOf(2.0));
+        packing.setLengthUnit("M");
+        packing.setWidth(BigDecimal.valueOf(1.0));
+        packing.setWidthUnit("M");
+        packing.setHeight(BigDecimal.valueOf(0.5));
+        packing.setHeightUnit("M");
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setPackingList(List.of(packing));
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        customerBookingService.setCBPackingDetails(request, customerBooking, customerBookingResponse);
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getPacksType()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPack()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPackUnit()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolume()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumeUnit()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getCargoWeightPerPack()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getCommodityGroup()), any());
+        assertNotNull(customerBookingResponse.getPackingList());
+        assertEquals(1, customerBookingResponse.getPackingList().size());
+    }
+
+
+    @Test
+    void testSetCBContainerDetails_withFlagsEnabled_shouldMapFields() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .containers(true)
+                        .containerType(true)
+                        .containerCount(true)
+                        .packagesPerContainer(true)
+                        .cargoWeightPerContainer(true)
+                        .containerCommodityCategory(true)
+                        .build())
+                .build();
+        Containers container = new Containers();
+        container.setTenantId(123);
+        container.setContainerCode("CONT123");
+        container.setContainerCount(10L);
+        container.setPackagesPerContainer(10L);
+        container.setContainerPackageType("Box");
+        container.setCargoWeightPerContainer(BigDecimal.valueOf(1000));
+        container.setContainerWeightUnit("KG");
+        container.setCommodityGroup("GroupA");
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setContainersList(List.of(container));
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        customerBookingService.setCBContainerDetails(request, customerBooking, customerBookingResponse);
+        assertNotNull(customerBookingResponse.getContainersList());
+        assertEquals(1, customerBookingResponse.getContainersList().size());
+        ContainerResponse response = customerBookingResponse.getContainersList().get(0);
+        assertEquals(123, response.getTenantId());
+        verify(commonUtils).mapIfSelected(eq(true), eq(container.getContainerCode()), any());
+    }
+
+    private CloneRequest createRequestWithAllFlags(boolean value) {
+        return CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder()
+                        .header(value)
+                        .general(value)
+                        .party(value)
+                        .containers(value)
+                        .packages(value)
+                        .cargoSummary(value)
+                        .build())
+                .build();
+    }
+
+    private CustomerBooking createMockCustomerBooking() {
+        CustomerBooking booking = new CustomerBooking();
+        booking.setTransportType("Air");
+        booking.setServiceMode("Express");
+        booking.setDirection("Import");
+        booking.setCargoType("General");
+        booking.setPaymentTerms("Prepaid");
+        booking.setCarrierDetails(new CarrierDetails());
+        booking.setPackingList(new ArrayList<>());
+        booking.setContainersList(new ArrayList<>());
+        booking.setDescription("Desc");
+        booking.setMarksnNumbers("Marks");
+        booking.setAdditionalTerms("Terms");
+        booking.setCustomer(new Parties());
+        booking.setConsignee(new Parties());
+        booking.setConsignor(new Parties());
+        booking.setNotifyParty(new Parties());
+        booking.setAdditionalParties(new ArrayList<>());
+        return booking;
+    }
 }

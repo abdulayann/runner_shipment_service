@@ -212,6 +212,8 @@ public class ApiConstants {
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
     public static final String API_UPDATE_PARTIES = "/update/parties";
+    public static final String API_CLONE_BOOKING_FROM_SHIPMENT = "/clone-from-shipment";
+
 
     // Dynamic endpoints
     public static final String API_DYNAMIC_LIST = "/dynamic/list";
