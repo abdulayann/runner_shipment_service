@@ -5,11 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
@@ -48,6 +44,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -56,6 +53,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import org.apache.catalina.mapper.Mapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1913,7 +1911,6 @@ class HblServiceTest extends CommonMocks {
     void testMapDeliveryDataInHbl_withNullBroker() {
         // Arrange
         additionalDetails.setImportBroker(null);
-
         // Act & Assert
         assertDoesNotThrow(() -> {
             ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
@@ -1922,4 +1919,44 @@ class HblServiceTest extends CommonMocks {
         assertNull(hblData.getDeliveryAgentAddress());
     }
 
- }
+    @Test
+    void testMapConsignerConsigneeToHbl_withNullPartyData() {
+        // Arrange
+        shipmentDetail.setConsigner(null);
+        shipmentDetail.setConsignee(null);
+        // Act & Assert
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData));
+        assertNull(hblData.getConsignorName());
+        assertNull(hblData.getConsigneeName());
+    }
+
+    @Test
+    void mapConsignerConsigneeToHbl_WithNullData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+
+        // Mock consigner with null orgData and addressData
+        Parties consigner = mock(Parties.class);
+        when(consigner.getOrgData()).thenReturn(null);
+        when(consigner.getAddressData()).thenReturn(null);
+
+        // Mock consignee with null orgData and addressData
+        Parties consignee = mock(Parties.class);
+        when(consignee.getOrgData()).thenReturn(null);
+        when(consignee.getAddressData()).thenReturn(null);
+
+        when(shipmentDetail.getConsigner()).thenReturn(consigner);
+        when(shipmentDetail.getConsignee()).thenReturn(consignee);
+
+        // Act
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData));
+
+        // Assert
+        assertNull(hblData.getConsignorName());
+        assertNull(hblData.getConsignorAddress());
+        assertNull(hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+}
