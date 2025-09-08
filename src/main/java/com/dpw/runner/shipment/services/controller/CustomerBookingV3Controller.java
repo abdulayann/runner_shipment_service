@@ -130,8 +130,8 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @GetMapping(ApiConstants.API_CLONE)
-    public ResponseEntity<IRunnerResponse> cloneById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBooking(id));
+    public ResponseEntity<IRunnerResponse> cloneBookingById(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingById(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = CustomerBookingV3Response.class)})
@@ -310,5 +310,11 @@ public class CustomerBookingV3Controller {
     @GetMapping(ApiConstants.API_DEFAULT_BOOKING)
     public ResponseEntity<IRunnerResponse> getDefaultBooking() {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getDefaultBooking());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
+    @GetMapping(ApiConstants.API_CLONE_BOOKING_FROM_SHIPMENT)
+        public ResponseEntity<IRunnerResponse> cloneBookingFromShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingFromShipmentIfExist(request));
     }
 }

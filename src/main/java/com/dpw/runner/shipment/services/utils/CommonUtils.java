@@ -130,6 +130,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -2576,7 +2577,10 @@ public class CommonUtils {
     }
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
+        if (null != shipmentDetails.getTransportMode()
+                && null != shipmentDetails.getDirection()
+                && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
             return UserContext.isAirSecurityUser();
         }
         return true;
@@ -4235,6 +4239,38 @@ public class CommonUtils {
         return innerPredicate;
     }
 
+    public void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+            throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+        }
+    }
+
+    public <T> void mapIfSelected(boolean flag, T value, Consumer<T> setter) {
+        if (flag && value != null) {
+            setter.accept(value);
+        }
+    }
+
+    public PartiesResponse getPartiesResponse(Parties partyData) {
+        PartiesResponse partiesResponse = new PartiesResponse();
+        if (null != partyData){
+            partiesResponse.setEntityId(partyData.getEntityId());
+            partiesResponse.setEntityType(partyData.getEntityType());
+            partiesResponse.setTenantId(partyData.getTenantId());
+            partiesResponse.setType(partyData.getType());
+            partiesResponse.setOrgCode(partyData.getOrgCode());
+            partiesResponse.setAddressCode(partyData.getAddressCode());
+            partiesResponse.setOrgId(partyData.getOrgId());
+            partiesResponse.setAddressId(partyData.getAddressId());
+            partiesResponse.setOrgData(partyData.getOrgData());
+            partiesResponse.setAddressData(partyData.getAddressData());
+            partiesResponse.setIsAddressFreeText(partyData.getIsAddressFreeText());
+            partiesResponse.setCountryCode(partyData.getCountryCode());
+        }
+        return partiesResponse;
+    }
     public static boolean canFetchDetailsWithoutTenantFilter(String xSource) {
         if (Objects.equals(xSource, NETWORK_TRANSFER)) {
             return true;

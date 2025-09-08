@@ -6273,7 +6273,7 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            checkPermissionsForCloning(shipmentDetails.get());
+            commonUtils.checkPermissionsForCloning(shipmentDetails.get());
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setId(null);
             cloneShipmentDetails.setGuid(null);
@@ -9931,16 +9931,6 @@ public class ShipmentService implements IShipmentService {
             throw new IllegalArgumentException("Field '" + fieldName + "' not found on " + obj.getClass().getSimpleName(), e);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Cannot access field '" + fieldName + "' on " + obj.getClass().getSimpleName(), e);
-        }
-    }
-
-    private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
-        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-            if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
-                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
-            }
         }
     }
 }

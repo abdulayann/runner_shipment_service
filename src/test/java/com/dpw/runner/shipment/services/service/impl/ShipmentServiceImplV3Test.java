@@ -22,30 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -99,19 +76,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -8295,5 +8260,154 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(criteriaQuery).where(predicate);
         verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
         verify(typedQuery).getResultList();
+    }
+
+    @Test
+    void testCloneShipment_nullShipmentId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                shipmentServiceImplV3.cloneShipment(request));
+        assertEquals("Shipment Id cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void testCloneShipment_happyPath_returnsClonedShipment() throws RunnerException {
+        Long shipmentId = 123L;
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(shipmentId);
+        request.setFlags(new CloneFlagsRequest());
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
+        ShipmentDetailsV3Response response = shipmentServiceImplV3.cloneShipment(request);
+        assertNotNull(response);
+        assertNotNull(response.getCarrierDetails());
+        verify(commonUtils, atLeastOnce()).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void testCloneShipment_validateShipmentThrowsException_throwsRunnerException() throws RunnerException {
+        Long shipmentId = 123L;
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(shipmentId);
+        doThrow(new DataRetrievalFailureException("Test Exception")).when(shipmentServiceImplV3).validateShipment(anyLong());
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                shipmentServiceImplV3.cloneShipment(request));
+        assertEquals("Test Exception", exception.getMessage());
+    }
+
+    @Test
+    void testSetPartieDetails_additionalPartiesAreNotNullAndNotEmpty_listIsMapped() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setParty(true);
+        flags.setAdditionalParty(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentAddresses(List.of(new Parties(), new Parties()));
+        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
+        when(commonUtils.getPartiesResponse(any())).thenReturn(new PartiesResponse());
+        shipmentServiceImplV3.cloneShipment(request);
+        verify(commonUtils).mapIfSelected(eq(true), any(List.class), any());
+    }
+
+    @Test
+    void testSetPartieDetails_additionalPartiesAreNull_mappingIsSkipped() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setParty(true);
+        flags.setAdditionalParty(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentAddresses(null);
+        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
+        shipmentServiceImplV3.cloneShipment(request);
+        verify(commonUtils, never()).mapIfSelected(eq(true), any(List.class), any());
+    }
+
+    @Test
+    void testValidateShipment_shipmentFound_returnsShipmentDetails() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(123L);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+        verify(commonUtils).checkPermissionsForCloning(shipmentDetails);
+    }
+
+    @Test
+    void testValidateShipment_shipmentNotFound_throwsDataRetrievalFailureException() {
+        Long shipmentId = 123L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () ->
+                shipmentServiceImplV3.validateShipment(shipmentId));
+    }
+
+    @Test
+    void testValidateShipment_permissionCheckFails_throwsValidationException() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doThrow(new ValidationException("Permissions failed")).when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        assertThrows(ValidationException.class, () ->
+                shipmentServiceImplV3.validateShipment(shipmentId));
+    }
+
+    @Test
+    void testValidateShipment_tenantDataNull_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(null);
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_directShipmentEnabled_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+        tenantData.setShipmentTransportModeSea(true);
+        tenantData.setBookingTransportModeSea(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_selectedModeIsOffInBooking_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(true);
+        tenantData.setBookingTransportModeAir(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_unknownMode_throwsIllegalArgumentExceptionDirectly() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("unknown");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
+                shipmentServiceImplV3.validateShipment(123L));
+        assertEquals("Unknown shipment transport mode: unknown", thrownException.getMessage());
     }
 }

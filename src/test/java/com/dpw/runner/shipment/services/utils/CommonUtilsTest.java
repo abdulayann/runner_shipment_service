@@ -148,6 +148,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
@@ -168,7 +169,6 @@ import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedTyp
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -6832,5 +6832,183 @@ class CommonUtilsTest {
         boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(CROSS_TENANT_SOURCE);
         assertTrue(result);
     }
+    @Test
+    void testCheckPermissionsForCloning_permissionCheckPassed_noExceptionThrown() {
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setCountryAirCargoSecurity(false);
+        doReturn(settings).when(commonUtils).getShipmentSettingFromContext();
+        assertDoesNotThrow(() -> commonUtils.checkPermissionsForCloning(shipmentDetails));
+    }
+
+    @Test
+    void testMapIfSelected_flagIsTrueAndValueIsNotNull_setterIsCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(true, testValue, mockSetter);
+        verify(mockSetter, times(1)).accept(testValue);
+    }
+
+    @Test
+    void testMapIfSelected_flagIsFalse_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(false, testValue, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testMapIfSelected_valueIsNull_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        commonUtils.mapIfSelected(true, null, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNull_returnsEmptyResponse() {
+        PartiesResponse response = commonUtils.getPartiesResponse(null);
+        assertNotNull(response);
+        assertNull(response.getEntityId());
+        assertNull(response.getEntityType());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNotNull_returnsMappedResponse() {
+        Parties partyData = new Parties();
+        partyData.setEntityId(1L);
+        partyData.setEntityType("Client");
+        partyData.setTenantId(123);
+        partyData.setType("shipper");
+        partyData.setOrgCode("ORG1");
+        partyData.setAddressCode("ADDR1");
+        PartiesResponse response = commonUtils.getPartiesResponse(partyData);
+        assertNotNull(response);
+        assertEquals(1L, response.getEntityId());
+        assertEquals("Client", response.getEntityType());
+        assertEquals(123, response.getTenantId());
+        assertEquals("shipper", response.getType());
+        assertEquals("ORG1", response.getOrgCode());
+        assertEquals("ADDR1", response.getAddressCode());
+    }
+
+    @Test
+    void testCheckSameParties_bothNull_returnsTrue() {
+        assertTrue(CommonUtils.checkSameParties(null, null));
+    }
+
+    @Test
+    void testCheckSameParties_oneNull_returnsFalse() {
+        assertFalse(CommonUtils.checkSameParties(new Parties(), null));
+        assertFalse(CommonUtils.checkSameParties(null, new Parties()));
+    }
+
+    @Test
+    void testCheckSameParties_idsMatch_returnsTrue() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr1");
+
+        assertTrue(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_orgIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org2");
+        p2.setAddressId("addr1");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_addressIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr2");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckPartyNotNull_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkPartyNotNull(null));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("");
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertTrue(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkAddressNotNull((Parties) null));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_addressIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_bothPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        party.setAddressId("addr123");
+        assertTrue(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckFails_returnsFalse() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(false);
+            assertFalse(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckPasses_returnsTrue() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertTrue(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
 
 }
