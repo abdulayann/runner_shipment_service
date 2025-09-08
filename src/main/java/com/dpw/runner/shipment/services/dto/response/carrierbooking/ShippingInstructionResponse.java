@@ -2,14 +2,14 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -26,7 +26,10 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
     private List<PartiesResponse> additionalParties;
-
+    private BigDecimal shipperDeclaredValue;
+    private String shipperDeclaredValueCurrency;
+    private String blReleaseOffice;
+    private LocalDateTime dateOfIssue;
     private String carrierBlNo;
     private String carrierBookingNo;
     private String entityType;
@@ -37,11 +40,13 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private Integer noOfUnFreightCopies;
     private Integer nonNegoFreightCopies;
     private Integer nonNegoUnFreightCopies;
+    private ShippingInstructionType shippingInstructionType;
+    private String serviceType;
 
-    private List<FreightDetailResponse> freightDetails;
-    private List<CommonPackageResponse> commonPackages;
-    private List<CommonContainerResponse> commonContainers;
-    private List<ReferenceNumberResponse> referenceNumbersResponse;
-    private SailingInformationResponse sailingInformationResponse;
+    private List<FreightDetailResponse> freightDetailList;
+    private List<CommonPackageResponse> commonPackagesList;
+    private List<CommonContainerResponse> commonContainersList;
+    private List<ReferenceNumberResponse> referenceNumbers;
+    private SailingInformationResponse sailingInformation;
 
 }
