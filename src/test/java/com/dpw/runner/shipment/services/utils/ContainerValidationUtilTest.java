@@ -721,4 +721,121 @@ class ContainerValidationUtilTest extends CommonMocks {
         assertEquals("Only one of BookingId, ConsolidationId, or ShipmentId should be provided.", exception.getMessage());
     }
 
+    @Test
+    void testValidateShipmentTypeForContainerOperation() {
+        testContainer.setId(1L);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                                                                                                    shipmentDetailsList,
+                                                                                                    shipmentsContainersMappingList,
+                                                                                                    Constants.CONSOLIDATION));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation1() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertThrows(ValidationException.class,() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.CONSOLIDATION));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation2() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FTL);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertThrows(ValidationException.class,() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.CONSOLIDATION));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation3() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(19L);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment, testShipment1));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.SHIPMENT));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation4() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.SHIPMENT));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation5() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(19L);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment, testShipment1));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertThrows(ValidationException.class,() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.SHIPMENT));
+    }
+
+    @Test
+    void testValidateShipmentTypeForContainerOperation6() {
+        testContainer.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FTL);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(19L);
+        List<Containers> containersList = new ArrayList<>(List.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(List.of(testShipment, testShipment1));
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>(List.of(shipmentsContainersMapping));
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentTypeForContainerOperation(containersList,
+                shipmentDetailsList,
+                shipmentsContainersMappingList,
+                Constants.SHIPMENT));
+    }
+
 }

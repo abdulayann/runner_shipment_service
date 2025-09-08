@@ -251,7 +251,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
-                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, false));
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, false, false));
     }
 
     @Test
@@ -282,7 +282,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
-                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, true));
+                containerV3Service.saveUnAssignContainerResultsBatch(shipmentIds, containers, paramsList, true, false));
     }
 
 
@@ -1081,7 +1081,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
-        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false);
         assertNotNull(response);
     }
 
@@ -1089,7 +1089,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDeleteBulk2(){
         when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>());
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
-        assertThrows(IllegalArgumentException.class, () ->containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () ->containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1124,7 +1124,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         // Act + Assert
         assertThrows(IllegalArgumentException.class,
-                () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+                () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1137,7 +1137,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getPacks()).thenReturn("2");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToPacking(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1149,7 +1149,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToShipmentCargo(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
     }
 
     @Test
@@ -1162,7 +1162,49 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
         List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
         when(containerDao.filterContainerIdsAttachedToShipment(any())).thenReturn(containerDeleteInfoProjections);
-        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", false));
+    }
+
+    @Test
+    void testDeleteBulk6() throws RunnerException {
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testDeleteBulk7() throws RunnerException {
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(shipmentsContainersMapping)));
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testDeleteBulk8() throws RunnerException {
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainersList(Set.of(testContainer));
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(testContainer.getId());
+        shipmentsContainersMapping.setShipmentId(testShipment.getId());
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(shipmentsContainersMapping)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        testPacking.setContainerId(testContainer.getId());
+        testPacking.setShipmentId(testShipment.getId());
+        when(packingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        BulkContainerResponse response = containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION", true);
+        assertNotNull(response);
     }
 
     @Test
@@ -2988,4 +3030,34 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(consolidationV3Service, never()).calculateShipmentWtVol(any());
         assertEquals(1, params.getFclOrFtlShipmentIds().size());
     }
+
+    @Test
+    void testUpdateShipmentSummary() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setFclOrFtlShipmentIds(Set.of(1L));
+        unAssignContainerParamsList.add(unAssignContainerParams);
+        unAssignContainerParams.setShipmentDetailsMap(Map.of(1L, testShipment));
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
+    @Test
+    void testUpdateShipmentSummary1() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
+        unAssignContainerParams.setFclOrFtlShipmentIds(null);
+        unAssignContainerParamsList.add(unAssignContainerParams);
+        unAssignContainerParams.setShipmentDetailsMap(Map.of(1L, testShipment));
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
+    @Test
+    void testUpdateShipmentSummary2() {
+        testShipment.setId(1L);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+        assertDoesNotThrow(() -> containerV3Service.updateShipmentSummary(unAssignContainerParamsList));
+    }
+
 }
