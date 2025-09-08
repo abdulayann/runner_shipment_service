@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -1222,7 +1223,21 @@ public class HblService implements IHblService {
         if (Objects.isNull(key) || !v1Data.containsKey(key))
             return Constants.EMPTY_STRING;
 
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            return getUnLocationsNameV3(v1Data, key);
+        }
         return v1Data.get(key).getLocCode() + " " + v1Data.get(key).getNameWoDiacritics();
+    }
+
+    private String getUnLocationsNameV3(Map<String, EntityTransferUnLocations> v1Data, String key) {
+
+        // Extract country code from UNLOC using initial 2 characters
+        String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
+
+        if (US.equalsIgnoreCase(countryCode)) {
+            return (countryCode + "," + v1Data.get(key).getNameWoDiacritics()).toUpperCase();
+        }
+        return v1Data.get(key).getNameWoDiacritics().toUpperCase();
     }
 
 }

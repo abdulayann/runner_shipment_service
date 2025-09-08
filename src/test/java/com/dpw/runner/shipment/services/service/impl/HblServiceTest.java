@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -50,6 +51,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -65,11 +67,13 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1067,6 +1071,72 @@ class HblServiceTest extends CommonMocks {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+
+    @Test
+    void partialUpdateHBLWithRestrictHBLFalseWithoutHblNotifyPartyV3Flow() throws RunnerException {
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(10L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .autoUpdateShipmentBL(true)
+                .hblLockSettings(jsonTestUtility.getJson("HBL_LOCK_ALL_FALSE", HblLockSettings.class))
+                .isRunnerV3Enabled(true)
+                .build();
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        var inputHbl = mockHbl;
+        inputHbl.setHblNotifyParty(null);
+
+        when(shipmentDao.findById(10L)).thenReturn(Optional.of(completeShipment));
+        when(hblDao.findByShipmentId(10L)).thenReturn(List.of(inputHbl));
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
+        when(hblDao.save(any())).thenReturn(inputHbl);
+        mockShipmentSettings();
+
+        // Building v1Data map
+        EntityTransferUnLocations usLoc = new EntityTransferUnLocations();
+        usLoc.setLocCode("USNYC");
+        usLoc.setNameWoDiacritics("New York");
+
+        EntityTransferUnLocations inLoc = new EntityTransferUnLocations();
+        inLoc.setLocCode("INBLR");
+        inLoc.setNameWoDiacritics("Bengaluru");
+
+        Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
+        v1Data.put("USKEY", usLoc);
+        v1Data.put("INKEY", inLoc);
+
+        try {
+            Method method = hblService.getClass().getDeclaredMethod("getUnLocationsName", Map.class, String.class);
+            method.setAccessible(true);
+
+            // Case 1: Null key
+            String result1 = (String) method.invoke(hblService, v1Data, null);
+            assertEquals("", result1);
+
+            // Case 2: RunnerV3 Flag enabled and US key
+            String result2 = (String) method.invoke(hblService, v1Data, "USKEY");
+            assertEquals("US,NEW YORK", result2);
+
+            // Case 3: RunnerV3 Flag enabled and Non-US key
+            String result3 = (String) method.invoke(hblService, v1Data, "INKEY");
+            assertEquals("BENGALURU", result3);
+
+            // Case 4: RunnerV3 Flag disabled
+            shipmentSettingsDetails.setIsRunnerV3Enabled(false);
+            String result4 = (String) method.invoke(hblService, v1Data, "INKEY");
+            assertEquals("INBLR Bengaluru", result4);
+
+        } catch (Exception e) {
+            fail("Reflection call failed: " + e.getMessage());
+        }
+
+        var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 
     @Test
     void partialUpdateHBLWithRestrictHBLFalseWithoutHblContainers() throws RunnerException {

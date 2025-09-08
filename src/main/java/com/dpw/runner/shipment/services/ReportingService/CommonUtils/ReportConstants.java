@@ -140,6 +140,7 @@ public class ReportConstants {
     public static final String CARGO_GROSS_QUANTITY_CODE = "CargoGrossQunatityCode";
     public static final String BL_COMMENTS = "BlComments";
     public static final String GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
+    public static final String US = "US";
 
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";

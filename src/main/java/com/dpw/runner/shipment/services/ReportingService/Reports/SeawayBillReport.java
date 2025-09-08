@@ -14,6 +14,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_MDY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_MDY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUE_PLACE_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PAID_PLACE_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_WC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
@@ -29,11 +31,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
@@ -157,6 +161,10 @@ public class SeawayBillReport extends IReport {
             this.populateShipmentReportData(dict, null, model.getShipment().getId());
             this.getContainerDetails(model.getShipment(), dict);
             this.getPackingDetails(model.getShipment(), dict);
+            if (Objects.nonNull(model.getShipment().getAdditionalDetails())) {
+                dict.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(processBLTransportDetailsFromShipmentModel(model.getShipment().getAdditionalDetails().getPlaceOfIssue())));
+                dict.put(PAID_PLACE_NAME, StringUtility.toUpperCase(processBLTransportDetailsFromShipmentModel(model.getShipment().getAdditionalDetails().getPaidPlace())));
+            }
         }
 
         return dict;
@@ -230,6 +238,7 @@ public class SeawayBillReport extends IReport {
         dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
         populateFreightsAndCharges(dict, model.blObject);
+        populateBlTransportSectionDetails(model.blObject.getHblData(), dict);
     }
 
     private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {

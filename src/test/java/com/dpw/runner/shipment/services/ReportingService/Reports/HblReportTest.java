@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -46,6 +48,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -100,6 +103,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -618,6 +623,223 @@ class HblReportTest extends CommonMocks {
         when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
+
+    void setData(HblModel hblModel, Hbl hbl, ConsolidationModel consolidationModel) {
+
+
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setMarksAndNumbers("123");
+        hblDataDto.setPlaceOfDelivery("deliveryAddress");
+        hbl.setHblData(hblDataDto);
+        hblModel.setTenant(new TenantModel());
+        hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        hblModel.setCommonContainers(Arrays.asList(shipmentContainers));
+
+        HblPartyDto hblPartyDto = new HblPartyDto();
+        hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .partiesList(List.of(
+                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("DAG").orgData(Map.of("FullName", "name", "ContactPhone","88")).addressData(Map.of()).build()
+                ))
+                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+                .transporterDetail(PartiesModel.builder().type("EXA").build())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+        ernReferenceNumbersModel.setType(ERN);
+        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+        cenReferenceNumbersModel.setType(CEN);
+        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+        frnReferenceNumbersModel.setType(FRN);
+        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+        hblModel.setTransportInstructionId(12L);
+        hblModel.setShipment(shipmentModel);
+
+        consolidationModel.setPayment("PPM");
+        consolidationModel.setReceivingAgent(partiesModel);
+        consolidationModel.setSendingAgent(partiesModel);
+        consolidationModel.setCarrierDetails(carrierDetailModel);
+        partiesModel = new PartiesModel();
+        partiesModel.setType("Notify Party 1");
+        orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+        hblModel.setConsolidation(consolidationModel);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'US MOCK PLACE', true, 'US001'",
+            "'Mumbai', true, 'GB001'",
+            "'Mumbai', false, 'GB001'",
+            "'', true, ''"
+    })
+    void populateDictionaryWithDifferentLocationAndRunnerV3(String placeOfIssue, boolean isRunnerV3Enabled, String expectedLocCode) throws JsonProcessingException {
+
+        // Setup ShipmentSettings with the varying RunnerV3Enabled flag
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .autoUpdateShipmentBL(true)
+                .hblLockSettings(jsonTestUtility.getJson("HBL_LOCK_ALL_FALSE", HblLockSettings.class))
+                .isRunnerV3Enabled(isRunnerV3Enabled)
+                .build();
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        // Setup HblModel and other common objects
+        HblModel hblModel = new HblModel();
+        hblModel.setIsHbl(false);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setHouseBillLogo("123");
+        hblModel.setUser(usersDto);
+
+        Hbl hbl = new Hbl();
+        hbl.setId(123L);
+        hbl.setShipmentId(123L);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        setData(hblModel, hbl, consolidationModel);
+
+        // Mock the shared methods (LocationData, VesselData, etc.)
+        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(Arrays.asList(new MasterData()));
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
+
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(1L);
+        consoleShipmentMapping.setConsolidationId(1L);
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("id", "123");
+        Map<String, Object> dictionary = new HashMap<>();
+        dictionary.put("id", "123");
+
+        // Populating the EntityTransferUnLocations and UnlocationsResponse mocks
+        EntityTransferUnLocations mockEntityTransferUnLocations = new EntityTransferUnLocations();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put(placeOfIssue, mockEntityTransferUnLocations);
+        when(masterDataUtils.getLocationDataFromCache(anySet(), anyString()))
+                .thenReturn(entityTransferUnLocationsMap);
+
+        UnlocationsResponse mockUnlocationsResponse = new UnlocationsResponse();
+        mockUnlocationsResponse.setName(placeOfIssue);
+        mockUnlocationsResponse.setLocCode(expectedLocCode); // Mock expected locCode based on the test case
+        when(jsonHelper.convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class)))
+                .thenReturn(mockUnlocationsResponse);
+
+        // Mock the JSON and other related methods
+        String blObjectJson = objectMapper.writeValueAsString(dataMap);
+        when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+        when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder());
+
+        // Setup Additional Details based on the PlaceOfIssue value
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        additionalDetails.setPlaceOfIssue(placeOfIssue);
+        hblModel.shipment.setAdditionalDetails(additionalDetails);
+
+        EntityTransferAddress entityAddress = new EntityTransferAddress();
+        entityAddress.setCountry("India");
+        when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
+
+        // Perform the actual test
+        assertNotNull(hblReport.populateDictionary(hblModel));
+
+        // Optionally, you could add assertions to check if the locCode was properly processed.
+        // For instance:
+        assertEquals(expectedLocCode, mockUnlocationsResponse.getLocCode());
+    }
+
 
     @Test
     void testPopulateFreightsAndCharges_nullAdditionalDetails() {

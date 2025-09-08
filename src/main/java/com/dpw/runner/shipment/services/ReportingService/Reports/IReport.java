@@ -16,6 +16,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATA_OR_ETA;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PLACE_OF_DELIVERY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PLACE_OF_RECEIPT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PORT_OF_DISCHARGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PORT_OF_LOADING;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED_VALUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOOKING_ORDER;
@@ -334,6 +338,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TWO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.UNID_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_DISPLAY_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_INITIALS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_PHONE_NUMBER;
@@ -1408,7 +1413,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ORIGINAL_WORDS, numberToWords(additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal()));
         dictionary.put(ReportConstants.COPY_BILLS, additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
 
-        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);
+        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? populateNameFromUnlocationsResponse(placeOfIssue) : null);
         dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
     }
 
@@ -1420,11 +1425,26 @@ public abstract class IReport {
     }
 
     private void addPaidPlaceTags(Map<String, Object> dictionary, UnlocationsResponse paidPlace) {
-        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
+        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? populateNameFromUnlocationsResponse(paidPlace) : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
 
         dictionary.put(ReportConstants.PAID_PLACE_NAME_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getName()) : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getCountry()) : null);
+    }
+
+    private String populateNameFromUnlocationsResponse(UnlocationsResponse unlocationsResponse) {
+
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            if (unlocationsResponse.getLocCode().length() >= 2) {
+                // Extract country code from UNLOC using initial 2 characters
+                String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
+                if (US.equalsIgnoreCase(countryCode)) {
+                    return (countryCode + "," + unlocationsResponse.getName()).toUpperCase();
+                }
+            }
+            return unlocationsResponse.getName().toUpperCase();
+        }
+        return unlocationsResponse.getName();
     }
 
     private MasterData getMasterDataForPackUnitAndAddTags(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, MasterData masterData) {
@@ -2703,7 +2723,42 @@ public abstract class IReport {
         dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getCargoTermsDescription()));
         dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getBlRemarksDescription()));
         dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_WITH_COMMA, convertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume(), v1TenantSettingsResponse));
+        populateBlTransportSectionDetails(hblDataDto, dictionary);
     }
+
+    public void populateBlTransportSectionDetails(HblDataDto hblDataDto, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(hblDataDto)) return;
+
+        if (Objects.nonNull(hblDataDto.getPlaceOfDelivery())) {
+            dictionary.put(BL_PLACE_OF_DELIVERY, StringUtility.toUpperCase(hblDataDto.getPlaceOfDelivery()));
+        }
+        if (Objects.nonNull(hblDataDto.getPortOfLoad())) {
+            dictionary.put(BL_PORT_OF_LOADING, StringUtility.toUpperCase(hblDataDto.getPortOfLoad()));
+        }
+        if (Objects.nonNull(hblDataDto.getPortOfDischarge())) {
+            dictionary.put(BL_PORT_OF_DISCHARGE, StringUtility.toUpperCase(hblDataDto.getPortOfDischarge()));
+        }
+        if (Objects.nonNull(hblDataDto.getPlaceOfReceipt())) {
+            dictionary.put(BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblDataDto.getPlaceOfReceipt()));
+        }
+    }
+
+    public String processBLTransportDetailsFromShipmentModel(String blTransportDetail) {
+        if (Objects.isNull(blTransportDetail)) return "";
+
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            if (blTransportDetail.length() >= 2) {
+                String countryCode = blTransportDetail.substring(0, 2);
+                if (US.equalsIgnoreCase(countryCode)) {
+                    return (countryCode + "," + blTransportDetail.substring(2));
+                }
+            }
+            return blTransportDetail;
+        }
+        return blTransportDetail;
+    }
+
 
     private List<String> getNotifyParty(Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
         List<String> notify = new ArrayList<>();
