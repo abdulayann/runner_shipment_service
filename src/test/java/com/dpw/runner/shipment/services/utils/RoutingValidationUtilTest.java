@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -490,7 +491,7 @@ class RoutingValidationUtilTest {
     @Test
     @DisplayName("Should return empty list when routing responses is null")
     void testValidateRoutingLegs_NullInput() {
-        List<String> result = routingValidationUtil.validateRoutingLegs(null);
+        List<String> result = routingValidationUtil.validateRoutingLegs(null, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -498,7 +499,7 @@ class RoutingValidationUtilTest {
     @Test
     @DisplayName("Should return empty list when routing responses is empty")
     void testValidateRoutingLegs_EmptyList() {
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -511,7 +512,7 @@ class RoutingValidationUtilTest {
                 LocalDateTime.of(2024, 1, 15, 12, 0));
         routingsResponses.add(leg1);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -529,7 +530,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -547,7 +548,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertEquals(1, result.size());
         assertEquals("ETD (of Leg No. 2) should be greater than ETA (of Leg No. 1)", result.get(0));
@@ -570,7 +571,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg2);
         routingsResponses.add(leg3);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertEquals(2, result.size());
         assertEquals("ETD (of Leg No. 2) should be greater than ETA (of Leg No. 1)", result.get(0));
@@ -590,7 +591,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -608,7 +609,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
@@ -626,7 +627,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        String result = routingValidationUtil.getWarningMessage(routingsResponses);
+        String result = routingValidationUtil.getWarningMessage(routingsResponses, new HashMap<>());
 
         assertNull(result);
     }
@@ -644,7 +645,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        String result = routingValidationUtil.getWarningMessage(routingsResponses);
+        String result = routingValidationUtil.getWarningMessage(routingsResponses, new HashMap<>());
 
         assertNotNull(result);
         assertEquals("ETD (of Leg No. 2) should be greater than ETA (of Leg No. 1)", result);
@@ -667,7 +668,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg2);
         routingsResponses.add(leg3);
 
-        String result = routingValidationUtil.getWarningMessage(routingsResponses);
+        String result = routingValidationUtil.getWarningMessage(routingsResponses, new HashMap<>());
 
         assertNotNull(result);
         String[] lines = result.split("###");
@@ -679,7 +680,7 @@ class RoutingValidationUtilTest {
     @Test
     @DisplayName("Should return null for getWarningMessage when input is null")
     void testGetWarningMessage_NullInput() {
-        String result = routingValidationUtil.getWarningMessage(null);
+        String result = routingValidationUtil.getWarningMessage(null, new HashMap<>());
 
         assertNull(result);
     }
@@ -687,7 +688,7 @@ class RoutingValidationUtilTest {
     @Test
     @DisplayName("Should return null for getWarningMessage when input is empty")
     void testGetWarningMessage_EmptyInput() {
-        String result = routingValidationUtil.getWarningMessage(routingsResponses);
+        String result = routingValidationUtil.getWarningMessage(routingsResponses, new HashMap<>());
 
         assertNull(result);
     }
@@ -723,7 +724,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg3);
         routingsResponses.add(leg4);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertEquals(1, result.size());
         assertEquals("ETD (of Leg No. 3) should be greater than ETA (of Leg No. 2)", result.get(0));
@@ -742,7 +743,7 @@ class RoutingValidationUtilTest {
         routingsResponses.add(leg1);
         routingsResponses.add(leg2);
 
-        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses);
+        List<String> result = routingValidationUtil.validateRoutingLegs(routingsResponses, new HashMap<>());
 
         assertTrue(result.isEmpty());
     }
