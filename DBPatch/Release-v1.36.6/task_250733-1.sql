@@ -1,0 +1,1 @@
+Delete from network_transfer where entity_id=69358 and entity_type = 'CONSOLIDATION' and tenant_id=618;
