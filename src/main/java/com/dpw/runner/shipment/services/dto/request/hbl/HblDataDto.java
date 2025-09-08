@@ -23,6 +23,7 @@ public class HblDataDto {
     private String consignorAddress;
     private String consignorTaxId;
     private String consignorReferenceNumber;
+    private String consigneeName;
     private String consigneeAddress;
     private String consigneeReferenceNumber;
     private String purchaseOrderNumber;
@@ -82,36 +83,35 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
-    public String shipperName;
-    public String shipperAddressLine1;
-    public String shipperAddressLine2;
-    public String shipperCity;
-    public String shipperState;
-    public String shipperZipCode;
-    public String shipperCountry;
+    private String shipperName;
+    private String shipperAddressLine1;
+    private String shipperAddressLine2;
+    private String shipperCity;
+    private String shipperState;
+    private String shipperZipCode;
+    private String shipperCountry;
     // Consignee fields
-    private String consigneeName;
-    public String consigneeAddressLine1;
-    public String consigneeAddressLine2;
-    public String consigneeCity;
-    public String consigneeState;
-    public String consigneeZipCode;
-    public String consigneeCountry;
+    private String consigneeAddressLine1;
+    private String consigneeAddressLine2;
+    private String consigneeCity;
+    private String consigneeState;
+    private String consigneeZipCode;
+    private String consigneeCountry;
     // Forwarding Agent (Origin Agent) fields
-    public String forwarderName;
-    public String forwarderAddressLine1;
-    public String forwarderAddressLine2;
-    public String forwarderCity;
-    public String forwarderState;
-    public String forwarderZipCode;
-    public String forwarderCountry;
+    private String forwarderName;
+    private String forwarderAddressLine1;
+    private String forwarderAddressLine2;
+    private String forwarderCity;
+    private String forwarderState;
+    private String forwarderZipCode;
+    private String forwarderCountry;
     // Delivery Agent (Destination Agent) fields
-    public String deliveryAgentName;
-    public String deliveryAgentAddressLine1;
-    public String deliveryAgentAddressLine2;
-    public String deliveryAgentCity;
-    public String deliveryAgentState;
-    public String deliveryAgentZipCode;
-    public String deliveryAgentCountry;
+    private String deliveryAgentName;
+    private String deliveryAgentAddressLine1;
+    private String deliveryAgentAddressLine2;
+    private String deliveryAgentCity;
+    private String deliveryAgentState;
+    private String deliveryAgentZipCode;
+    private String deliveryAgentCountry;
 
 }

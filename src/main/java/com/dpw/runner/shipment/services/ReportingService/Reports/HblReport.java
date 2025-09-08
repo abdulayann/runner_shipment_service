@@ -364,8 +364,12 @@ public class HblReport extends IReport {
         processReferenceNumbersList(hblModel, dictionary);
         addCargoLocationTag(hblModel, dictionary);
         processNotifyParty(hblModel, dictionary);
-        processConsignerConsignee(hblModel, dictionary);
-        processDeliveryForwardAgent(hblModel, dictionary);
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            processConsignerConsigneeV3(hblModel, dictionary);
+        } else {
+            processConsignerConsignee(hblModel, dictionary);
+        }
+        processForwardAgent(hblModel, dictionary);
         List<String> deliveryParty = getOrgAddress(hblModel.shipment.getAdditionalDetails().getNotifyParty());
         if (hblModel.blObject.getHblNotifyParty() != null && !hblModel.blObject.getHblNotifyParty().isEmpty())
             dictionary.put(NOTIFY_PARTY_ADDRESS, getAddressList(hblModel.blObject.getHblNotifyParty().get(0).getAddress()));
@@ -547,6 +551,38 @@ public class HblReport extends IReport {
         dictionary.put(DESCRIPTION_ORIGINAL, getAddressList(description));
     }
 
+    private void processConsignerConsigneeV3(HblModel hblModel, Map<String, Object> dictionary) {
+        List<String> consigner = null;
+        List<String> consignee = null;
+        if (hblModel.blObject != null && hblModel.isHbl && !hblModel.shipment.getTransportMode().equals(AIR)) {
+            List<String> notify = getNotifyOrgAddress(hblModel.blObject, hblModel.shipmentSettingsDetails);
+            if (!Objects.isNull(notify)) {
+                dictionary.put(BL_NOTIFY_PARTY, notify);
+                dictionary.put(BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).toList());
+            }
+            if(Boolean.TRUE.equals(hblModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+                consigner = getOrgAddress(null, hblModel.blObject.getHblData().getConsignorAddress(),
+                        null, null, null, null);
+                consignee = getOrgAddress(null, hblModel.blObject.getHblData().getConsigneeAddress(),
+                        null, null, null, null);
+            } else {
+                consigner = getOrgAddress(hblModel.blObject.getHblData().getConsignorName(), hblModel.blObject.getHblData().getConsignorAddress(),
+                        null, null, null, null);
+                consignee = getOrgAddress(hblModel.blObject.getHblData().getConsigneeName(), hblModel.blObject.getHblData().getConsigneeAddress(),
+                        null, null, null, null);
+            }
+        } else {
+            consigner = getShipmentConsignerV3(hblModel, consigner, dictionary);
+            consignee = getShipmentConsigneeV3(hblModel, consignee, dictionary);
+        }
+
+        dictionary.put(BL_NEW_SHIPPER, (consigner != null && !consigner.isEmpty()) ? consigner : Collections.emptyList());
+        dictionary.put(BL_NEW_SHIPPER_IN_CAPS, consigner != null ? consigner.stream().map(String::toUpperCase).toList() : null);
+        dictionary.put(CONSIGNER_ADDRESS, getAddressList(hblModel.blObject.getHblData().getConsignorAddress()));
+        dictionary.put(BL_NEW_CONSIGNEE, consignee);
+        if(!Objects.isNull(consignee))
+            dictionary.put(BL_NEW_CONSIGNEE_IN_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
+    }
     private void processConsignerConsignee(HblModel hblModel, Map<String, Object> dictionary) {
         List<String> consigner = null;
         List<String> consignee = null;
@@ -572,12 +608,12 @@ public class HblReport extends IReport {
             consignee = getShipmentConsignee(hblModel, consignee, dictionary);
         }
 
-        dictionary.put(BL_NEW_SHIPPER, (consigner != null && !consigner.isEmpty()) ? consigner : Collections.emptyList());
-        dictionary.put(BL_NEW_SHIPPER_IN_CAPS, consigner != null ? consigner.stream().map(String::toUpperCase).toList() : null);
+        dictionary.put(CONSIGNER, consigner);
+        dictionary.put(CONSIGNER_CAPS, consigner != null ? consigner.stream().map(String::toUpperCase).toList() : null);
         dictionary.put(CONSIGNER_ADDRESS, getAddressList(hblModel.blObject.getHblData().getConsignorAddress()));
-        dictionary.put(BL_NEW_CONSIGNEE, consignee);
+        dictionary.put(CONSIGNEE, consignee);
         if(!Objects.isNull(consignee))
-            dictionary.put(BL_NEW_CONSIGNEE_IN_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
+            dictionary.put(CONSIGNEE_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
     }
 
     private void addActualDeliveryTag(HblModel hblModel, Map<String, Object> dictionary) {
@@ -750,7 +786,7 @@ public class HblReport extends IReport {
                     hblModel.shipment.getVolume().toString()), hblModel.shipment.getVolumeUnit()));
     }
 
-    private List<String> getShipmentConsigner(HblModel hblModel, List<String> consigner, Map<String, Object> dictionary) {
+    private List<String> getShipmentConsignerV3(HblModel hblModel, List<String> consigner, Map<String, Object> dictionary) {
         PartiesModel shipmentConsigner = hblModel.shipment.getConsigner();
         if (shipmentConsigner != null) {
             Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
@@ -765,20 +801,37 @@ public class HblReport extends IReport {
         }
         return consigner;
     }
-    private void processDeliveryForwardAgent(HblModel hblModel, Map<String, Object> dictionary) {
-        List<String> deliveryAgent = null;
-        List<String> forwardAgent = null;
 
-        deliveryAgent = getShipmentDeliveryAgent(hblModel, deliveryAgent);
-        forwardAgent = getShipmentForwardAgent(hblModel, forwardAgent);
+    private List<String> getShipmentConsignee(HblModel hblModel, List<String> consignee, Map<String, Object> dictionary) {
+        PartiesModel shipmentConsignee = hblModel.shipment.getConsignee();
+        if (shipmentConsignee != null) {
+            Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
+            if (consigneeAddress != null) {
+                consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress, COMPANY_NAME), getValueFromMap(consigneeAddress, ADDRESS1),
+                        getValueFromMap(consigneeAddress, ADDRESS2),
+                        ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
+                        getValueFromMap(consigneeAddress, EMAIL), getValueFromMap(consigneeAddress, CONTACT_PHONE),
+                        getValueFromMap(consigneeAddress, ZIP_POSTCODE));
+                dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON, getValueFromMap(consigneeAddress, CONTACT_PERSON));
+            }
+        }
+        return consignee;
+    }
+    private void processDeliveryAgentV3(HblModel hblModel, Map<String, Object> dictionary) {
+        List<String> deliveryAgent = null;
+        deliveryAgent = getShipmentDeliveryAgentV3(hblModel, deliveryAgent);
         dictionary.put(BL_DELIVERY, (deliveryAgent != null && !deliveryAgent.isEmpty()) ? deliveryAgent : Collections.emptyList());
         dictionary.put(BL_DELIVERY_IN_CAPS, deliveryAgent != null ? deliveryAgent.stream().map(String::toUpperCase).toList() : null);
-        dictionary.put(BL_FORWARDER, forwardAgent);
-        if(!Objects.isNull(forwardAgent))
-            dictionary.put(BL_FORWARDER_IN_CAPS, forwardAgent.stream().map(String::toUpperCase).collect(Collectors.toList()));
-    }
-
-    private List<String> getShipmentDeliveryAgent(HblModel hblModel, List<String> deliveryAgent) {
+}
+    private void processForwardAgent(HblModel hblModel, Map<String, Object> dictionary) {
+        List<String> forwardAgent = null;
+        forwardAgent = getShipmentForwardAgent(hblModel, forwardAgent);
+            dictionary.put(BL_FORWARDER, forwardAgent);
+            if(!Objects.isNull(forwardAgent))
+                dictionary.put(BL_FORWARDER_IN_CAPS, forwardAgent.stream().map(String::toUpperCase).collect(Collectors.toList()));
+        }
+    private List<String> getShipmentDeliveryAgentV3(HblModel hblModel, List<String> deliveryAgent) {
         PartiesModel shipmentDelivery = hblModel.shipment.getAdditionalDetails().getImportBroker();
         if (shipmentDelivery != null) {
             Map<String, Object> deliveryAgentAddress = shipmentDelivery.getAddressData();
@@ -805,7 +858,7 @@ public class HblReport extends IReport {
         return forwardAgent;
     }
 
-    private List<String> getShipmentConsignee(HblModel hblModel, List<String> consignee, Map<String, Object> dictionary) {
+    private List<String> getShipmentConsigneeV3(HblModel hblModel, List<String> consignee, Map<String, Object> dictionary) {
         PartiesModel shipmentConsignee = hblModel.shipment.getConsignee();
         if (shipmentConsignee != null) {
             Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
@@ -820,6 +873,21 @@ public class HblReport extends IReport {
             }
         }
         return consignee;
+    }
+    private List<String> getShipmentConsigner(HblModel hblModel, List<String> consigner, Map<String, Object> dictionary) {
+        PartiesModel shipmentConsigner = hblModel.shipment.getConsigner();
+        if (shipmentConsigner != null) {
+            Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
+            if (consignerAddress != null) {
+                consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
+                        getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                        getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                        getValueFromMap(consignerAddress, ZIP_POSTCODE));
+                dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON));
+            }
+        }
+        return consigner;
     }
 
     private void addDeliverToTag(HblModel hblModel, Map<String, Object> dictionary) {
@@ -886,8 +954,12 @@ public class HblReport extends IReport {
             dictionary.put(BL_WEIGHT_UNIT, hblModel.blObject.getHblData().getCargoGrossWeightUnit());
             dictionary.put(BL_NETWEIGHT, convertToWeightNumberFormat(hblModel.blObject.getHblData().getCargoNetWeight(), v1TenantSettingsResponse));
             dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
-            dictionary.put(BL_DELIVERYAGENT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgent()));
-            dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                  processDeliveryAgentV3(hblModel, dictionary);
+            } else {
+                dictionary.put(BL_DELIVERYAGENT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgent()));
+                dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
+            }
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoTermsDescription()));
             dictionary.put(BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getBlRemarksDescription()));
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));

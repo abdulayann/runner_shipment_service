@@ -500,10 +500,14 @@ public class HblService implements IHblService {
         Routings routing = getRoutingsForShipment(shipmentDetail);
 
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            mapDeliveryDataInHblV3(additionalDetails, hblData);
+            mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
+            mapForwardDataInHblV3(additionalDetails, hblData);
+        } else {
             mapConsignerConsigneeToHbl(shipmentDetail, hblData);
-            mapForwardDataInHbl(additionalDetails, hblData);
             mapDeliveryDataInHbl(additionalDetails, hblData);
-
+    }
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
         Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
@@ -595,15 +599,13 @@ public class HblService implements IHblService {
         return routing;
     }
 
-    private void mapDeliveryDataInHbl(AdditionalDetails additionalDetails, HblDataDto hblData) {
+    private void mapDeliveryDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
             if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
-                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
                 hblData.setDeliveryAgentName(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
             if (additionalDetails.getImportBroker().getAddressData() != null) {
-                hblData.setDeliveryAgentAddress(constructAddress(additionalDetails.getImportBroker().getAddressData()));
                 Map<String, String> addressComponents = extractAddressComponents(additionalDetails.getImportBroker().getAddressData());
                 hblData.setDeliveryAgentAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());
                 hblData.setDeliveryAgentAddressLine2(addressComponents.get(PartiesConstants.ADDRESS2).toUpperCase());
@@ -615,7 +617,7 @@ public class HblService implements IHblService {
         }
     }
 
-    private void mapForwardDataInHbl(AdditionalDetails additionalDetails, HblDataDto hblData) {
+    private void mapForwardDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
         if (!Objects.isNull(additionalDetails.getExportBroker())) {
             Parties broker = additionalDetails.getExportBroker();
             if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
@@ -633,16 +635,13 @@ public class HblService implements IHblService {
         }
     }
 
-    private void mapConsignerConsigneeToHbl(ShipmentDetails shipmentDetail, HblDataDto hblData) {
+    private void mapConsignerConsigneeToHblV3(ShipmentDetails shipmentDetail, HblDataDto hblData) {
         if (shipmentDetail.getConsigner() != null) {
             if (shipmentDetail.getConsigner().getOrgData() != null) {
                 hblData.setShipperName(StringUtility.convertToString(
                         shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
-                hblData.setConsignorName(StringUtility.convertToString(
-                        shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
             if (shipmentDetail.getConsigner().getAddressData() != null) {
-                hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()).toUpperCase());
                 Map<String, String> addressComponents = extractAddressComponents(shipmentDetail.getConsigner().getAddressData());
                 hblData.setShipperAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());
                 hblData.setShipperAddressLine2(addressComponents.get(PartiesConstants.ADDRESS2).toUpperCase());
@@ -658,7 +657,6 @@ public class HblService implements IHblService {
                         shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
             if (shipmentDetail.getConsignee().getAddressData() != null) {
-                hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
                 Map<String, String> addressComponents = extractAddressComponents(shipmentDetail.getConsignee().getAddressData());
                 hblData.setConsigneeAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());
                 hblData.setConsigneeAddressLine2(addressComponents.get(PartiesConstants.ADDRESS2).toUpperCase());
@@ -814,6 +812,31 @@ public class HblService implements IHblService {
         return null;
     }
 
+    private void mapConsignerConsigneeToHbl(ShipmentDetails shipmentDetail, HblDataDto hblData) {
+        if(shipmentDetail.getConsigner() != null) {
+            if (shipmentDetail.getConsigner().getOrgData() != null)
+                hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
+            if (shipmentDetail.getConsigner().getAddressData() != null)
+                hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
+        }
+        if(shipmentDetail.getConsignee() != null ) {
+            if (shipmentDetail.getConsignee().getOrgData() != null)
+                hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
+            if (shipmentDetail.getConsignee().getAddressData() != null)
+                hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+            }
+        }
+
+    private void mapDeliveryDataInHbl(AdditionalDetails additionalDetails, HblDataDto hblData) {
+        if (!Objects.isNull(additionalDetails.getImportBroker())) {
+            Parties broker = additionalDetails.getImportBroker();
+            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(broker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()));
+        }
+    }
+
     private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, Set<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
@@ -848,18 +871,26 @@ public class HblService implements IHblService {
         List<HblPartyDto> hblParties = new ArrayList<>();
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null) {
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
-            hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
-            hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
-            hblParty.setCity(toUpperCase(addressComponents.get(PartiesConstants.CITY)));
-            hblParty.setState(toUpperCase(addressComponents.get(PartiesConstants.STATE)));
-            hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
-            hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
-
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            hblParties.add(hblParty);
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                hblParty.setIsShipmentCreated(true);
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
+                hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
+                hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
+                hblParty.setCity(toUpperCase(addressComponents.get(PartiesConstants.CITY)));
+                hblParty.setState(toUpperCase(addressComponents.get(PartiesConstants.STATE)));
+                hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
+                hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
+                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+                hblParties.add(hblParty);
+            }
+         else {
+                hblParty.setIsShipmentCreated(true);
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                hblParty.setAddress(constructAddress(party.getAddressData()));
+                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+                hblParties.add(hblParty);
+            }
         }
         return hblParties;
     }
