@@ -1,9 +1,16 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -16,6 +23,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class CarrierBookingUtil {
+
+    @Autowired
+    private CommonUtils commonUtils;
+
+    @Autowired
+    private ICarrierBookingDao carrierBookingDao;
 
     public String truncate(String text, int maxLength) {
         if (text == null) {
@@ -69,4 +82,24 @@ public class CarrierBookingUtil {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+
+    public void generateBookingNumber(CarrierBooking carrierBookingEntity) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        var prefix = "";
+        if (StringUtility.isNotEmpty(v1TenantSettingsResponse.getBookingPrefix())) {
+            prefix = v1TenantSettingsResponse.getBookingPrefix();
+        }
+        if (v1TenantSettingsResponse.getBookingNumberGeneration() != null && v1TenantSettingsResponse.getBookingNumberGeneration() == CarrierBookingGenerationType.Serial.getValue()) {
+            //get total count of carrier booking for that tenant + 1, prefix+count
+            Long totalCarrierBookings = carrierBookingDao.getTotalCarrierBookings();
+            carrierBookingEntity.setBookingNo(prefix + totalCarrierBookings + 1);
+        } else {
+            //generate the random number and add prefix
+            String randomBookingNumber = StringUtility.getRandomString(10);
+            carrierBookingEntity.setBookingNo(prefix + randomBookingNumber);
+        }
+
+    }
+
+
 }

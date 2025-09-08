@@ -73,7 +73,7 @@ public class CarrierBookingController {
     }
 
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) throws JsonMappingException {
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
         return carrierBookingService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
     }
