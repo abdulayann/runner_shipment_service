@@ -4757,7 +4757,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             response.setShipmentType(tenantSettings.getDefaultContainerType());
 
             response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
-            response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+            response.setVolumeUnit(VOLUME_UNIT_M3);
+            response.setPacksUnit(tenantSettings.getDefaultPackUnit());
+            response.setDgPacksUnit(tenantSettings.getDefaultPackUnit());
             response.setStatus(0);
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
