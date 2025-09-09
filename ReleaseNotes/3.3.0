@@ -1,4 +1,10 @@
 Release Version - Release-v3.3.0
 
+Pre-Release Notes:-
+DocumentService
+MDM
+
 Post-Release Notes:-
+DB Script
 1. Run ShippedOnboardDateMigration DB Patch in all the environments.
+2. Run CargoReadinessDateMigration DB Patch in all the environments.
