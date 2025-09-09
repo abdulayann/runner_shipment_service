@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.PayerType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FreightDetailResponse {
+public class FreightDetailResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy / BaseEntity
 
@@ -18,6 +19,4 @@ public class FreightDetailResponse {
     private String paymentTerms;
     private PayerType payerType;
     private String payerLocation;
-    private Long shippingInstructionId;
-
 }

@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +15,7 @@ import org.hibernate.annotations.Where;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 
@@ -39,8 +42,17 @@ public class CommonPackages extends MultiTenancy {
     @Column(name = "hs_code", length = 20)
     private String hsCode;
 
-    @Column(name = "commodity_description", columnDefinition = "TEXT")
-    private String commodityDescription;
+    @Column(name = "commodity_code")
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
+    private String commodityCode;
+
+    @Column(name = "commodity_group")
+    @MasterData(type = MasterDataType.COMMODITY_GROUP)
+    private String commodityGroup;
+
+    @Column(name = "marksn_nums", columnDefinition = "TEXT")
+    @Size(max=25000, message = "max size is 25000 for marks_n_nums")
+    private String marksnNums;
 
     @Column(name = "goods_description", columnDefinition = "TEXT")
     private String goodsDescription;
