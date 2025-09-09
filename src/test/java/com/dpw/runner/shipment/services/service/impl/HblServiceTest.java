@@ -2147,4 +2147,51 @@ class HblServiceTest extends CommonMocks {
         // You can add more specific assertions based on what the methods should set
     }
 
+    @Test
+    void updateShipmentPartiesToHBL_WithV3Enabled_ShouldSetV3AddressFields() {
+        // Arrange
+        Hbl hbl = new Hbl();
+        hbl.setHblNotifyParty(new ArrayList<>());
+
+        Parties party = mock(Parties.class);
+        HblLockSettings hblLock = mock(HblLockSettings.class);
+
+        // Mock V3 enabled
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(settings.getIsRunnerV3Enabled()).thenReturn(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+        // Mock party data
+        Map<String, Object> orgData = Map.of(
+                PartiesConstants.FULLNAME, "Test Party",
+                PartiesConstants.EMAIL, "test@example.com"
+        );
+        Map<String, Object> addressData = Map.of(
+                PartiesConstants.ADDRESS1, "123 Test St",
+                PartiesConstants.ADDRESS2, "Suite 100",
+                PartiesConstants.CITY, "Test City",
+                PartiesConstants.STATE, "TS",
+                PartiesConstants.ZIP_POST_CODE, "12345",
+                PartiesConstants.COUNTRY, "USA"
+        );
+
+        when(party.getOrgData()).thenReturn(orgData);
+        when(party.getAddressData()).thenReturn(addressData);
+
+
+        ReflectionTestUtils.invokeMethod(hblService, "updateShipmentPartiesToHBL", party, hbl, hblLock);
+        // Assert
+        assertEquals(1, hbl.getHblNotifyParty().size());
+        HblPartyDto resultParty = hbl.getHblNotifyParty().get(0);
+        assertTrue(resultParty.getIsShipmentCreated());
+        assertEquals("Test Party", resultParty.getName());
+        assertEquals("test@example.com", resultParty.getEmail());
+        assertNotNull(resultParty.getAddress1());
+        assertNotNull(resultParty.getAddress2());
+        assertNotNull(resultParty.getCity());
+        assertNotNull(resultParty.getState());
+        assertNotNull(resultParty.getZipCode());
+        assertNotNull(resultParty.getCountry());
+    }
+
 }
