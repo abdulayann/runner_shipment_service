@@ -629,6 +629,11 @@ public class ReportConstants {
     public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
     public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
     public static final String BL_CHARGES = "BLCharges";
+    public static final String BL_NEW_CARGO = "BLNewCargo";
+    public static final String PRINT_BY_CONTAINER = "PrintByContainer";
+    public static final String PRINT_BY_PACK = "PrintByPack";
+    public static final String CONTAINER_DETAILS = "ContainerDetails";
+    public static final String NUMBER_AND_KIND_OF_PACKAGE = "NumberAndKindOfPackage";
 
     //HAWB
     public static final String AGENT = "Agent";
