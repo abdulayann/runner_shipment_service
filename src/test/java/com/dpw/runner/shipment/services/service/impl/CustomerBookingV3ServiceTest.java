@@ -72,6 +72,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -4100,6 +4101,122 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         ContainerResponse response = customerBookingResponse.getContainersList().get(0);
         assertEquals(123, response.getTenantId());
         verify(commonUtils).mapIfSelected(eq(true), eq(container.getContainerCode()), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldSetCarrierDetails_whenDetailsNotNullAndHeaderFlagTrue() {
+        // Arrange
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)
+                        .destination(true)
+                        .pol(true)
+                        .pod(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("Air");
+        shipmentDetails.setServiceType("Express");
+        shipmentDetails.setDirection("Import");
+        shipmentDetails.setShipmentType("General");
+        shipmentDetails.setPaymentTerms("Prepaid");
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        CarrierDetails details = new CarrierDetails();
+        details.setOrigin("JFK");
+        details.setOriginCountry("USA");
+        details.setDestination("LHR");
+        details.setDestinationCountry("UK");
+        details.setOriginPort("New York");
+        details.setOriginPortCountry("USA");
+        details.setDestinationPort("London");
+        details.setDestinationPortCountry("UK");
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, times(13)).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldNotSetCarrierDetails_whenDetailsNull() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)
+                        .destination(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, null, builder);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::origin));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::originCountry));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::destination));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::destinationCountry));
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldNotSetAnyDetails_whenHeaderFlagFalse() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(false) // Header flag is false
+                        .origin(true)
+                        .destination(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetails details = new CarrierDetails();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldOnlyCallMapIfSelectedForEnabledFlags() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)    // Enabled
+                        .destination(false) // Disabled
+                        .pol(true)       // Enabled
+                        .pod(false)      // Disabled
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        CarrierDetails details = new CarrierDetails();
+        details.setOrigin("JFK");
+        details.setOriginCountry("USA");
+        details.setDestination("LHR");
+        details.setDestinationCountry("UK");
+        details.setOriginPort("New York");
+        details.setOriginPortCountry("USA");
+        details.setDestinationPort("London");
+        details.setDestinationPortCountry("UK");
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, times(8)).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails,
+                                              CustomerBookingV3Response customerBookingResponse,
+                                              CarrierDetails details,
+                                              CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        try {
+            Method method = CustomerBookingV3Service.class.getDeclaredMethod(
+                    "setHeaderDetailsFromShipment",
+                    CloneRequest.class,
+                    ShipmentDetails.class,
+                    CustomerBookingV3Response.class,
+                    CarrierDetails.class,
+                    CarrierDetailResponse.CarrierDetailResponseBuilder.class
+            );
+            method.setAccessible(true);
+            method.invoke(customerBookingService, request, shipmentDetails, customerBookingResponse, details, builder);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to invoke private method", e);
+        }
     }
 
     private CloneRequest createRequestWithAllFlags(boolean value) {
