@@ -50,6 +50,14 @@ public class CommonContainers extends MultiTenancy {
     @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private String commodityCode;
 
+    @Column(name = "commodity_group")
+    @MasterData(type = MasterDataType.COMMODITY_GROUP)
+    private String commodityGroup;
+
+    @Column(name = "marksn_nums", columnDefinition = "TEXT")
+    @Size(max=25000, message = "max size is 25000 for marksn_nums")
+    private String marksNums;
+
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 

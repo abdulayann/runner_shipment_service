@@ -5,10 +5,17 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.CommonPackages;
+import com.dpw.runner.shipment.services.entity.FreightDetail;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
@@ -22,7 +29,13 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -87,6 +100,22 @@ public class ShippingInstructionMasterDataHelper {
                     masterDataUtils.createInBulkMasterListRequest(response, ShippingInstruction.class,
                             fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
 
+            if (Objects.nonNull(response.getSailingInformation())) {
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+            }
+            if (CollectionUtils.isEmpty(response.getCommonContainersList())) {
+                response.getCommonContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName() + r.getId(), cacheMap)));
+            }
+            if (CollectionUtils.isEmpty(response.getReferenceNumbers())) {
+                response.getReferenceNumbers().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
+            }
+            if (CollectionUtils.isEmpty(response.getCommonPackagesList())) {
+                response.getCommonPackagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonPackages.class, fieldNameKeyMap, CommonPackages.class.getSimpleName() + r.getId(), cacheMap)));
+            }
+            if (CollectionUtils.isEmpty(response.getFreightDetailList())) {
+                response.getFreightDetailList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, FreightDetail.class, fieldNameKeyMap, FreightDetail.class.getSimpleName() + r.getId(), cacheMap)));
+            }
+
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
             masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
@@ -110,6 +139,12 @@ public class ShippingInstructionMasterDataHelper {
             Set<String> locationCodes = new HashSet<>(masterDataUtils.createInBulkUnLocationsRequest(response,
                     ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
 
+            if (Objects.nonNull(response.getSailingInformation())) {
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap)));
+            }
+            if (CollectionUtils.isEmpty(response.getFreightDetailList())) {
+                response.getFreightDetailList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, FreightDetail.class, fieldNameKeyMap, FreightDetail.class.getSimpleName() + r.getId(), cacheMap)));
+            }
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes,
                     EntityTransferConstants.LOCATION_SERVICE_GUID);
 
@@ -125,10 +160,10 @@ public class ShippingInstructionMasterDataHelper {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-
-            Set<String> carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(response,
-                    ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
-
+            Set<String> carrierList = new HashSet<>();
+            if (!Objects.isNull(response.getSailingInformation())) {
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+            }
             if (CollectionUtils.isEmpty(carrierList)) {
                 return;
             }
@@ -147,10 +182,10 @@ public class ShippingInstructionMasterDataHelper {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-
-            Set<String> vesselList = new HashSet<>(masterDataUtils.createInBulkVesselsRequest(response,
-                    ShippingInstruction.class, fieldNameKeyMap, ShippingInstruction.class.getSimpleName(), cacheMap));
-
+            Set<String> vesselList = new HashSet<>();
+            if (Objects.nonNull(response.getSailingInformation())) {
+                vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap)));
+            }
             Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels(), cacheMap);
 
@@ -158,6 +193,48 @@ public class ShippingInstructionMasterDataHelper {
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in ShippingInstruction: addAllVesselDataInSingleCall in class: {} with exception: {}",
                     LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    public void addAllCommodityTypesInSingleCall(ShippingInstructionResponse shippingInstructionResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> commodityTypes = new HashSet<>();
+            if (Objects.nonNull(shippingInstructionResponse.getCommonContainersList())) {
+                shippingInstructionResponse.getCommonContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
+            }
+            if (Objects.nonNull(shippingInstructionResponse.getCommonPackagesList())) {
+                shippingInstructionResponse.getCommonPackagesList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, CommonPackages.class, fieldNameKeyMap, CommonPackages.class.getSimpleName(), cacheMap)));
+            }
+            if (org.springframework.util.CollectionUtils.isEmpty(commodityTypes)) {
+                return;
+            }
+            Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    public void addAllContainerTypesInSingleCall(ShippingInstructionResponse shippingInstructionResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> containerTypes = new HashSet<>();
+            if (!Objects.isNull(shippingInstructionResponse.getCommonContainersList())) {
+                shippingInstructionResponse.getCommonContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
+            }
+            if (org.springframework.util.CollectionUtils.isEmpty(containerTypes)) {
+                return;
+            }
+            Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse, cacheMap);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
         }
     }
 }

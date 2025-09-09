@@ -73,4 +73,6 @@ public interface IPackingV3Service {
     Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
 
     PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId);
+
+    List<Packing> getPackingsByConsolidationId(Long consolidationId);
 }

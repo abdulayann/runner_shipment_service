@@ -5,20 +5,25 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping(ShippingInstructionsConstants.SI_API_HANDLE)
@@ -99,10 +104,10 @@ public class ShippingInstructionsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shippingInstructionId) {
         String responseMsg = "failure executing :(";
         try {
-            return (ResponseEntity<?>) service.getAllMasterData(shipmentId);
+            return (ResponseEntity<?>) service.getAllMasterData(shippingInstructionId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";
@@ -110,5 +115,9 @@ public class ShippingInstructionsController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
-
+    @PostMapping(ApiConstants.API_LIST)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        return service.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+    }
 }

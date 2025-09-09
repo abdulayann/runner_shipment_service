@@ -121,16 +121,21 @@ public class ShippingInstruction extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Parties> additionalParties;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "shipping_instruction_id")
     private List<FreightDetail> freightDetailList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "shipping_instruction_id")
     private List<CommonPackages> commonPackagesList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "shipping_instruction_id")
     private List<CommonContainers> commonContainersList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "shipping_instruction_id")
     private List<ReferenceNumbers> referenceNumbers;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
