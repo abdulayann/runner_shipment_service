@@ -578,7 +578,6 @@ public class HblReport extends IReport {
 
         dictionary.put(BL_NEW_SHIPPER, (consigner != null && !consigner.isEmpty()) ? consigner : Collections.emptyList());
         dictionary.put(BL_NEW_SHIPPER_IN_CAPS, consigner != null ? consigner.stream().map(String::toUpperCase).toList() : null);
-        dictionary.put(CONSIGNER_ADDRESS, getAddressList(hblModel.blObject.getHblData().getConsignorAddress()));
         dictionary.put(BL_NEW_CONSIGNEE, consignee);
         if(!Objects.isNull(consignee))
             dictionary.put(BL_NEW_CONSIGNEE_IN_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));

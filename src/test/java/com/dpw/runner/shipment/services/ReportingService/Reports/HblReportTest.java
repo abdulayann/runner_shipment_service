@@ -1,7 +1,15 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getValueFromMap;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ADDRESS1;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.CITY;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.CONTACT_PHONE;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.EMAIL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,6 +19,7 @@ import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
@@ -90,9 +99,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -2289,5 +2300,196 @@ class HblReportTest extends CommonMocks {
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
+    @Test
+    void testProcessDeliveryAgentV3_and_ProcessForwardAgent() {
+        // Setup HblModel and AdditionalDetailModel
+        HblModel hblModel = new HblModel();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+
+        // Delivery Agent (ImportBroker)
+        PartiesModel importBroker = new PartiesModel();
+        Map<String, Object> deliveryAgentAddress = new HashMap<>();
+        deliveryAgentAddress.put(COMPANY_NAME, "Delivery Co");
+        deliveryAgentAddress.put(ADDRESS1, "123 Main St");
+        deliveryAgentAddress.put(ADDRESS2, "Suite 100");
+        deliveryAgentAddress.put(CITY, "Mumbai");
+        deliveryAgentAddress.put(COUNTRY, "India");
+        deliveryAgentAddress.put(EMAIL, "delivery@example.com");
+        deliveryAgentAddress.put(CONTACT_PHONE, "1234567890");
+        deliveryAgentAddress.put(ZIP_POSTCODE, "400001");
+        importBroker.setAddressData(deliveryAgentAddress);
+        additionalDetails.setImportBroker(importBroker);
+
+        // Forward Agent (ExportBroker)
+        PartiesModel exportBroker = new PartiesModel();
+        Map<String, Object> forwardAgentAddress = new HashMap<>();
+        forwardAgentAddress.put(COMPANY_NAME, "Forward Co");
+        forwardAgentAddress.put(ADDRESS1, "456 Market St");
+        forwardAgentAddress.put(ADDRESS2, "Floor 2");
+        forwardAgentAddress.put(CITY, "Delhi");
+        forwardAgentAddress.put(COUNTRY, "India");
+        forwardAgentAddress.put(EMAIL, "forward@example.com");
+        forwardAgentAddress.put(CONTACT_PHONE, "9876543210");
+        forwardAgentAddress.put(ZIP_POSTCODE, "110001");
+        exportBroker.setAddressData(forwardAgentAddress);
+        additionalDetails.setExportBroker(exportBroker);
+
+        shipmentModel.setAdditionalDetails(additionalDetails);
+        hblModel.setShipment(shipmentModel);
+
+        Map<String, Object> dictionary = new HashMap<>();
+        ReflectionTestUtils.invokeMethod(hblReport, "processDeliveryAgentV3", hblModel, dictionary);
+        ReflectionTestUtils.invokeMethod(hblReport, "processForwardAgent",hblModel, dictionary);
+
+        // Assert delivery agent
+        assertNotNull(dictionary.get(BL_DELIVERY));
+        assertTrue(((List<String>) dictionary.get(BL_DELIVERY)).get(0).contains("Delivery Co"));
+        assertNotNull(dictionary.get(BL_DELIVERY_IN_CAPS));
+        assertTrue(((List<String>) dictionary.get(BL_DELIVERY_IN_CAPS)).get(0).contains("DELIVERY CO"));
+
+        // Assert forward agent
+        assertNotNull(dictionary.get(BL_FORWARDER));
+        assertTrue(((List<String>) dictionary.get(BL_FORWARDER)).get(0).contains("Forward Co"));
+        assertNotNull(dictionary.get(BL_FORWARDER_IN_CAPS));
+        assertTrue(((List<String>) dictionary.get(BL_FORWARDER_IN_CAPS)).get(0).contains("FORWARD CO"));
+    }
+
+    @Test
+    void testGetShipmentConsigneeV3_withValidConsignee() throws Exception {
+        HblReport hblReport = new HblReport();
+
+        // Setup consignee address data
+        Map<String, Object> consigneeAddress = new HashMap<>();
+        consigneeAddress.put(COMPANY_NAME, "Consignee Co");
+        consigneeAddress.put(ADDRESS1, "789 Main St");
+        consigneeAddress.put(ADDRESS2, "Suite 200");
+        consigneeAddress.put(CITY, "Chennai");
+        consigneeAddress.put(COUNTRY, "India");
+        consigneeAddress.put(EMAIL, "consignee@example.com");
+        consigneeAddress.put(CONTACT_PHONE, "5551234567");
+        consigneeAddress.put(ZIP_POSTCODE, "600001");
+        consigneeAddress.put(CONTACT_PERSON, "John Doe");
+
+        PartiesModel consigneeParty = new PartiesModel();
+        consigneeParty.setAddressData(consigneeAddress);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setConsignee(consigneeParty);
+
+        HblModel hblModel = new HblModel();
+        hblModel.setShipment(shipmentModel);
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> result = ReflectionTestUtils.invokeMethod(hblReport, "getShipmentConsigneeV3",hblModel, null, dictionary);
+
+        // Assert address lines
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.get(0).contains("Consignee Co"));
+
+        // Assert dictionary fields
+        assertEquals("Consignee Co", dictionary.get(ReportConstants.CONSIGNEE_NAME));
+        assertEquals("John Doe", dictionary.get(ReportConstants.CONSIGNEE_CONTACT_PERSON));
+    }
+
+    @Test
+    void testGetShipmentConsignerV3_withValidConsigner() {
+        HblReport hblReport = new HblReport();
+
+        // Setup consigner address data
+        Map<String, Object> consignerAddress = new HashMap<>();
+        consignerAddress.put(COMPANY_NAME, "Consigner Co");
+        consignerAddress.put(ADDRESS1, "456 Main St");
+        consignerAddress.put(ADDRESS2, "Suite 300");
+        consignerAddress.put(CITY, "Bangalore");
+        consignerAddress.put(COUNTRY, "India");
+        consignerAddress.put(EMAIL, "consigner@example.com");
+        consignerAddress.put(CONTACT_PHONE, "9998887777");
+        consignerAddress.put(ZIP_POSTCODE, "560001");
+        consignerAddress.put(CONTACT_PERSON, "Jane Smith");
+
+        PartiesModel consignerParty = new PartiesModel();
+        consignerParty.setAddressData(consignerAddress);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setConsigner(consignerParty);
+
+        HblModel hblModel = new HblModel();
+        hblModel.setShipment(shipmentModel);
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> result = ReflectionTestUtils.invokeMethod(hblReport, "getShipmentConsignerV3",hblModel, null, dictionary);
+        // Assert address lines
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.get(0).contains("Consigner Co"));
+
+        // Assert dictionary fields
+        assertEquals("Consigner Co", dictionary.get(ReportConstants.CONSIGNER_NAME));
+        assertEquals("Jane Smith", dictionary.get(ReportConstants.CONSIGNER_CONTACT_PERSON));
+    }
+    @Test
+    void testProcessConsignerConsigneeV3_withBlObject() {
+        HblReport hblReport = new HblReport();
+        HblModel hblModel = new HblModel();
+        hblModel.isHbl = true;
+        hblModel.shipment = new ShipmentModel();
+        hblModel.shipment.setTransportMode("SEA");
+        hblModel.shipmentSettingsDetails = new ShipmentSettingsDetails();
+        hblModel.shipmentSettingsDetails.setDisableBlPartiesName(false);
+
+        Hbl hbl = new Hbl();
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setConsignorName("Consignor Name");
+        hblDataDto.setConsignorAddress("Consignor Address");
+        hblDataDto.setConsigneeName("Consignee Name");
+        hblDataDto.setConsigneeAddress("Consignee Address");
+        hbl.setHblData(hblDataDto);
+        hblModel.blObject = hbl;
+
+        Map<String, Object> dictionary = new HashMap<>();
+        ReflectionTestUtils.invokeMethod(hblReport, "processConsignerConsigneeV3", hblModel, dictionary);
+
+        assertEquals(List.of("Consignor Name", "Consignor Address"), dictionary.get(BL_NEW_SHIPPER));
+        assertEquals(List.of("CONSIGNOR NAME", "CONSIGNOR ADDRESS"), dictionary.get(BL_NEW_SHIPPER_IN_CAPS));
+        assertEquals(List.of("Consignee Name", "Consignee Address"), dictionary.get(BL_NEW_CONSIGNEE));
+        assertEquals(List.of("CONSIGNEE NAME", "CONSIGNEE ADDRESS"), dictionary.get(BL_NEW_CONSIGNEE_IN_CAPS));
+    }
+
+    @Test
+    void testProcessConsignerConsigneeV3_withShipmentData() {
+        HblReport hblReport = new HblReport();
+        HblModel hblModel = new HblModel();
+        hblModel.isHbl = false;
+        hblModel.shipment = new ShipmentModel();
+        hblModel.shipment.setTransportMode("SEA");
+        hblModel.shipmentSettingsDetails = new ShipmentSettingsDetails();
+
+        PartiesModel consignerParty = new PartiesModel();
+        Map<String, Object> consignerAddress = new HashMap<>();
+        consignerAddress.put(COMPANY_NAME, "Consigner Co");
+        consignerAddress.put(CONTACT_PERSON, "Jane Smith");
+        consignerParty.setAddressData(consignerAddress);
+        hblModel.shipment.setConsigner(consignerParty);
+
+        PartiesModel consigneeParty = new PartiesModel();
+        Map<String, Object> consigneeAddress = new HashMap<>();
+        consigneeAddress.put(COMPANY_NAME, "Consignee Co");
+        consigneeAddress.put(CONTACT_PERSON, "John Doe");
+        consigneeParty.setAddressData(consigneeAddress);
+        hblModel.shipment.setConsignee(consigneeParty);
+
+        Map<String, Object> dictionary = new HashMap<>();
+        ReflectionTestUtils.invokeMethod(hblReport, "processConsignerConsigneeV3", hblModel, dictionary);
+
+        List<String> consignerResult = (List<String>) dictionary.get(BL_NEW_SHIPPER);
+        List<String> consigneeResult = (List<String>) dictionary.get(BL_NEW_CONSIGNEE);
+
+        assertTrue(consignerResult.get(0).contains("Consigner Co"));
+        assertTrue(consigneeResult.get(0).contains("Consignee Co"));
+        assertEquals("Jane Smith", dictionary.get(CONSIGNER_CONTACT_PERSON));
+        assertEquals("John Doe", dictionary.get(CONSIGNEE_CONTACT_PERSON));
+    }
 
 }
