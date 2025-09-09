@@ -400,4 +400,10 @@ class MDMServiceAdapterTest {
         assertTrue(result.isEmpty());
     }
 
+    
+    @Test
+    void getTask_Failure(){
+        when(restTemplate.getForEntity(any(), any())).thenThrow(new RuntimeException("ex"));
+        assertThrows(RunnerException.class , () -> mdmServiceAdapter.getTask(null, 1L));
+    }
 }
