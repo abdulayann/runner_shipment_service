@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -13,20 +14,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.CommonContainers;
-import com.dpw.runner.shipment.services.entity.CommonPackages;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.ShippingInstruction;
-import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -36,12 +25,14 @@ import com.dpw.runner.shipment.services.kafka.dto.GenericKafkaPayload;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -69,6 +60,8 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -91,6 +84,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private JsonHelper jsonHelper;
 
     @Autowired
+    private IV1Service v1Service;
+
+    @Autowired
     private MasterDataUtils masterDataUtils;
 
     @Autowired
@@ -106,6 +102,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     //@Value("${booking.queue}")
     private String bookingQueue = "";
 
@@ -113,7 +112,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         validateFetchAndSetSI(shippingInstruction, true);
-
         shippingInstruction.setStatus(ShippingInstructionStatus.Draft.name());
         ShippingInstruction savedInfo = repository.save(shippingInstruction);
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
@@ -121,38 +119,51 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private void validateFetchAndSetSI(ShippingInstruction shippingInstruction, boolean isCreate) {
         validateSIRequest(shippingInstruction);
+    }
+
+    private void setDefaultValues(ShippingInstructionEntityType type, Long entityId,
+                                  ShippingInstructionResponseMapper response) {
         ConsolidationDetails consolidationDetails;
-        if (ShippingInstructionEntityType.CARRIER_BOOKING.equals(shippingInstruction.getEntityType())) {
-            Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(shippingInstruction.getEntityId());
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+
+        if (ShippingInstructionEntityType.CARRIER_BOOKING.equals(type)) {
+            Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(entityId);
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
             }
             populateHeaderSection(shippingInstruction, carrierBooking.get());
             populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
             consolidationDetails = getConsolidationDetail(carrierBooking.get().getEntityId());
+            shippingInstruction.setReferenceNumbers(carrierBooking.get().getReferenceNumbersList());
+            response.setBookingStatus(carrierBooking.get().getStatus().name());
 
-        } else if (ShippingInstructionEntityType.CONSOLIDATION.equals(shippingInstruction.getEntityType())) {
-            consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
-            fillDetailsFromConsol(shippingInstruction, consolidationDetails);
+        } else if (ShippingInstructionEntityType.CONSOLIDATION.equals(type)) {
+            consolidationDetails = getConsolidationDetail(entityId);
+            response.setBookingStatus(consolidationDetails.getBookingStatus());
         } else {
             throw new ValidationException("Invalid value of Shipping Instruction Type");
         }
-        if (isCreate) {
-            List<Packing> packingList = packingV3Service.getPackingsByConsolidationId(consolidationDetails.getId());
-            List<Containers> containersList = consolidationDetails.getContainersList();
-            Map<Long, Containers> containersMap = new HashMap<>();
-            if (!CollectionUtils.isEmpty(containersList)) {
-                containersMap = containersList.stream()
-                        .collect(Collectors.toMap(
-                                Containers::getId,
-                                Function.identity(),
-                                (existing, replacement) -> existing
-                        ));
-            }
-            shippingInstruction.setCommonPackagesList(setCommonPackages(packingList, containersMap));
-            shippingInstruction.setCommonContainersList(setCommonContainers(containersList));
-        }
+        shippingInstruction.setEntityId(entityId);
+        setEntityNumber(shippingInstruction);
+        fillDetailsFromConsol(shippingInstruction, consolidationDetails);
+        setPackingAndContainerDetails(consolidationDetails, shippingInstruction);
+        response.setShippingInstruction(shippingInstruction);
+    }
 
+    private void setPackingAndContainerDetails(ConsolidationDetails consolidationDetails, ShippingInstruction shippingInstruction) {
+        List<Packing> packingList = packingV3Service.getPackingsByConsolidationId(consolidationDetails.getId());
+        List<Containers> containersList = consolidationDetails.getContainersList();
+        Map<Long, Containers> containersMap = new HashMap<>();
+        if (!CollectionUtils.isEmpty(containersList)) {
+            containersMap = containersList.stream()
+                    .collect(Collectors.toMap(
+                            Containers::getId,
+                            Function.identity(),
+                            (existing, replacement) -> existing
+                    ));
+        }
+        shippingInstruction.setCommonPackagesList(setCommonPackages(packingList, containersMap));
+        shippingInstruction.setCommonContainersList(setCommonContainers(containersList));
     }
 
     private List<CommonContainers> setCommonContainers(List<Containers> containersList) {
@@ -306,9 +317,20 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 carrierBookingPage.getTotalElements());
     }
 
+    public ShippingInstructionResponse getDefaultShippingInstructionValues(ShippingInstructionEntityType entityType, Long entityId) {
+        ShippingInstruction instruction = new ShippingInstruction();
+        ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
+        setDefaultValues(entityType, entityId, mapper);
+        instruction.setStatus(ShippingInstructionStatus.Draft.name());
+        ShippingInstructionResponse response = jsonHelper.convertValue(mapper.getShippingInstruction(), ShippingInstructionResponse.class);
+        response.setBookingStatus(mapper.getBookingStatus());
+        return response;
+    }
+
     private void fillDetailsFromConsol(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
+        populateDefaultFreightDetails(shippingInstruction, consolidationDetails);
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
@@ -325,7 +347,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private void populateHeaderSection(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
         shippingInstruction.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
         shippingInstruction.setCarrierBlNo(carrierBooking.getCarrierBlNo());
-        shippingInstruction.setEntityNumber(carrierBooking.getBookingNo());
+        setEntityNumber(shippingInstruction);
+    }
+
+    private void setEntityNumber(ShippingInstruction shippingInstruction) {
+//        shippingInstruction.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
+//        shippingInstruction.setCarrierBlNo(consolidationDetails.getBl);
+        shippingInstruction.setEntityNumber(String.valueOf(shippingInstruction.getEntityId()));
     }
 
     private void validateSIRequest(ShippingInstruction shippingInstruction) {
@@ -404,7 +432,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return masterDataResponse;
     }
 
-    private void sendDataToKafka(ShippingInstruction shippingInstruction) {
+    private void sendDataToKafka(String shippingInstruction) {
         try {
             // Convert object to JSON string
             String jsonPayload = jsonHelper.convertToJson(shippingInstruction);
@@ -419,5 +447,51 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         } catch (Exception e) {
             throw new RuntimeException("Error serializing ShippingInstruction", e);
         }
+    }
+
+    public void populateDefaultFreightDetails(ShippingInstruction si, ConsolidationDetails consol) {
+        if (consol == null || consol.getPayment() == null) {
+            return;
+        }
+        TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        FreightDetail freightDetail = new FreightDetail();
+        freightDetail.setChargeType("OriginTerminalHandling");
+
+        switch (consol.getPayment()) {
+            case PAYMENT_TERM_PREPAID:
+                freightDetail.setPaymentTerms("Prepaid");
+                freightDetail.setPayerType(PayerType.SHIPPER);
+                Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                                EntityTransferConstants.ID,
+                                StringUtility.convertToString(tenantModel.getUnloco())
+                        ))
+                        .filter(list -> !list.isEmpty())
+                        .map(list -> list.get(0).getLocationsReferenceGUID())
+                        .ifPresent(freightDetail::setPayerLocation);
+                break;
+
+            case PAYMENT_TERM_COLLECT:
+                freightDetail.setPaymentTerms("Collect");
+                freightDetail.setPayerType(PayerType.CONSIGNEE);
+
+                String paymentLocation;
+                if (consol.getReceivingAgent() != null) {
+                    paymentLocation = consol.getReceivingAgent().getOrgCode();
+                } else {
+                    paymentLocation = consol.getCarrierDetails().getDestinationPortCountry();
+                }
+                freightDetail.setPayerLocation(paymentLocation);
+                break;
+
+            default:
+                // no defaults if other terms
+                return;
+        }
+
+        // add to SI (initialize if null)
+        if (si.getFreightDetailList() == null) {
+            si.setFreightDetailList(new ArrayList<>());
+        }
+        si.getFreightDetailList().add(freightDetail);
     }
 }

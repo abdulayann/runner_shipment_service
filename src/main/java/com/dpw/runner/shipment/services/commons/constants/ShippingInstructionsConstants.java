@@ -19,4 +19,8 @@ public class ShippingInstructionsConstants {
     public static final String DATA_NOT_FOUND = "Shipping Instructions Not Found {}";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("freightDetailList","commonPackagesList","commonContainersList","referenceNumbers","sailingInformation");
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
+    public static final String PAYMENT_TERM_PREPAID = "PPD";
+    public static final String PAYMENT_TERM_COLLECT = "CCX";
+    public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Shipping Instruction Retrieval";
+
 }
