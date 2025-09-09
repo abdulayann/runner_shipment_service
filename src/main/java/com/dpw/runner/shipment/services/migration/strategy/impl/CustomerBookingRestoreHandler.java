@@ -39,15 +39,22 @@ import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
 import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
@@ -78,45 +85,55 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
 
     @Override
-    public void restore(Integer tenantId) {
-
+    public Map<String, Object> restore(Integer tenantId) {
+        log.info("Started Booking restore for tenant: {}", tenantId);
         List<CustomerBookingBackupEntity> customerBookingBackupEntities = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
         Set<Long> allBackupBookingIds = customerBookingBackupEntities.stream().map(CustomerBookingBackupEntity::getBookingId)
                 .collect(Collectors.toSet());
-        log.info("Count of booking ids : {}", allBackupBookingIds.size());
+        Map<String, Object> map = new HashMap<>();
         if (allBackupBookingIds.isEmpty()) {
-            return;
+            map.put("Total Booking :", 0);
+            return map;
         }
+        Map<Long, String>  failureMap = new HashMap<>();
         customerBookingDao.deleteAdditionalBookingsByBookingIdAndTenantId(allBackupBookingIds, tenantId);
-
-        allBackupBookingIds =  customerBookingBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
+        allBackupBookingIds = customerBookingBackupEntities.stream().filter(ids -> !ids.getIsDeleted())
                 .map(CustomerBookingBackupEntity::getBookingId).collect(Collectors.toSet());
         customerBookingDao.revertSoftDeleteByBookingIdAndTenantId(allBackupBookingIds, tenantId);
+        map.put("Total Booking :", allBackupBookingIds.size());
+        log.info("Count of restore booking ids data : {}", allBackupBookingIds.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        allBackupBookingIds.forEach(id -> {
 
-        log.info("Count of no restore booking ids data : {}", allBackupBookingIds.size());
-        List<CompletableFuture<Object>> bookingFutures = allBackupBookingIds.stream()
-                .map(id -> trxExecutor.runInAsyncForBooking(() -> {
-                    try {
-                        v1Service.setAuthContext();
-                        TenantContext.setCurrentTenant(tenantId);
-                        UserContext.getUser().setPermissions(new HashMap<>());
-                        return transactionTemplate.execute(status -> {
-                            restoreCustomerBookingData(id, tenantId);
-                            return null;
-                        });
-                    } catch (Exception e) {
-                        log.error("Booking migration failed [id={}]: {}", id, e.getMessage(), e);
-                        migrationUtil.saveErrorResponse(id, Constants.CUSTOMER_BOOKING,
-                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
-                        throw new IllegalArgumentException(e);
-                    } finally {
-                        v1Service.clearAuthContext();
-                    }
-                }))
-                .toList();
+            Future<Long> future = trxExecutor.runInAsyncForBooking(() -> {
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+                    return transactionTemplate.execute(status -> {
+                        restoreCustomerBookingData(id, tenantId);
+                        return null;
+                    });
+                } catch (Exception e) {
+                    log.error("Booking migration failed [id={}]: {}", id, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(id, Constants.CUSTOMER_BOOKING,
+                            IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    failureMap.put(id, e.getMessage());
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            bookingQueue.add(future);
+        });
 
-        futureCompletion(bookingFutures);
-        log.info("Completed booking backup for tenant: {}", tenantId);
+        List<Long> booking = collectAllProcessedIds(bookingQueue);
+        map.put("Total Booking Restore : ", booking.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Bookings Restore details : ", failureMap);
+        }
+        log.info("Completed Booking restore for tenant: {}", tenantId);
+        return map;
     }
 
     public void restoreCustomerBookingData(Long bookingId, Integer tenantId) {
@@ -159,8 +176,9 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
     private void restoreOneToManyMapping(CustomerBooking backupData, Long bookingId) {
 
-        List<Long> additionalPartiesIds = backupData.getAdditionalParties().stream().map(Parties::getId).filter(Objects::nonNull).toList();
-        validateAndRestoreAdditionalPartiesDetails(bookingId, additionalPartiesIds, backupData);
+        List<Long> allPartiesIds = getAllPartiesIds(backupData);
+
+        validateAndRestoreAdditionalPartiesDetails(bookingId, allPartiesIds, backupData);
 
         List<Long> packingIds = backupData.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndRestorePackingDetails(bookingId, packingIds, backupData);
@@ -184,8 +202,16 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             bookingChargesDao.deleteAllById(existingIds);
         }
         if (backupData.getBookingCharges() != null && !backupData.getBookingCharges().isEmpty()) {
-            backupData.getBookingCharges().forEach(charge ->
-                    charge.setId(null));
+            backupData.getBookingCharges().forEach(charge -> {
+                        charge.setId(null);
+                        if (Objects.nonNull(charge.getDebtor())) {
+                            charge.getDebtor().setId(null);
+                        }
+                        if (Objects.nonNull(charge.getCreditor())) {
+                            charge.getCreditor().setId(null);
+                        }
+                    }
+            );
             bookingChargesDao.saveAll(backupData.getBookingCharges());
         }
     }
@@ -225,8 +251,20 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         packingDao.saveAll(backupData.getPackingList());
     }
 
+    private static List<Long> getAllPartiesIds(CustomerBooking customerBooking) {
+        return Stream.of(
+                nullSafeCollectionStream(customerBooking.getContainersList()).flatMap(container -> Stream.of(container.getPickupAddress(), container.getDeliveryAddress())),
+                nullSafeCollectionStream(customerBooking.getBookingCharges()).flatMap(bookingCharges -> Stream.of(bookingCharges.getCreditor(), bookingCharges.getDebtor())),
+                nullSafeCollectionStream(customerBooking.getAdditionalParties()))
+                .flatMap(Function.identity()).filter(Objects::nonNull).map(Parties::getId).filter(Objects::nonNull).distinct().toList();
+    }
+
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {
         return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
+    }
+
+    private static <T> Stream<T> nullSafeCollectionStream(Collection<T> collection) {
+        return (collection == null) ? Stream.empty() : collection.stream();
     }
 }
 
