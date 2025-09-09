@@ -50,6 +50,7 @@ public class ShipmentConstants {
             Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.NOTIFY_PARTY_ORG_CODE, RunnerEntityMapping.builder().parentTable(Constants.ADDITIONAL_DETAILS).tableName("notifyParty").dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CLIENT_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
@@ -154,6 +155,11 @@ public class ShipmentConstants {
             Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
             Map.entry("isReefer", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isReefer").build()),
+            Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("bookingNumber").isContainsText(true).build()),
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("contractId").isContainsText(true).build()),
+            Map.entry("parentContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("parentContractId").isContainsText(true).build()),
+            Map.entry("destinationContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("destinationContractId").isContainsText(true).build()),
+            Map.entry("destinationParentContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("destinationParentContractId").isContainsText(true).build()),
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
 
     );

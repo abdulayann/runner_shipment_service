@@ -121,8 +121,6 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
@@ -439,65 +437,121 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
-    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-        Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
-        Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build()),
-        Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry(Constants.BOOKING_STATUS_FIELD, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).fieldName(Constants.BOOKING_STATUS_FIELD).build()),
-        Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
-        Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry(Constants.SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
-        Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry("consolidationType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry(TRANSPORT_MODE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry("releaseType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("containerCategory", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("shipmentType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry("mawb", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("serviceLevel", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
-        Map.entry("shippingLine", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).isContainsText(true).build()),
-        Map.entry("vessel", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("voyage", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("originPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("originLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originLocCode").build()),
-        Map.entry("destinationLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationLocCode").build()),
-        Map.entry("originPortLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originPortLocCode").build()),
-        Map.entry("destinationPortLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationPortLocCode").build()),
-        Map.entry("destinationPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
-        Map.entry("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("ata", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("atd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build()),
-        Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build()),
-        Map.entry("bookingCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("estimatedTerminalCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("hazardousBookingCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("isDomestic", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
-        Map.entry("payment", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
-        Map.entry("reeferCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("shipInstructionCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
-        Map.entry("guid", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(UUID.class).fieldName("guid").build()),
-        Map.entry("bol", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).fieldName("bol").build()),
-        Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("houseBill").build()),
-        Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
-        Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
-        Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
-        Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
-        Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
-        Map.entry(TENANT_ID, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName(TENANT_ID).build()),
-        Map.entry(Constants.INTER_BRANCH_CONSOLE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.INTER_BRANCH_CONSOLE).build()),
-        Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build()),
-        Map.entry("requestedOn", RunnerEntityMapping.builder().tableName("consoleShipmentMappings").dataType(LocalDateTime.class).fieldName(Constants.CREATED_AT).build()),
-        Map.entry("reefer", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName("reefer").build()),
-        Map.entry(Constants.LAT_DATE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName(Constants.LAT_DATE).build())
+    // --- ConsolidationDetails fields ---
+    private static final Map<String, RunnerEntityMapping> CONSOLIDATION_FIELDS = Map.ofEntries(
+            Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry(Constants.BOOKING_STATUS_FIELD,
+                    RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).fieldName(Constants.BOOKING_STATUS_FIELD).build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("consolidationType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry(TRANSPORT_MODE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("releaseType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("incoterms", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("containerCategory", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("mawb", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("serviceLevel", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("bookingCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("estimatedTerminalCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("hazardousBookingCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
+            Map.entry("payment", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).build()),
+            Map.entry("reeferCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("shipInstructionCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("guid", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(UUID.class).fieldName("guid").build()),
+            Map.entry("bol", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).isContainsText(true).fieldName("bol").build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
+            Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
+            Map.entry(TENANT_ID, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName(TENANT_ID).build()),
+            Map.entry(Constants.INTER_BRANCH_CONSOLE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.INTER_BRANCH_CONSOLE).build()),
+            Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build()),
+            Map.entry("reefer", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName("reefer").build()),
+            Map.entry(Constants.LAT_DATE,
+                    RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName(Constants.LAT_DATE).build())
     );
+
+    // --- Shipment fields ---
+    private static final Map<String, RunnerEntityMapping> SHIPMENT_FIELDS = Map.ofEntries(
+            Map.entry(Constants.SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("serviceType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("orderNumber", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("jobStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).isContainsText(true).build()),
+            Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("houseBill").build()),
+            Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
+            Map.entry("weight", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(BigDecimal.class).fieldName("weightUnit").build()),
+            Map.entry("weightUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
+            Map.entry("volume", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(BigDecimal.class).fieldName("volume").build()),
+            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("volumeUnit").build()),
+            Map.entry("chargable", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(BigDecimal.class).fieldName("chargable").build()),
+            Map.entry("volumetricWeight", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(BigDecimal.class).fieldName("volumetricWeight").build()),
+            Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(Integer.class).fieldName("noOfPacks").build()),
+            Map.entry("packsUnit", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("packsUnit").build())
+
+    );
+
+    // --- Carrier fields ---
+    private static final Map<String, RunnerEntityMapping> CARRIER_FIELDS = Map.ofEntries(
+            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("flightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).isContainsText(true).build()),
+            Map.entry("vessel", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("voyage", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("originPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("originLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originLocCode").build()),
+            Map.entry("destinationLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationLocCode").build()),
+            Map.entry("originPortLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originPortLocCode").build()),
+            Map.entry("destinationPortLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationPortLocCode").build()),
+            Map.entry("destinationPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).build()),
+            Map.entry("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("ata", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("atd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(LocalDateTime.class).build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build())
+    );
+
+    // --- Parties fields ---
+    private static final Map<String, RunnerEntityMapping> PARTY_FIELDS = Map.ofEntries(
+            Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build())
+    );
+
+    // --- Containers fields ---
+    private static final Map<String, RunnerEntityMapping> CONTAINER_FIELDS = Map.ofEntries(
+            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build()),
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build())
+    );
+
+    // --- ConsoleShipmentMappings fields ---
+    private static final Map<String, RunnerEntityMapping> CONSOLE_SHIPMENT_MAPPING_FIELDS = Map.ofEntries(
+            Map.entry("requestedOn", RunnerEntityMapping.builder().tableName("consoleShipmentMappings").dataType(LocalDateTime.class).fieldName(Constants.CREATED_AT).build())
+    );
+
+    // --- Allocations fields ---
+    private static final Map<String, RunnerEntityMapping> ALLOCATION_FIELDS = Map.ofEntries(
+            Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build())
+    );
+
+    // --- Final merged map ---
+    public static final Map<String, RunnerEntityMapping> tableNames =
+            Stream.of(
+                            CONSOLIDATION_FIELDS,
+                            SHIPMENT_FIELDS,
+                            CARRIER_FIELDS,
+                            PARTY_FIELDS,
+                            CONTAINER_FIELDS,
+                            CONSOLE_SHIPMENT_MAPPING_FIELDS,
+                            ALLOCATION_FIELDS
+                    ).flatMap(m -> m.entrySet().stream())
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
     private ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
 
@@ -1969,7 +2023,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
             List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
-            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails, true);
         }
     }
 
@@ -2010,7 +2064,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         for (Long shipmentId : shipmentIds) {
             try {
                 commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_PULL_REQUESTED, null, emailTemplatesRequests,
-                        shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, null, null);
+                        shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consolidationDetails.getCreatedBy(), null, true);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }
@@ -2036,8 +2090,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
 
         var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
-        List<String> toEmailsList = new ArrayList<>();
-        List<String> ccEmailsList = new ArrayList<>();
+        Set<String> toEmailsList = new HashSet<>();
+        Set<String> ccEmailsList = new HashSet<>();
         if (shipmentDetails.getCreatedBy() != null) {
             toEmailsList.add(shipmentDetails.getCreatedBy());
         }
@@ -2047,7 +2101,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (consolidationDetails.getAssignedTo() != null) {
             ccEmailsList.add(consolidationDetails.getAssignedTo());
         }
-
+        //add console created user data
+        if(consolidationDetails.getCreatedBy() != null) {
+            ccEmailsList.add(consolidationDetails.getCreatedBy());
+        }
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
@@ -2069,18 +2126,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 executorService);
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
-        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
         ccEmailsList.addAll(new ArrayList<>(toEmailIds));
         ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
+        commonUtils.setCurrentUserEmail(ccEmailsList);
         if (shipmentDetails.getCreatedBy() == null || shipmentDetails.getAssignedTo() == null) {
             toEmailIds.clear();
             ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
             toEmailsList.addAll(new ArrayList<>(toEmailIds));
         }
 
         commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailsList, ccEmailsList);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, new ArrayList<>(toEmailsList), new ArrayList<>(ccEmailsList));
 
         return ResponseHelper.buildSuccessResponse();
     }
@@ -3976,51 +4034,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException("No containers found for detachment from shipment: " + shipmentDetails);
         }
 
-        // Process each container using the internal methods of unAssignContainers one by one
-        // Collect all results for batch processing
-        Map<String, List<Containers>> containersToSaveMap = new HashMap<>();
-        List<List<Long>> allShipmentIdsForDetachment = new ArrayList<>();
-        List<UnAssignContainerParams> unAssignContainerParamsList =  new ArrayList<>();
+        containerV3Service.bulkUnAssign(shipmentDetails, containerIds, shipmentPackings, isFCLDelete, isForcedDetach, Boolean.FALSE);
 
-        for (Long containerId : containerIds) {
-            // Create UnAssignContainerRequest for this container
-            UnAssignContainerRequest unAssignRequest = new UnAssignContainerRequest();
-            unAssignRequest.setContainerId(containerId);
-
-            // Building shipmentPackIds → Map<shipmentId, List<packingIds>>
-            Map<Long, List<Long>> shipmentPackIds = getShipmentPackIds(shipmentDetails, containerId, shipmentPackings);
-
-            unAssignRequest.setShipmentPackIds(shipmentPackIds);
-            // Step 2: Create UnAssignContainerParams for this operation
-            UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
-            containerV3Service.unAssignContainers(unAssignRequest, Constants.CONSOLIDATION_PACKING, unAssignContainerParams, containersToSaveMap, allShipmentIdsForDetachment, unAssignContainerParamsList, false, isForcedDetach);
-        }
-        containerV3Service.saveUnAssignContainerResultsBatch(allShipmentIdsForDetachment, containersToSaveMap, unAssignContainerParamsList, isFCLDelete);
-        updateShipmentSummary(unAssignContainerParamsList);
-
-
-    }
-
-    private static Map<Long, List<Long>> getShipmentPackIds(List<ShipmentDetails> shipmentDetails, Long containerId, List<Packing> shipmentPackings) {
-        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
-        for (ShipmentDetails ship : shipmentDetails) {
-            List<Long> shipContIds =  ship.getContainersList().stream()
-                    .filter(container -> container != null && container.getId() != null)
-                    .map(Containers::getId)
-                    .collect(Collectors.toList());
-            if (shipContIds.contains(containerId)) {
-                shipmentPackIds.put(ship.getId(), new ArrayList<>());
-            }
-        }
-        for (Packing packing : shipmentPackings) {
-            if (packing.getContainerId().equals(containerId)) {
-                Long shipmentId = packing.getShipmentId();
-                if (shipmentPackIds.containsKey(shipmentId)) {
-                    shipmentPackIds.get(shipmentId).add(packing.getId());
-                }
-            }
-        }
-        return shipmentPackIds;
     }
 
     private static void extractContainerAndShipmentIds(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Long> shipmentIds) {
@@ -4041,29 +4056,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             // Collect shipment IDs for batch processing
             shipmentIds.add(shipmentDetail.getId());
-        }
-    }
-
-    private void updateShipmentSummary(List<UnAssignContainerParams> unAssignContainerParamsList) throws RunnerException {
-        if (unAssignContainerParamsList == null || unAssignContainerParamsList.isEmpty()) {
-            return;
-        }
-        for(UnAssignContainerParams unAssignContainerParams: unAssignContainerParamsList) {
-            Set<Long> shipmentIds = unAssignContainerParams.getFclOrFtlShipmentIds();
-            Map<Long, ShipmentDetails> shipmentDetailsMap = unAssignContainerParams.getShipmentDetailsMap();
-
-            if (shipmentIds == null || shipmentIds.isEmpty() ||
-                    shipmentDetailsMap == null || shipmentDetailsMap.isEmpty()) {
-                continue;
-            }
-
-            for (Long shipmentId : shipmentIds) {
-
-                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
-                if (shipmentDetails != null) {
-                    shipmentV3Service.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
-                }
-            }
         }
     }
 
@@ -4758,7 +4750,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetailsMap = shipments.stream().collect(Collectors.toMap(BaseEntity::getId, e -> e));
             shipments.forEach(shipment -> {
                 try {
-                    commonUtils.sendEmailForPullPushRequestStatus(shipment, console, SHIPMENT_PUSH_ACCEPTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, requestedUsernameMap.get(shipment.getId()), null);
+                    commonUtils.sendEmailForPullPushRequestStatus(shipment, console, SHIPMENT_PUSH_ACCEPTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, requestedUsernameMap.get(shipment.getId()), null, true);
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
                 }
@@ -4786,9 +4778,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                                                 ConsoleShipmentMapping consoleShipMapping, Map<Long, ShipmentDetails> finalShipMap,
                                                 Map<Long, ConsolidationDetails> finalConsoleMap) throws Exception {
         if(consoleShipMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null);
+            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null, true);
         else
-            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null);
+            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null, true);
     }
 
     private void sendRejectionEmails(AibActionConsolidation aibActionRequest, Set<ShipmentRequestedType> requestedTypes, ConsolidationDetails console, List<ConsoleShipmentMapping> consoleShipMapping) {
@@ -4835,7 +4827,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         for(Long shipId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipId), console, SHIPMENT_PUSH_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, shipmentRequestUserMap.get(shipId), null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipId), console, SHIPMENT_PUSH_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, shipmentRequestUserMap.get(shipId), null, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -4873,7 +4865,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         for(Long shipmentId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), console, SHIPMENT_PULL_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), console, SHIPMENT_PULL_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -5330,7 +5322,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         for(Long shipmentId : interbranchShipIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null, true);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }

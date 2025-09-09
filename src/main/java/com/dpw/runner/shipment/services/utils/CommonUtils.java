@@ -778,7 +778,7 @@ public class CommonUtils {
     }
 
     public void sendRejectionEmailsExplicitly(List<ShipmentDetails> shipmentDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
-                                              Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsolidationDetails> otherConsolidationDetails) {
+                                              Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsolidationDetails> otherConsolidationDetails, boolean isV3FlagEnabled) {
         Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
         Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
         Map<String, String> usernameEmailsMap = new HashMap<>();
@@ -797,9 +797,9 @@ public class CommonUtils {
                 try {
                     if (finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId()) && finalShipmentDetailsMap.containsKey(consoleShipmentMapping.getShipmentId())) {
                         if (consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, isV3FlagEnabled);
                         else
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, isV3FlagEnabled);
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -808,7 +808,7 @@ public class CommonUtils {
         }
     }
 
-    public void sendEmailShipmentPullRequest(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPullRequest(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PULL_REQUESTED)) {
@@ -822,8 +822,15 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, toEmailIds);
         setCurrentUserEmail(ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
+
+        if(isV3FlagEnabled) {
+            setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+            setRequestedUserEmail(sendEmailDto, ccEmailIds);
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        }
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -874,7 +881,7 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -972,7 +979,7 @@ public class CommonUtils {
         return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
     }
 
-    public void sendEmailShipmentPullReject(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPullReject(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PULL_REJECTED)) {
@@ -988,8 +995,12 @@ public class CommonUtils {
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
-        // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        if (isV3FlagEnabled) {
+            // fetching to and cc from master lists
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1011,13 +1022,13 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentPushAccept(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPushAccept(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PUSH_ACCEPTED)) {
@@ -1032,14 +1043,19 @@ public class CommonUtils {
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
+        if(isV3FlagEnabled) {
+            setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        }
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentPushReject(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPushReject(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PUSH_REJECTED)) {
@@ -1054,8 +1070,13 @@ public class CommonUtils {
         setRequestedUserEmail(sendEmailDto, ccEmailIds);
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
+        if (isV3FlagEnabled) {
+            setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        }
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1077,7 +1098,7 @@ public class CommonUtils {
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1165,7 +1186,7 @@ public class CommonUtils {
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
                                                   Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequestMap, Set<ShipmentRequestedType> shipmentRequestedTypes, Map<String, UnlocationsResponse> unLocMap,
                                                   Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap,
-                                                  String requestedUser, Map<Integer, TenantModel> tenantModelMap) throws Exception {
+                                                  String requestedUser, Map<Integer, TenantModel> tenantModelMap, boolean isV3FlagEnabled) throws Exception {
         SendEmailDto sendEmailDto = SendEmailDto.builder()
                 .shipmentDetails(shipmentDetails)
                 .consolidationDetails(consolidationDetails)
@@ -1180,21 +1201,21 @@ public class CommonUtils {
                 .requestedUser(requestedUser)
                 .tenantModelMap(tenantModelMap)
                 .build();
-        sendEmailForPullPushRequestStatus(sendEmailDto);
+        sendEmailForPullPushRequestStatus(sendEmailDto, isV3FlagEnabled);
     }
 
-    public void sendEmailForPullPushRequestStatus(SendEmailDto sendEmailDto) throws Exception {
+    public void sendEmailForPullPushRequestStatus(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) throws Exception {
         switch (sendEmailDto.getType()) {
-            case SHIPMENT_PULL_REQUESTED -> sendEmailShipmentPullRequest(sendEmailDto);
+            case SHIPMENT_PULL_REQUESTED -> sendEmailShipmentPullRequest(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PULL_ACCEPTED -> sendEmailShipmentPullAccept(sendEmailDto);
-            case SHIPMENT_PULL_REJECTED -> sendEmailShipmentPullReject(sendEmailDto);
+            case SHIPMENT_PULL_REJECTED -> sendEmailShipmentPullReject(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto);
-            case SHIPMENT_PUSH_ACCEPTED -> sendEmailShipmentPushAccept(sendEmailDto);
-            case SHIPMENT_PUSH_REJECTED -> sendEmailShipmentPushReject(sendEmailDto);
+            case SHIPMENT_PUSH_ACCEPTED -> sendEmailShipmentPushAccept(sendEmailDto, isV3FlagEnabled);
+            case SHIPMENT_PUSH_REJECTED -> sendEmailShipmentPushReject(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
             case SHIPMENT_PULL_WITHDRAW -> sendEmailShipmentPullWithdraw(sendEmailDto);
             case SHIPMENT_PUSH_WITHDRAW -> sendEmailShipmentPushWithdraw(sendEmailDto);
-            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType());
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType(), isV3FlagEnabled);
         }
     }
 
@@ -1205,7 +1226,7 @@ public class CommonUtils {
             emailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getShipmentDetails().getCreatedBy()));
     }
 
-    public void setConsolidationCreatedUserEmail(SendEmailDto sendEmailDto, Set<String> emailIds) {
+    public static void setConsolidationCreatedUserEmail(SendEmailDto sendEmailDto, Set<String> emailIds) {
         if (!isStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getCreatedBy()))
             emailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getCreatedBy()));
     }
@@ -1223,6 +1244,16 @@ public class CommonUtils {
     public void setCurrentUserEmail(Set<String> emailIds) {
         if (!isStringNullOrEmpty(UserContext.getUser().getEmail()))
             emailIds.add(UserContext.getUser().getEmail());
+    }
+
+    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId) {
+        if (v1TenantSettingsMap.containsKey(tenantId)) {
+            V1TenantSettingsResponse settings = v1TenantSettingsMap.get(tenantId);
+            addEmails(toEmailIds, settings.getShipmentAttachDefaultToMailId());
+            addEmails(toEmailIds, settings.getConsolidationAttachDefaultToMailId());
+            addEmails(ccEmailIds, settings.getShipmentAttachDefaultCCMailId());
+            addEmails(ccEmailIds, settings.getConsolidationAttachDefaultCCMailId());
+        }
     }
 
     public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
