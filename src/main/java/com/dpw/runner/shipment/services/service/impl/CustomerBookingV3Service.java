@@ -1076,7 +1076,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     // old cb to cb
-    @SuppressWarnings("unused")
     @Override
     public CustomerBookingV3Response cloneBooking(Long id) throws RunnerException {
         if(Objects.isNull(id)) {
