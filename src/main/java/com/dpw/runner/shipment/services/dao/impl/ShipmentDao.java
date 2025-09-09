@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
@@ -405,7 +405,7 @@ public class ShipmentDao implements IShipmentDao {
         addPartyTypeValidationErrors(request, errors);
 
         // Duplicate Agent Organisations not allowed
-        addAgentOrganisationIdValidationErrors(request, errors);
+        addAgentOrganisationIdValidationErrors(request, errors, isFromBookingV3);
 
         // Shipment must be attached to consolidation with same master bill
         addMasterBillValidationErrors(request, errors);
@@ -515,7 +515,7 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
-    private void addAgentOrganisationIdValidationErrors(ShipmentDetails request, Set<String> errors) {
+    private void addAgentOrganisationIdValidationErrors(ShipmentDetails request, Set<String> errors, boolean isFromBookingV3) {
         if (request.getAdditionalDetails() != null && request.getAdditionalDetails().getExportBroker() != null
                 && request.getAdditionalDetails().getImportBroker() != null) {
 
@@ -526,6 +526,39 @@ public class ShipmentDao implements IShipmentDao {
                 errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
             }
         }
+
+        if (!isFromBookingV3 && request.getDirection()!=null && request.getJobType()!=null) {
+            boolean isDirectionCTS = request.getDirection().equals(DIRECTION_CTS) && !request.getJobType().equals(SHIPMENT_TYPE_DRT);
+            boolean isDirectionIMP = request.getDirection().equals(DIRECTION_IMP) && !request.getJobType().equals(SHIPMENT_TYPE_DRT);
+
+            if (request.getAdditionalDetails() == null) {
+                if (isDirectionCTS) {
+                    errors.add(ShipmentConstants.ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY);
+                }
+                if (isDirectionIMP) {
+                    errors.add(ShipmentConstants.DESTINATION_AGENT_IS_MANDATORY);
+                }
+            } else {
+                boolean exportBrokerMissing = request.getAdditionalDetails().getExportBroker() == null;
+                boolean importBrokerMissing = request.getAdditionalDetails().getImportBroker() == null;
+
+                if (isDirectionCTS) {
+                    if (exportBrokerMissing && importBrokerMissing) {
+                        errors.add(ShipmentConstants.ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY);
+                    } else if (exportBrokerMissing) {
+                        errors.add(ShipmentConstants.ORIGIN_AGENT_IS_MANDATORY);
+                    } else if (importBrokerMissing) {
+                        errors.add(ShipmentConstants.DESTINATION_AGENT_IS_MANDATORY);
+                    }
+                }
+                if (isDirectionIMP && importBrokerMissing) {
+                    errors.add(ShipmentConstants.DESTINATION_AGENT_IS_MANDATORY);
+                }
+            }
+        }
+
+
+
     }
 
     private void addMasterBillValidationErrors(ShipmentDetails request, Set<String> errors) {
