@@ -298,8 +298,8 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
-    @GetMapping(ApiConstants.API_CLONE)
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentDetailsV3Response.class)})
+    @PostMapping(ApiConstants.API_CLONE)
     public ResponseEntity<IRunnerResponse> cloneShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipment(request));
     }
