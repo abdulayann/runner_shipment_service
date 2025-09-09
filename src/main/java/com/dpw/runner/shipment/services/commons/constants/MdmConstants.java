@@ -18,9 +18,4 @@ public class MdmConstants {
 
     public static final String SHIPMENT_MODULE = "SHP";
     public static final String CONSOLIDATION_MODULE = "CON";
-
-    public static final String TASK_TYPE = "taskType";
-    public static final String ENTITY_UUID = "entityUuid";
-    public static final String ENTITY_TYPE = "entityType";
-    public static final String STATUS = "status";
 }
