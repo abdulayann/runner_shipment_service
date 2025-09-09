@@ -3850,9 +3850,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                       ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
 
         if (templateStatus == OCEAN_DG_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, Boolean.TRUE); // Himanshu to confirm if this is true for v3 always
         } else if (templateStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, Boolean.TRUE);
         }
         dictionary.put(VIEWS, commonUtils.getTaskIdHyperLinkV3(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
     }
