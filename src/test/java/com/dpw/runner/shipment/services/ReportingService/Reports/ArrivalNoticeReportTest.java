@@ -486,6 +486,152 @@ class ArrivalNoticeReportTest extends CommonMocks {
     }
 
     @Test
+    void populateDictionary_FCFShipmentTypeEmptyContainers() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.getShipmentDetails().setShipmentType("FCL");
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+
+        mockCommodity();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionary_LCLShipmentTypeNullPacks() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.getShipmentDetails().setShipmentType("LCL");
+        arrivalNoticeModel.getShipmentDetails().setNoOfPacks(null);
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+        mockCommodity();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionaryLCLShipmentType() {
+
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+
+        arrivalNoticeModel.getShipmentDetails().setShipmentType("LCL");
+        arrivalNoticeModel.getShipmentDetails().setNoOfPacks(1);
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+        mockCommodity();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionaryNullShipmentType() {
+
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+
+        arrivalNoticeModel.getShipmentDetails().setShipmentType(null);
+        arrivalNoticeModel.getShipmentDetails().setNoOfPacks(1);
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+        mockCommodity();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionaryFCLShipmentType() {
+
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+
+        arrivalNoticeModel.getShipmentDetails().setShipmentType("FCL");
+        List<ContainerModel> containersCount = new ArrayList<>();
+        ContainerModel containerModel1 = new ContainerModel();
+        containerModel1.setContainerCount(5L);
+        ContainerModel containerModel2 = new ContainerModel();
+        containerModel2.setContainerCount(5L);
+        containersCount.add(containerModel1);
+        containersCount.add(containerModel2);
+        arrivalNoticeModel.getShipmentDetails().setContainersList(containersCount);
+
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionaryFCLShipmentTypeNullContainerCount() {
+
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.setHbl(populateHbl());
+
+        arrivalNoticeModel.getShipmentDetails().setShipmentType("FCL");
+        List<ContainerModel> containersCount = new ArrayList<>();
+        ContainerModel containerModel1 = new ContainerModel();
+        containerModel1.setContainerCount(0L);
+        ContainerModel containerModel2 = new ContainerModel();
+        containerModel2.setContainerCount(5L);
+        containersCount.add(containerModel1);
+        containersCount.add(containerModel2);
+        arrivalNoticeModel.getShipmentDetails().setContainersList(containersCount);
+
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(arrivalNoticeModel);
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    void mockDetailsForFCLAndLCLShipmentTypesDuringPopulateDictionary(ArrivalNoticeModel arrivalNoticeModel) {
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+
+        masterDataMock();
+        mockCarrier();
+        mockRakc(arrivalNoticeModel.shipmentDetails);
+        mockBill(false);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+    }
+
+    @Test
     void populateDictionary_BillingIntegrationDisabled_haz_temp() {
         ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
         arrivalNoticeModel.setUsersDto(UserContext.getUser());
