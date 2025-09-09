@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_TOTAL_PACKS_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -617,6 +619,93 @@ class HblReportTest extends CommonMocks {
         entityAddress.setCountry("India");
         when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
         assertNotNull(hblReport.populateDictionary(hblModel));
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_NullShipmentModel() {
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateTotalCountFromCargoSummary(null, new Hbl(), dictionary);
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_NullBlObject() {
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateTotalCountFromCargoSummary(new ShipmentModel(), null, dictionary);
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_NullBlData() {
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setShipmentType("FCL");
+        Hbl hbl = new Hbl();
+        hblReport.populateTotalCountFromCargoSummary(shipmentModel, hbl, dictionary);
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_NullShipmentType() {
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setShipmentType(null);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(new HblDataDto());
+
+        hblReport.populateTotalCountFromCargoSummary(shipmentModel, hbl, dictionary);
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_FCL() {
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setShipmentType("FCL");
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setContainerCount(5L);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        hblReport.populateTotalCountFromCargoSummary(shipmentModel, hbl, dictionary);
+
+        assertEquals(5L, dictionary.get(BL_TOTAL_PACKS_COUNT));
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_LCL_WithPackageCount() {
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setShipmentType("LCL");
+        shipmentModel.setNoOfPacks(10);
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setPackageCount(8);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        hblReport.populateTotalCountFromCargoSummary(shipmentModel, hbl, dictionary);
+
+        assertEquals(8, dictionary.get(BL_TOTAL_PACKS_COUNT));
+    }
+
+    @Test
+    void testPopulateTotalCountFromCargoSummary_LCL_NullPackageCount() {
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setShipmentType("LCL");
+        shipmentModel.setNoOfPacks(10);
+
+        HblDataDto hblData = new HblDataDto();
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        hblReport.populateTotalCountFromCargoSummary(shipmentModel, hbl, dictionary);
+        assertNull(dictionary.get("BL_TOTAL_PACKS_COUNT"));
     }
 
     @Test
