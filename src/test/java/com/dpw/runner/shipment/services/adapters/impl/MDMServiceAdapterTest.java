@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
@@ -291,7 +291,7 @@ class MDMServiceAdapterTest {
         when(restTemplate.postForEntity(anyString(), any(), any()))
                 .thenReturn(ResponseEntity.ok(mockServiceResponse));
         when(jsonHelper.convertValue(mockServiceResponse.getData(), MdmTaskCreateResponse.class)).thenReturn(expectedResponse);
-        MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
+        com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
 
        assertNotNull(actualResponse);
     }
@@ -307,7 +307,7 @@ class MDMServiceAdapterTest {
         when(restTemplate.postForEntity(anyString(), any(), any()))
                 .thenReturn(ResponseEntity.ok(mockServiceResponse));
         when(jsonHelper.convertValue(mockServiceResponse.getData(), MdmTaskCreateResponse.class)).thenReturn(expectedResponse);
-        MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
+        com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
 
         assertNotNull(actualResponse);
     }
@@ -400,4 +400,10 @@ class MDMServiceAdapterTest {
         assertTrue(result.isEmpty());
     }
 
+    
+    @Test
+    void getTask_Failure(){
+        when(restTemplate.getForEntity(any(), any())).thenThrow(new RuntimeException("ex"));
+        assertThrows(RunnerException.class , () -> mdmServiceAdapter.getTask(null, 1L));
+    }
 }
