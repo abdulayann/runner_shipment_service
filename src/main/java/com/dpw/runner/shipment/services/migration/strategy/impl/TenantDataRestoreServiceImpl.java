@@ -49,7 +49,7 @@ public class TenantDataRestoreServiceImpl implements TenantDataRestoreService {
                 long startTime = System.currentTimeMillis();
                 var response =   restoreTenantData(tenantId, count);
                 log.info("Restore from V3 to V2 completed for tenantId: {}", tenantId);
-                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response) + "took : " + (System.currentTimeMillis()-startTime) / (60000.0) + " min", "Restore From V3 to V2",  false);
+                emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response) + " = took : " + Math.round((System.currentTimeMillis() - startTime) / 60000.0) + " min", "Restore From V3 to V2",  false);
                 shipmentSettingsDao.updateIsRestoreRunningFlag(false, tenantId);
             } catch (Exception e) {
                 log.error("Restore from V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
