@@ -1196,6 +1196,16 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
+    @Override
+    public List<Packing> getPackingsByConsolidationId(Long consolidationId) {
+        List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        if (!CollectionUtils.isEmpty(consolidationDetailsEntity)) {
+            List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
+            return packingDao.findByShipmentIdIn(shipmentIds);
+        }
+        return new ArrayList<>();
+    }
+
     private PackingAssignmentProjection getAssignedPackages(String module, Long consolidationId, Long shipmentId) {
         PackingAssignmentProjection assignedPackages = null;
         if (module.equals(Constants.CONSOLIDATION)) {

@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum ShippingInstructionType {
     ORIGINAL("Original"),
-    SEAWAY_EXPRESS("Seaway/Express");
+    EXPRESS("Seaway/Express");
 
     private final String description;
 
