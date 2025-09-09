@@ -537,6 +537,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private void setPackingDetailsFromShipment(CloneRequest request, CustomerBookingV3Response customerBookingResponse) {
         List<Packing> packings = packingDao.findByShipmentId(request.getShipmentId());
+        setPackingData(request, customerBookingResponse, packings);
+    }
+
+    private void setPackingData(CloneRequest request, CustomerBookingV3Response customerBookingResponse, List<Packing> packings) {
         if (!packings.isEmpty() && request.getFlags().isPackages()) {
             customerBookingResponse.setPackingList(packings.stream().map(packingResponse -> {
                 PackingResponse p = new PackingResponse();
@@ -605,7 +609,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+    public void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if(request.getFlags().isHeader()) {
             commonUtils.mapIfSelected(request.getFlags().isMode(), shipmentDetails.getTransportMode(), customerBookingResponse::setTransportType);
             commonUtils.mapIfSelected(request.getFlags().isServiceType(), shipmentDetails.getServiceType(), customerBookingResponse::setServiceMode);
@@ -1253,31 +1257,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     public void setCBPackingDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {
         List<Packing> packings = customerBooking.getPackingList();
-        if (!packings.isEmpty() && request.getFlags().isPackages()) {
-            customerBookingResponse.setPackingList(packings.stream().map(packingResponse -> {
-                PackingResponse p = new PackingResponse();
-                if (request.getFlags().isDimensionPerPack()) {
-                    p.setLength(packingResponse.getLength());
-                    p.setLengthUnit(packingResponse.getLengthUnit());
-                    p.setWidth(packingResponse.getWidth());
-                    p.setWidthUnit(packingResponse.getWidthUnit());
-                    p.setHeight(packingResponse.getHeight());
-                    p.setHeightUnit(packingResponse.getHeightUnit());
-                }
-                commonUtils.mapIfSelected(request.getFlags().isPackageCount(), packingResponse.getPacks(), p::setPacks);
-                commonUtils.mapIfSelected(request.getFlags().isPackageCount(), packingResponse.getPacksType(), p::setPacksType);
-                commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPack(), p::setVolumePerPack);
-                commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPackUnit(), p::setVolumePerPackUnit);
-                commonUtils.mapIfSelected(request.getFlags().isVolume(), packingResponse.getVolume(), p::setVolume);
-                commonUtils.mapIfSelected(request.getFlags().isVolume(), packingResponse.getVolumeUnit(), p::setVolumeUnit);
-                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerPack(), packingResponse.getCargoWeightPerPack(), p::setCargoWeightPerPack);
-                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerPack(), packingResponse.getPackWeightUnit(), p::setPackWeightUnit);
-                commonUtils.mapIfSelected(request.getFlags().isCargoWeight(), packingResponse.getWeight(), p::setWeight);
-                commonUtils.mapIfSelected(request.getFlags().isCargoWeight(), packingResponse.getWeightUnit(), p::setWeightUnit);
-                commonUtils.mapIfSelected(request.getFlags().isPackageCommodityCategory(), packingResponse.getCommodityGroup(), p::setCommodityGroup);
-                return p;
-            }).toList());
-        }
+        setPackingData(request, customerBookingResponse, packings);
     }
 
     public void setCBContainerDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {

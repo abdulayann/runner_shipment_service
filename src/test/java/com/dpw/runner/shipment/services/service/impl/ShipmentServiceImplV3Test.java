@@ -8410,4 +8410,115 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentServiceImplV3.validateShipment(123L));
         assertEquals("Unknown shipment transport mode: unknown", thrownException.getMessage());
     }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenAirModeIsDisabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenAirModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenAirModeIsNull() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(null); // Null should be treated as not false
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenSeaModeIsDisabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenSeaModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenRailModeIsDisabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRailModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenRoadModeIsDisabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRoadModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
+        assertFalse(result);
+    }
+
+    private boolean isSelectedModeOffInBooking(String shipmentMode, V1TenantSettingsResponse tenantData) {
+        try {
+            java.lang.reflect.Method method = ShipmentServiceImplV3.class.getDeclaredMethod(
+                    "isSelectedModeOffInBooking", String.class, V1TenantSettingsResponse.class
+            );
+            method.setAccessible(true);
+            return (Boolean) method.invoke(shipmentServiceImplV3, shipmentMode, tenantData);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to invoke private method", e);
+        }
+    }
 }
