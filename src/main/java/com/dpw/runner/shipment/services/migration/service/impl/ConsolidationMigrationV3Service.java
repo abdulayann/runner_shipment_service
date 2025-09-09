@@ -720,7 +720,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     });
                 } catch (Exception e) {
                     log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, Arrays.toString(e.getStackTrace()), e);
-                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getStackTrace().toString());
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
