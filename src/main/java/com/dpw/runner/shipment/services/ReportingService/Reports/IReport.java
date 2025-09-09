@@ -895,7 +895,7 @@ public abstract class IReport {
         populateTotalCountFromCargoSummary(shipment, dictionary, v1TenantSettingsResponse);
     }
 
-    private void populateTotalCountFromCargoSummary(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+    public void populateTotalCountFromCargoSummary(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (Objects.isNull(shipment.getShipmentType())) return;
         if (shipment.getShipmentType().equals(FCL)) {
             Long containersCount = shipment.getContainersList().stream()

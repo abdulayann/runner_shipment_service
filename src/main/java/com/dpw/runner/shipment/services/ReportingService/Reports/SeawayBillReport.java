@@ -157,6 +157,7 @@ public class SeawayBillReport extends IReport {
             this.populateShipmentReportData(dict, null, model.getShipment().getId());
             this.getContainerDetails(model.getShipment(), dict);
             this.getPackingDetails(model.getShipment(), dict);
+            populateTotalCountFromCargoSummary(model.getShipment(), dict, tenantSettings);
         }
 
         return dict;
