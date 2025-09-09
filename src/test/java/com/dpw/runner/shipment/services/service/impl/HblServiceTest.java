@@ -322,6 +322,7 @@ class HblServiceTest extends CommonMocks {
         ShipmentDetails inputShipment = testShipment;
         Long shipmentId = 1L;
         testShipment.setId(shipmentId);
+        testShipment.setContainersList(new HashSet<>());
         String containerNumber = "CONT12345";
         Containers container = new Containers();
         container.setId(1L);
@@ -387,6 +388,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(false);
         mockShipmentSettings();
         // Mock
@@ -412,6 +414,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         mockShipmentSettings();
 
@@ -439,6 +442,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         mockShipmentSettings();
 
@@ -467,6 +471,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         mockShipmentSettings();
 
@@ -495,6 +500,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         mockShipmentSettings();
 
@@ -523,6 +529,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
         mockShipmentSettings();
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));

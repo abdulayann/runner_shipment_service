@@ -387,6 +387,9 @@ public class ReportConstants {
     public static final String BL_NETWEIGHT_UNIT = "BL_NetWeightUnit";
     public static final String BL_DELIVERYAGENT = "BL_Delivery";
     public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAddress";
+    public static final String BL_TOTAL_PACKS_COUNT = "BL_TotalPacksCount";
+    public static final String FCL = "FCL";
+    public static final String LCL = "LCL";
     public static final String TOTAL_PCS = "ToatalPcs";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";

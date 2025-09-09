@@ -501,6 +501,7 @@ public class HblReport extends IReport {
             this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
+        populateTotalCountFromCargoSummary(hblModel.getShipment(), hblModel.blObject, dictionary);
 
         return dictionary;
     }
