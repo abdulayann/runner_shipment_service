@@ -157,12 +157,13 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
 
     @Override
-    public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
-        Map<String, Integer> map = new HashMap<>();
+    public Map<String, Object> migrateBookingV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+        Map<String, Object> map = new HashMap<>();
         List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
         map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
         log.info("fetched {} bookingIds for Migrations", bookingIds.size());
+        Map<Long, String>  failureMap = new HashMap<>();
         bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -185,7 +186,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 } catch (Exception e) {
                     log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, Arrays.toString(e.getStackTrace()));
                     migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.stream(e.getStackTrace()).toString());
-
+                    failureMap.put(booking, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -195,7 +196,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         });
 
         List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
-        map.put("Total Bookings Migrated", bookingsProcessed.size());
+        map.put("Total Bookings Migrated ", bookingsProcessed.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Bookings Migration: ", failureMap);
+        }
         log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), bookingIds.size(), tenantId);
         return map;
     }

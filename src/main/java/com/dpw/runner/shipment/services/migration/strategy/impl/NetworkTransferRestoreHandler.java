@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,17 +49,17 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
 
 
     @Override
-    public void restore(Integer tenantId) {
-
+    public Map<String, Object> restore(Integer tenantId) {
+        log.info("Started network Transfer restore for tenant: {}", tenantId);
         List<NetworkTransferBackupEntity> networkTransferBackupEntities = backupRepository.findNetworkTransferIdsByTenantId(tenantId);
         Set<Long> allBackupNetworkTransferIds = networkTransferBackupEntities.stream().map(NetworkTransferBackupEntity::getNetworkTransferId)
                 .collect(Collectors.toSet());
         log.info("Count of networkTransfer ids : {}", allBackupNetworkTransferIds.size());
+        Map<String, Object> map = new HashMap<>();
+        map.put("Total NetworkTransfer :", allBackupNetworkTransferIds.size());
         if (allBackupNetworkTransferIds.isEmpty()) {
-            return;
+            return map;
         }
-
-        log.info("Count of no restore networkTransfer ids data : {}", allBackupNetworkTransferIds.size());
         try {
             trxExecutor.runInTrx(() -> {
                 v1Service.setAuthContext();
@@ -87,12 +88,14 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
             log.error("Network Transfer migration failed for tenant Id [id={}]: {}", tenantId, e.getMessage(), e);
             migrationUtil.saveErrorResponse(Long.valueOf(tenantId), Constants.NETWORK_TRANSFER,
                     IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+            map.put("NetworkTransfer Failed Reason", e.getMessage());
             throw new IllegalArgumentException(e);
         } finally {
             v1Service.clearAuthContext();
         }
-
+        map.put("Total NetworkTransfer restored :", allBackupNetworkTransferIds.size());
         log.info("Completed network Transfer restore for tenant: {}", tenantId);
+        return map;
     }
 }
 

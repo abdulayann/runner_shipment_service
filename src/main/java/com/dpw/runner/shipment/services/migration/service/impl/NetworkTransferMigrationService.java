@@ -382,14 +382,15 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     }
 
     @Override
-    public Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
-        Map<String, Integer> map = new HashMap<>();
+    public Map<String, Object> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+        Map<String, Object> map = new HashMap<>();
         List<Long> networkTranferList = fetchNteFromDB(List.of(MigrationStatus.NT_CREATED.name(), MigrationStatus.NT_PROCESSED_FOR_V3.name()), tenantId);
         map.put("Total NetworkTransfer", networkTranferList.size());
         log.info("Starting NetworkTransfer migration for tenant [{}]. Found {} NetworkTransfer(s).", tenantId, networkTranferList.size());
 
         List<Future<Long>> networkTransferFutures = new ArrayList<>();
         log.info("fetched {} networkTransfer for Migrations", networkTranferList.size());
+        Map<Long, String>  failureMap = new HashMap<>();
         for (Long nteId : networkTranferList) {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -405,6 +406,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                             return migrated.getId();
                         } catch (Exception e) {
                             log.error("NetworkTransfer migration failed [id={}]: {}", nteId, e.getMessage(), e);
+                            failureMap.put(nteId, e.getMessage());
                             throw new IllegalArgumentException(e);
                         }
                     });
@@ -421,6 +423,10 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         }
         List<Long> migratedNteIds = MigrationUtil.collectAllProcessedIds(networkTransferFutures);
         map.put("Total Network Transfer Migrated", migratedNteIds.size());
+        map.put("Total Network Transfer Migrated ", migratedNteIds.size());
+        if(!failureMap.isEmpty()) {
+            map.put("Failed Network Transfer Migration: ", failureMap);
+        }
         log.info("Network Transfer migration complete: {}/{} migrated for tenant [{}]", migratedNteIds.size(), networkTranferList.size(), tenantId);
         return map;
     }
