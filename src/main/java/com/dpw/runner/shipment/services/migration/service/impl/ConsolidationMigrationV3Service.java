@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -718,8 +719,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                         return migrated.getId();
                     });
                 } catch (Exception e) {
-                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
-                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, Arrays.toString(e.getStackTrace()), e);
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

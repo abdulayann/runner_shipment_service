@@ -39,6 +39,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -106,7 +107,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                     } catch (Exception e) {
                         log.error("Booking migration failed [id={}]: {}", id, e.getMessage(), e);
                         migrationUtil.saveErrorResponse(id, Constants.CUSTOMER_BOOKING,
-                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                         throw new IllegalArgumentException(e);
                     } finally {
                         v1Service.clearAuthContext();
