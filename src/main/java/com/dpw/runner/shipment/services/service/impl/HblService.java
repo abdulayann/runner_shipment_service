@@ -548,6 +548,9 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        hblData.setContainerCount(shipmentDetail.getContainersList().stream()
+                .mapToLong(container -> Objects.nonNull(container.getContainerCount()) ? container.getContainerCount() : 0L)
+                .sum());
         boolean syncShipment = getSyncShipment(shipmentDetail);
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         mapVoyageVesselFromRouting(routing, hblData, carrierDetails);
