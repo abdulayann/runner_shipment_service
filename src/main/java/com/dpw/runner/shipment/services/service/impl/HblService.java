@@ -499,14 +499,12 @@ public class HblService implements IHblService {
         Routings routing = getRoutingsForShipment(shipmentDetail);
 
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-            mapDeliveryDataInHblV3(additionalDetails, hblData);
-            mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
-            mapForwardDataInHblV3(additionalDetails, hblData);
-        } else{
-            mapConsignerConsigneeToHbl(shipmentDetail, hblData);
-        mapDeliveryDataInHbl(additionalDetails, hblData);
-    }
+        PartyMapper mapper = (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+                ? this::mapPartiesV3
+                : this::mapPartiesLegacy;
+
+        mapper.apply(shipmentDetail, additionalDetails, hblData);
+
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
         Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
@@ -568,7 +566,20 @@ public class HblService implements IHblService {
 
         return hblData;
     }
+    private void mapPartiesV3(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
+        mapDeliveryDataInHblV3(additionalDetails, hblData);
+        mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
+        mapForwardDataInHblV3(additionalDetails, hblData);
+    }
 
+    private void mapPartiesLegacy(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
+        mapConsignerConsigneeToHbl(shipmentDetail, hblData);
+        mapDeliveryDataInHbl(additionalDetails, hblData);
+    }
+    @FunctionalInterface
+    interface PartyMapper {
+        void apply(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData);
+    }
 
     private void mapVoyageVesselFromRouting(Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
         if (Objects.nonNull(routing)) {
