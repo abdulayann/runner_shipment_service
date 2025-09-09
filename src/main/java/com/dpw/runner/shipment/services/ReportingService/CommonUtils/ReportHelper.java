@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -111,6 +112,20 @@ public class ReportHelper {
             list.add(pincode);
         return list;
     }
+
+    private static String formatCountryCode(String countryCode) {
+        if (Strings.isNullOrEmpty(countryCode)) {
+            return null;
+        }
+        if (countryCode.length() == 2) {
+            return countryCode.toUpperCase();
+        }
+        if (countryCode.length() == 3) {
+            return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
+        }
+        return countryCode;
+    }
+
 
     public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
     {
@@ -256,6 +271,35 @@ public class ReportHelper {
         if (StringUtility.isNotEmpty(stateCountry))
             sb.append(stateCountry).append(" ");
 
+        if (StringUtility.isNotEmpty(sb.toString()))
+            list.add(sb.toString());
+
+        return list;
+
+    }
+    public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
+    {
+        List<String> list = new ArrayList<>();
+        if(StringUtility.isNotEmpty(name))
+            list.add(name);
+        if(StringUtility.isNotEmpty(address1))
+            list.add(address1);
+        if(StringUtility.isNotEmpty(address2))
+            list.add(address2);
+
+        StringBuilder sb = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city))
+            sb.append(city).append(" ");
+        if (StringUtility.isNotEmpty(stateCode))
+            sb.append(stateCode).append(" ");
+        if (StringUtility.isNotEmpty(pinCode))
+            sb.append(pinCode).append(" ");
+        // Convert 3-letter country code to 2-letter if needed
+        String formattedCountryCode = formatCountryCode(countryCode);
+        if (!Strings.isNullOrEmpty(formattedCountryCode)) {
+            sb.append(formattedCountryCode).append(" ");
+        }
         if (StringUtility.isNotEmpty(sb.toString()))
             list.add(sb.toString());
 

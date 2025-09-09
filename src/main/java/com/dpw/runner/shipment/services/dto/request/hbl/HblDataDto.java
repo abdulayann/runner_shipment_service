@@ -69,6 +69,8 @@ public class HblDataDto {
     private String cargoTerms;
     private String deliveryAgentAddress;
     private String deliveryAgent;
+    private String forwardingAgent;
+    private String forwardingAgentAddress;
     private String quantityCode;
     private String invoiceNumbers;
     private String jsonFiled;
@@ -81,4 +83,35 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
+    private String shipperName;
+    private String shipperAddressLine1;
+    private String shipperAddressLine2;
+    private String shipperCity;
+    private String shipperState;
+    private String shipperZipCode;
+    private String shipperCountry;
+    // Consignee fields
+    private String consigneeAddressLine1;
+    private String consigneeAddressLine2;
+    private String consigneeCity;
+    private String consigneeState;
+    private String consigneeZipCode;
+    private String consigneeCountry;
+    // Forwarding Agent (Origin Agent) fields
+    private String forwarderName;
+    private String forwarderAddressLine1;
+    private String forwarderAddressLine2;
+    private String forwarderCity;
+    private String forwarderState;
+    private String forwarderZipCode;
+    private String forwarderCountry;
+    // Delivery Agent (Destination Agent) fields
+    private String deliveryAgentName;
+    private String deliveryAgentAddressLine1;
+    private String deliveryAgentAddressLine2;
+    private String deliveryAgentCity;
+    private String deliveryAgentState;
+    private String deliveryAgentZipCode;
+    private String deliveryAgentCountry;
+
 }
