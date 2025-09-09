@@ -5055,9 +5055,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             response.getAllocations().setWeightUnit(tenantSettings.getWeightChargeableUnit());
             response.getAllocations().setVolumeUnit(VOLUME_UNIT_M3);
             response.getAllocations().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAllocations().setDgPacksType(tenantSettings.getDefaultPackUnit());
             response.getAchievedQuantities().setConsolidatedWeightUnit(tenantSettings.getWeightChargeableUnit());
             response.getAchievedQuantities().setConsolidatedVolumeUnit(VOLUME_UNIT_M3);
             response.getAchievedQuantities().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setDgPacksType(tenantSettings.getDefaultPackUnit());
             return response;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
