@@ -19,8 +19,9 @@ import java.util.List;
 public class ShippingInstructionResponse implements IRunnerResponse {
 
     private Long id;
-
     private String status;
+    private String bookingStatus;
+    private String bookingNo;
     private PartiesResponse contract;
     private PartiesResponse shipper;
     private PartiesResponse consignee;
