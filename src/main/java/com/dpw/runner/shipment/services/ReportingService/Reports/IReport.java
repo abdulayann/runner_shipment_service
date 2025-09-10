@@ -1072,14 +1072,9 @@ public abstract class IReport {
         populateV3TruckDriverDetailsTags(shipment, dictionary);
     }
 
-    public void populateTotalCountFromCargoSummary(ShipmentModel shipmentModel, Hbl blObject, Map<String, Object> dictionary) {
-        if (Objects.isNull(shipmentModel) || Objects.isNull(blObject)
-                || Objects.isNull(blObject.getHblData()) || Objects.isNull(shipmentModel.getShipmentType())) return;
-        if (shipmentModel.getShipmentType().equals(FCL)) {
-            dictionary.put(BL_TOTAL_PACKS_COUNT, blObject.getHblData().getContainerCount());
-        } else if (shipmentModel.getShipmentType().equals(LCL) && Objects.nonNull(shipmentModel.getNoOfPacks())) {
-            dictionary.put(BL_TOTAL_PACKS_COUNT, blObject.getHblData().getPackageCount());
-        }
+    public void populateTotalCountFromCargoSummary(Hbl blObject, Map<String, Object> dictionary) {
+        if (Objects.isNull(blObject) || Objects.isNull(blObject.getHblData())) return;
+        dictionary.put(BL_TOTAL_PACKS_COUNT, blObject.getHblData().getTotalUnitsReceivedByCarrier());
     }
 
     private void addNoOfPacks(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
