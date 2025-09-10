@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -60,6 +61,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.util.*;
@@ -515,6 +517,11 @@ public class HblService implements IHblService {
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
         hblData.setPackageCount(shipmentDetail.getNoOfPacks());
         hblData.setPackageType(shipmentDetail.getPacksUnit());
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            String numberAndKindOfPack = generateNumberAndKindOfPack(String.valueOf(shipmentDetail.getNoOfPacks()), shipmentDetail.getPacksUnit());
+            hblData.setNumberAndKindOfPackage(numberAndKindOfPack);
+            hblData.setShowByContainer(true);
+        }
         hblData.setReason(Constants.EMPTY_STRING);
         hblData.setBlType(HblConstants.ORIGINAL_HBL);
         hblData.setStatus(Constants.PENDING);
@@ -533,6 +540,7 @@ public class HblService implements IHblService {
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
+        hblData.setBlRemark("SHIPPER’S LOAD, STOWAGE, COUNT AND SEAL");
         List<ShipmentOrder> shipmentOrders = shipmentDetail.getShipmentOrders();
         if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
             hblData.setPurchaseOrderNumber(shipmentOrders.stream().map(ShipmentOrder::getOrderNumber).filter(Objects::nonNull).collect(Collectors.joining(", ")));
@@ -594,6 +602,16 @@ public class HblService implements IHblService {
     @FunctionalInterface
     interface PartyMapper {
         void apply(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData);
+    }
+
+    private String generateNumberAndKindOfPack(String noOfPack, String packType) {
+        String numberAndKindOfPack = noOfPack == null ? "0" : noOfPack;
+        // Call masterDataApi for type
+        var masterData = masterDataUtil.getMasterListData(MasterDataType.PACKS_UNIT, packType);
+        if (Objects.nonNull(masterData)) {
+            numberAndKindOfPack += " " + masterData.getItemDescription();
+        }
+        return numberAndKindOfPack;
     }
 
     private void mapVoyageVesselFromRouting(Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
@@ -801,6 +819,7 @@ public class HblService implements IHblService {
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
             HblContainerDto hblContainer = HblContainerDto.builder().build();
+            hblContainer.setId(container.getId());
             hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
@@ -813,11 +832,59 @@ public class HblService implements IHblService {
             hblContainer.setContainerType(container.getContainerCode());
             hblContainer.setShipperSealNumber(container.getShipperSealNumber());
             hblContainer.setCustomsSealNumber(container.getCustomsSealNumber());
-            hblContainer.setContainerDesc(container.getDescriptionOfGoods());
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                String newLine = "\r\n";
+                hblContainer.setContainerDesc("SAID TO CONTAIN: "+ newLine + container.getDescriptionOfGoods());
+                hblContainer.setContainerDetails(populateContainerDetails(container));
+                String numberAndKindOfPack = generateNumberAndKindOfPack(container.getPacks(), container.getPacksType());
+                hblContainer.setNumberAndKindOfPackage(numberAndKindOfPack);
+            } else {
+                hblContainer.setContainerDesc(container.getDescriptionOfGoods());
+            }
             hblContainer.setQuantity(container.getContainerCount());
+            hblContainer.setMarksNums(container.getMarksNums());
             hblContainers.add(hblContainer);
         });
         return hblContainers;
+    }
+
+    private String populateContainerDetails(Containers container) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+        if(!Strings.isNullOrEmpty(container.getContainerCode())) {
+            sb.append(container.getContainerCode());
+        }
+        if(!Strings.isNullOrEmpty(container.getContainerNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getContainerNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getCarrierSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getCarrierSealNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getCustomsSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getCustomsSealNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getShipperSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getShipperSealNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getVeterinarySealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getVeterinarySealNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getTerminalOperatorSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getTerminalOperatorSealNumber());
+        }
+
+        return sb.toString();
+    }
+
+    private static void checkAndAppendDelimiter(StringBuilder sb, String delimiter) {
+        if(!sb.isEmpty())
+            sb.append(delimiter);
     }
 
     private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment, List<ReferenceNumbers> referenceNumber, CompanySettingsResponse companySettingsResponse, Long noOfPackage, String packsType, BigDecimal volume, BigDecimal weight, String volumeUnit, String weightUnit) {
@@ -874,9 +941,15 @@ public class HblService implements IHblService {
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
             cargo.setGuid(pack.getGuid());
-            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId()))
+            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId())) {
                 cargo.setBlContainerContainerNumber(finalMap.get(pack.getContainerId()));
-            cargo.setCargoDesc(pack.getGoodsDescription());
+                cargo.setBlContainerId(pack.getContainerId());
+            }
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                addPackingV3Fields(pack, cargo);
+            } else {
+                cargo.setCargoDesc(pack.getGoodsDescription());
+            }
             cargo.setCargoGrossVolume(pack.getVolume());
             cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
             cargo.setCargoGrossWeight(pack.getWeight());
@@ -890,6 +963,13 @@ public class HblService implements IHblService {
         });
 
         return hblCargoes;
+    }
+
+    private void addPackingV3Fields(Packing pack, HblCargoDto cargo) {
+        String newLine = "\r\n";
+        cargo.setCargoDesc("SAID TO CONTAIN: "+ newLine + pack.getGoodsDescription());
+        String numberAndKindOfPack = generateNumberAndKindOfPack(pack.getPacks(), pack.getPacksType());
+        cargo.setNumberAndKindOfPackage(numberAndKindOfPack);
     }
 
     private List<HblPartyDto> mapShipmentPartiesToHBL(Parties party) {
@@ -1125,8 +1205,10 @@ public class HblService implements IHblService {
         packMap.forEach((guid, pack) -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
             cargo.setGuid(pack.getGuid());
-            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId()))
+            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId())) {
                 cargo.setBlContainerContainerNumber(finalMap.get(pack.getContainerId()));
+                cargo.setBlContainerId(pack.getContainerId());
+            }
             cargo.setCargoDesc(pack.getGoodsDescription());
             cargo.setCargoGrossVolume(pack.getVolume());
             cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
@@ -1203,6 +1285,7 @@ public class HblService implements IHblService {
         if(!contMap.isEmpty()) {
             contMap.forEach((guid, container) -> {
                 HblContainerDto hblContainer = HblContainerDto.builder().build();
+                hblContainer.setId(container.getId());
                 hblContainer.setGuid(container.getGuid());
                 hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
                 hblContainer.setSealNumber(container.getSealNumber());

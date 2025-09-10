@@ -251,6 +251,7 @@ public class ReportConstants {
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
     public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
+    public static final String SHIPPED_ONBOARD_NEW = "BL_ShippedOnBoard";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -634,9 +635,15 @@ public class ReportConstants {
     public static final String BL_DELIVERY_AGENT_ADDRESS = "BL_DeliveryAgentAddress";
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
+    public static final String BL_REMARKS = "BLRemarks";
     public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
     public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
     public static final String BL_CHARGES = "BLCharges";
+    public static final String BL_NEW_CARGO = "BLNewCargo";
+    public static final String PRINT_BY_CONTAINER = "PrintByContainer";
+    public static final String PRINT_BY_PACK = "PrintByPack";
+    public static final String CONTAINER_DETAILS = "ContainerDetails";
+    public static final String NUMBER_AND_KIND_OF_PACKAGE = "NumberAndKindOfPackage";
 
     //HAWB
     public static final String AGENT = "Agent";
@@ -1117,6 +1124,7 @@ public class ReportConstants {
     public static final String PORT_OF_LOADING_IN_CAPS = "PortOfLoadingInCaps";
     public static final String BL_DESCRIPTION = "BLDescription";
     public static final String CARGO_TERMS_DESCRIPTION = "CargoTermsDescription";
+    public static final String CARGO_TERMS = "CargoTerms";
     public static final String LOAD_DESCRIPTION_REMARKS = "LoadRemarksDescription";
     public static final String CONSOLE_DELIVERY_MODE_IN_CAPS = "ConsolDeliveryMode";
     public static final String CONSOLE_MARKS_N_NUMBERS_IN_CAPS = "ConsolMarksandNumber";

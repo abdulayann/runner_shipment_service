@@ -256,6 +256,7 @@ class HblServiceTest extends CommonMocks {
         inputHBL.setHblContainer(List.of());
         Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
         // Test
@@ -274,6 +275,7 @@ class HblServiceTest extends CommonMocks {
         inputHBL.setHblContainer(List.of());
         Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
         when(v1Service.retrieveCompanySettings()).thenReturn(CompanySettingsResponse.builder().SeaLclContainerFlag(true).build());
@@ -390,8 +392,10 @@ class HblServiceTest extends CommonMocks {
         testShipment.setHouseBill("custom-house-bl");
         testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(false);
-        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
+
         // Mock
+        mockShipmentSettings();
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -419,6 +423,7 @@ class HblServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
@@ -447,6 +452,7 @@ class HblServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.setConsolidationList(null);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -476,6 +482,7 @@ class HblServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.getConsolidationList().iterator().next().setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -505,6 +512,7 @@ class HblServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -532,6 +540,7 @@ class HblServiceTest extends CommonMocks {
         testShipment.setContainersList(new HashSet<>());
         mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -682,6 +691,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
         mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -704,6 +714,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
         mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -728,6 +739,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
         mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(inputShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -750,6 +762,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
 
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -770,8 +783,9 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_CONTAINERS);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
