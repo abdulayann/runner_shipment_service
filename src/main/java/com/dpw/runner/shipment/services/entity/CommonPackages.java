@@ -17,6 +17,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 
 @Entity
@@ -73,4 +74,7 @@ public class CommonPackages extends MultiTenancy {
 
     @Column(name ="shipping_instruction_id")
     private Long shippingInstructionId;
+
+    @Column(name ="packing_ref_guid")
+    private UUID packingRefGuid;
 }

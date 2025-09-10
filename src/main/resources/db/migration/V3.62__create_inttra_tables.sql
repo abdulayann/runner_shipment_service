@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS common_packages (
     gross_weight_unit VARCHAR(20),
     volume NUMERIC,
     volume_unit VARCHAR(20),
+    packing_ref_guid uuid,
     shipping_instruction_id BIGINT REFERENCES shipping_instruction(id)
 );
 
@@ -232,6 +233,7 @@ CREATE TABLE IF NOT EXISTS common_containers (
     weight_determination_method VARCHAR(100),
     weight_determination_location VARCHAR(255),
     vgm_status VARCHAR(100),
+    container_ref_guid uuid,
     carrier_booking_id BIGINT REFERENCES carrier_booking(id),
     shipping_instruction_id BIGINT REFERENCES shipping_instruction(id),
     verified_gross_mass_id BIGINT REFERENCES verified_gross_mass(id)

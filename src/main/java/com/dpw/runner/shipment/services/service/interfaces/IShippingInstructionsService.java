@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import org.springframework.http.ResponseEntity;
 
 public interface IShippingInstructionsService {
@@ -21,6 +21,6 @@ public interface IShippingInstructionsService {
 
     ResponseEntity<IRunnerResponse> getAllMasterData(Long shippingInstId);
 
-    ShippingInstructionResponse getDefaultShippingInstructionValues(ShippingInstructionEntityType type, Long entityId);
+    ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType type, Long entityId);
 
 }

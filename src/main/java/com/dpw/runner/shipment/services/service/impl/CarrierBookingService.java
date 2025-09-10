@@ -11,19 +11,23 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -56,6 +60,7 @@ import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -131,7 +136,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (Objects.isNull(sailingInformation)) {
                 sailingInformation = new SailingInformation();
             }
-            if(consolidationDetails.getCarrierDetails() != null) {
+            if (consolidationDetails.getCarrierDetails() != null) {
                 sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
@@ -222,7 +227,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (sailingInformation == null) {
                 sailingInformation = new SailingInformation();
             }
-            if(consolidationDetails.getCarrierDetails() != null) {
+            if (consolidationDetails.getCarrierDetails() != null) {
                 sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
@@ -257,14 +262,14 @@ public class CarrierBookingService implements ICarrierBookingService {
 
     @Override
     public void syncCarrierBookingToService(SyncBookingToService syncBookingToService) {
-        if(!CarrierBookingConstants.CARRIER_BOOKING.equalsIgnoreCase(syncBookingToService.getEntityType())){
+        if (!CarrierBookingConstants.CARRIER_BOOKING.equalsIgnoreCase(syncBookingToService.getEntityType())) {
             throw new ValidationException("Invalid entity Type : " + syncBookingToService.getEntityType());
         }
         CarrierBooking carrierBooking = carrierBookingDao.findById(syncBookingToService.getEntityId())
-                .orElseThrow(()-> new ValidationException("Invalid carrier Booking Id:" + syncBookingToService.getEntityId()));
+                .orElseThrow(() -> new ValidationException("Invalid carrier Booking Id:" + syncBookingToService.getEntityId()));
 
         Object entity = carrierBookingValidationUtil.validateRequest(carrierBooking.getEntityType(), carrierBooking.getEntityId());
-        if(Constants.CONSOLIDATION.equalsIgnoreCase(carrierBooking.getEntityType())){
+        if (Constants.CONSOLIDATION.equalsIgnoreCase(carrierBooking.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             setCarrierBookingSyncFields(consolidationDetails, carrierBooking);
             consolidationDetailsDao.save(consolidationDetails);
@@ -272,13 +277,13 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     private void setCarrierBookingSyncFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) {
-            consolidationDetails.setMawb(carrierBooking.getCarrierBlNo());
-            consolidationDetails.setBookingStatus(carrierBooking.getStatus().name());
-            consolidationDetails.setBookingId(carrierBooking.getBookingNo());
-            consolidationDetails.setCarrierBookingRef(carrierBooking.getCarrierBookingNo());
-            if(carrierBooking.getShippingInstruction() != null) {
-                consolidationDetails.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
-            }
+        consolidationDetails.setMawb(carrierBooking.getCarrierBlNo());
+        consolidationDetails.setBookingStatus(carrierBooking.getStatus().name());
+        consolidationDetails.setBookingId(carrierBooking.getBookingNo());
+        consolidationDetails.setCarrierBookingRef(carrierBooking.getCarrierBookingNo());
+        if (carrierBooking.getShippingInstruction() != null) {
+            consolidationDetails.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
+        }
     }
 
     @Override
@@ -354,6 +359,100 @@ public class CarrierBookingService implements ICarrierBookingService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public CarrierBookingResponse getDefaultCarrierBookingValues(EntityType type, Long entityId) {
+        ConsolidationDetails consolidationDetails;
+        CarrierBookingResponse carrierBookingResponse = new CarrierBookingResponse();
+        if (EntityType.CONSOLIDATION.equals(type)) {
+            consolidationDetails = consolidationDetailsDao.findConsolidationsById(entityId);
+            carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
+        } else {
+            throw new ValidationException("Invalid value of Entity Type");
+        }
+        carrierBookingResponse.setEntityId(consolidationDetails.getId());
+        carrierBookingResponse.setEntityType(type);
+        carrierBookingResponse.setEntityNumber(consolidationDetails.getConsolidationNumber());
+        carrierBookingResponse.setServiceType(consolidationDetails.getServiceLevel());
+        SailingInformationResponse sailingInformation = new SailingInformationResponse();
+        if (consolidationDetails.getCarrierDetails() != null) {
+            sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
+            sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+            sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+            sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+            sailingInformation.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        }
+        sailingInformation.setTerminalCutoff(consolidationDetails.getTerminalCutoff());
+        sailingInformation.setVerifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff());
+        sailingInformation.setShipInstructionCutoff(consolidationDetails.getShipInstructionCutoff());
+        sailingInformation.setReeferCutoff(consolidationDetails.getReeferCutoff());
+        sailingInformation.setHazardousBookingCutoff(consolidationDetails.getHazardousBookingCutoff());
+        sailingInformation.setEmptyContainerPickupCutoff(consolidationDetails.getEarliestEmptyEquPickUp());
+        //no mapping for loaded container gate in
+        List<CommonContainerResponse> commonContainersList = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(consolidationDetails.getContainersList())) {
+            for (Containers containers : consolidationDetails.getContainersList()) {
+                CommonContainerResponse commonContainers = getCommonContainerResponse(containers);
+                commonContainersList.add(commonContainers);
+            }
+        }
+        carrierBookingResponse.setContainersList(commonContainersList);
+        List<ReferenceNumberResponse> referenceNumberResponses = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(consolidationDetails.getReferenceNumbersList())) {
+            for (ReferenceNumbers referenceNumbers : consolidationDetails.getReferenceNumbersList()) {
+                ReferenceNumberResponse referenceNumberResponse = new ReferenceNumberResponse();
+                referenceNumberResponse.setType(referenceNumbers.getType());
+                referenceNumberResponse.setReferenceNumber(referenceNumbers.getReferenceNumber());
+                referenceNumberResponses.add(referenceNumberResponse);
+            }
+        }
+        carrierBookingResponse.setReferenceNumbersList(referenceNumberResponses);
+        //add parties data
+        //sending agent is origin agent, receivingAgent is destination agent in consol
+        if (Objects.nonNull(consolidationDetails.getSendingAgent())) {
+            PartiesResponse partiesResponse = jsonHelper.convertValue(consolidationDetails.getSendingAgent(), PartiesResponse.class);
+            partiesResponse.setId(null);
+            partiesResponse.setGuid(null);
+            carrierBookingResponse.setRequester(partiesResponse);
+            carrierBookingResponse.setShipper(partiesResponse);
+            carrierBookingResponse.setForwardingAgent(partiesResponse);
+            //contract party is not given in UX
+        }
+        if (Objects.nonNull(consolidationDetails.getReceivingAgent())) {
+            PartiesResponse partiesResponse = jsonHelper.convertValue(consolidationDetails.getReceivingAgent(), PartiesResponse.class);
+            partiesResponse.setId(null);
+            partiesResponse.setGuid(null);
+            carrierBookingResponse.setConsignee(partiesResponse);
+        }
+
+        return carrierBookingResponse;
+    }
+
+    @NotNull
+    private static CommonContainerResponse getCommonContainerResponse(Containers containers) {
+        CommonContainerResponse commonContainers = new CommonContainerResponse();
+        commonContainers.setContainerCode(containers.getContainerCode());
+        commonContainers.setContainerNo(containers.getContainerNumber());
+        commonContainers.setPacks(StringUtility.isNotEmpty(containers.getPacks()) ? Integer.parseInt(containers.getPacks()) : null);
+        commonContainers.setPacksUnit(containers.getPacksType());
+        commonContainers.setHsCode(containers.getHsCode());
+        commonContainers.setCommodityCode(containers.getCommodityCode());
+        commonContainers.setCommodityGroup(containers.getCommodityGroup());
+        commonContainers.setMarksNums(containers.getMarksNums());
+        commonContainers.setGoodsDescription(containers.getDescriptionOfGoods());
+        commonContainers.setGrossWeight(containers.getGrossWeight());
+        commonContainers.setGrossWeightUnit(containers.getGrossWeightUnit());
+        commonContainers.setVolume(containers.getGrossVolume());
+        commonContainers.setVolumeUnit(containers.getGrossVolumeUnit());
+        commonContainers.setNetWeight(containers.getNetWeight());
+        commonContainers.setNetWeightUnit(containers.getNetWeightUnit());
+        commonContainers.setTareWeight(containers.getTareWeight());
+        commonContainers.setTareWeightUnit(containers.getTareWeightUnit());
+        commonContainers.setCustomsSealNumber(containers.getCustomsSealNumber());
+        commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
+        commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
+        return commonContainers;
     }
 
     private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
@@ -597,7 +696,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             List<CommonContainers> carrierBookingContainers = carrierBooking.getContainersList();
 
 
-            List<ContainerMisMatchWarning> warnings =  carrierBookingUtil.detectContainerMismatches(consoleContainers, carrierBookingContainers);
+            List<ContainerMisMatchWarning> warnings = carrierBookingUtil.detectContainerMismatches(consoleContainers, carrierBookingContainers);
 
             // attach to response or handle as needed
             carrierBookingResponse.setContainerMismatchWarningList(warnings);

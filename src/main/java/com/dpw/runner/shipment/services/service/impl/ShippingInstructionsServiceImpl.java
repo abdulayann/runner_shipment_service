@@ -112,7 +112,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         validateFetchAndSetSI(shippingInstruction, true);
-        shippingInstruction.setStatus(ShippingInstructionStatus.Draft.name());
+        shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
         ShippingInstruction savedInfo = repository.save(shippingInstruction);
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
     }
@@ -121,12 +121,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         validateSIRequest(shippingInstruction);
     }
 
-    private void setDefaultValues(ShippingInstructionEntityType type, Long entityId,
+    private void setDefaultValues(EntityType type, Long entityId,
                                   ShippingInstructionResponseMapper response) {
         ConsolidationDetails consolidationDetails;
         ShippingInstruction shippingInstruction = new ShippingInstruction();
 
-        if (ShippingInstructionEntityType.CARRIER_BOOKING.equals(type)) {
+        if (EntityType.CARRIER_BOOKING.equals(type)) {
             Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(entityId);
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
@@ -137,7 +137,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             shippingInstruction.setReferenceNumbers(carrierBooking.get().getReferenceNumbersList());
             response.setBookingStatus(carrierBooking.get().getStatus().name());
 
-        } else if (ShippingInstructionEntityType.CONSOLIDATION.equals(type)) {
+        } else if (EntityType.CONSOLIDATION.equals(type)) {
             consolidationDetails = getConsolidationDetail(entityId);
             response.setBookingStatus(consolidationDetails.getBookingStatus());
         } else {
@@ -317,11 +317,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 carrierBookingPage.getTotalElements());
     }
 
-    public ShippingInstructionResponse getDefaultShippingInstructionValues(ShippingInstructionEntityType entityType, Long entityId) {
+    public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
         ShippingInstruction instruction = new ShippingInstruction();
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         setDefaultValues(entityType, entityId, mapper);
-        instruction.setStatus(ShippingInstructionStatus.Draft.name());
+        instruction.setStatus(ShippingInstructionStatus.Draft);
         ShippingInstructionResponse response = jsonHelper.convertValue(mapper.getShippingInstruction(), ShippingInstructionResponse.class);
         response.setBookingStatus(mapper.getBookingStatus());
         return response;

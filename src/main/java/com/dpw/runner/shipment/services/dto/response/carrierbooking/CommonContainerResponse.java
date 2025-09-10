@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 public class CommonContainerResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy / BaseEntity
+    private UUID guid;
     private String containerCode;
     private Integer count;
     private String goodsDescription;
@@ -47,4 +49,6 @@ public class CommonContainerResponse implements IRunnerResponse {
     private Long carrierBookingId;
     private Long shippingInstructionId;
     private Long verifiedGrossMassId;
+    private String commodityGroup;
+    private String marksNums;
 }

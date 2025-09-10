@@ -2,11 +2,9 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
-import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import org.springframework.http.ResponseEntity;
 
 public interface IVerifiedGrossMassService {
@@ -46,5 +44,7 @@ public interface IVerifiedGrossMassService {
     void delete(Long id);
 
     ResponseEntity<IRunnerResponse> getAllMasterData(Long vgmId);
+
+    VerifiedGrossMassResponse getDefaultVerifiedGrossMassValues(EntityType type, Long entityId);
 }
 

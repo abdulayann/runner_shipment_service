@@ -22,6 +22,8 @@ public class CarrierBookingConstants {
     public static final String MAIN_CARRIAGE = "MainCarriage";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
+    public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Carrier Booking Retrieval";
+
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation

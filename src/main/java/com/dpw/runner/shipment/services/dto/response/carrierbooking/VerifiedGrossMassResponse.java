@@ -2,6 +2,10 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +20,12 @@ import java.util.List;
 public class VerifiedGrossMassResponse implements IRunnerResponse {
 
     private Long id;
-    private String status;
+    private CarrierBookingStatus bookingStatus;
+    private VerifiedGrossMassStatus status;
+    private ShippingInstructionStatus siStatus;
+    private Long entityId;
+    private EntityType entityType;
+    private String entityNumber;
     private String carrierBookingNo;
     private String carrierBlNo;
     private String internalEmails;

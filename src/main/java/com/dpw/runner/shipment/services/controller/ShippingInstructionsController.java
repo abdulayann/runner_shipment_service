@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -11,12 +10,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -124,7 +122,7 @@ public class ShippingInstructionsController {
 
     @GetMapping
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShippingInstructionsConstants.RETRIEVE_DEFAULT_SUCCESS)})
-    public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam ShippingInstructionEntityType type) {
+    public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
         try {
             ShippingInstructionResponse response = service.getDefaultShippingInstructionValues(type, entityId);
             return ResponseHelper.buildSuccessResponse(response);
