@@ -16,88 +16,52 @@ import lombok.Builder;
 public class CloneFlagsRequest extends CommonRequest implements IRunnerRequest {
 
     // Header
-    @Builder.Default
-    private boolean header = true;
-    @Builder.Default
-    private boolean mode = true;
-    @Builder.Default
-    private boolean shipmentType = true;
-    @Builder.Default
-    private boolean cargoType = true;
-    @Builder.Default
-    private boolean serviceType = true;
-    @Builder.Default
-    private boolean paymentTerms = true;
-    @Builder.Default
-    private boolean origin = true;
-    @Builder.Default
-    private boolean pol = true;
-    @Builder.Default
-    private boolean pod = true;
-    @Builder.Default
-    private boolean destination = true;
+    private boolean header;
+    private boolean mode;
+    private boolean shipmentType;
+    private boolean cargoType;
+    private boolean serviceType;
+    private boolean paymentTerms;
+    private boolean origin;
+    private boolean pol;
+    private boolean pod;
+    private boolean destination;
 
     // Party
-    @Builder.Default
-    private boolean party = true;
-    @Builder.Default
-    private boolean client = true;
-    @Builder.Default
-    private boolean shipper = true;
-    @Builder.Default
-    private boolean consignee = true;
-    @Builder.Default
-    private boolean notifyParty = true;
-    @Builder.Default
-    private boolean additionalParty = true;
+    private boolean party;
+    private boolean client;
+    private boolean shipper;
+    private boolean consignee;
+    private boolean notifyParty;
+    private boolean additionalParty;
 
     // General
-    @Builder.Default
-    private boolean general = true;
-    @Builder.Default
-    private boolean incoterms = true;
-    @Builder.Default
-    private boolean carrier = true;
+    private boolean general;
+    private boolean incoterms;
+    private boolean carrier;
 
     // Container(s)
-    @Builder.Default
-    private boolean containers = true;
-    @Builder.Default
-    private boolean containerType = true;
-    @Builder.Default
-    private boolean containerCount = true;
-    @Builder.Default
-    private boolean packagesPerContainer = true;
-    @Builder.Default
-    private boolean cargoWeightPerContainer = true;
-    @Builder.Default
-    private boolean containerCommodityCategory = true;
+    private boolean containers;
+    private boolean containerType;
+    private boolean containerCount;
+    private boolean packagesPerContainer;
+    private boolean cargoWeightPerContainer;
+    private boolean containerCommodityCategory;
 
     // Package(s)
-    @Builder.Default
-    private boolean packages = true;
-    @Builder.Default
-    private boolean packageCount = true;
-    @Builder.Default
-    private boolean volumePerPack = true;
-    @Builder.Default
-    private boolean cargoWeightPerPack = true;
-    @Builder.Default
-    private boolean packageCommodityCategory = true;
-    @Builder.Default
-    private boolean dimensionPerPack = true;
-    @Builder.Default
-    private boolean volume = true;
-    @Builder.Default
-    private boolean cargoWeight = true;
+    private boolean packages;
+    private boolean packageType;
+    private boolean packageCount;
+    private boolean volumePerPack;
+    private boolean cargoWeightPerPack;
+    private boolean packageCommodityCategory;
+    private boolean dimensionPerPack;
+    private boolean volume;
+    private boolean cargoWeight;
 
     // Cargo Summary
-    @Builder.Default
-    private boolean cargoSummary = true;
-    @Builder.Default
-    private boolean description = true;
-    @Builder.Default
-    private boolean marksAndNumbers = true;
-    @Builder.Default
-    private boolean additionalTerms = true;
+    private boolean cargoSummary;
+    private boolean description;
+    private boolean marksAndNumbers;
+    private boolean additionalTerms;
 }
