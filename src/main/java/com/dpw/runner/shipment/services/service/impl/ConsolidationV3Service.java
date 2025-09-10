@@ -2492,6 +2492,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     !CommonUtils.checkSameParties(console.getSendingAgent(), sd.getAdditionalDetails().getExportBroker())) {
                 // If export broker doesn't match, update it from sending agent
                 sd.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+                sd.getAdditionalDetails().setExportBrokerCountry(null);
             } else if (sd.getAdditionalDetails() == null) {
                 // If no AdditionalDetails exist, initialize and set export broker
                 sd.setAdditionalDetails(new AdditionalDetails());
@@ -2503,6 +2504,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     !CommonUtils.checkSameParties(console.getReceivingAgent(), sd.getAdditionalDetails().getImportBroker())) {
                 // If import broker doesn't match, update it from receiving agent
                 sd.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+                sd.getAdditionalDetails().setImportBrokerCountry(null);
             } else if (sd.getAdditionalDetails() == null) {
                 // If still null (shouldn't happen here), initialize and set import broker
                 sd.setAdditionalDetails(new AdditionalDetails());
