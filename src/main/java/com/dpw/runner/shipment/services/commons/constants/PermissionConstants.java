@@ -19,4 +19,8 @@ public final class PermissionConstants {
     public static final String CONSOLIDATIONS_AIR_INTER_BRANCH = "Consolidations:Air:Interbranch Consolidation";
     public static final String SHIPMENT_IN_PIPELINE_MODIFY = "Operations:ShipmentInPipeline:Modify";
     public static final String SHIPMENT_IN_PIPELINE_VIEW = "Operations:ShipmentInPipeline:View";
+    public static final String CARRIER_BOOKING_CREATE = "Operations:CarrierBookings:Create";
+    public static final String CARRIER_BOOKING_VIEW = "Operations:CarrierBookings:View";
+    public static final String CARRIER_BOOKING_MODIFY = "Operations:CarrierBookings:Modify";
+    public static final String CARRIER_BOOKING_CANCEL= "Operations:CarrierBookings:Cancel";
 }
