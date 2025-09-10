@@ -553,7 +553,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     p.setHeightUnit(packingResponse.getHeightUnit());
                 }
                 commonUtils.mapIfSelected(request.getFlags().isPackageCount(), packingResponse.getPacks(), p::setPacks);
-                commonUtils.mapIfSelected(request.getFlags().isPackageCount(), packingResponse.getPacksType(), p::setPacksType);
+                commonUtils.mapIfSelected(request.getFlags().isPackageType(), packingResponse.getPacksType(), p::setPacksType);
                 commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPack(), p::setVolumePerPack);
                 commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPackUnit(), p::setVolumePerPackUnit);
                 commonUtils.mapIfSelected(request.getFlags().isVolume(), packingResponse.getVolume(), p::setVolume);

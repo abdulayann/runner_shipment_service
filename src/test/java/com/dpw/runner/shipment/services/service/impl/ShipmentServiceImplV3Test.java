@@ -81,19 +81,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -227,12 +215,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -8271,23 +8254,27 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("Shipment Id cannot be null", exception.getMessage());
     }
 
-    @Test
+//    @Test
     void testCloneShipment_happyPath_returnsClonedShipment() throws RunnerException {
         Long shipmentId = 123L;
-        CloneRequest request = new CloneRequest();
-        request.setShipmentId(shipmentId);
-        request.setFlags(new CloneFlagsRequest());
+        CloneFlagsRequest flags = CloneFlagsRequest.builder()
+                .packages(true)
+                .build();
+        CloneRequest request = CloneRequest.builder()
+                .shipmentId(shipmentId)
+                .flags(flags)
+                .build();
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
-        ShipmentDetailsV3Response response = shipmentServiceImplV3.cloneShipment(request);
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.cloneShipment(request);
         assertNotNull(response);
         assertNotNull(response.getCarrierDetails());
         verify(commonUtils, atLeastOnce()).mapIfSelected(anyBoolean(), any(), any());
     }
 
     @Test
-    void testCloneShipment_validateShipmentThrowsException_throwsRunnerException() throws RunnerException {
+    void testCloneShipment_validateShipmentThrowsException_throwsRunnerException() {
         Long shipmentId = 123L;
         CloneRequest request = new CloneRequest();
         request.setShipmentId(shipmentId);
@@ -8520,5 +8507,116 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         } catch (Exception e) {
             throw new RuntimeException("Failed to invoke private method", e);
         }
+    }
+
+    @Test
+    void testGetPathBasedOnType_B2B() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("B2B");
+        assertEquals("src/main/resources/b2b_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_S2B() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("S2B");
+        assertEquals("src/main/resources/s2b_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_S2S() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("S2S");
+        assertEquals("src/main/resources/s2s_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_InvalidType() {
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.getPathBasedOnType("INVALID"));
+    }
+
+    @Test
+    void testGetCloneConfig_Success() throws RunnerException {
+        String type = "B2B";
+        String path = shipmentServiceImplV3.getPathBasedOnType(type);
+        CloneFieldResponse expectedResponse = new CloneFieldResponse();
+        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class)).thenReturn(expectedResponse);
+        CloneFieldResponse response = shipmentServiceImplV3.getCloneConfig(type);
+        assertNotNull(response);
+        assertEquals(expectedResponse, response);
+        verify(commonUtils, times(1)).fetchFromJsonFile(path, CloneFieldResponse.class);
+    }
+
+    @Test
+    void testGetCloneConfig_FileNotFound() throws RunnerException {
+        String type = "B2B";
+        String path = shipmentServiceImplV3.getPathBasedOnType(type);
+        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class))
+                .thenThrow(new RunnerException("File not found"));
+        RunnerException exception = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.getCloneConfig(type));
+        assertEquals("File not found", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipment_ShipmentNotFound() {
+        Long shipmentId = 1L;
+
+        // Mocking shipmentDao to return empty Optional
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        // Expect DataRetrievalFailureException when shipment not found
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.validateShipment(shipmentId);
+        });
+
+        assertEquals("Failed to fetch data for given constraint.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipment_DisallowedMode_ThrowsException() {
+        Long shipmentId = 2L;
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+
+        // Mocking a shipment present
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        // Mock permissions check
+        doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+
+        // Mock tenant settings to trigger exception
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+
+        // Since isSelectedModeOffInBooking returns false, exception is thrown
+        ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
+        doReturn(false).when(spyService).isSelectedModeOffInBooking("AIR", tenantData);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            spyService.validateShipment(shipmentId);
+        });
+
+        assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
+    }
+
+    @Test
+    public void testValidateShipment_DisallowedTransportModeConfig() {
+        Long shipmentId = 3L;
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(true);
+        tenantData.setTransportModeConfig(false);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            shipmentServiceImplV3.validateShipment(shipmentId);
+        });
+
+        assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
     }
 }

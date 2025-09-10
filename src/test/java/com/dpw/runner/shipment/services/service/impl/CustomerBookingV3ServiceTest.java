@@ -3938,7 +3938,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(null);
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
-        when(containerDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
         assertDoesNotThrow(() -> customerBookingService.cloneBookingFromShipmentIfExist(request));
         CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
         assertNotNull(response);
@@ -3990,7 +3989,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = spyService.cloneBookingById(request);
         assertNotNull(response);
         assertNotNull(response.getCarrierDetails());
-        verify(commonUtils, atLeastOnce()).mapIfSelected(eq(true), any(), any());
     }
 
     @Test
@@ -4059,7 +4057,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         customerBooking.setPackingList(List.of(packing));
         CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
         customerBookingService.setCBPackingDetails(request, customerBooking, customerBookingResponse);
-        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getPacksType()), any());
         verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPack()), any());
         verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPackUnit()), any());
         verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolume()), any());

@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.apache.http.auth.AuthenticationException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -357,7 +358,7 @@ class ShipmentControllerV3Test {
     @Test
     void testCloneShipment_successfulClone_returns200Ok() throws RunnerException {
         CloneRequest request = new CloneRequest();
-        ShipmentDetailsV3Response mockResponse = new ShipmentDetailsV3Response();
+        ShipmentRetrieveLiteResponse mockResponse = new ShipmentRetrieveLiteResponse();
         when(shipmentService.cloneShipment(request)).thenReturn(mockResponse);
         ResponseEntity<IRunnerResponse> responseEntity = shipmentControllerV3.cloneShipment(request);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -374,6 +375,25 @@ class ShipmentControllerV3Test {
             assertEquals(expectedException, e);
         }
         verify(shipmentService, times(1)).cloneShipment(request);
+    }
+
+    @Test
+    void getCloneConfig_shouldReturnSuccessResponse_whenServiceIsSuccessful() throws Exception {
+        CloneFieldResponse mockResponse = mock(CloneFieldResponse.class);
+        when(shipmentService.getCloneConfig("S2S")).thenReturn(mockResponse);
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.getCloneConfig("S2S");
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentService, times(1)).getCloneConfig("S2S");
+    }
+
+    @Test
+    void getCloneConfig_shouldReturnFailedResponse_whenServiceThrowsException() throws Exception {
+        String errorMessage = "Service unavailable.";
+        when(shipmentService.getCloneConfig("B2B")).thenThrow(new RuntimeException(errorMessage));
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.getCloneConfig("B2B");
+        verify(shipmentService, times(1)).getCloneConfig("B2B");
+        Assertions.assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
 }
