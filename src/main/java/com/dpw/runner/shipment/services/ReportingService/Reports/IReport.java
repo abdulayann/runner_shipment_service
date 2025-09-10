@@ -128,7 +128,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER_IN_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLASH_POINT_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER_IN_CAPS;
@@ -157,7 +156,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KC_EXPIRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KC_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KNOWN_CONSIGNOR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LCL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOADED_DATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD_DESCRIPTION_REMARKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MARINE_POLLUTANT;
@@ -372,7 +370,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Containe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
