@@ -101,4 +101,28 @@ public class TiPackages extends MultiTenancy {
     @Column(name = "tunnel_restriction_code")
     @Size(max=10, message = "max size is 10 for tunnel_restriction_code")
     private String tunnelRestrictionCode;
+
+    @Column(name = "proper_shipping_name")
+    @Size(max=63, message = "max size is 63 for proper shipping name")
+    private String properShippingName;
+
+    @Column(name = "packing_group")
+    @Size(max=31, message = "max size is 31 for packing group")
+    @MasterData(type = MasterDataType.PACKING_GROUP)
+    private String packingGroup;
+
+    @Column(name = "minimum_flash_point")
+    private BigDecimal minimumFlashPoint;
+
+    @Column(name = "minimum_flash_point_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
+    @Size(max = 3, message = "max size is 3 for minimum flash point unit")
+    private String minimumFlashPointUnit;
+
+    @Column(name = "marine_pollutant")
+    private Boolean marinePollutant = false;
+
+    @Column(name = "dg_class_description")
+    @Size(max=255, message = "max size is 255 for dg class description")
+    private String dgClassDescription;
 }

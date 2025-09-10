@@ -3706,7 +3706,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testGetDefaultBooking() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setVolumeChargeableUnit("CBM");
+        tenantSettings.setVolumeChargeableUnit("M3");
         tenantSettings.setWeightChargeableUnit("KGS");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
@@ -3718,7 +3718,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
         assertNotNull(response);
-        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals("M3", response.getVolumeUnit());
         assertEquals("KGS", response.getGrossWeightUnit());
         assertEquals(1, response.getTenantId());
         assertEquals(BookingSource.Runner, response.getSource());

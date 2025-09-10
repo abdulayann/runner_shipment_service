@@ -5,6 +5,9 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @Generated
 @SuppressWarnings("all")
+@EnableAsync
 public class EntityLevelRollbackService {
 
 
@@ -39,19 +43,25 @@ public class EntityLevelRollbackService {
     @Autowired
     private DataSource dataSource;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Transactional(rollbackFor = Exception.class)
+    @Async
     public void executeSqlFromFile(String tenantId, String schema) {
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/backup_schema.sql"))));
-             Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
+                new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")))
+        )) {
 
             String sql = reader.lines().collect(Collectors.joining("\n"));
             for (String statement : sql.split(";")) {
                 if (!statement.trim().isEmpty()) {
-                    statement = statement.replaceAll("__TENANT_ID__", tenantId).replaceAll("__SCHEMA__", schema);
-                    log.info("Executing: {}", statement);
-                    stmt.execute(statement); // No colon parsing here
+
+                    String parsed = statement.replace("__TENANT_ID__", tenantId).replace("__SCHEMA__", schema);
+
+                    log.info("Executing: {}", parsed);
+                    jdbcTemplate.execute(parsed);
+
                 }
             }
             log.info("✅ SQL script executed successfully.");
@@ -62,6 +72,7 @@ public class EntityLevelRollbackService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Async
     public String backupEntity(Integer tenantId) {
         try (
                 BufferedReader reader = new BufferedReader(
@@ -87,6 +98,5 @@ public class EntityLevelRollbackService {
             throw new RuntimeException(e); // Triggers rollback
         }
     }
-
 
 }

@@ -296,6 +296,20 @@ public class AwbController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.VALIDATE_AWB_FOR_ATTACHMENT)
+    public ResponseEntity<IRunnerResponse> validateAwbBeforeAttachment(@ApiParam(name = "Consolidation Id", required = true) @RequestParam Optional<Long> consolidationId) {
+        String responseMsg = "";
+        try {
+            return awbService.validateAwbBeforeAttachment(consolidationId);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error getting data for Awb validations for attachment";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
     @ApiResponses(value = {@ApiResponse(response = FnmStatusMessageResponseClass.class, code = 200, message = AwbConstants.FNM_STATUS_FETCH_SUCCESS)})
     @GetMapping(ApiConstants.FNM_STATUS_MESSAGE)
     public ResponseEntity<IRunnerResponse> getFnmStatusMessage(@ApiParam(name = "Shipment Id") @RequestParam Optional<Long> shipmentId, @ApiParam(name = "Consolidation Id") @RequestParam Optional<Long> consolidationId) {

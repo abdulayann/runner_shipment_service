@@ -430,6 +430,7 @@ public class ReportService implements IReportService {
         BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
 
         pdfByteContent = getPdfBytesForHouseBill(reportRequest, dataRetrived, waterMarkRequired, pdfByteContent, font, isOriginalPrint, isSurrenderPrint, isNeutralPrint, tenantSettingsRow);
+        pdfByteContent = addWaterMarkForDraftSeawayBill(reportRequest, pdfByteContent, font);
         addHBLToRepoForSeawayBill(reportRequest, pdfByteContent, tenantSettingsRow);
         createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrived, tenantSettingsRow);
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
@@ -442,6 +443,19 @@ public class ReportService implements IReportService {
         // Push document to document master
         var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
+    }
+
+    // Add Watermark for draft Seaway Bill
+    private byte[] addWaterMarkForDraftSeawayBill(ReportRequest reportRequest, byte[] pdfByteContent, BaseFont font) {
+        try {
+            if (ReportConstants.SEAWAY_BILL.equalsIgnoreCase(reportRequest.getReportInfo()) && pdfByteContent != null
+                    && DRAFT.equalsIgnoreCase(reportRequest.getPrintType())) {
+                pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, ReportConstants.DRAFT_WATERMARK);
+            }
+        } catch (Exception e) {
+            throw new ValidationException(e.getMessage());
+        }
+        return pdfByteContent;
     }
 
     private void setReportParametersFromRequest(IReport report, ReportRequest reportRequest) {
@@ -2832,9 +2846,9 @@ public class ReportService implements IReportService {
                     docType = DocumentConstants.HBL;
                     break;
                 case SEAWAY_BILL:
-                    filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
-                    childType = SEA_WAYBILL;
-                    docType = DocumentConstants.HBL;
+                    filename = SEAWAY_BILL + DocumentConstants.DASH + StringUtility.convertToString(reportRequest.getPrintType()) + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = reportRequest.getPrintType();
+                    docType = DocumentConstants.SEA_WAYBILL;
                     break;
                 case HAWB, MAWB:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
@@ -2899,6 +2913,11 @@ public class ReportService implements IReportService {
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                } else if (SEAWAY_BILL.equalsIgnoreCase(docType)) {
+                    if (DRAFT.equalsIgnoreCase(childType))
+                        customFileName = baseDocName + "_" + DRAFT + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                    else
+                        customFileName = StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else if (Objects.equals(docType, TRANSPORT_INSTRUCTIONS)) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + suffix + DocumentConstants.DOT_PDF;
                 }else {

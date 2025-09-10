@@ -36,7 +36,7 @@ public class EmailServiceUtility {
             "wasim.jafar@dpworld.com", "pardeep.malik@dpworld.com", "lalchand.mali@dpworld.com"
             ,"isha.mittal@dpworld.com", "sonam.gupta@dpworld.com", "Subham.Mallick@dpworld.com",
             "nabeel.abdullah@dpworld.com", "Aditya.Thakur@dpworld.com", "mylavarapu.vamsi@dpworld.com",
-            "Dipanshu.Saini@dpworld.com", "Shadab.Sayeed@dpworld.com");
+            "Dipanshu.Saini@dpworld.com", "Shadab.Sayeed@dpworld.com", "Shatadru.Chowdhury@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 

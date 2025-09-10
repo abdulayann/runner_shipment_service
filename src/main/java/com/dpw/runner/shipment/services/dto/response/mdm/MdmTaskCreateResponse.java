@@ -1,5 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request.mdm;
-
+package com.dpw.runner.shipment.services.dto.response.mdm;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

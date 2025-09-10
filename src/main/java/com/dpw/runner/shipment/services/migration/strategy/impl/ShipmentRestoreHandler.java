@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -42,10 +41,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
 import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
 
 @Service
@@ -328,21 +329,25 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     }
 
     @Override
-    public void restore(Integer tenantId) {
+    public Map<String, Object> restore(Integer tenantId) {
         log.info("Executing shipment restore tasks for tenantId: {}", tenantId);
         Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
+        Map<String, Object> map = new HashMap<>();
+        List<Future<Long>> bookingQueue = new ArrayList<>();
         if (allBackupShipmentIds.isEmpty()) {
-            return;
+            map.put("Total Shipment :", 0);
+            return map;
         }
+        Map<Long, String>  failureMap = new HashMap<>();
         log.info("Fetched all shipment ids to restore...");
         shipmentDao.deleteAdditionalShipmentsByShipmentIdAndTenantId(allBackupShipmentIds, tenantId);
         log.info("Deleted additional shipments...");
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
         shipmentDao.revertSoftDeleteShipmentIdAndTenantId(new ArrayList<>(nonAttachedShipmentIds), tenantId);
-
-        log.info("Count of no restore shipment ids data : {}", nonAttachedShipmentIds.size());
-        List<CompletableFuture<Object>> shipmentFutures = nonAttachedShipmentIds.stream()
-                .map(id -> trxExecutor.runInAsyncForShipment(() -> {
+        map.put("Total Shipment :", nonAttachedShipmentIds.size());
+        log.info("Count of restore shipment ids data : {}", nonAttachedShipmentIds.size());
+        nonAttachedShipmentIds.forEach( id -> {
+            Future<Long> future =  trxExecutor.runInAsyncForShipment(() -> {
                     try {
                         v1Service.setAuthContext();
                         TenantContext.setCurrentTenant(tenantId);
@@ -354,16 +359,23 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                     } catch (Exception e) {
                         log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
                         migrationUtil.saveErrorResponse(id, Constants.SHIPMENT,
-                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                                IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                        failureMap.put(id, e.getMessage());
                         throw new IllegalArgumentException(e);
-                    } finally {
+                    }  finally {
                         v1Service.clearAuthContext();
                     }
-                }))
-                .toList();
-        log.info("Waiting for all shipment restore tasks to complete...");
-        futureCompletion(shipmentFutures);
+            });
+            bookingQueue.add(future);
+        });
+
+        List<Long> shipmentProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Shipment Restore :", shipmentProcessed.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Shipment Restore details :", failureMap);
+        }
         log.info("Completed shipment restore for tenant: {}", tenantId);
+        return map;
     }
 
 

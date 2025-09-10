@@ -75,6 +75,7 @@ import com.dpw.runner.shipment.services.dto.response.AwbOtherInfoResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbStatusForAttachment;
 import com.dpw.runner.shipment.services.dto.response.FnmStatusMessageResponse;
 import com.dpw.runner.shipment.services.dto.response.IataAgentResponse;
 import com.dpw.runner.shipment.services.dto.response.IataFetchRateResponse;
@@ -4073,6 +4074,27 @@ public class AwbService implements IAwbService {
         }
 
         return ResponseHelper.buildSuccessResponse(res);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateAwbBeforeAttachment(Optional<Long> consolidationId) {
+        if(consolidationId.isPresent()) {
+            AwbStatusForAttachment res = AwbStatusForAttachment.builder().isAirMessageSent(false).build();
+            var awb = awbDao.findByConsolidationId(consolidationId.get());
+            if (awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null) {
+                if (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED)) {
+                    res = AwbStatusForAttachment.builder().isAirMessageSent(true)
+                            .message("The MAWB Original has been printed, the FWB/FZB has been transmitted to the carrier, and the RCS status has been acknowledged by the carrier. Would you like to proceed?").build();
+                } else if (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+                        Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) ||
+                        Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS)) {
+                    res = AwbStatusForAttachment.builder().isAirMessageSent(true)
+                            .message("The MAWB Original has been printed, the FWB/FZB has been transmitted to the carrier Would you like to proceed?").build();
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(res);
+        }
+        return ResponseHelper.buildSuccessResponse();
     }
 
     @Override
