@@ -83,6 +83,8 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
+    private boolean showByContainer;
+    private String numberAndKindOfPackage;
     private String shipperName;
     private String shipperAddressLine1;
     private String shipperAddressLine2;

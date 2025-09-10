@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -350,6 +351,8 @@ public class HblReport extends IReport {
         populateFreightsAndCharges(dictionary, hblModel.blObject);
 
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
+        if(hblModel.shipment.getAdditionalDetails() != null)
+            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MMM/yyyy", true));
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -492,6 +495,11 @@ public class HblReport extends IReport {
 
         addDeliverToTag(hblModel, dictionary);
 
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            dictionary.put(NUMBER_AND_KIND_OF_PACKAGE, hblModel.blObject.getHblData().getNumberAndKindOfPackage());
+            buildCargoSectionForV3(dictionary, hblModel);
+        }
+
         if (hblModel.consolidation != null) {
             this.populateConsolidationReportData(dictionary, null, hblModel.consolidation.getId());
         }
@@ -504,6 +512,79 @@ public class HblReport extends IReport {
 
         return dictionary;
     }
+
+    private void buildCargoSectionForV3(Map<String, Object> dictionary, HblModel hblModel) {
+        if(Boolean.TRUE.equals(hblModel.blObject.getHblData().isShowByContainer())) {
+            dictionary.put(PRINT_BY_CONTAINER, true);
+            dictionary.put(PRINT_BY_PACK, false);
+        } else {
+            dictionary.put(PRINT_BY_CONTAINER, false);
+            dictionary.put(PRINT_BY_PACK, true);
+        }
+        List<Map<String, Object>> cargoSectionList = new ArrayList<>();
+        List<HblCargoDto> unAssignedPacks = new ArrayList<>();
+        Map<Long, List<HblCargoDto>> cargoMap;
+        if(!CommonUtils.listIsNullOrEmpty(hblModel.blObject.getHblCargo())) {
+            unAssignedPacks = hblModel.blObject.getHblCargo().stream().filter(pack -> pack.getBlContainerId() == null).toList();
+            cargoMap = hblModel.blObject.getHblCargo().stream().filter(pack -> pack.getBlContainerId() != null)
+                    .collect(Collectors.groupingBy(HblCargoDto::getBlContainerId));
+        } else {
+            cargoMap = new HashMap<>();
+        }
+
+        List<HblContainerDto> hblContainerDtoList = hblModel.blObject.getHblContainer();
+        if(!CommonUtils.listIsNullOrEmpty(hblContainerDtoList)) {
+            hblContainerDtoList.forEach(cont -> {
+                Map<String, Object> mp = new HashMap<>();
+                mp.put(CONTAINER_DETAILS, cont.getContainerDetails());
+                mp.put(MARKS_N_NUMS, cont.getMarksNums());
+                mp.put(DESCRIPTION, cont.getContainerDesc());
+                mp.put(WEIGHT, cont.getContainerGrossWeight());
+                mp.put(WEIGHT_UNIT, cont.getContainerGrossWeightUnit());
+                mp.put(VOLUME, cont.getContainerGrossVolume());
+                mp.put(VOLUME_UNIT, cont.getContainerGrossVolumeUnit());
+                List<Map<String, Object>> packsList = new ArrayList<>();
+                if(cargoMap.containsKey(cont.getId())) {
+                    List<HblCargoDto> cargoDtoList = cargoMap.get(cont.getId());
+                    if(!CommonUtils.listIsNullOrEmpty(cargoDtoList)) {
+                        buildPackingMap(packsList, cargoDtoList);
+                    }
+                } else {
+                    Map<String, Object> packs = new HashMap<>();
+                    packs.put(NUMBER_AND_KIND_OF_PACKAGE, cont.getNumberAndKindOfPackage());
+                    packsList.add(packs);
+                }
+                mp.put(PACKS, packsList);
+                cargoSectionList.add(mp);
+            });
+        }
+
+        if(!CommonUtils.listIsNullOrEmpty(unAssignedPacks)){
+            Map<String, Object> mp = new HashMap<>();
+            List<Map<String, Object>> packsList = new ArrayList<>();
+            buildPackingMap(packsList, unAssignedPacks);
+            mp.put(PACKS, packsList);
+            cargoSectionList.add(mp);
+        }
+
+        dictionary.put(BL_NEW_CARGO, cargoSectionList);
+    }
+
+    private void buildPackingMap(List<Map<String, Object>> packsList, List<HblCargoDto> cargoDtoList) {
+        cargoDtoList.forEach(cargo -> {
+            Map<String, Object> packs = new HashMap<>();
+            packs.put(NUMBER_AND_KIND_OF_PACKAGE, cargo.getNumberAndKindOfPackage());
+            packs.put(MARKS_N_NUMS, cargo.getMarksAndNumbers());
+            packs.put(DESCRIPTION, cargo.getCargoDesc());
+            packs.put(WEIGHT, cargo.getCargoGrossWeight());
+            packs.put(WEIGHT_UNIT, cargo.getCargoGrossWeightUnit());
+            packs.put(VOLUME, cargo.getCargoGrossVolume());
+            packs.put(VOLUME_UNIT, cargo.getCargoGrossVolumeUnit());
+            packsList.add(packs);
+        });
+    }
+
+
 
     private void processAdditionalDetails(HblModel hblModel, Map<String, Object> dictionary) {
         if (hblModel.consolidation != null) {
@@ -961,6 +1042,8 @@ public class HblReport extends IReport {
             }
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoTermsDescription()));
             dictionary.put(BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getBlRemarksDescription()));
+            dictionary.put(BL_REMARKS, hblModel.blObject.getHblData().getBlRemark());
+            dictionary.put(CARGO_TERMS, hblModel.blObject.getHblData().getCargoTerms());
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
