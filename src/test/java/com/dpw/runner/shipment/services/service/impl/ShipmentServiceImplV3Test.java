@@ -196,6 +196,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -8614,4 +8615,146 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
     }
+
+    @Test
+    void setCargoDetails_shouldNotSetAnyFields_whenCargoSummaryFlagFalse() {
+        CloneRequest request = createCloneRequest(false, true, true, true); // cargoSummary = false
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    @Test
+    void setCargoDetails_shouldOnlySetAdditionalTerms_whenOnlyAdditionalTermsFlagTrue() {
+        CloneRequest request = createCloneRequest(true, false, false, true);
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        verify(commonUtils, times(3)).mapIfSelected(anyBoolean(), anyString(), any());
+        verify(commonUtils, atLeastOnce()).mapIfSelected(eq(true), anyString(), any());
+        verify(commonUtils, atLeast(2)).mapIfSelected(eq(false), anyString(), any());
+    }
+
+    @Test
+    void setCargoDetails_shouldNotSetAnyValues_whenCargoSummaryTrueButAllSubFlagsFalse() {
+        CloneRequest request = createCloneRequest(true, false, false, false); // cargoSummary true, all subflags false
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        doAnswer(invocation -> {
+            Boolean shouldSet = invocation.getArgument(0);
+            String value = invocation.getArgument(1);
+            Consumer<String> setter = invocation.getArgument(2);
+            if (Boolean.TRUE.equals(shouldSet)) {
+                setter.accept(value);
+            }
+            return null;
+        }).when(commonUtils).mapIfSelected(anyBoolean(), anyString(), any());
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        assertNull(response.getGoodsDescription());
+        assertNull(response.getMarksNum());
+        assertNull(response.getAdditionalTerms());
+        verify(commonUtils, times(3)).mapIfSelected(eq(false), anyString(), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Goods Description"), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Marks"), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Additional Terms"), any());
+    }
+
+    @Test
+    void setGeneralDetails_WhenGeneralFlagIsFalse_ShouldDoNothing() {
+        CloneRequest requestData = new CloneRequest();
+        CloneFlagsRequest request = mock(CloneFlagsRequest.class);
+        when(request.isGeneral()).thenReturn(false);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        requestData.setFlags(request);
+        shipmentServiceImplV3.setGeneralDetails(requestData, shipmentDetails, response, details, builder);
+        verifyNoInteractions(commonUtils);
+    }
+
+    @Test
+    void setGeneralDetails_WhenIncotermsIsNull_ShouldHandleNullGracefully() {
+        CloneRequest requestData = new CloneRequest();
+        CloneFlagsRequest request = mock(CloneFlagsRequest.class);
+        when(request.isGeneral()).thenReturn(true);
+        when(request.isIncoterms()).thenReturn(true);
+        when(request.isCarrier()).thenReturn(true);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getIncoterms()).thenReturn(null);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        when(details.getShippingLine()).thenReturn("Hapag-Lloyd");
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        requestData.setFlags(request);
+        shipmentServiceImplV3.setGeneralDetails(requestData, shipmentDetails, response, details, builder);
+        verify(commonUtils).mapIfSelected(eq(true), eq(null), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("Hapag-Lloyd"), any());
+    }
+
+    @Test
+    void setHeadersDetails_WhenHeaderFlagIsFalse_ShouldDoNothing() {
+        CloneRequest request = mock(CloneRequest.class);
+        CloneFlagsRequest flags = mock(CloneFlagsRequest.class);
+        when(flags.isHeader()).thenReturn(false);
+        when(request.getFlags()).thenReturn(flags);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        shipmentServiceImplV3.setHeadersDetails(request, shipmentDetails, response, details, builder);
+        verifyNoInteractions(commonUtils);
+    }
+
+    @Test
+    void setHeadersDetails_WhenHeaderFlagIsTrueWithNullDetails_ShouldOnlyCallShipmentMappings() {
+        CloneRequest request = mock(CloneRequest.class);
+        CloneFlagsRequest flags = mock(CloneFlagsRequest.class);
+        when(flags.isHeader()).thenReturn(true);
+        when(flags.isMode()).thenReturn(true);
+        when(flags.isServiceType()).thenReturn(true);
+        when(flags.isShipmentType()).thenReturn(true);
+        when(flags.isCargoType()).thenReturn(true);
+        when(flags.isPaymentTerms()).thenReturn(true);
+        when(request.getFlags()).thenReturn(flags);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getTransportMode()).thenReturn("AIR");
+        when(shipmentDetails.getServiceType()).thenReturn("EXPRESS");
+        when(shipmentDetails.getDirection()).thenReturn("IMPORT");
+        when(shipmentDetails.getShipmentType()).thenReturn("FREIGHT");
+        when(shipmentDetails.getPaymentTerms()).thenReturn("PREPAID");
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        shipmentServiceImplV3.setHeadersDetails(request, shipmentDetails, response, null, builder);
+        verify(commonUtils).mapIfSelected(eq(true), eq("AIR"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("EXPRESS"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("IMPORT"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("FREIGHT"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("PREPAID"), any());
+        verify(commonUtils, times(5)).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    private CloneRequest createCloneRequest(boolean cargoSummary, boolean description,
+                                            boolean marksAndNumbers, boolean additionalTerms) {
+        CloneFlagsRequest flags = CloneFlagsRequest.builder()
+                .cargoSummary(cargoSummary)
+                .description(description)
+                .marksAndNumbers(marksAndNumbers)
+                .additionalTerms(additionalTerms)
+                .build();
+
+        return CloneRequest.builder()
+                .flags(flags)
+                .build();
+    }
+
+    private ShipmentDetails createShipmentDetails() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setGoodsDescription("Test Goods Description");
+        details.setMarksNum("Test Marks");
+        details.setAdditionalTerms("Test Additional Terms");
+        return details;
+    }
+
 }

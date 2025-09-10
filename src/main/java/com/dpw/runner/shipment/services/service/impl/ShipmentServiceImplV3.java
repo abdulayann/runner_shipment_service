@@ -894,7 +894,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+    public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if (request.getFlags().isGeneral()) {
             commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);
             if (null != details) {
@@ -903,7 +903,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setCargoDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
+    public void setCargoDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
         if (request.getFlags().isCargoSummary()) {
             commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), shipmentRetrieveLiteResponse::setGoodsDescription);
             commonUtils.mapIfSelected(request.getFlags().isMarksAndNumbers(), shipmentDetails.getMarksNum(), shipmentRetrieveLiteResponse::setMarksNum);
@@ -932,7 +932,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setHeadersDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+    public void setHeadersDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if(request.getFlags().isHeader()) {
             commonUtils.mapIfSelected(request.getFlags().isMode(), shipmentDetails.getTransportMode(), shipmentRetrieveLiteResponse::setTransportMode);
             commonUtils.mapIfSelected(request.getFlags().isServiceType(), shipmentDetails.getServiceType(), shipmentRetrieveLiteResponse::setServiceType);

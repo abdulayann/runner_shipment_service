@@ -647,7 +647,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private static void setCommodityCategory(CloneRequest request, List<Containers> list, ContainerResponse container) {
+    public static void setCommodityCategory(CloneRequest request, List<Containers> list, ContainerResponse container) {
         // commodity category
         if (request.getFlags().isContainerCommodityCategory()) {
             // Collect all categories, keeping blanks as null/empty
@@ -667,7 +667,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private static void setCargoWeight(CloneRequest request, List<Containers> list, long count, ContainerResponse container) {
+    public static void setCargoWeight(CloneRequest request, List<Containers> list, long count, ContainerResponse container) {
         // cargo weight (convert all to KG first)
         if (request.getFlags().isCargoWeightPerContainer()) {
             double totalWeightKg = list.stream()
