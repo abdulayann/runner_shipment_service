@@ -93,6 +93,9 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "pickup_from_contact_no")
     private String pickupFromContactNo;
 
+    @Column(name = "created_by_user_email")
+    private String createByUserEmail;
+
     @Column(name = "delivery_to_req_empty_positioning_date")
     private LocalDateTime deliveryToReqEmptyPositioningDate;
 

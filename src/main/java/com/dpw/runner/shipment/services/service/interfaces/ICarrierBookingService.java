@@ -46,6 +46,8 @@ public interface ICarrierBookingService {
      */
     void delete(Long id);
 
+    void cancel(Long id); // cancel status
+
     void syncCarrierBookingToService(SyncBookingToService syncBookingToService) throws RunnerException;
 
     void updateCarrierDataToBooking(InttraCarrierBookingEventDto inttraCarrierBookingEventDto);

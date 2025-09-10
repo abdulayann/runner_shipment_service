@@ -38,7 +38,7 @@ public class CarrierBookingConstants {
     public static final String CARRIER_BOOKING_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Carrier Booking Data Retrieval By Id";
     public static final String CARRIER_BOOKING_SYNC_SUCCESSFUL = "Carrier Booking successfully sync to consolidation";
 
-
+    public static final String CANCELLED = "CANCELLED";
     public static final String CARRIER_BOOKING_ID = "Carrier Booking Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String CARRIER_BOOKING = "CARRIER_BOOKING";

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -139,6 +140,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingValidationUtil.validateServiceType(request);
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
+        carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -230,6 +232,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingValidationUtil.validateServiceType(request);
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
+        carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -269,6 +272,16 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingDao.delete(id);
         log.info("CarrierBookingService.delete() successful with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
+    }
+
+    @Override
+    public void cancel(Long id) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
+                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
+
+        carrierBooking.setStatus(CarrierBookingStatus.Cancelled);
+        sendNotification(carrierBooking);
+        carrierBookingDao.save(carrierBooking);
     }
 
     @Override
@@ -702,6 +715,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 ));
     }
 
+    //call when status Change
     private void sendNotification(CarrierBooking carrierBooking) {
         try {
             List<String> requests = new ArrayList<>(
@@ -713,17 +727,25 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request = new SendEmailBaseRequest();
-                request.setTo(carrierBooking.getInternalEmails());
-                request.setSubject(carrierBookingTemplate.getSubject());
-                request.setTemplateName(carrierBookingTemplate.getName());
-                request.setHtmlBody(carrierBookingTemplate.getBody());
+                SendEmailBaseRequest request =  getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
                 notificationService.sendEmail(request);
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {
             log.error("Error in  sending carrier booking email: {}", e.getMessage());
         }
+    }
+
+    @NotNull
+    private static SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
+        String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
+        toEmails += carrierBooking.getCreateByUserEmail();
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(carrierBookingTemplate.getSubject());
+        request.setTemplateName(carrierBookingTemplate.getName());
+        request.setHtmlBody(carrierBookingTemplate.getBody());
+        return request;
     }
 
     public List<EmailTemplatesRequest> getCarrierBookingEmailTemplate(List<String> templateCodes) {

@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -108,6 +109,19 @@ public class CarrierBookingController {
         return ResponseHelper.buildSuccessResponse();
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = CarrierBookingConstants.CANCELLED),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PutMapping(ApiConstants.CANCEL)
+    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
+    public ResponseEntity<IRunnerResponse> cancel(@RequestParam Long id) {
+        log.info("Received Carrier Booking Cancel request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        carrierBookingService.cancel(id);
+        log.info("Carrier Booking Cancel successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        return ResponseHelper.buildSuccessResponse();
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
@@ -127,12 +141,13 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<IRunnerResponse> syncCarrierBookingToService(@RequestBody @Valid SyncBookingToService syncBookingToService) {
+    public ResponseEntity<IRunnerResponse> syncCarrierBookingToService(@RequestBody @Valid SyncBookingToService syncBookingToService) throws RunnerException {
         log.info("Received Carrier Booking Sync request with RequestId: {} and body: {}", LoggerHelper.getRequestIdFromMDC(), syncBookingToService);
         carrierBookingService.syncCarrierBookingToService(syncBookingToService);
         log.info("Carrier Booking Sync successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), syncBookingToService);
         return ResponseHelper.buildSuccessResponse();
     }
+
     @GetMapping
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.RETRIEVE_DEFAULT_SUCCESS)})
     public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
@@ -145,4 +160,6 @@ public class CarrierBookingController {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+
 }
