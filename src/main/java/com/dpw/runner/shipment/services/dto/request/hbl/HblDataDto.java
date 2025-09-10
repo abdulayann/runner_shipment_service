@@ -53,6 +53,7 @@ public class HblDataDto {
     private String cargoNetWeightUnit;
     private String cargoGrossVolumeUnit;
     private String cargoGrossWeightUnit;
+    private String totalUnitsReceivedByCarrier;
     private String reason;
     private String houseBill;
     private String voyage;

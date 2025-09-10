@@ -538,6 +538,11 @@ public abstract class IReport {
         populateV3TruckDriverDetailsTags(shipment, dictionary);
     }
 
+    public void populateTotalCountFromCargoSummary(Hbl blObject, Map<String, Object> dictionary) {
+        if (Objects.isNull(blObject) || Objects.isNull(blObject.getHblData())) return;
+        dictionary.put(BL_TOTAL_PACKS_COUNT, blObject.getHblData().getTotalUnitsReceivedByCarrier());
+    }
+
     private void addNoOfPacks(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(shipment.getNoOfPacks() != null) {
             dictionary.put(ReportConstants.NO_OF_PACKAGES, getDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
