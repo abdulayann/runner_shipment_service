@@ -4397,7 +4397,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
 
-    protected void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+    public void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment) {
 
         if(isValidCutoffCase(oldConsolidation, newConsolidation, shipmentDetailsList, fromAttachShipment)) return;

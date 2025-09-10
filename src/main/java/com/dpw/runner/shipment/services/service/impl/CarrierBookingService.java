@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
@@ -26,9 +27,11 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -50,6 +53,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
@@ -73,6 +77,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,9 +111,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
     private final IConsolidationDetailsDao consolidationDetailsDao;
+    private final IConsolidationV3Service consolidationV3Service;
+    private final IShipmentDao shipmentDao;
+
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
@@ -120,6 +128,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.masterDataUtils = masterDataUtils;
         this.executorServiceMasterData = executorServiceMasterData;
         this.consolidationDetailsDao = consolidationDetailsDao;
+        this.consolidationV3Service = consolidationV3Service;
+        this.shipmentDao = shipmentDao;
     }
 
     @Override
@@ -261,7 +271,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public void syncCarrierBookingToService(SyncBookingToService syncBookingToService) {
+    public void syncCarrierBookingToService(SyncBookingToService syncBookingToService) throws RunnerException {
         if (!CarrierBookingConstants.CARRIER_BOOKING.equalsIgnoreCase(syncBookingToService.getEntityType())) {
             throw new ValidationException("Invalid entity Type : " + syncBookingToService.getEntityType());
         }
@@ -272,8 +282,49 @@ public class CarrierBookingService implements ICarrierBookingService {
         if (Constants.CONSOLIDATION.equalsIgnoreCase(carrierBooking.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             setCarrierBookingSyncFields(consolidationDetails, carrierBooking);
+            syncCutOffFields(consolidationDetails, carrierBooking);
+
             consolidationDetailsDao.save(consolidationDetails);
         }
+    }
+
+    private void syncCutOffFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) throws RunnerException {
+        SailingInformation sailingInformation = carrierBooking.getSailingInformation();
+        if (sailingInformation.getVerifiedGrossMassCutoff() != null) {
+            consolidationDetails.setVerifiedGrossMassCutoff(sailingInformation.getVerifiedGrossMassCutoff());
+        }
+
+        if (sailingInformation.getReeferCutoff() != null) {
+            consolidationDetails.setReeferCutoff(sailingInformation.getReeferCutoff());
+        }
+
+        if (sailingInformation.getShipInstructionCutoff() != null) {
+            consolidationDetails.setShipInstructionCutoff(sailingInformation.getShipInstructionCutoff());
+        }
+
+        if (sailingInformation.getHazardousBookingCutoff() != null) {
+            consolidationDetails.setHazardousBookingCutoff(sailingInformation.getHazardousBookingCutoff());
+        }
+
+        if (sailingInformation.getEmptyContainerPickupCutoff() != null) {
+            consolidationDetails.setEarliestEmptyEquPickUp(sailingInformation.getEmptyContainerPickupCutoff());
+        }
+
+        if (sailingInformation.getLoadedContainerGateInCutoff() != null) {
+            consolidationDetails.setTerminalCutoff(sailingInformation.getLoadedContainerGateInCutoff());
+        }
+        updateShipmentCutoffFields(consolidationDetails);
+    }
+
+    private void updateShipmentCutoffFields(ConsolidationDetails consolidationDetails) throws RunnerException {
+        ConsolidationDetails oldConsolidation = consolidationDetailsDao.findConsolidationsById(consolidationDetails.getId());
+        List<ShipmentDetails> shipmentDetailsList = Optional.ofNullable(consolidationDetails.getShipmentsList())
+                .orElse(Collections.emptySet())
+                .stream()
+                .toList();
+
+        consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldConsolidation, consolidationDetails, shipmentDetailsList, false);
+        shipmentDao.saveAll(shipmentDetailsList);
     }
 
     private void setCarrierBookingSyncFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) {
