@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.util.UUID;
 
 @Getter
-public class GenericKafkaPayload<T> {
+public class GenericKafkaPayload {
     private final String id;      // unique id generated
     private final GenericKafkaMsgType type;    // entity type
     private final String payload; // serialized JSON payload
