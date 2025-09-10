@@ -96,9 +96,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
-    @ExcludeTimeZone
     private LocalDateTime cargoReadinessDate;
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean controlled;
     private String controlledReferenceNumber;

@@ -84,6 +84,8 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String WeightChargeableUnit;
     @JsonProperty("VolumeChargeableUnit")
     private String VolumeChargeableUnit;
+    @JsonProperty("DefaultPackUnit")
+    private String defaultPackUnit;
     @JsonProperty("MeasurementChargeableUnit")
     private String MeasurementChargeableUnit;
     @JsonProperty("TemperatureUnit")

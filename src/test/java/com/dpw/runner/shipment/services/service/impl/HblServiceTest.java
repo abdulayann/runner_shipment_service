@@ -1437,6 +1437,52 @@ class HblServiceTest extends CommonMocks {
         assertFalse(responseBody.getWarning().contains("CONT002"));
     }
 
+
+    @Test
+    void testValidateSealNumberWarning_containersMissingSeals2() {
+        Long shipmentId = 4L;
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setDirection(Constants.DIRECTION_EXP);
+
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerCode("20GP");
+        container1.setCarrierSealNumber(null);
+        container1.setCustomsSealNumber(null);
+        container1.setShipperSealNumber(null);
+        container1.setVeterinarySealNumber(null);
+        // All seals empty
+
+        Containers container3 = new Containers();
+        container3.setId(2L);
+        container3.setContainerNumber("CONT003");
+        container3.setContainerCode("20FP");
+        container3.setCarrierSealNumber(null);
+        container3.setCustomsSealNumber(null);
+        container3.setShipperSealNumber(null);
+        container3.setVeterinarySealNumber(null);
+
+        Containers container2 = new Containers();
+        container2.setId(4L);
+        container2.setContainerCode("20GP");
+        container2.setCarrierSealNumber("SealX"); // Has at least one seal
+
+        shipment.setContainersList(new HashSet<>(Arrays.asList(container3, container1, container2)));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(shipmentId);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(responseBody);
+        assertNotNull(responseBody.getWarning());
+        assertTrue(responseBody.getWarning().contains("20GP"));
+        assertTrue(responseBody.getWarning().contains("CONT003"));
+        assertFalse(responseBody.getWarning().contains("CONT002"));
+    }
+
     @Test
     void testValidateSealNumberWarning_AllContainersHaveSeals() {
         Containers container = new Containers();

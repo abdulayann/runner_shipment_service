@@ -8,16 +8,6 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -30,18 +20,6 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -5070,6 +5048,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
             response.setMasterDataMap(masterDataResponse);
             setTenantAndDefaultAgent(response);
+            if(Objects.isNull(response.getAllocations())) {
+                response.setAllocations(new AllocationsResponse());
+            }
+            if(Objects.isNull(response.getAchievedQuantities())) {
+                response.setAchievedQuantities(new AchievedQuantitiesResponse());
+            }
+            response.getAllocations().setWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAllocations().setVolumeUnit(VOLUME_UNIT_M3);
+            response.getAllocations().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAllocations().setDgPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setConsolidatedWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAchievedQuantities().setConsolidatedVolumeUnit(VOLUME_UNIT_M3);
+            response.getAchievedQuantities().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setDgPacksType(tenantSettings.getDefaultPackUnit());
             return response;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

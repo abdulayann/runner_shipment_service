@@ -22,4 +22,8 @@ public interface IShipmentSettingsDao {
     List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId);
     Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
     Optional<ShipmentSettingsDetails> getSettingsByTenantIdWithCache(Integer tenantId);
+    Optional<ShipmentSettingsDetails> checkMigrationRunning();
+    void updateMigrationRunningFlag(Boolean isMigrationRunning, Integer tenantId);
+    void updateIsRestoreRunningFlag(Boolean isRestoreRunning, Integer tenantId);
+    Optional<ShipmentSettingsDetails> checkRestoreRunning();
 }

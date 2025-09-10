@@ -13,7 +13,7 @@ import java.util.List;
 public interface INetworkTransferBackupRepository extends JpaRepository<NetworkTransferBackupEntity, Long> {
     void deleteByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT * FROM network_transfer_backup c WHERE c.tenant_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM network_transfer_backup c WHERE c.tenant_id = ?1 and c.is_deleted = false", nativeQuery = true)
     @Transactional
     List<NetworkTransferBackupEntity> findNetworkTransferIdsByTenantId(Integer tenantId);
 

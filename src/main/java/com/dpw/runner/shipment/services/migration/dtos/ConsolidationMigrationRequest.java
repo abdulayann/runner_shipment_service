@@ -16,4 +16,7 @@ public class ConsolidationMigrationRequest {
 
     private Long bookingId;
 
+    private Integer weightDecimal;
+    private Integer volumeDecimal;
+
 }

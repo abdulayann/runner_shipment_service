@@ -170,8 +170,10 @@ public class NotesUtil {
         Set<Containers> containersSet = new HashSet<>(containersList);
         StringBuilder text = new StringBuilder();
         Set<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
-        for(ShipmentDetails shipmentDetails: shipmentDetailsList){
-            addNotesForShipment(shipmentDetails);
+        if (shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
+            for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                addNotesForShipment(shipmentDetails);
+            }
         }
 
         text.append("Please note that the Cargo details have been amended since it is a V2 consolidation opened in V3.");
