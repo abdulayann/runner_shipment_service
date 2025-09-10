@@ -3767,10 +3767,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private DBOperationType determineOperationType(OceanDGStatus dgStatus, boolean isOceanDgUser) {
-        if (dgStatus == OCEAN_DG_REQUESTED && isOceanDgUser) return DG_APPROVE;
-        return dgStatus == OCEAN_DG_REQUESTED
-                ? DBOperationType.DG_REQUEST
-                : COMMERCIAL_REQUEST;
+        if (dgStatus == OCEAN_DG_APPROVAL_REQUIRED && isOceanDgUser) return DG_APPROVE;
+        return (dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_REQUESTED) ? DBOperationType.DG_REQUEST : COMMERCIAL_REQUEST;
     }
 
     private void sendEmailForDGApproval(ShipmentDetails shipmentDetails, String remarks)
