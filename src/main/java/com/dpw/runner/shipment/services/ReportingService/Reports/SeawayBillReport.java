@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_TOTAL_PACKS_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_ADDRESS;
@@ -157,7 +158,6 @@ public class SeawayBillReport extends IReport {
             this.populateShipmentReportData(dict, null, model.getShipment().getId());
             this.getContainerDetails(model.getShipment(), dict);
             this.getPackingDetails(model.getShipment(), dict);
-            populateTotalCountFromCargoSummary(model.getShipment(), model.blObject, dict);
         }
 
         return dict;
@@ -230,6 +230,7 @@ public class SeawayBillReport extends IReport {
         dict.put("BLCustomConsigner", consignerWithNameAndAddress);
         dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+        dict.put(BL_TOTAL_PACKS_COUNT, model.blObject.getHblData().getTotalUnitsReceivedByCarrier());
         populateFreightsAndCharges(dict, model.blObject);
     }
 

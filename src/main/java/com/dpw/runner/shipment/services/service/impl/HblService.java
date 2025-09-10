@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LCL;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -524,9 +526,7 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
-        hblData.setContainerCount(shipmentDetail.getContainersList().stream()
-                .mapToLong(container -> Objects.nonNull(container.getContainerCount()) ? container.getContainerCount() : 0L)
-                .sum());
+        populateTotalUnitsReceivedByCarrier(shipmentDetail, hblData);
         boolean syncShipment = getSyncShipment(shipmentDetail);
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         mapVoyageVesselFromRouting(routing, hblData, carrierDetails);
@@ -569,6 +569,17 @@ public class HblService implements IHblService {
 
         return hblData;
     }
+
+    private void populateTotalUnitsReceivedByCarrier(ShipmentDetails shipmentDetail, HblDataDto hblData) {
+        if (shipmentDetail.getShipmentType().equals(FCL)) {
+            hblData.setTotalUnitsReceivedByCarrier(String.valueOf(shipmentDetail.getContainersList().stream()
+                    .mapToLong(container -> Objects.nonNull(container.getContainerCount()) ? container.getContainerCount() : 0L)
+                    .sum()) + " CONTAINER(S)");
+        } else if (shipmentDetail.getShipmentType().equals(LCL)) {
+            hblData.setTotalUnitsReceivedByCarrier(String.valueOf(hblData.getPackageCount()) + " PACKAGE(S)");
+        }
+    }
+
     private void mapPartiesV3(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
         mapDeliveryDataInHblV3(additionalDetails, hblData);
         mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
