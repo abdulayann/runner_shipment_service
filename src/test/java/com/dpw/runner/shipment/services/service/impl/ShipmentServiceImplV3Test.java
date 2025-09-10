@@ -8557,15 +8557,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testValidateShipment_ShipmentNotFound() {
         Long shipmentId = 1L;
-
-        // Mocking shipmentDao to return empty Optional
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
-
-        // Expect DataRetrievalFailureException when shipment not found
         DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentServiceImplV3.validateShipment(shipmentId);
         });
-
         assertEquals("Failed to fetch data for given constraint.", exception.getMessage());
     }
 
@@ -8600,7 +8595,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    public void testValidateShipment_DisallowedTransportModeConfig() {
+    void testValidateShipment_DisallowedTransportModeConfig() {
         Long shipmentId = 3L;
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
