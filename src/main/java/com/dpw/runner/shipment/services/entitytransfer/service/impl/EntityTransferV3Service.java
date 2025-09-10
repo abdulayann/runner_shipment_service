@@ -308,7 +308,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             taskPayload.getAdditionalDetails().setRegulatedEntityCategory(null);
             taskPayload.getAdditionalDetails().setAdditionalSecurityInformation(null);
             taskPayload.getAdditionalDetails().setHouseBillType(null);
-            taskPayload.getAdditionalDetails().setReleaseType(null);
             taskPayload.getAdditionalDetails().setPlaceOfSupply(null);
             taskPayload.getAdditionalDetails().setPlaceOfIssue(null);
             taskPayload.getAdditionalDetails().setBLChargesDisplay(null);
