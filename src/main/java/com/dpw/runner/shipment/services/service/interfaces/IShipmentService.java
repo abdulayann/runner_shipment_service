@@ -121,7 +121,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
 
-    String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException;
+    ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) throws RunnerException;
     PartiesRequest fetchOrgInfoFromV1(PartiesOrgAddressRequest request) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId);
