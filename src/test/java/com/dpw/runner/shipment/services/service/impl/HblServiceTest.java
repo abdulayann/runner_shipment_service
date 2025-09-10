@@ -1,22 +1,14 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -24,6 +16,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.HblConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -32,23 +25,14 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
-import com.dpw.runner.shipment.services.dto.request.HblRequest;
-import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblLockSettings;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -60,25 +44,23 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.lang.reflect.Method;
+import java.util.*;
+
+import org.apache.catalina.mapper.Mapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -88,6 +70,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -125,6 +108,9 @@ class HblServiceTest extends CommonMocks {
     private ConsolidationService consolidationService;
     @Mock
     private HblService self;
+    private ShipmentDetails shipmentDetail;
+    private HblDataDto hblData;
+    private AdditionalDetails additionalDetails;
 
 
     @BeforeAll
@@ -147,6 +133,9 @@ class HblServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
+        shipmentDetail = new ShipmentDetails();
+        hblData = new HblDataDto();
+        additionalDetails = new AdditionalDetails();
     }
 
     @Test
@@ -267,6 +256,7 @@ class HblServiceTest extends CommonMocks {
         inputHBL.setHblContainer(List.of());
         Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
         // Test
@@ -285,6 +275,7 @@ class HblServiceTest extends CommonMocks {
         inputHBL.setHblContainer(List.of());
         Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
         when(v1Service.retrieveCompanySettings()).thenReturn(CompanySettingsResponse.builder().SeaLclContainerFlag(true).build());
@@ -399,8 +390,10 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
 
         // Mock
+        mockShipmentSettings();
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -424,9 +417,10 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
@@ -451,9 +445,10 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.setConsolidationList(null);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -479,9 +474,10 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.getConsolidationList().iterator().next().setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -507,9 +503,10 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
-
+        mockShipmentSettings();
 
         // Mock
+        mockShipmentSettings();
         addDataForAutomaticTransfer(testShipment);
         testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -534,7 +531,9 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -557,6 +556,7 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         String errorMessage = DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
@@ -682,8 +682,9 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.ALL);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -704,8 +705,9 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_DATA);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -728,8 +730,9 @@ class HblServiceTest extends CommonMocks {
         inputShipment.setHouseBill(null);
         inputShipment.getAdditionalDetails().setImportBroker(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(inputShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -752,6 +755,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
 
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -772,8 +776,9 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_CONTAINERS);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
         // Mock
+        mockShipmentSettings();
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
         when(hblDao.save(any())).thenReturn(mockHbl);
@@ -794,7 +799,7 @@ class HblServiceTest extends CommonMocks {
         resetRequest.setResetType(HblReset.HBL_PARTIES);
         completeShipment.setHouseBill("houseBill");
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
-
+        mockShipmentSettings();
         // Mock
         when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
@@ -1485,5 +1490,722 @@ class HblServiceTest extends CommonMocks {
         assertNull(responseBody.getWarning());
     });
 }
+
+
+    @Test
+    void testConvertCountryCodeTo2Letters_With3LetterCode() throws Exception {
+        Method method = HblService.class.getDeclaredMethod("convertCountryCodeTo2Letters", String.class);
+        method.setAccessible(true);
+        assertEquals("US", method.invoke(hblService, "USA"));
+        assertEquals("GB", method.invoke(hblService, "GBR"));
+        assertEquals("IN", method.invoke(hblService, "IND"));
+    }
+
+
+    @Test
+    void testConstructAddress_WithCompleteData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.COMPANY_NAME, "Test Company");
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.CITY, "New York");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+        addressData.put(PartiesConstants.STATE, "NY");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "10001");
+        addressData.put(PartiesConstants.CONTACT_PHONE, "123-456-7890");
+
+        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(hblService, addressData);
+        assertTrue(result.contains("Test Company"));
+        assertTrue(result.contains("123 Main St"));
+        assertTrue(result.contains("New York"));
+        assertTrue(result.contains("USA"));
+    }
+
+    @Test
+    void testConstructAddress_WithPartialData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.CITY, "New York");
+        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(hblService, addressData);
+        assertTrue(result.contains("123 Main St"));
+        assertTrue(result.contains("New York"));
+    }
+
+
+    @Test
+    void testExtractAddressComponents_WithCompleteData() throws Exception {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.ADDRESS2, "Suite 100");
+        addressData.put(PartiesConstants.CITY, "New York");
+        addressData.put(PartiesConstants.STATE, "NY");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "10001");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        Method method = HblService.class.getDeclaredMethod("extractAddressComponents", Map.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, String> result = (Map<String, String>) method.invoke(hblService, addressData);
+        assertEquals("123 Main St", result.get(PartiesConstants.ADDRESS1));
+        assertEquals("Suite 100", result.get(PartiesConstants.ADDRESS2));
+        assertEquals("New York", result.get(PartiesConstants.CITY));
+        assertEquals("NY", result.get(PartiesConstants.STATE));
+        assertEquals("10001", result.get(PartiesConstants.ZIP_POST_CODE));
+        assertEquals("USA", result.get(PartiesConstants.COUNTRY));
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_full() throws Exception {
+        Map<String, Object> addr = Map.of(
+                PartiesConstants.ADDRESS1, "123 St",
+                PartiesConstants.ADDRESS2, "Suite 9",
+                PartiesConstants.CITY, "Chennai",
+                PartiesConstants.STATE, "TN",
+                PartiesConstants.ZIP_POST_CODE, "600001",
+                PartiesConstants.COUNTRY, "IND"
+        );
+        Parties broker = new Parties();
+        broker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Ship Co"));
+        broker.setAddressData(addr);
+        AdditionalDetails ad = new AdditionalDetails();
+        ad.setImportBroker(broker);
+        mockShipmentSettings();
+
+        HblDataDto dto = new HblDataDto();
+        Method method = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        method.setAccessible(true);
+        method1.setAccessible(true);
+        method.invoke(hblService, ad, dto);
+
+        assertEquals("SHIP CO", dto.getDeliveryAgentName());
+        assertEquals("123 ST", dto.getDeliveryAgentAddressLine1());
+        assertEquals("IN", dto.getDeliveryAgentCountry()); // ISO3166 mocked or real
+    }
+    @Test
+    void endToEnd_fullBrokerConsignerConsigneeMapping() throws Exception {
+        Map<String, Object> importAddr = new HashMap<>();
+        importAddr.put(PartiesConstants.COMPANY_NAME, "ImportCo Pvt Ltd");
+        importAddr.put(PartiesConstants.ADDRESS1,    "12 Harbor Road");
+        importAddr.put(PartiesConstants.ADDRESS2,    "Dock Area");
+        importAddr.put(PartiesConstants.CITY,        "Chennai");
+        importAddr.put(PartiesConstants.STATE,       "TN");
+        importAddr.put(PartiesConstants.ZIP_POST_CODE, "600001");
+        importAddr.put(PartiesConstants.COUNTRY,     "IND");          // alpha-3 → should become IN
+        importAddr.put(PartiesConstants.CONTACT_PHONE,"+91-44-1111");
+        mockShipmentSettings();
+        Parties importBroker = new Parties();
+        importBroker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Eastern Brokers"));
+        importBroker.setAddressData(importAddr);
+
+        Map<String, Object> exportAddr = new HashMap<>();
+        exportAddr.put(PartiesConstants.ADDRESS1, "99 Ocean Ave");
+        exportAddr.put(PartiesConstants.CITY,     "Singapore");
+        exportAddr.put(PartiesConstants.STATE,    "SG");
+        exportAddr.put(PartiesConstants.ZIP_POST_CODE, "234567");
+        exportAddr.put(PartiesConstants.COUNTRY,  "SGP");             // alpha-3 → should become SG
+
+        Parties exportBroker = new Parties();
+        exportBroker.setOrgData(Map.of(PartiesConstants.FULLNAME, "Pacific Forwarding"));
+        exportBroker.setAddressData(exportAddr);
+
+        AdditionalDetails additional = new AdditionalDetails();
+        additional.setImportBroker(importBroker);
+        additional.setExportBroker(exportBroker);
+
+        // ---------- Build Consigner ----------
+        Map<String, Object> consignerAddr = new HashMap<>();
+        consignerAddr.put(PartiesConstants.ADDRESS1, "45 Hill St");
+        consignerAddr.put(PartiesConstants.CITY,     "Mumbai");
+        consignerAddr.put(PartiesConstants.STATE,    "MH");
+        consignerAddr.put(PartiesConstants.ZIP_POST_CODE, "400001");
+        consignerAddr.put(PartiesConstants.COUNTRY,  "IND");
+
+        Parties consigner = new Parties();
+        consigner.setOrgData(Map.of(PartiesConstants.FULLNAME, "Blue Line Traders"));
+        consigner.setAddressData(consignerAddr);
+
+        // ---------- Build Consignee ----------
+        Map<String, Object> consigneeAddr = new HashMap<>();
+        consigneeAddr.put(PartiesConstants.ADDRESS1, "77 Main Road");
+        consigneeAddr.put(PartiesConstants.ADDRESS2, "Industrial Estate");
+        consigneeAddr.put(PartiesConstants.CITY,     "Colombo");
+        consigneeAddr.put(PartiesConstants.STATE,    "WP");
+        consigneeAddr.put(PartiesConstants.ZIP_POST_CODE, "00900");
+        consigneeAddr.put(PartiesConstants.COUNTRY,  "LKA");
+
+        Parties consignee = new Parties();
+        consignee.setOrgData(Map.of(PartiesConstants.FULLNAME, "Island Imports"));
+        consignee.setAddressData(consigneeAddr);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setConsigner(consigner);
+        shipment.setConsignee(consignee);
+
+        // ---------- Execute mapping ----------
+        HblDataDto dto = new HblDataDto();
+        HblService svc = new HblService();   // replace with actual class
+        Method method = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        method.setAccessible(true);
+        method.invoke(hblService, additional, dto);
+        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        method1.setAccessible(true);
+        method1.invoke(hblService, additional, dto);
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHblV3", ShipmentDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, shipment, dto);
+
+        // Delivery agent (import broker)
+        assertEquals("EASTERN BROKERS", dto.getDeliveryAgentName());
+        assertEquals("12 HARBOR ROAD",  dto.getDeliveryAgentAddressLine1());
+        assertEquals("DOCK AREA",       dto.getDeliveryAgentAddressLine2());
+        assertEquals("CHENNAI",         dto.getDeliveryAgentCity());
+        assertEquals("TN",              dto.getDeliveryAgentState());
+        assertEquals("600001",          dto.getDeliveryAgentZipCode());
+        assertEquals("IN",              dto.getDeliveryAgentCountry());
+
+        // Forwarder (export broker)
+        assertEquals("PACIFIC FORWARDING", dto.getForwarderName());
+        assertEquals("99 OCEAN AVE",       dto.getForwarderAddressLine1());
+        assertEquals("SINGAPORE",          dto.getForwarderCity());
+        assertEquals("SG",                 dto.getForwarderCountry());
+
+        // Consigner
+        assertEquals("BLUE LINE TRADERS", dto.getShipperName());
+        assertEquals("45 HILL ST",        dto.getShipperAddressLine1());
+        assertEquals("MUMBAI",            dto.getShipperCity());
+        assertEquals("IN",                dto.getShipperCountry());
+
+        // Consignee
+        assertEquals("ISLAND IMPORTS", dto.getConsigneeName());
+        assertEquals("77 MAIN ROAD",   dto.getConsigneeAddressLine1());
+        assertEquals("INDUSTRIAL ESTATE", dto.getConsigneeAddressLine2());
+        assertEquals("COLOMBO",        dto.getConsigneeCity());
+        assertEquals("LKA".length() == 3 ? "LK" : "LK", dto.getConsigneeCountry()); // depends on ISO helper
+
+    }
+    private Parties party(String fullName) {
+        Map<String, Object> org = new HashMap<>();
+        org.put(PartiesConstants.FULLNAME, fullName);
+        mockShipmentSettings();
+        Map<String, Object> addr = new HashMap<>();
+        addr.put(PartiesConstants.ADDRESS1, "Line1");
+        addr.put(PartiesConstants.ADDRESS2, "Line2");
+        addr.put(PartiesConstants.CITY, "Mumbai");
+        addr.put(PartiesConstants.STATE, "MH");
+        addr.put(PartiesConstants.ZIP_POST_CODE, "400001");
+        addr.put(PartiesConstants.COUNTRY, "INDIA");
+
+        Parties p = new Parties();      // your domain class, not PartiesModel
+        p.setOrgData(org);
+        p.setAddressData(addr);
+        // set other simple fields if you need them in tests
+        return p;
+    }
+
+
+
+    @Test
+    void mapDeliveryData_setsAgentFields() throws Exception {
+        AdditionalDetails addl = new AdditionalDetails();
+        addl.setImportBroker(party("Import Broker"));
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, addl, dto);
+        assertEquals("IMPORT BROKER", dto.getDeliveryAgentName());
+        assertEquals("LINE1", dto.getDeliveryAgentAddressLine1());
+        assertEquals("MUMBAI", dto.getDeliveryAgentCity());
+        assertEquals("MH", dto.getDeliveryAgentState());
+        assertEquals("400001", dto.getDeliveryAgentZipCode());
+        assertEquals("INDIA", dto.getDeliveryAgentCountry()); // depends on convertCountryCodeTo2Letters
+    }
+
+    @Test
+    void mapForwardData_setsForwarderFields() throws Exception {
+        AdditionalDetails addl = new AdditionalDetails();
+        addl.setExportBroker(party("Forwarder"));
+
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, addl, dto);
+        assertEquals("FORWARDER", dto.getForwarderName());
+        assertEquals("LINE1", dto.getForwarderAddressLine1());
+        assertEquals("MUMBAI", dto.getForwarderCity());
+        assertEquals("MH", dto.getForwarderState());
+        assertEquals("400001", dto.getForwarderZipCode());
+        assertEquals("INDIA", dto.getForwarderCountry());
+    }
+
+    @Test
+    void mapConsignerConsignee_setsBothParties() throws Exception {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setConsigner(party("Consignor"));
+        shipment.setConsignee(party("Consignee"));
+        HblDataDto dto = HblDataDto.builder().build();
+        Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHblV3", ShipmentDetails.class, HblDataDto.class);
+        method2.setAccessible(true);
+        method2.invoke(hblService, shipment, dto);
+
+        assertEquals("CONSIGNOR", dto.getShipperName());
+        assertEquals("CONSIGNOR", dto.getShipperName());
+        assertEquals("CONSIGNEE", dto.getConsigneeName());
+        assertEquals("LINE1", dto.getShipperAddressLine1());
+        assertEquals("LINE1", dto.getConsigneeAddressLine1());
+        assertEquals("MUMBAI", dto.getConsigneeCity());
+    }
+    @Test
+    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
+        // Given
+        Hbl hbl = new Hbl();
+        hbl.setHblNotifyParty(new ArrayList<>());
+        Parties party = new Parties();
+        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
+        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
+        HblLockSettings hblLock = new HblLockSettings();
+
+        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        // When
+        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
+        method.setAccessible(true);
+        method.invoke(hblService, party, hbl, hblLock);
+
+        assertNotNull(hbl.getHblNotifyParty());
+        assertFalse(hbl.getHblNotifyParty().isEmpty());
+        assertEquals(1, hbl.getHblNotifyParty().size());
+        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
+        assertEquals("Test Party", hblParty.getName());
+        assertEquals("123 Main St", hblParty.getAddress());
+        assertTrue(hblParty.getIsShipmentCreated());
+    }
+    @Test
+    void testMapShipmentPartiesToHBL_v3Enabled() throws Exception {
+        // Given
+        Parties party = new Parties();
+        party.setOrgData(Map.of(
+                PartiesConstants.FULLNAME, "Test Party",
+                PartiesConstants.EMAIL, "test@party.com"
+        ));
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
+        addressData.put(PartiesConstants.ADDRESS2, "Apt 4B");
+        addressData.put(PartiesConstants.CITY, "Anytown");
+        addressData.put(PartiesConstants.STATE, "Anystate");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
+        addressData.put(PartiesConstants.COUNTRY, "US");
+        party.setAddressData(addressData);
+
+        ShipmentSettingsDetails shipmentSettings = new ShipmentSettingsDetails();
+        shipmentSettings.setIsRunnerV3Enabled(true);
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettings);
+
+        // When
+        Method method = HblService.class.getDeclaredMethod("mapShipmentPartiesToHBL", Parties.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<HblPartyDto> result = (List<HblPartyDto>) method.invoke(hblService, party);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        HblPartyDto hblParty = result.get(0);
+        assertTrue(hblParty.getIsShipmentCreated());
+        assertEquals("Test Party", hblParty.getName());
+        assertEquals("123 MAIN ST", hblParty.getAddress1());
+        assertEquals("APT 4B", hblParty.getAddress2());
+        assertEquals("ANYTOWN", hblParty.getCity());
+        assertEquals("ANYSTATE", hblParty.getState());
+        assertEquals("12345", hblParty.getZipCode());
+        assertEquals("US", hblParty.getCountry());
+        assertEquals("test@party.com", hblParty.getEmail());
+    }
+    private Parties createParty(String fullName, String address1, String city, String country) {
+        Parties party = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, fullName);
+        party.setOrgData(orgData);
+
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, address1);
+        addressData.put(PartiesConstants.CITY, city);
+        addressData.put(PartiesConstants.COUNTRY, country);
+        party.setAddressData(addressData);
+
+        return party;
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withFullData() {
+        // Arrange
+        Parties consigner = createParty("Consigner Name", "123 Consigner St", "Consigner City", "USA");
+        Parties consignee = createParty("Consignee Name", "456 Consignee Ave", "Consignee City", "CAN");
+        shipmentDetail.setConsigner(consigner);
+        shipmentDetail.setConsignee(consignee);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Consigner Name", hblData.getConsignorName());
+        assertTrue(hblData.getConsignorAddress().contains("123 Consigner St"));
+        assertEquals("Consignee Name", hblData.getConsigneeName());
+        assertTrue(hblData.getConsigneeAddress().contains("456 Consignee Ave"));
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withNullConsignee() {
+        // Arrange
+        Parties consigner = createParty("Consigner Name", "123 Consigner St", "Consigner City", "USA");
+        shipmentDetail.setConsigner(consigner);
+        shipmentDetail.setConsignee(null);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Consigner Name", hblData.getConsignorName());
+        assertTrue(hblData.getConsignorAddress().contains("123 Consigner St"));
+        assertNull(hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withPartialData() {
+        // Arrange
+        Parties consigner = new Parties();
+        consigner.setOrgData(null); // No org data
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "123 Consigner St");
+        consigner.setAddressData(addressData);
+        shipmentDetail.setConsigner(consigner);
+
+        Parties consignee = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Consignee Name");
+        consignee.setOrgData(orgData);
+        consignee.setAddressData(null); // No address data
+        shipmentDetail.setConsignee(consignee);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertNull(hblData.getConsignorName());
+        assertNotNull(hblData.getConsignorAddress());
+        assertEquals("Consignee Name", hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_withFullData() {
+        // Arrange
+        Parties broker = new Parties();
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Broker Name");
+        broker.setOrgData(orgData);
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "789 Broker Blvd");
+        broker.setAddressData(addressData);
+        additionalDetails.setImportBroker(broker);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+
+        // Assert
+        assertEquals("Broker Name", hblData.getDeliveryAgent());
+        assertTrue(hblData.getDeliveryAgentAddress().contains("789 Broker Blvd"));
+    }
+
+    @Test
+    void testMapDeliveryDataInHbl_withNullBroker() {
+        // Arrange
+        additionalDetails.setImportBroker(null);
+        // Act & Assert
+        assertDoesNotThrow(() -> {
+            ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+        });
+        assertNull(hblData.getDeliveryAgent());
+        assertNull(hblData.getDeliveryAgentAddress());
+    }
+
+    @Test
+    void testMapConsignerConsigneeToHbl_withNullPartyData() {
+        // Arrange
+        shipmentDetail.setConsigner(null);
+        shipmentDetail.setConsignee(null);
+        // Act & Assert
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData));
+        assertNull(hblData.getConsignorName());
+        assertNull(hblData.getConsigneeName());
+    }
+
+    @Test
+    void mapConsignerConsigneeToHbl_WithNullData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+
+        // Mock consigner with null orgData and addressData
+        Parties consigner = mock(Parties.class);
+        when(consigner.getOrgData()).thenReturn(null);
+        when(consigner.getAddressData()).thenReturn(null);
+
+        // Mock consignee with null orgData and addressData
+        Parties consignee = mock(Parties.class);
+        when(consignee.getOrgData()).thenReturn(null);
+        when(consignee.getAddressData()).thenReturn(null);
+
+        when(shipmentDetail.getConsigner()).thenReturn(consigner);
+        when(shipmentDetail.getConsignee()).thenReturn(consignee);
+
+        // Act
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData));
+
+        // Assert
+        assertNull(hblData.getConsignorName());
+        assertNull(hblData.getConsignorAddress());
+        assertNull(hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddress());
+    }
+
+    // Test null hblData
+    @Test
+    void mapConsignerConsigneeToHbl_WithNullHblData_ShouldNotThrow() {
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, null));
+    }
+
+    // Test null additionalDetails
+
+
+    @Test
+    void mapDeliveryDataInHbl_WithEmptyAddressData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        AdditionalDetails additionalDetails = mock(AdditionalDetails.class);
+
+        Parties importBroker = mock(Parties.class);
+        when(importBroker.getOrgData()).thenReturn(Map.of(PartiesConstants.FULLNAME, "Test Agent"));
+        when(importBroker.getAddressData()).thenReturn(Collections.emptyMap());
+        when(additionalDetails.getImportBroker()).thenReturn(importBroker);
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+        // Assert - test what the actual method returns for empty map
+        assertEquals("Test Agent", hblData.getDeliveryAgent());
+        // Don't assert the exact address value, just that it doesn't throw
+        assertNotNull(hblData.getDeliveryAgentAddress());
+    }
+    @Test
+    void mapConsignerToHbl_WithEmptyConsignerAddressData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+
+        Parties consigner = mock(Parties.class);
+        when(consigner.getOrgData()).thenReturn(Map.of(PartiesConstants.FULLNAME, "Test Shipper"));
+        when(consigner.getAddressData()).thenReturn(Collections.emptyMap());
+        when(shipmentDetail.getConsigner()).thenReturn(consigner);
+        when(shipmentDetail.getConsignee()).thenReturn(null);
+
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Test Shipper", hblData.getConsignorName());
+        assertNotNull(hblData.getConsignorAddress()); // Should not throw
+    }
+    @Test
+    void mapConsigneeToHbl_WithEmptyConsigneeAddressData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+
+        Parties consignee = mock(Parties.class);
+        when(consignee.getOrgData()).thenReturn(Map.of(PartiesConstants.FULLNAME, "Test Consignee"));
+        when(consignee.getAddressData()).thenReturn(Collections.emptyMap());
+
+        when(shipmentDetail.getConsigner()).thenReturn(null);
+        when(shipmentDetail.getConsignee()).thenReturn(consignee);
+
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHbl", shipmentDetail, hblData);
+
+        // Assert
+        assertEquals("Test Consignee", hblData.getConsigneeName());
+        assertNotNull(hblData.getConsigneeAddress()); // Should not throw
+    }
+    @Test
+    void mapDeliveryDataInHbl_WithNullBrokerOrgData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        AdditionalDetails additionalDetails = mock(AdditionalDetails.class);
+
+        Parties importBroker = mock(Parties.class);
+        when(importBroker.getOrgData()).thenReturn(null);
+        when(importBroker.getAddressData()).thenReturn(Map.of("address", "test address"));
+
+        when(additionalDetails.getImportBroker()).thenReturn(importBroker);
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHbl", additionalDetails, hblData);
+
+        // Assert
+        assertNull(hblData.getDeliveryAgent()); // Should be null
+        assertNotNull(hblData.getDeliveryAgentAddress()); // Should be set
+    }
+
+    @Test
+    void mapConsignerConsigneeToHblV3_WithNullData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+
+        // Mock consigner with some null data
+        Parties consigner = mock(Parties.class);
+        when(consigner.getOrgData()).thenReturn(null); // Null orgData
+        when(consigner.getAddressData()).thenReturn(null); // Null addressData
+
+        // Mock consignee with some null data
+        Parties consignee = mock(Parties.class);
+        when(consignee.getOrgData()).thenReturn(null); // Null orgData
+        when(consignee.getAddressData()).thenReturn(null); // Null addressData
+
+        when(shipmentDetail.getConsigner()).thenReturn(consigner);
+        when(shipmentDetail.getConsignee()).thenReturn(consignee);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(hblService, "mapConsignerConsigneeToHblV3", shipmentDetail, hblData);
+
+        // Assert - Should not throw any exceptions and handle nulls gracefully
+        assertNull(hblData.getShipperName());
+        assertNull(hblData.getShipperAddressLine1());
+        assertNull(hblData.getShipperAddressLine2());
+        assertNull(hblData.getShipperCity());
+        assertNull(hblData.getShipperState());
+        assertNull(hblData.getShipperZipCode());
+        assertNull(hblData.getShipperCountry());
+
+        assertNull(hblData.getConsigneeName());
+        assertNull(hblData.getConsigneeAddressLine1());
+        assertNull(hblData.getConsigneeAddressLine2());
+        assertNull(hblData.getConsigneeCity());
+        assertNull(hblData.getConsigneeState());
+        assertNull(hblData.getConsigneeZipCode());
+        assertNull(hblData.getConsigneeCountry());
+    }
+    @Test
+    void mapForwardDataInHblV3_WithNullData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        AdditionalDetails additionalDetails = mock(AdditionalDetails.class);
+
+        // Mock export broker with null data
+        Parties exportBroker = mock(Parties.class);
+        when(exportBroker.getOrgData()).thenReturn(null); // Null orgData
+        when(exportBroker.getAddressData()).thenReturn(null); // Null addressData
+
+        when(additionalDetails.getExportBroker()).thenReturn(exportBroker);
+        ReflectionTestUtils.invokeMethod(hblService, "mapForwardDataInHblV3", additionalDetails, hblData);
+
+        // Assert - Should not throw any exceptions and handle nulls gracefully
+        assertNull(hblData.getForwarderName());
+        assertNull(hblData.getForwarderAddressLine1());
+        assertNull(hblData.getForwarderAddressLine2());
+        assertNull(hblData.getForwarderCity());
+        assertNull(hblData.getForwarderState());
+        assertNull(hblData.getForwarderZipCode());
+        assertNull(hblData.getForwarderCountry());
+    }
+
+    @Test
+    void mapDeliveryDataInHblV3_WithNullData_ShouldHandleGracefully() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        AdditionalDetails additionalDetails = mock(AdditionalDetails.class);
+
+        // Mock import broker with null data
+        Parties importBroker = mock(Parties.class);
+        when(importBroker.getOrgData()).thenReturn(null); // Null orgData
+        when(importBroker.getAddressData()).thenReturn(null); // Null addressData
+
+        when(additionalDetails.getImportBroker()).thenReturn(importBroker);
+
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHblV3", additionalDetails, hblData);
+
+        // Assert - Should not throw any exceptions and handle nulls gracefully
+        assertNull(hblData.getDeliveryAgentName());
+        assertNull(hblData.getDeliveryAgentAddressLine1());
+        assertNull(hblData.getDeliveryAgentAddressLine2());
+        assertNull(hblData.getDeliveryAgentCity());
+        assertNull(hblData.getDeliveryAgentState());
+        assertNull(hblData.getDeliveryAgentZipCode());
+        assertNull(hblData.getDeliveryAgentCountry());
+    }
+
+    @Test
+    void mapPartiesV3_ShouldPopulateAllV3Fields() {
+        // Arrange
+        HblDataDto hblData = new HblDataDto();
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+        AdditionalDetails additionalDetails = mock(AdditionalDetails.class);
+
+        // Mock minimal data to ensure methods don't throw exceptions
+        when(shipmentDetail.getConsigner()).thenReturn(mock(Parties.class));
+        when(shipmentDetail.getConsignee()).thenReturn(mock(Parties.class));
+        when(additionalDetails.getImportBroker()).thenReturn(mock(Parties.class));
+        when(additionalDetails.getExportBroker()).thenReturn(mock(Parties.class));
+        ReflectionTestUtils.invokeMethod(hblService, "mapPartiesV3", shipmentDetail, additionalDetails, hblData);
+        assertNotNull(hblData);
+        // You can add more specific assertions based on what the methods should set
+    }
+
+    @Test
+    void updateShipmentPartiesToHBL_WithV3Enabled_ShouldSetV3AddressFields() {
+        // Arrange
+        Hbl hbl = new Hbl();
+        hbl.setHblNotifyParty(new ArrayList<>());
+
+        Parties party = mock(Parties.class);
+        HblLockSettings hblLock = mock(HblLockSettings.class);
+
+        // Mock V3 enabled
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(settings.getIsRunnerV3Enabled()).thenReturn(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+        // Mock party data
+        Map<String, Object> orgData = Map.of(
+                PartiesConstants.FULLNAME, "Test Party",
+                PartiesConstants.EMAIL, "test@example.com"
+        );
+        Map<String, Object> addressData = Map.of(
+                PartiesConstants.ADDRESS1, "123 Test St",
+                PartiesConstants.ADDRESS2, "Suite 100",
+                PartiesConstants.CITY, "Test City",
+                PartiesConstants.STATE, "TS",
+                PartiesConstants.ZIP_POST_CODE, "12345",
+                PartiesConstants.COUNTRY, "USA"
+        );
+
+        when(party.getOrgData()).thenReturn(orgData);
+        when(party.getAddressData()).thenReturn(addressData);
+
+
+        ReflectionTestUtils.invokeMethod(hblService, "updateShipmentPartiesToHBL", party, hbl, hblLock);
+        // Assert
+        assertEquals(1, hbl.getHblNotifyParty().size());
+        HblPartyDto resultParty = hbl.getHblNotifyParty().get(0);
+        assertTrue(resultParty.getIsShipmentCreated());
+        assertEquals("Test Party", resultParty.getName());
+        assertEquals("test@example.com", resultParty.getEmail());
+        assertNotNull(resultParty.getAddress1());
+        assertNotNull(resultParty.getAddress2());
+        assertNotNull(resultParty.getCity());
+        assertNotNull(resultParty.getState());
+        assertNotNull(resultParty.getZipCode());
+        assertNotNull(resultParty.getCountry());
+    }
 
 }

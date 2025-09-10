@@ -38,4 +38,7 @@ public class HblContainerDto implements Serializable {
     private String  quantityCode;
     private String packsType;
     private Long containerCount;
+    private String marksNums;
+    private String containerDetails;
+    private String numberAndKindOfPackage;
 }

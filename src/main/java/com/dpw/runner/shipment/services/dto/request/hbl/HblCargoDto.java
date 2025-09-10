@@ -20,7 +20,7 @@ public class HblCargoDto implements Serializable {
     private String packageType;
     private String classification;
     private String iMCONo;
-    private Integer blContainerId;
+    private Long blContainerId;
     private String cargoGrossVolumeUnit;
     private BigDecimal cargoGrossVolume;
     private String cargoNetWeightUnit;
@@ -35,6 +35,7 @@ public class HblCargoDto implements Serializable {
     private String blContainerContainerNumber;
     private String cargoesCommodityDesc;
     private String unNo;
+    private String numberAndKindOfPackage;
 
 
 }
