@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
 import org.springframework.http.ResponseEntity;
 
@@ -45,7 +46,7 @@ public interface ICarrierBookingService {
      */
     void delete(Long id);
 
-    void syncCarrierBookingToService(SyncBookingToService syncBookingToService);
+    void syncCarrierBookingToService(SyncBookingToService syncBookingToService) throws RunnerException;
 
     void updateCarrierDataToBooking(InttraCarrierBookingEventDto inttraCarrierBookingEventDto);
 

@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -308,7 +309,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void syncCarrierBookingToService_ValidConsolidation_Success() {
+    void syncCarrierBookingToService_ValidConsolidation_Success() throws RunnerException {
         carrierBooking.setStatus(CarrierBookingStatus.Draft);
         SailingInformation sailingInformation = new SailingInformation();
         carrierBooking.setSailingInformation(sailingInformation);
