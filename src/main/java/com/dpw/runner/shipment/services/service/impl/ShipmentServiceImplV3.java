@@ -3431,7 +3431,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 operationType = DBOperationType.DG_REJECT;
             }
         } else if (dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            if (request.getStatus() == TaskStatus.REJECTED) {
+            if (request.getStatus() == TaskStatus.APPROVED) {
                 operationType = COMMERCIAL_APPROVE;
             } else {
                 operationType = DBOperationType.COMMERCIAL_REJECT;
