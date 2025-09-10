@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS carrier_booking (
     contract_id BIGINT REFERENCES parties(id),
     internal_emails TEXT,
     external_emails TEXT,
+    created_by_user_email TEXT,
     pickup_from_req_empty_positioning_date timestamp without time zone,
     pickup_from_req_full_pickup_date timestamp without time zone,
     pickup_from_contact_name varchar(255),
