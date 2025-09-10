@@ -173,29 +173,29 @@ public class MigrationV3Service implements IMigrationV3Service {
 
 
     @Override
-    public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) {
+    public Map<String, Object> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId, Integer count, Integer weightDecimal, Integer volumeDecimal) {
 
         // Taking json backup for respective tenantID.
         v1Service.setAuthContext();
         Map<String, BigDecimal> codeTeuMap = initCodeTeuMap();
         if ((count & 2) > 0)
             backupService.backupTenantData(tenantId);
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
 
         if ((count & 4) > 0) {
-            Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
-            map.putAll(bookingStats);
+            Map<String, Object> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
+            map.put("Booking :", bookingStats);
         }
 
         if ((count & 8) > 0)
-            map.putAll(this.migrateConsolidation(tenantId,codeTeuMap, weightDecimal, volumeDecimal));
+            map.put("Consolidation : " , this.migrateConsolidation(tenantId,codeTeuMap, weightDecimal, volumeDecimal));
 
         if ((count & 16) > 0)
-            map.putAll(this.migrateShipment(tenantId));
+            map.put("Shipment :", this.migrateShipment(tenantId));
 
         if ((count & 32) > 0) {
-            Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
-            map.putAll(nteStats);
+            Map<String, Object> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId, codeTeuMap, weightDecimal, volumeDecimal);
+            map.put("Network Transfer :", nteStats);
         }
 
         return map;
@@ -240,12 +240,13 @@ public class MigrationV3Service implements IMigrationV3Service {
     }
 
 
-    private Map<String, Integer> migrateShipment(Integer tenantId) {
-        Map<String, Integer> map = new HashMap<>();
+    private Map<String, Object> migrateShipment(Integer tenantId) {
+        Map<String, Object> map = new HashMap<>();
         // Step 2: Fetch all V2 shipments for tenant
         List<Long> shipmentIds = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         map.put("Total Shipment", shipmentIds.size());
         log.info("Starting Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentIds.size());
+        Map<Long, String>  failureMap = new HashMap<>();
 
         List<Future<Long>> shipmentFutures = new ArrayList<>();
         log.info("fetched {} shipments for Migrations", shipmentIds.size());
@@ -272,6 +273,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     log.error("Async failure during shipment setup [id={}]", id, e);
                     migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     shipmentBackupRepository.deleteBackupByTenantIdAndShipmentId(id, tenantId);
+                    failureMap.put(id, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -281,15 +283,20 @@ public class MigrationV3Service implements IMigrationV3Service {
         });
         List<Long> migratedShipmentIds = collectAllProcessedIds(shipmentFutures);
         map.put("Total Shipment Migrated", migratedShipmentIds.size());
+        map.put("Total Shipment Migrated " , migratedShipmentIds.size());
+        if(!failureMap.isEmpty()) {
+            map.put("Failed Shipment Migration: ", failureMap);
+        }
         log.info("Shipment migration complete: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentIds.size(), tenantId);
         return map;
     }
 
-    private Map<String, Integer> migrateConsolidation(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    private Map<String, Object> migrateConsolidation(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         // Step 1: Fetch all V2 consolidations for tenant
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         map.put("Total Consolidation", consolIds.size());
+        Map<Long, String>  failureMap = new HashMap<>();
         log.info("Starting V2 to V3 migration for tenant [{}]. Found {} consolidation(s).", tenantId, consolIds.size());
         // Queue for async processing of consolidation migrations
         List<Future<Long>> queue = new ArrayList<>();
@@ -317,6 +324,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
                     migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                     consolidationBackupRepository.deleteBackupByTenantIdAndConsolidationId(id, tenantId);
+                    failureMap.put(id, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -328,6 +336,9 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         List<Long> migratedConsolIds = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", migratedConsolIds.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Consolidation Migration: ", failureMap);
+        }
         log.info("Consolidation migration complete: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolIds.size(), tenantId);
         return map;
     }
