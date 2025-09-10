@@ -45,6 +45,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private Map<String, Object> emptyContainerPickupDetails;
     private PartiesResponse requester;
     private PartiesResponse shipper;
+    private PartiesResponse contract;
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
     private PartiesResponse pickupFrom;

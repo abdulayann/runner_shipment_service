@@ -116,6 +116,11 @@ public class CarrierBooking extends MultiTenancy {
     private Parties shipper;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "contract_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties contract;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignee_id", referencedColumnName = "id")
     @OrganizationData
     private Parties consignee;
