@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -113,5 +114,16 @@ public class VerifiedGrossMassController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
-
+    @GetMapping
+    @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.RETRIEVE_DEFAULT_SUCCESS)})
+    public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
+        try {
+            VerifiedGrossMassResponse response = verifiedGrossMassService.getDefaultVerifiedGrossMassValues(type, entityId);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving default verified gross mass data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

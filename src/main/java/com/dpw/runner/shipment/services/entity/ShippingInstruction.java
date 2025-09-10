@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.ReferenceNumberRequest;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -42,7 +41,8 @@ import java.util.List;
 public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "status", length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private ShippingInstructionStatus status;
 
     @Column(name = "shipping_instruction_type")
     @Enumerated(EnumType.STRING)
@@ -70,7 +70,7 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "entity_type", length = 50)
     @Enumerated(EnumType.STRING)
-    private ShippingInstructionEntityType entityType;
+    private EntityType entityType;
 
     @Column(name = "entity_id")
     private Long entityId;

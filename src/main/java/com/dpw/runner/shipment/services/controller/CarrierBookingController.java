@@ -10,11 +10,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -127,5 +127,16 @@ public class CarrierBookingController {
         log.info("Carrier Booking Sync successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), syncBookingToService);
         return ResponseHelper.buildSuccessResponse();
     }
-
+    @GetMapping
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.RETRIEVE_DEFAULT_SUCCESS)})
+    public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
+        try {
+            CarrierBookingResponse response = carrierBookingService.getDefaultCarrierBookingValues(type, entityId);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving default carrier booking data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

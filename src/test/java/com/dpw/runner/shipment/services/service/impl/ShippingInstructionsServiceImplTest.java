@@ -16,7 +16,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -98,7 +98,7 @@ class ShippingInstructionsServiceImplTest {
 
     private ShippingInstructionRequest buildSimpleRequest() {
         return ShippingInstructionRequest.builder()
-                .entityType(ShippingInstructionEntityType.CARRIER_BOOKING)
+                .entityType(EntityType.CARRIER_BOOKING)
                 .entityId(100L)
                 .noOfFreightCopies(2)
                 .nonNegoFreightCopies(2)
@@ -117,7 +117,7 @@ class ShippingInstructionsServiceImplTest {
 
     private ShippingInstruction buildSimpleEntity() {
         ShippingInstruction si = new ShippingInstruction();
-        si.setEntityType(ShippingInstructionEntityType.CARRIER_BOOKING);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
         si.setEntityId(100L);
         si.setNoOfFreightCopies(2);
         si.setNonNegoFreightCopies(2);
@@ -198,7 +198,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionRequest request = buildSimpleRequest();
         // For update, let’s go via CONSOLIDATION branch to cover it
         ShippingInstruction entity = buildSimpleEntity();
-        entity.setEntityType(ShippingInstructionEntityType.CONSOLIDATION);
+        entity.setEntityType(EntityType.CONSOLIDATION);
         entity.setEntityId(999L);
         entity.setSailingInformation(new SailingInformation());
 
@@ -244,7 +244,7 @@ class ShippingInstructionsServiceImplTest {
         // Arrange
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
-        when(bad.getEntityType()).thenReturn(ShippingInstructionEntityType.CARRIER_BOOKING);
+        when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         // Set just the first invalid field; others valid
         when(bad.getNoOfFreightCopies()).thenReturn(101);
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
@@ -261,7 +261,7 @@ class ShippingInstructionsServiceImplTest {
     void create_ShouldThrow_WhenNonNegoFreightCopies_Negative() {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
-        when(bad.getEntityType()).thenReturn(ShippingInstructionEntityType.CARRIER_BOOKING);
+        when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNonNegoFreightCopies()).thenReturn(-1); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
@@ -277,7 +277,7 @@ class ShippingInstructionsServiceImplTest {
     void create_ShouldThrow_WhenNoOfUnFreightCopies_GreaterThan100() {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
-        when(bad.getEntityType()).thenReturn(ShippingInstructionEntityType.CARRIER_BOOKING);
+        when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNonNegoFreightCopies()).thenReturn(1);
         when(bad.getNoOfUnFreightCopies()).thenReturn(1000); // invalid
@@ -294,7 +294,7 @@ class ShippingInstructionsServiceImplTest {
     void create_ShouldThrow_WhenNonNegoUnFreightCopies_Negative() {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
-        when(bad.getEntityType()).thenReturn(ShippingInstructionEntityType.CARRIER_BOOKING);
+        when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
 //        when(bad.getEntityId()).thenReturn(1L);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNonNegoFreightCopies()).thenReturn(1);

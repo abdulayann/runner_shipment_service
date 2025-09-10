@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionEntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +26,7 @@ public class ShippingInstructionRequest implements Serializable {
     private String status;
     private String carrierBlNo;
     private String carrierBookingNo;
-    private ShippingInstructionEntityType entityType;
+    private EntityType entityType;
     @NotNull(message = "Entity Id can not be null")
     @Min(value = 1, message = "Entity id can not be zero/negative")
     private Long entityId;
