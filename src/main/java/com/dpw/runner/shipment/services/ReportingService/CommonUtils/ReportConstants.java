@@ -281,6 +281,7 @@ public class ReportConstants {
     public static final String CONSIGNER_FREETEXT = "ConsignerAddressFreeText";
     public static final String CONSIGNEE_FREETEXT = "ConsigneeAddressFreeText";
     public static final String NOTIFY_PARTY_FREETEXT = "NotifyPartyAddressFreeText";
+    public static final String DELIVERY_AGENT_FREETEXT = "DeliveryAgentFreeText";
     public static final String NOTIFY_PARTY_FREETEXT_IN_CAPS = "NotifyPartyAddressFreeTextInCaps";
     public static final String CONSIGNER_NAME = "ConsignerName";
     public static final String CONSIGNER_COMPANY_NAME = "ConignerAdrs_CompanyName";
@@ -385,8 +386,8 @@ public class ReportConstants {
     public static final String BL_WEIGHT_UNIT = "BL_WeightUnit";
     public static final String BL_NETWEIGHT = "BL_NetWeight";
     public static final String BL_NETWEIGHT_UNIT = "BL_NetWeightUnit";
-    public static final String BL_DELIVERYAGENT = "BL_DeliveryAgent";
-    public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAgentAddress";
+    public static final String BL_DELIVERYAGENT = "BL_Delivery";
+    public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAddress";
     public static final String TOTAL_PCS = "ToatalPcs";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";
@@ -550,6 +551,14 @@ public class ReportConstants {
     public static final String BL_VESSEL_NAME = "BL_VesselName";
     public static final String BL_VOYAGE = "BL_Voyage";
     public static final String BL_NOTIFY_PARTY = "BL_NotifyParty";
+    public static final String BL_NEW_SHIPPER = "BL_NewShipper";
+    public static final String BL_NEW_SHIPPER_IN_CAPS = "BL_NewShipperInCaps";
+    public static final String BL_NEW_CONSIGNEE = "BL_NewConsignee";
+    public static final String BL_NEW_CONSIGNEE_IN_CAPS = "BL_NewConsigneeInCaps";
+    public static final String BL_FORWARDER = "BL_Forwarder";
+    public static final String BL_FORWARDER_IN_CAPS = "BL_ForwarderInCaps";
+    public static final String BL_DELIVERY = "BL_Delivery";
+    public static final String BL_DELIVERY_IN_CAPS = "BL_DeliveryInCaps";
     public static final String TOTAL_PACKS_WEIGHT = "TotalPacksWeight";
     public static final String TOTAL_PACKS_VOLUME = "TotalPacksVolume";
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";
