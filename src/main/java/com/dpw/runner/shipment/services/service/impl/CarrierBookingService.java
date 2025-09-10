@@ -417,6 +417,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             carrierBookingResponse.setRequester(partiesResponse);
             carrierBookingResponse.setShipper(partiesResponse);
             carrierBookingResponse.setForwardingAgent(partiesResponse);
+            carrierBookingResponse.setContract(partiesResponse);
             //contract party is not given in UX
         }
         if (Objects.nonNull(consolidationDetails.getReceivingAgent())) {

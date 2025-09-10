@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -53,6 +54,7 @@ public class CarrierBookingRequest implements Serializable {
     @NotNull(message = "Shipper can not be null")
     private PartiesRequest shipper;
     private PartiesRequest consignee;
+    private PartiesResponse contract;
     private PartiesRequest forwardingAgent;
     private PartiesRequest pickupFrom;
     private PartiesRequest deliveryTo;

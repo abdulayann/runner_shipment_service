@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS carrier_booking (
     forwarding_agent_id BIGINT REFERENCES parties(id),
     pickup_from_id BIGINT REFERENCES parties(id),
     deliver_to_id BIGINT REFERENCES parties(id),
+    contract_id BIGINT REFERENCES parties(id),
     internal_emails TEXT,
     external_emails TEXT,
     pickup_from_req_empty_positioning_date timestamp without time zone,
