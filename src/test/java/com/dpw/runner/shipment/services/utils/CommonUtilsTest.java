@@ -31,27 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -7009,5 +6989,22 @@ class CommonUtilsTest {
         }
     }
 
+    @Test
+    void testFetchFromJsonFile_Success() throws RunnerException {
+        String filePath = "src/main/resources/b2b_clone_flags_response.json";
+        CloneFieldResponse result = commonUtils.fetchFromJsonFile(filePath, CloneFieldResponse.class);
+        assertNotNull(result);
+        assertEquals("Header", result.getHeader().getLabel());
+        assertEquals("header", result.getHeader().getValue());
+    }
+
+    @Test
+    void testFetchFromJsonFile_FileNotFound() {
+        String invalidFilePath = "src/main/resources/testData.json";
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            commonUtils.fetchFromJsonFile(invalidFilePath, CloneFieldResponse.class);
+        });
+        assertTrue(exception.getMessage().contains("Error reading JSON file"));
+    }
 
 }

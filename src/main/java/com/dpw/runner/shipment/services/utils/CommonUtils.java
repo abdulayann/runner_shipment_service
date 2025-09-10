@@ -71,6 +71,9 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -114,6 +117,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -4157,5 +4161,17 @@ public class CommonUtils {
                 .map(UsersDto::getPermissions)
                 .map(permissions -> Boolean.TRUE.equals(permissions.get(CAN_VIEW_ALL_BRANCH_SHIPMENTS)))
                 .orElse(false);
+    }
+
+    public <T> T fetchFromJsonFile(String filePath, Class<T> clazz) throws RunnerException {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.registerModule(new JavaTimeModule());
+            return objectMapper.readValue(new File(filePath), clazz);
+        } catch (IOException e) {
+            log.error("Error reading JSON file", e);
+            throw new RunnerException("Error reading JSON file: " + e.getMessage());
+        }
     }
 }

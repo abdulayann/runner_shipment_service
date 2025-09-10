@@ -15,10 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
@@ -51,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import java.util.Optional;
 
 
@@ -298,9 +296,21 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentDetailsV3Response.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentRetrieveLiteResponse.class)})
     @PostMapping(ApiConstants.API_CLONE)
     public ResponseEntity<IRunnerResponse> cloneShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipment(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = IRunnerResponse.class)})
+    @GetMapping(ApiConstants.API_CLONE_CONFIG)
+    public ResponseEntity<IRunnerResponse> getCloneConfig(@RequestParam() String type) {
+        log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), type);
+        try {
+            return ResponseHelper.buildSuccessResponse(shipmentService.getCloneConfig(type));
+        } catch (Exception ex) {
+            log.error("Error processing getCloneConfig", ex);
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 }
