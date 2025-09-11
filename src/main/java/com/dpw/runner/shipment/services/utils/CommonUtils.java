@@ -4133,11 +4133,11 @@ public class CommonUtils {
         } else if (value instanceof LocalDateTime localDateTime) {
             Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
             return cb.greaterThan(dateTimePath, localDateTime);
-        } else if (value instanceof Comparable comparable) {
+        }else if (value instanceof Comparable<?> comparable) {
             // Generic comparable handling
-            Expression<Comparable> comparablePath = (Expression<Comparable>) fieldPath;
-            return cb.greaterThan(comparablePath, comparable);
-        } else {
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
+        }else {
             throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
         }
     }
@@ -4159,10 +4159,10 @@ public class CommonUtils {
         } else if (value instanceof LocalDateTime localDateTime) {
             Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
             return cb.lessThan(dateTimePath, localDateTime);
-        } else if (value instanceof Comparable comparable) {
+        }else if (value instanceof Comparable<?> comparable) {
             // Generic comparable handling
-            Expression<Comparable> comparablePath = (Expression<Comparable>) fieldPath;
-            return cb.lessThan(comparablePath, comparable);
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThan((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
         }
@@ -4185,10 +4185,10 @@ public class CommonUtils {
         } else if (value instanceof LocalDateTime localDateTime) {
             Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
             return cb.greaterThanOrEqualTo(dateTimePath, localDateTime);
-        } else if (value instanceof Comparable comparable) {
+        } else if (value instanceof Comparable<?> comparable) {
             // Generic comparable handling
-            Expression<Comparable> comparablePath = (Expression<Comparable>) fieldPath;
-            return cb.greaterThanOrEqualTo(comparablePath, comparable);
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.greaterThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
         }
@@ -4211,10 +4211,10 @@ public class CommonUtils {
         } else if (value instanceof LocalDateTime localDateTime) {
             Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
             return cb.lessThanOrEqualTo(dateTimePath, localDateTime);
-        } else if (value instanceof Comparable comparable) {
+        } else if (value instanceof Comparable<?> comparable) {
             // Generic comparable handling
-            Expression<Comparable> comparablePath = (Expression<Comparable>) fieldPath;
-            return cb.lessThanOrEqualTo(comparablePath, comparable);
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
         }
