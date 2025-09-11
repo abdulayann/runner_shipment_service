@@ -74,6 +74,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
@@ -174,7 +175,8 @@ public class CarrierBookingService implements ICarrierBookingService {
     public CarrierBookingResponse retrieveById(Long id) {
         log.info("CarrierBookingService.getById() called with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
-        CarrierBooking carrierBooking = carrierBookingDao.findById(id).orElseThrow(() -> new ValidationException("Invalid id : " + id));
+        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
+                .orElseThrow(() -> new ValidationException("Carrier Booking does not exists with id : " + id));
 
         carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
         // consolidation fetch container, common container properties diff
@@ -192,16 +194,15 @@ public class CarrierBookingService implements ICarrierBookingService {
             log.error(CARRIER_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
         }
-        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
-            throw new ValidationException(CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
-        }
 
         Pair<Specification<CarrierBooking>, Pageable> tuple = fetchData(listCommonRequest, CarrierBooking.class, CarrierBookingConstants.tableNames);
         Page<CarrierBooking> carrierBookingPage = carrierBookingDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
+        Set<String> includeColumns = new HashSet<>(Optional.ofNullable(listCommonRequest.getIncludeColumns())
+                .orElse(Collections.emptyList()));
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()));
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData, includeColumns);
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
@@ -265,10 +266,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        log.info("CarrierBookingService.delete() called with RequestId: {} and id: {}",
-                LoggerHelper.getRequestIdFromMDC(), id);
-        carrierBookingDao.delete(id);
+        log.info("CarrierBookingService.delete() called with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
+                .orElseThrow(() -> new ValidationException("CarrierBooking not found with Id: " + id));
+        carrierBookingDao.delete(carrierBooking);
         log.info("CarrierBookingService.delete() successful with RequestId: {} and id: {}",
                 LoggerHelper.getRequestIdFromMDC(), id);
     }

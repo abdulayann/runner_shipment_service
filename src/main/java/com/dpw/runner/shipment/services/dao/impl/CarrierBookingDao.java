@@ -39,8 +39,8 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     }
 
     @Override
-    public void delete(Long id) {
-        carrierBookingRepository.deleteById(id);
+    public void delete(CarrierBooking carrierBooking) {
+        carrierBookingRepository.delete(carrierBooking);
     }
 
     @Override

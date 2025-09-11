@@ -13,7 +13,7 @@ public interface ICarrierBookingDao {
     Optional<CarrierBooking> findById(Long id);
     Page<CarrierBooking> findAll(Specification<CarrierBooking> spec, Pageable pageable);
     CarrierBooking update(Long id, CarrierBooking request);
-    void delete(Long id);
+    void delete(CarrierBooking carrierBooking);
     Long getTotalCarrierBookings();
     CarrierBooking save(CarrierBooking carrierBooking);
     CarrierBooking findByBookingNo(String referenceValue);
