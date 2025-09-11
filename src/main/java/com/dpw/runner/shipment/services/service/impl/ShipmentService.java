@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -4039,7 +4040,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
@@ -4055,7 +4056,8 @@ public class ShipmentService implements IShipmentService {
 
         if(shipmentCount <= exportExcelLimit){
             downloadShipmentListExcel(response, shipmentDetailsPage);
-        }else {
+        } else {
+            exportExcelResponse.setEmailSent(true);
             request.setPageSize(Integer.MAX_VALUE);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
                 TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
