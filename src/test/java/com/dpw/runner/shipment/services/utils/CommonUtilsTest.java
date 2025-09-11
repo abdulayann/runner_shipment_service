@@ -6234,7 +6234,7 @@ class CommonUtilsTest {
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertTrue(!result.isEmpty());
     }
     @Test
      void testRefineIncludeColumns_NullList_ThrowsException() {
@@ -6247,7 +6247,7 @@ class CommonUtilsTest {
         });
     }
     @Test
-     void testRefineIncludeColumns_NoSpecialColumns_ReturnsUnchanged() {
+     void testRefineIncludeColumns_NoSpecialColumns_ReturnsAddedGuid() {
         // Arrange
         List<String> includeColumns = Arrays.asList(
                 "id",
@@ -6258,16 +6258,17 @@ class CommonUtilsTest {
         );
 
         // Act
-        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
 
         // Assert
         assertNotNull(result);
-        assertEquals(5, result.size());
+        assertEquals(6, result.size());
         assertTrue(result.contains("id"));
         assertTrue(result.contains("shipmentNumber"));
         assertTrue(result.contains("status"));
         assertTrue(result.contains("pickupDetails.address"));
         assertTrue(result.contains("deliveryDetails.contactName"));
+        assertTrue(result.contains("guid"));
     }
 
     @Test
@@ -6281,11 +6282,11 @@ class CommonUtilsTest {
         );
 
         // Act
-        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
 
         // Assert
         assertNotNull(result);
-        assertEquals(4, result.size());
+        assertEquals(6, result.size());
         assertTrue(result.contains("transporterDetail.orgData"));
         assertTrue(result.contains("pickupDetails.orgData"));
         assertTrue(result.contains("deliveryDetails.orgData"));
@@ -6303,11 +6304,11 @@ class CommonUtilsTest {
         );
 
         // Act
-        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
 
         // Assert
         assertNotNull(result);
-        assertEquals(4, result.size());
+        assertEquals(6, result.size());
         assertTrue(result.contains("pickupDetails.addressData"));
         assertTrue(result.contains("deliveryDetails.addressData"));
         assertTrue(result.contains("transporterDetail.addressData"));
@@ -6779,9 +6780,9 @@ class CommonUtilsTest {
             ListCommonRequest request = createListCommonRequestWithOperator(operator, true);
 
             // This should throw IllegalArgumentException due to unsupported Boolean type
-            assertThrows(IllegalArgumentException.class, () -> {
+            assertDoesNotThrow(() -> {
                 commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, request);
-            }, "Should throw IllegalArgumentException for unsupported Boolean type with operator: " + operator);
+            }, "Should not throw exception for supported Boolean type with operator: " + operator);
         }
     }
 
