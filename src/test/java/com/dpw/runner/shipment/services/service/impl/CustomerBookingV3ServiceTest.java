@@ -54,10 +54,7 @@ import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -4369,7 +4366,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         container2.setGrossWeightUnit("KG");
         List<Containers> containers = List.of(container1, container2);
         CustomerBookingV3Service.setCargoWeight(request, containers, 0, container,2);
-        assertTrue(container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(0.0)) == 0);
+        BigDecimal expectedWeight = new BigDecimal("0.00");
+        BigDecimal actualWeight = container.getCargoWeightPerContainer();
+        System.out.println(expectedWeight +" for reference "+ actualWeight);
+        Assertions.assertEquals(expectedWeight, actualWeight);
     }
 
     private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails,

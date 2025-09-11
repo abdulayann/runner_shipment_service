@@ -7014,34 +7014,6 @@ class CommonUtilsTest {
     }
 
     @Test
-    void isSelectedModeOffInBooking_shouldReturnTrue_whenAirModeIsFalse() {
-        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
-        tenantData.setBookingTransportModeAir(false);
-        assertTrue(commonUtils.isSelectedModeOffInBooking("AIR", tenantData));
-    }
-
-    @Test
-    void isSelectedModeOffInBooking_shouldReturnFalse_whenSeaModeIsTrue() {
-        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
-        tenantData.setBookingTransportModeSea(true);
-        assertFalse(commonUtils.isSelectedModeOffInBooking("SEA", tenantData));
-    }
-
-    @Test
-    void isSelectedModeOffInBooking_shouldReturnFalse_whenRailModeIsTrue() {
-        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
-        tenantData.setBookingTransportModeSea(true);
-        assertFalse(commonUtils.isSelectedModeOffInBooking("RAI", tenantData));
-    }
-
-    @Test
-    void isSelectedModeOffInBooking_shouldReturnFalse_whenRoadModeIsTrue() {
-        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
-        tenantData.setBookingTransportModeSea(true);
-        assertFalse(commonUtils.isSelectedModeOffInBooking("ROA", tenantData));
-    }
-
-    @Test
     void isSelectedModeOffInBooking_shouldThrowException_forUnknownMode() {
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
@@ -7136,5 +7108,23 @@ class CommonUtilsTest {
                     TRANSPORT_MODE_AIR, DIRECTION_EXP);
             assertFalse(result);
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportModesProvider")
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenModeIsOn(String transportMode) {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        switch (transportMode) {
+            case "SEA" -> tenantData.setBookingTransportModeSea(true);
+            case "RAI" -> tenantData.setBookingTransportModeRail(true);
+            case "ROA" -> tenantData.setBookingTransportModeRoad(true);
+            case "AIR" -> tenantData.setBookingTransportModeAir(true);
+            default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
+        }
+        assertFalse(commonUtils.isSelectedModeOffInBooking(transportMode, tenantData));
+    }
+
+    private static Stream<String> transportModesProvider() {
+        return Stream.of("SEA", "RAI", "ROA","AIR");
     }
 }
