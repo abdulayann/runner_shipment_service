@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstr
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -132,4 +133,24 @@ public class ShippingInstructionsController {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<String> submitSI(@PathVariable ShippingInstructionRequest request) {
+        try {
+            service.submitSI(request);
+            return ResponseEntity.ok("Shipping Instruction submitted successfully.");
+        } catch (ValidationException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
+//    @PostMapping("/{id}/amend")
+//    public ResponseEntity<String> amendSI(@PathVariable Long id) {
+//        try {
+//            service.amendSI(id);
+//            return ResponseEntity.ok("Shipping Instruction moved to Draft for amendment.");
+//        } catch (ValidationException ex) {
+//            return ResponseEntity.badRequest().body(ex.getMessage());
+//        }
+//    }
 }

@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -23,16 +22,13 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
-import com.dpw.runner.shipment.services.kafka.dto.GenericKafkaPayload;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
+import io.netty.util.internal.ObjectUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
@@ -156,13 +152,19 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void setReferenceNumber(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
-        List<ReferenceNumbers> referenceNumbersList = shippingInstruction.getReferenceNumbers()
-                != null ? shippingInstruction.getReferenceNumbers() : new ArrayList<>();
+        if (!Objects.nonNull(carrierBooking.getReferenceNumbersList())) {
+            log.debug("Reference list empty for booking {}", carrierBooking.getId());
+            return;
+        }
+        Set<ReferenceNumbers> referenceNumbersList = shippingInstruction.getReferenceNumbers()
+                != null ? new HashSet<>(shippingInstruction.getReferenceNumbers()) : new HashSet<>();
         for (ReferenceNumbers referenceNumbers : carrierBooking.getReferenceNumbersList()) {
             referenceNumbers.setId(null);
             referenceNumbers.setGuid(null);
             referenceNumbersList.add(referenceNumbers);
         }
+
+        shippingInstruction.setReferenceNumbers(new ArrayList<>(referenceNumbersList));
     }
 
     private void setPartiesNumber(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
@@ -281,7 +283,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void populateSailingInformationFromCarrierBooking(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
-        if (Objects.nonNull(shippingInstruction.getSailingInformation())) {
+        if (Objects.nonNull(shippingInstruction.getSailingInformation()) && Objects.nonNull(carrierBooking.getSailingInformation())) {
             shippingInstruction.getSailingInformation().setCarrierReceiptPlace(carrierBooking.getSailingInformation().getCarrierReceiptPlace());
             shippingInstruction.getSailingInformation().setPol(carrierBooking.getSailingInformation().getPol());
             shippingInstruction.getSailingInformation().setPod(carrierBooking.getSailingInformation().getPod());
@@ -307,7 +309,23 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
-        return jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+        ShippingInstruction instruction = shippingInstruction.get();
+        if (EntityType.CARRIER_BOOKING.equals(instruction.getEntityType())) {
+            CarrierBookingInfoProjection projection = repository.findBookingInfoById(instruction.getEntityId());
+            if (projection != null) {
+                mapper.setBookingStatus(projection.getBookingStatus());
+                instruction.setEntityNumber(projection.getBookingStatus());
+            }
+        } else {
+            ConsolidationDetails consolidationDetails = getConsolidationDetail(instruction.getEntityId());
+            shippingInstruction.get().setEntityNumber(consolidationDetails.getConsolidationNumber());
+            populateFreightDetails(instruction, consolidationDetails);
+        }
+        ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
+        if (mapper.getBookingStatus() != null) {
+            response.setBookingStatus(mapper.getBookingStatus());
+        }
+        return response;
     }
 
     public ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest shippingInstructionRequest) {
@@ -387,18 +405,26 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private void fillDetailsFromConsol(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
-        populateDefaultFreightDetails(shippingInstruction, consolidationDetails);
+        populateFreightDetails(shippingInstruction, consolidationDetails);
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
-        if (shippingInstruction.getSailingInformation() != null) {
-            shippingInstruction.getSailingInformation().setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
-            shippingInstruction.getSailingInformation().setPol(consolidationDetails.getCarrierDetails().getOriginPort());
-            shippingInstruction.getSailingInformation().setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
-            shippingInstruction.getSailingInformation().setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
-            shippingInstruction.getSailingInformation().setShipInstructionCutoff(consolidationDetails.getShipInstructionCutoff());
-            shippingInstruction.getSailingInformation().setVerifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff());
+        if (shippingInstruction == null || shippingInstruction.getSailingInformation() == null) {
+            return; // nothing to populate
         }
+        if (consolidationDetails != null && consolidationDetails.getCarrierDetails() != null) {
+
+            CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+            shippingInstruction.getSailingInformation().setCarrierReceiptPlace(carrierDetails.getOrigin());
+            shippingInstruction.getSailingInformation().setPol(carrierDetails.getOriginPort());
+            shippingInstruction.getSailingInformation().setPod(carrierDetails.getDestinationPort());
+            shippingInstruction.getSailingInformation().setCarrierDeliveryPlace(carrierDetails.getDestination());
+
+        }
+
+        shippingInstruction.getSailingInformation().setShipInstructionCutoff(consolidationDetails.getShipInstructionCutoff());
+        shippingInstruction.getSailingInformation().setVerifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff());
+
     }
 
     private void populateHeaderSection(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
@@ -490,8 +516,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
 
-
-    public void populateDefaultFreightDetails(ShippingInstruction si, ConsolidationDetails consol) {
+    public void populateFreightDetails(ShippingInstruction si, ConsolidationDetails consol) {
         if (consol == null || consol.getPayment() == null) {
             return;
         }
@@ -535,5 +560,58 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             si.setFreightDetailList(new ArrayList<>());
         }
         si.getFreightDetailList().add(freightDetail);
+    }
+
+    public void submitSI(ShippingInstructionRequest request) {
+        ShippingInstruction si = jsonHelper.convertValue(request, ShippingInstruction.class);
+        CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
+                .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
+
+        // Step 1: Check booking status
+        if ((!CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) && !CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
+            throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+        }
+
+        // Step 2: Validate mandatory fields
+        validateSIRequest(si);
+
+        // Step 3: Mark SI as submitted
+        si.setStatus(ShippingInstructionStatus.SISubmitted);
+        repository.save(si);
+    }
+
+//    public void amendSI(ShippingInstructionRequest request) {
+//
+//        ShippingInstruction si = jsonHelper.convertValue(request, ShippingInstruction.class);
+//
+//        if (!ShippingInstructionStatus.SISubmitted.name().equalsIgnoreCase(si.getStatus().name()) && !ShippingInstructionStatus.SIAccepted.name().equalsIgnoreCase(si.getStatus().name())) {
+//            throw new ValidationException("Amendment not allowed. SI is not Submitted/Accepted.");
+//        }
+//
+//        // Enable only editable fields in UI (backend doesn't enforce which fields are editable,
+//        // but you can keep audit logs of what changed here).
+//        si.setStatus(ShippingInstructionStatus.SIAmendRequested);
+//        repository.save(si);
+//    }
+
+    private void populateReadOnlyFields(ShippingInstruction shippingInstruction) {
+        ConsolidationDetails consolidationDetails;
+        if (EntityType.CARRIER_BOOKING.equals(shippingInstruction.getEntityType())) {
+            Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(shippingInstruction.getEntityId());
+            if (carrierBooking.isEmpty()) {
+                throw new ValidationException("Invalid entity id");
+            }
+            populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
+            consolidationDetails = getConsolidationDetail(carrierBooking.get().getEntityId());
+            setReferenceNumber(shippingInstruction, carrierBooking.get());
+            setPartiesNumber(shippingInstruction, carrierBooking.get());
+
+        } else if (EntityType.CONSOLIDATION.equals(shippingInstruction.getEntityType())) {
+            consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
+            shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
+        } else {
+            throw new ValidationException("Invalid value of Shipping Instruction Type");
+        }
+
     }
 }

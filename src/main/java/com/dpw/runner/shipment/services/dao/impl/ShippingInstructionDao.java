@@ -53,7 +53,7 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
     }
 
     @Override
-    public List<CarrierBookingInfoProjection> findBookingInfoById(Long bookingId) {
+    public CarrierBookingInfoProjection findBookingInfoById(Long bookingId) {
         return shippingInstructionRepository.findCarrierBookingInfoById(bookingId);
     }
 

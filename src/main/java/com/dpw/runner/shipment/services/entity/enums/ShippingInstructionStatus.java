@@ -6,14 +6,15 @@ import lombok.Getter;
 public enum ShippingInstructionStatus {
     Draft(0, "Draft"),
     Requested(1, "Booking Requested"),
-    AcceptedByCarrier(2, "Processed By INNTRA"),
+    SIAccepted(2, "SI accepted"),
     RejectedByCarrier(3, "Rejected By INTTRA"),
     ConfirmedByCarrier(4, "Confirmed By Carrier"),
     DeclinedByCarrier(5, "Declined By Carrier"),
     ConditionallyAccepted(6, "Confirmed - Conditionally Accepted"),
-    PendingFromCarrier(7, "Pending From Carrier"),
+    SIAmendRequested(7, "SI Amend Requested"),
     Cancelled(8, "Cancelled"),
-    ChangedSI(9, "Amend Requested");
+    ChangedSI(9, "Amend Requested"),
+    SISubmitted(10, "SI Submitted");
     private final int value;
     private final String description;
 
