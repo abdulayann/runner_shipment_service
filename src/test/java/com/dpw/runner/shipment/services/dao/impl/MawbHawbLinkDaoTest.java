@@ -45,6 +45,13 @@ class MawbHawbLinkDaoTest {
     }
 
     @Test
+    void saveAll() {
+        List<MawbHawbLink> mawbHawbLink = List.of(MawbHawbLink.builder().build());
+        when(mawbHawbLinkRepository.saveAll(any())).thenReturn(mawbHawbLink);
+        assertEquals(mawbHawbLink, mawbHawbLinkDao.saveAll(mawbHawbLink));
+    }
+
+    @Test
     void findAll() {
         ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
         Pair<Specification<MawbHawbLink>, Pageable> pair = fetchData(listReq, MawbHawbLink.class);

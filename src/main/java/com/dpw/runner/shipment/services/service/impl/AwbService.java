@@ -1503,15 +1503,8 @@ public class AwbService implements IAwbService {
                 }
             }
             awbDao.save(awb);
+            updateMawbHawbLink(awb, newLinks, hawbIds, mawb);
 
-            if(!hawbIds.contains(awb.getId())) {
-                MawbHawbLink mawbHawblink = new MawbHawbLink();
-                mawbHawblink.setHawbId(awb.getId());
-                mawbHawblink.setMawbId(mawb.getId());
-                newLinks.add(mawbHawblink);
-            } else {
-                hawbIds.remove(awb.getId());
-            }
         }
         if(!CommonUtils.listIsNullOrEmpty(newLinks))
             mawbHawbLinkDao.saveAll(newLinks);
@@ -1521,6 +1514,17 @@ public class AwbService implements IAwbService {
         }
 
 
+    }
+
+    private void updateMawbHawbLink(Awb awb, List<MawbHawbLink> newLinks, Set<Long> hawbIds, Awb mawb) {
+        if(!hawbIds.contains(awb.getId())) {
+            MawbHawbLink mawbHawblink = new MawbHawbLink();
+            mawbHawblink.setHawbId(awb.getId());
+            mawbHawblink.setMawbId(mawb.getId());
+            newLinks.add(mawbHawblink);
+        } else {
+            hawbIds.remove(awb.getId());
+        }
     }
 
     private Awb generateAwb(CreateAwbRequest request) throws RunnerException {
