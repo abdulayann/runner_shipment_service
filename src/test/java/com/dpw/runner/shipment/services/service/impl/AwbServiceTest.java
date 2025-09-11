@@ -2265,6 +2265,7 @@ class AwbServiceTest extends CommonMocks {
 
 
         when(awbDao.save(any())).thenReturn(testMawb);
+        when(mawbHawbLinkDao.findByMawbId(anyLong())).thenReturn(List.of(MawbHawbLink.builder().hawbId(12L).mawbId(23L).build()));
 
         // UnLocation response mocking
         when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
