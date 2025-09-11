@@ -56,7 +56,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
+   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) {
         log.info("Received Carrier Booking CREATE request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.create(request);
@@ -69,7 +69,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
+   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long id) {
         log.info("Received Carrier Booking GET BY ID request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
         CarrierBookingResponse response = carrierBookingService.retrieveById(id);
@@ -78,7 +78,7 @@ public class CarrierBookingController {
     }
 
     @PostMapping(ApiConstants.API_LIST)
-    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
+//    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
         return carrierBookingService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
@@ -89,7 +89,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PutMapping(ApiConstants.API_UPDATE)
-    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
+   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) {
         log.info("Received Carrier Booking UPDATE request with RequestId: {}, and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.update(request);
@@ -114,7 +114,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PutMapping(ApiConstants.CANCEL)
-    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
+   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
     public ResponseEntity<IRunnerResponse> cancel(@RequestParam Long id) {
         log.info("Received Carrier Booking Cancel request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
         carrierBookingService.cancel(id);

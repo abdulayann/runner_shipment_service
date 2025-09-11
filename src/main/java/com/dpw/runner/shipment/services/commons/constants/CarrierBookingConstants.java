@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,156 @@ public class CarrierBookingConstants {
     public static final String CARRIER_LIST_REQUEST_NULL_ERROR = "Carrier List Request is Null";
     public static final String CARRIER_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
 
-    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
     public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry("status", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)   // CarrierBookingStatus is an enum stored as string
+                    .fieldName("status")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("bookingNo", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("bookingNo")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("carrierBookingNo", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("carrierBookingNo")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("carrierBlNo", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("carrierBlNo")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("entityType", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("entityType")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("entityId", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(Long.class)
+                    .fieldName("entityId")
+                    .build()),
+
+            Map.entry("entityNumber", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("entityNumber")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("serviceType", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("serviceType")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("bookingOffice", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("bookingOffice")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("bookingComment", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("bookingComment")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("carrierComment", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("carrierComment")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("internalEmails", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("internalEmails")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("externalEmails", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("externalEmails")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("pickupFromReqEmptyPositioningDate", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("pickupFromReqEmptyPositioningDate")
+                    .build()),
+
+            Map.entry("pickupFromReqFullPickupDate", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("pickupFromReqFullPickupDate")
+                    .build()),
+
+            Map.entry("pickupFromContactName", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("pickupFromContactName")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("pickupFromContactNo", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("pickupFromContactNo")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("createByUserEmail", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("createByUserEmail")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("deliveryToReqEmptyPositioningDate", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("deliveryToReqEmptyPositioningDate")
+                    .build()),
+
+            Map.entry("deliveryToReqFullPickupDate", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("deliveryToReqFullPickupDate")
+                    .build()),
+
+            Map.entry("deliveryToContactName", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("deliveryToContactName")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("deliveryToContactNo", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING)
+                    .dataType(String.class)
+                    .fieldName("deliveryToContactNo")
+                    .isContainsText(true)
+                    .build())
+    );
+
 }
