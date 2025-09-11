@@ -124,6 +124,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -502,6 +503,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             ShipmentDetails shipmentDetails = shipmentData.get();
+            commonUtils.validateAirSecurityPermission(StringUtility.convertToString(shipmentDetails.getTransportMode()), StringUtility.convertToString(shipmentDetails.getDirection()));
+            V1TenantSettingsResponse tenantData = validateBranchConfig(shipmentDetails.getTransportMode());
             CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
             CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
             CarrierDetails details = shipmentDetails.getCarrierDetails();
@@ -513,7 +516,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             setGenetalDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
             customerBookingResponse.setCarrierDetails(builder.build());
             //Container
-            setContainerDetailsFromShipment(request, customerBookingResponse);
+            setContainerDetailsFromShipment(request, customerBookingResponse, (Objects.isNull(tenantData.getWeightDecimalPlace()) ? 2 : tenantData.getWeightDecimalPlace()));
             //Packing
             setPackingDetailsFromShipment(request, customerBookingResponse);
             // Cargo summary
@@ -568,14 +571,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private void setContainerDetailsFromShipment(CloneRequest request, CustomerBookingV3Response customerBookingResponse) {
+    private void setContainerDetailsFromShipment(CloneRequest request, CustomerBookingV3Response customerBookingResponse, Integer weightDecimalPlace) {
         if (request.getFlags().isContainers()) {
             List<ContainerResponse> containersList = new ArrayList<>();
             List<Containers> containers = containerDao.findByShipmentId(request.getShipmentId());
             if (!containers.isEmpty()) {
                 Map<String, List<Containers>> groupedByType = containers.stream().filter(c -> c.getContainerCode() != null)
                         .collect(Collectors.groupingBy(Containers::getContainerCode));
-                setContainersDetails(request, groupedByType, containersList);
+                setContainersDetails(request, groupedByType, containersList, weightDecimalPlace);
                 customerBookingResponse.setContainersList(containersList);
             }
         }
@@ -629,7 +632,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private void setContainersDetails(CloneRequest request, Map<String, List<Containers>> groupedByType, List<ContainerResponse> containersList) {
+    private void setContainersDetails(CloneRequest request, Map<String, List<Containers>> groupedByType, List<ContainerResponse> containersList, Integer weightDecimalPlace) {
         for (Map.Entry<String, List<Containers>> entry : groupedByType.entrySet()) {
             ContainerResponse container = new ContainerResponse();
             if (request.getFlags().isContainerType()) {
@@ -641,7 +644,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             if (request.getFlags().isContainerCount()) {
                 container.setContainerCount(count);
             }
-            setCargoWeight(request, list, count, container);
+            setCargoWeight(request, list, count, container, weightDecimalPlace);
             setCommodityCategory(request, list, container);
             containersList.add(container);
         }
@@ -667,7 +670,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    public static void setCargoWeight(CloneRequest request, List<Containers> list, long count, ContainerResponse container) {
+    public static void setCargoWeight(CloneRequest request, List<Containers> list, long count, ContainerResponse container, Integer weightDecimalPlace) {
         // cargo weight (convert all to KG first)
         if (request.getFlags().isCargoWeightPerContainer()) {
             double totalWeightKg = list.stream()
@@ -683,7 +686,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                         }
                     }).sum();
             BigDecimal cargoWtPerContainer = BigDecimal.valueOf(count == 0 ? 0.0 : totalWeightKg / count);
-            container.setCargoWeightPerContainer(cargoWtPerContainer);
+            container.setCargoWeightPerContainer(cargoWtPerContainer.setScale(weightDecimalPlace, RoundingMode.HALF_UP));
             container.setContainerWeightUnit(WEIGHT_UNIT_KG);
         }
     }
@@ -1227,6 +1230,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         String responseMsg;
         try {
             CustomerBooking customerBooking = getValidatedCustomerBooking(request.getBookingId());
+            validateBranchConfig(customerBooking.getTransportType());
             CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
             CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
             CarrierDetails details = customerBooking.getCarrierDetails();
@@ -1244,6 +1248,17 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
+    }
+
+    public V1TenantSettingsResponse validateBranchConfig(String transportType) {
+        V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        if (Objects.nonNull(tenantData)
+                && Objects.nonNull(transportType)
+                && Boolean.TRUE.equals(tenantData.getTransportModeConfig())
+                && commonUtils.isSelectedModeOffInBooking(transportType, tenantData)) {
+            throw new IllegalStateException("Clone Booking is not allowed. Please check the Transport Config.");
+        }
+        return tenantData;
     }
 
     private void setCBCargoDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {

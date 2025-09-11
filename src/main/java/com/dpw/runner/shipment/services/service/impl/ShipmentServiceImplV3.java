@@ -962,32 +962,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (Objects.nonNull(tenantData)) {
             if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
                 String shipmentMode = shipmentDetails.get().getTransportMode();
-                if (Objects.nonNull(shipmentMode) && isSelectedModeOffInBooking(shipmentMode, tenantData)) {
+                if (Objects.nonNull(shipmentMode) && commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
                     return shipmentDetails;
                 } else {
-                    throw new IllegalStateException("Shipment to Shipment Cloning is not allowed");
+                    throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
                 }
             }
             if (Objects.nonNull(tenantData.getTransportModeConfig()) && Boolean.FALSE.equals(tenantData.getTransportModeConfig())) {
-                throw new IllegalStateException("Shipment to Shipment Cloning is not allowed");
+                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
             }
         }
         return shipmentDetails;
-    }
-
-    public boolean isSelectedModeOffInBooking(String shipmentMode, V1TenantSettingsResponse tenantData) {
-        switch (shipmentMode) {
-            case TRANSPORT_MODE_AIR:
-                return Boolean.FALSE.equals(tenantData.getBookingTransportModeAir());
-            case TRANSPORT_MODE_SEA:
-                return Boolean.FALSE.equals(tenantData.getBookingTransportModeSea());
-            case TRANSPORT_MODE_RAI:
-                return Boolean.FALSE.equals(tenantData.getBookingTransportModeRail());
-            case TRANSPORT_MODE_ROA:
-                return Boolean.FALSE.equals(tenantData.getBookingTransportModeRoad());
-            default:
-                throw new IllegalArgumentException("Unknown shipment transport mode: " + shipmentMode);
-        }
     }
 
     @Override

@@ -287,6 +287,11 @@ class CommonUtilsTest {
     @Mock
     private CriteriaQuery<Long> countQuery;
 
+    @Mock
+    private ShipmentSettingsDetails shipmentSettingsDetails;
+
+
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
@@ -7008,4 +7013,128 @@ class CommonUtilsTest {
         assertTrue(exception.getMessage().contains("Error reading JSON file"));
     }
 
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenAirModeIsFalse() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        assertTrue(commonUtils.isSelectedModeOffInBooking("AIR", tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenSeaModeIsTrue() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeSea(true);
+        assertFalse(commonUtils.isSelectedModeOffInBooking("SEA", tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRailModeIsTrue() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeSea(true);
+        assertFalse(commonUtils.isSelectedModeOffInBooking("RAI", tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRoadModeIsTrue() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeSea(true);
+        assertFalse(commonUtils.isSelectedModeOffInBooking("ROA", tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldThrowException_forUnknownMode() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commonUtils.isSelectedModeOffInBooking("unknown", tenantData));
+        assertEquals("Unknown transport mode: unknown", exception.getMessage());
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirImport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_AIR, DIRECTION_IMP);
+        assertTrue(result);
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_SeaTransport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_SEA, DIRECTION_EXP);
+        assertTrue(result);
+    }
+
+    @Test
+    void validateAirSecurityPermission_CountrySecurityDisabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(false);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithAirSecurityUser_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertDoesNotThrow(() ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithoutAirSecurityUser_ShouldThrowValidationException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            ValidationException exception = assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+            assertEquals(AIR_SECURITY_PERMISSION_MSG, exception.getMessage());
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirImportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_IMP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_SeaTransportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_SEA, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_NullCountrySecurity_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(null);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithAirSecurityUser_ShouldReturnTrue() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithoutAirSecurityUser_ShouldReturnFalse() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertFalse(result);
+        }
+    }
 }

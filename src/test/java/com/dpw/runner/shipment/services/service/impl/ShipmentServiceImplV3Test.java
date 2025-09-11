@@ -165,10 +165,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -181,6 +178,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -8347,6 +8345,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         tenantData.setBookingTransportModeSea(false);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(commonUtils.isSelectedModeOffInBooking("SEA", tenantData)).thenReturn(true); // ✅ mock first
         Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
         assertTrue(result.isPresent());
         assertEquals(shipmentDetails, result.get());
@@ -8375,19 +8374,21 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         tenantData.setDisableDirectShipment(false);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
+        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
                 shipmentServiceImplV3.validateShipment(123L));
-        assertEquals("Unknown shipment transport mode: unknown", thrownException.getMessage());
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", thrownException.getMessage());
     }
 
     @Test
     void isSelectedModeOffInBooking_shouldReturnTrue_whenAirModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setBookingTransportModeAir(false);
         tenantData.setBookingTransportModeSea(true);
         tenantData.setBookingTransportModeRail(true);
         tenantData.setBookingTransportModeRoad(true);
-        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        boolean result =commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
         assertTrue(result);
     }
 
@@ -8415,34 +8416,40 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void isSelectedModeOffInBooking_shouldReturnTrue_whenSeaModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setBookingTransportModeAir(true);
         tenantData.setBookingTransportModeSea(false);
         tenantData.setBookingTransportModeRail(true);
         tenantData.setBookingTransportModeRoad(true);
-        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        boolean result = commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
         assertTrue(result);
     }
 
     @Test
     void isSelectedModeOffInBooking_shouldReturnFalse_whenSeaModeIsEnabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setBookingTransportModeAir(false);
         tenantData.setBookingTransportModeSea(true);
         tenantData.setBookingTransportModeRail(false);
         tenantData.setBookingTransportModeRoad(false);
-        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        boolean result = commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
         assertFalse(result);
     }
 
     @Test
     void isSelectedModeOffInBooking_shouldReturnTrue_whenRailModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setBookingTransportModeAir(true);
         tenantData.setBookingTransportModeSea(true);
         tenantData.setBookingTransportModeRail(false);
         tenantData.setBookingTransportModeRoad(true);
-        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
+        boolean result = commonUtils.isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
         assertTrue(result);
     }
 
@@ -8459,12 +8466,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void isSelectedModeOffInBooking_shouldReturnTrue_whenRoadModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setBookingTransportModeAir(true);
         tenantData.setBookingTransportModeSea(true);
         tenantData.setBookingTransportModeRail(true);
         tenantData.setBookingTransportModeRoad(false);
-        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
+        boolean result = commonUtils.isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
         assertTrue(result);
     }
 
@@ -8481,11 +8490,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     private boolean isSelectedModeOffInBooking(String shipmentMode, V1TenantSettingsResponse tenantData) {
         try {
-            java.lang.reflect.Method method = ShipmentServiceImplV3.class.getDeclaredMethod(
+            Method method = CommonUtils.class.getDeclaredMethod(
                     "isSelectedModeOffInBooking", String.class, V1TenantSettingsResponse.class
             );
             method.setAccessible(true);
-            return (Boolean) method.invoke(shipmentServiceImplV3, shipmentMode, tenantData);
+            return (Boolean) method.invoke(commonUtils, shipmentMode, tenantData);
         } catch (Exception e) {
             throw new RuntimeException("Failed to invoke private method", e);
         }
@@ -8557,11 +8566,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
-        doReturn(false).when(spyService).isSelectedModeOffInBooking("AIR", tenantData);
+        doReturn(false).when(commonUtils).isSelectedModeOffInBooking("AIR", tenantData);
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             spyService.validateShipment(shipmentId);
         });
-        assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", exception.getMessage());
     }
 
     @Test
@@ -8577,7 +8586,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             shipmentServiceImplV3.validateShipment(shipmentId);
         });
-        assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", exception.getMessage());
     }
 
     @Test
