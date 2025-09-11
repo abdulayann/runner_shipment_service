@@ -91,6 +91,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -3982,7 +3983,9 @@ import static org.mockito.Mockito.when;
         when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
         when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
-        consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest), exportExcelResponse);
 
         assertEquals(200,response.getStatus());
     }
