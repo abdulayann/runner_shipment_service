@@ -492,7 +492,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     @Override
     public CustomerBookingV3Response cloneBookingFromShipmentIfExist(CloneRequest request) throws RunnerException {
         if (null == request.getShipmentId()) {
-            throw new ValidationException("Shipment Id cannot be null");
+            throw new ValidationException("Shipment Id Is Mandatory");
         }
         String responseMsg;
         try {
@@ -1080,7 +1080,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response cloneBooking(Long id) throws RunnerException {
         if(Objects.isNull(id)) {
             log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Booking Id cannot be null");
+            throw new ValidationException("Booking Id Is Mandatory");
         }
         String responseMsg;
         try {
@@ -1222,7 +1222,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response cloneBookingById(CloneRequest request) throws RunnerException {
         if(Objects.isNull(request.getBookingId())) {
             log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Booking Id cannot be null");
+            throw new ValidationException("Booking Id Is Mandatory");
         }
         String responseMsg;
         try {

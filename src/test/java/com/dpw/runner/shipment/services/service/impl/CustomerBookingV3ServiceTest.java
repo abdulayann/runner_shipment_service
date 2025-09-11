@@ -2553,7 +2553,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             customerBookingService.cloneBooking(null);
         });
-        assertEquals("Booking Id cannot be null", exception.getMessage());
+        assertEquals("Booking Id Is Mandatory", exception.getMessage());
     }
 
     @Test
@@ -3804,7 +3804,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         assertThatThrownBy(() -> customerBookingService.cloneBookingFromShipmentIfExist(request))
                 .isInstanceOf(ValidationException.class)
-                .hasMessage("Shipment Id cannot be null");
+                .hasMessage("Shipment Id Is Mandatory");
     }
 
     @Test
@@ -3813,7 +3813,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         request.setShipmentId(null);
         ValidationException exception = assertThrows(ValidationException.class, () ->
                 customerBookingService.cloneBookingFromShipmentIfExist(request));
-        assertEquals("Shipment Id cannot be null", exception.getMessage());
+        assertEquals("Shipment Id Is Mandatory", exception.getMessage());
     }
 
     @Test
@@ -3950,7 +3950,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         request.setBookingId(null);
         ValidationException exception = assertThrows(ValidationException.class, () ->
                 customerBookingService.cloneBookingById(request));
-        assertEquals("Booking Id cannot be null", exception.getMessage());
+        assertEquals("Booking Id Is Mandatory", exception.getMessage());
     }
 
     @Test

@@ -852,7 +852,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public ShipmentRetrieveLiteResponse cloneShipment(CloneRequest request) throws RunnerException {
         if (null == request.getShipmentId()) {
-            throw new ValidationException("Shipment Id cannot be null");
+            throw new ValidationException("Shipment Id Is Mandatory");
         }
         String responseMsg;
         try {

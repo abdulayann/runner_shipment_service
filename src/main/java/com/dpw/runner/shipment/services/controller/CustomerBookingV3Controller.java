@@ -313,7 +313,7 @@ public class CustomerBookingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
-    @PostMapping(ApiConstants.API_CLONE_BOOKING_FROM_SHIPMENT)
+    @PostMapping(ApiConstants.API_CLONE_FROM_SHIPMENT)
         public ResponseEntity<IRunnerResponse> cloneBookingFromShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingFromShipmentIfExist(request));
     }
