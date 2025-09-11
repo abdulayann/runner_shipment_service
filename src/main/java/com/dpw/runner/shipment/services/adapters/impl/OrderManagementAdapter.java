@@ -5,14 +5,11 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderPartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
@@ -180,6 +177,20 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         return customerBookingResponse;
     }
 
+    private List<ReferenceNumbersResponse> fetchReferenceNumberResponseListForOrderV3(OrderManagementDTO order) {
+        List<ReferenceNumbersResponse> referenceNumbersList = null;
+        if (order.getReferences() != null) {
+            referenceNumbersList = order.getReferences().stream()
+                    .map(ref -> ReferenceNumbersResponse.builder()
+                            .countryOfIssue(ref.getCountryOfIssue())
+                            .type(ref.getType())
+                            .referenceNumber(ref.getReference())
+                            .build())
+                    .toList();
+        }
+        return referenceNumbersList;
+    }
+
     private CustomerBookingV3Response mapOrderToBookingV3(OrderManagementDTO order)
     {
         Map<String, OrderPartiesResponse> partyCodeMap = getPartyOrgCodeDataMap(order);
@@ -200,6 +211,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
                 .cargoType(order.getContainerMode())
                 .serviceMode(order.getServiceMode())
                 .incoTerms(order.getIncoTerm())
+                .referenceNumbersList(fetchReferenceNumberResponseListForOrderV3(order))
                 .build();
         for (Map.Entry<String, OrderPartiesResponse> entry : partyCodeMap.entrySet()) {
             String partyCode = entry.getKey();
