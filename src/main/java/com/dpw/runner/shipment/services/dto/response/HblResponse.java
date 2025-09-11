@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -22,4 +23,5 @@ public class HblResponse extends HblDataDto implements IRunnerResponse {
     private List<HblCargoDto> cargoes;
     private List<HblContainerDto> containers;
     private List<HblPartyDto> notifyParties;
+    private List<HblFreightsAndCharges> hblFreightsAndCharges;
 }

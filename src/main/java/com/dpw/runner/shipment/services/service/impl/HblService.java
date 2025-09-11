@@ -494,6 +494,7 @@ public class HblService implements IHblService {
         response.setNotifyParties(hbl.getHblNotifyParty());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
+        response.setHblFreightsAndCharges(hbl.getHblFreightsAndCharges());
 
         return response;
     }
