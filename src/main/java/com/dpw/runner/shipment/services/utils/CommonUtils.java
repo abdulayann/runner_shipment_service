@@ -4298,4 +4298,29 @@ public class CommonUtils {
             throw new RunnerException("Error reading JSON file: " + e.getMessage());
         }
     }
+
+    public boolean isSelectedModeOffInBooking(String transportMode, V1TenantSettingsResponse tenantData) {
+        return switch (transportMode) {
+            case TRANSPORT_MODE_AIR -> Boolean.FALSE.equals(tenantData.getBookingTransportModeAir());
+            case TRANSPORT_MODE_SEA -> Boolean.FALSE.equals(tenantData.getBookingTransportModeSea());
+            case TRANSPORT_MODE_RAI -> Boolean.FALSE.equals(tenantData.getBookingTransportModeRail());
+            case TRANSPORT_MODE_ROA -> Boolean.FALSE.equals(tenantData.getBookingTransportModeRoad());
+            default -> throw new IllegalArgumentException("Unknown transport mode: " + transportMode);
+        };
+    }
+
+    public void validateAirSecurityPermission(String transportType, String direction) {
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !checkAirSecurityForTransportTypeAndDirection(transportType, direction)) {
+            throw new ValidationException(AIR_SECURITY_PERMISSION_MSG);
+        }
+    }
+
+    public boolean checkAirSecurityForTransportTypeAndDirection(String transportType, String direction) {
+        if (transportType.equals(Constants.TRANSPORT_MODE_AIR) && direction.equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
 }

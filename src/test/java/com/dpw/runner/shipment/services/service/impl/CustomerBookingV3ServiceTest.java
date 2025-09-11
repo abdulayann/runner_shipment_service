@@ -3839,6 +3839,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         flags.setPackages(true);
         flags.setCargoSummary(true);
         request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.findByShipmentId(shipmentId)).thenReturn(List.of(new Packing()));
@@ -3875,6 +3878,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         shipmentDetails.setGoodsDescription("desc");
         shipmentDetails.setMarksNum("marks");
         shipmentDetails.setAdditionalTerms("terms");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
         customerBookingService.cloneBookingFromShipmentIfExist(request);
         verify(commonUtils).mapIfSelected(eq(true), eq("desc"), any());
@@ -3890,6 +3896,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         flags.setPackages(true);
         flags.setDimensionPerPack(true);
         request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         Packing mockPacking = new Packing();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
         when(packingDao.findByShipmentId(123L)).thenReturn(List.of(mockPacking));
@@ -3905,10 +3914,13 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CloneFlagsRequest flags = new CloneFlagsRequest();
         flags.setPackages(false); // Flag is false
         request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
         when(packingDao.findByShipmentId(123L)).thenReturn(List.of(new Packing()));
         CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
-        assertNull(response.getPackingList()); // Assuming it's not initialized if logic is skipped
+        assertNull(response.getPackingList());
     }
 
     @Test
@@ -3922,6 +3934,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockContainer1.setContainerCode("20GP");
         Containers mockContainer2 = new Containers();
         mockContainer2.setContainerCode("40HC");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
         when(containerDao.findByShipmentId(123L)).thenReturn(List.of(mockContainer1, mockContainer2));
         CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
@@ -3937,6 +3952,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         request.setFlags(flags);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setCarrierDetails(null);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
         assertDoesNotThrow(() -> customerBookingService.cloneBookingFromShipmentIfExist(request));
@@ -4294,7 +4312,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         container1.setGrossWeight(new BigDecimal(100));
         container1.setGrossWeightUnit("KG");
         List<Containers> containers = List.of(container1);
-        CustomerBookingV3Service.setCargoWeight(request, containers, 1, container);
+        CustomerBookingV3Service.setCargoWeight(request, containers, 1, container, 2);
         assertNull(container.getCargoWeightPerContainer());
         assertNull(container.getContainerWeightUnit());
     }
@@ -4313,9 +4331,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         container2.setGrossWeight(new BigDecimal("200.0"));
         container2.setGrossWeightUnit("KG");
         List<Containers> containers = List.of(container1, container2);
-        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container);
-
-        assertEquals(BigDecimal.valueOf(150.0), container.getCargoWeightPerContainer());
+        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container, 2);
+        assertEquals(0, container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(150.0)));
         assertEquals("KG", container.getContainerWeightUnit());
     }
 
@@ -4333,8 +4350,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         container2.setGrossWeight(new BigDecimal("200.0"));
         container2.setGrossWeightUnit("KG");
         List<Containers> containers = List.of(container1, container2);
-        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container);
-        assertEquals(BigDecimal.valueOf(100.0), container.getCargoWeightPerContainer());
+        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container,2);
+        assertEquals(0, container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(100.0)));
     }
 
     @Test
@@ -4351,8 +4368,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         container2.setGrossWeight(new BigDecimal("200.0"));
         container2.setGrossWeightUnit("KG");
         List<Containers> containers = List.of(container1, container2);
-        CustomerBookingV3Service.setCargoWeight(request, containers, 0, container);
-        assertEquals(BigDecimal.valueOf(0.0), container.getCargoWeightPerContainer());
+        CustomerBookingV3Service.setCargoWeight(request, containers, 0, container,2);
+        assertTrue(container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(0.0)) == 0);
     }
 
     private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails,
