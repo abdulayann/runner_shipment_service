@@ -71,7 +71,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
-    @Query(value = "UPDATE customer_booking SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    @Query(value = "UPDATE customer_booking SET is_deleted = true WHERE id NOT IN (?1) and migration_status != 'CREATED_IN_V2' and tenant_id = ?2", nativeQuery = true)
     void deleteAdditionalBookingsByBookingIdAndTenantId(Set<Long> allBackupBookingIds, Integer tenantId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

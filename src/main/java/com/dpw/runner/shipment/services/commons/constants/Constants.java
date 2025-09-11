@@ -504,6 +504,7 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
+    public static final String CARRIER_PORTAL = "Carrier Portal";
     public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
@@ -636,7 +637,6 @@ public class Constants {
     public static final String NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE = "You are not allowed to view this consolidation as this tenant is not part of receiving agent or triangulation partner.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
-
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
@@ -722,6 +722,8 @@ public class Constants {
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
     public static final String TENANTS = "Tenants";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
     private Constants() {
     }
 

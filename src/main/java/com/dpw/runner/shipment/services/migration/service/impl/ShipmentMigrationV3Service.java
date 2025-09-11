@@ -9,12 +9,7 @@ import com.dpw.runner.shipment.services.commons.enums.TILegType;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
@@ -211,6 +206,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
         if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
             shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+        if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
+            for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
+                if(shipmentAddress.getOrgData()!=null && shipmentAddress.getOrgData().get("Country")!=null)
+                    shipmentAddress.setCountryCode((String) shipmentAddress.getOrgData().get("Country"));
+            }
+        }
     }
 
     private void saveReferenceData(ShipmentDetails shipmentDetails, String referenceNumber, String referenceType) {
@@ -348,7 +349,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
-
+        shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         return shipmentDetails;
     }
 
@@ -460,7 +461,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 });
             } catch (Exception e) {
                 log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
-                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
                 throw new IllegalArgumentException(e);
             } finally {
                 v1Service.clearAuthContext();

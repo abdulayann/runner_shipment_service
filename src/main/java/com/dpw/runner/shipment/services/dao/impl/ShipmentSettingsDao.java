@@ -86,4 +86,24 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     public Optional<ShipmentSettingsDetails> getSettingsByTenantIdWithCache(Integer tenantId) {
         return shipmentSettingsRepository.findByTenantId(tenantId);
     }
+
+    @Override
+    public Optional<ShipmentSettingsDetails> checkMigrationRunning() {
+        return shipmentSettingsRepository.checkMigrationRunning();
+    }
+
+    @Override
+    public void updateMigrationRunningFlag(Boolean isMigrationRunning, Integer tenantId) {
+        shipmentSettingsRepository.updateIsMigrationRunningFlag(isMigrationRunning, tenantId);
+    }
+
+    @Override
+    public void updateIsRestoreRunningFlag(Boolean isRestoreRunning, Integer tenantId) {
+        shipmentSettingsRepository.updateIsRestoreRunningFlag(isRestoreRunning, tenantId);
+    }
+
+    @Override
+    public Optional<ShipmentSettingsDetails> checkRestoreRunning() {
+        return shipmentSettingsRepository.checkRestoreRunning();
+    }
 }

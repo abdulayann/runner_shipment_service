@@ -103,13 +103,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -180,6 +174,29 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 import java.lang.reflect.Field;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -8364,6 +8381,47 @@ ShipmentServiceTest extends CommonMocks {
         });
     }
 
+    @Test
+    void testSendOceanDGApprovalEmail() throws RunnerException {
+        try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+            UserContext.class)) {
+            OceanDGApprovalRequest request = OceanDGApprovalRequest
+                .builder()
+                .shipmentId(1l)
+                .remarks("Non_DG_USER")
+                .build();
+
+            Packing packing = new Packing();
+            packing.setHazardous(true);
+            packing.setDGClass("1.2");
+            ShipmentDetails shipmentDetails = ShipmentDetails
+                .builder()
+                .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .packingList(List.of(packing))
+                .build();
+
+            when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                Optional.ofNullable(shipmentDetails));
+
+
+            UsersDto user = UsersDto.builder().build();
+            userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
+            userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(false);
+
+            when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+            Integer roleId = 1;
+            List<String> users = new ArrayList<>();
+            users.add("abc@email.com");
+            TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
+            when(commonUtils.getRoleId(any())).thenReturn(roleId);
+            when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
+            when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+
+            assertThrows(RunnerException.class,() ->shipmentService.sendOceanDGApprovalEmail(request));
+        }
+    }
+
 
     @Test
     void testSendOceanDGApprovalEmail_Commercial() throws RunnerException {
@@ -8396,7 +8454,8 @@ ShipmentServiceTest extends CommonMocks {
             TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
             when(commonUtils.getRoleId(any())).thenReturn(roleId);
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
-            when(commonUtils.createTaskMDM(any(), any())).thenReturn(taskCreateResponse);
+            when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+            when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
             assertThrows(RunnerException.class,()-> shipmentService.sendOceanDGApprovalEmail(request));
             verify(shipmentDao).findById(any());
@@ -8456,9 +8515,10 @@ ShipmentServiceTest extends CommonMocks {
         verify(shipmentDao).findById(any());
     }
 
+
     @Test
-    void testDgApprovalResponse_Imp1() throws RunnerException {
-        OceanDGRequestV3 request = OceanDGRequestV3
+    void testDgApprovalResponse_Imp() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest
                 .builder()
                 .shipmentId(1l)
                 .remarks("")
@@ -8469,7 +8529,7 @@ ShipmentServiceTest extends CommonMocks {
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
                 .direction(Constants.IMP)
                 .build();
-        shipmentDetails.setGuid(UUID.randomUUID());
+
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
         shipmentService.dgApprovalResponse(request);
@@ -8485,7 +8545,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testDgApprovalResponse_ShipmentNotFound(){
-        OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).build();
 
         assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentService.dgApprovalResponse(request);
@@ -8494,17 +8554,47 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testDgApprovalResponse_InvalidDGStatus(){
-        OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).build();
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
-        shipmentDetails.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
-            Optional.ofNullable(shipmentDetails));
+                Optional.ofNullable(shipmentDetails));
 
         assertThrows(RunnerException.class, () -> {
             shipmentService.dgApprovalResponse(request);
         });
         verify(shipmentDao).findById(any());
+    }
+
+    @Test
+    void testDgApprovalResponse_ValidDgApprove() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).status(TaskStatus.APPROVED).build();
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        packing.setDGClass("1.23");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails
+                .builder()
+                .oceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED)
+                .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
+                .packingList(List.of(packing))
+                .build();
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                Optional.ofNullable(shipmentDetails));
+
+
+        V1DataResponse v1Response = V1DataResponse.builder().build();
+        when(v1Service.listTask(any())).thenReturn(v1Response);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        List<TaskCreateRequest> taskCreateRequestList = new ArrayList<>();
+        taskCreateRequestList.add(TaskCreateRequest.builder().id("12").userEmail("hc@email.com").build());
+
+        when(jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class)).thenReturn(taskCreateRequestList);
+
+        shipmentService.dgApprovalResponse(request);
+        verify(v1Service).listTask(any());
     }
 
     @Test
@@ -8559,82 +8649,6 @@ ShipmentServiceTest extends CommonMocks {
         });
 
         assertTrue(thrown.getMessage().contains("MDM down"));
-    }
-
-    @Test
-    void testDgApprovalResponse_Imp() throws RunnerException {
-        OceanDGRequestV3 request = OceanDGRequestV3
-                .builder()
-                .shipmentId(1l)
-                .remarks("")
-                .build();
-        shipmentDetails = ShipmentDetails
-                .builder()
-                .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
-                .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
-                .direction(Constants.IMP)
-                .build();
-        shipmentDetails.setGuid(UUID.randomUUID());
-        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
-                Optional.ofNullable(shipmentDetails));
-        shipmentService.dgApprovalResponse(request);
-        verify(shipmentDao).findById(any());
-    }
-
-    @Test
-    void testDgApprovalResponse_NullRequest1() {
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentService.dgApprovalResponse(null);
-        });
-    }
-
-    @Test
-    void testDgApprovalResponse_ShipmentNotFound1() {
-        OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
-
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentService.dgApprovalResponse(request);
-        });
-    }
-
-    @Test
-    void testDgApprovalResponse_InvalidDGStatus1() {
-        OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
-        shipmentDetails.setGuid(UUID.randomUUID());
-        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
-                Optional.ofNullable(shipmentDetails));
-
-        assertThrows(RunnerException.class, () -> {
-            shipmentService.dgApprovalResponse(request);
-        });
-        verify(shipmentDao).findById(any());
-    }
-
-    @Test
-    void testDgApprovalResponse_ValidDgApprove1() throws RunnerException {
-        OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).status(TaskStatus.APPROVED).build();
-
-        Packing packing = new Packing();
-        packing.setHazardous(true);
-        packing.setDGClass("1.23");
-
-        ShipmentDetails shipmentDetails = ShipmentDetails
-                .builder()
-                .oceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED)
-                .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
-                .packingList(List.of(packing))
-                .build();
-        shipmentDetails.setGuid(UUID.randomUUID());
-        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
-                Optional.ofNullable(shipmentDetails));
-
-        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-
-        when(mdmServiceAdapter.getTaskList(any(), any(), any(), any())).thenReturn(new ArrayList<>());
-        String response = shipmentService.dgApprovalResponse(request);
-        assertNotNull(response);
     }
 
     @Test
@@ -8705,7 +8719,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 
@@ -8724,7 +8738,7 @@ ShipmentServiceTest extends CommonMocks {
         String remarks = "Remarks";
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
-            remarks, taskCreateResponse);
+            remarks, taskCreateResponse, false);
         assertEquals("Remarks", remarks);
     }
 
