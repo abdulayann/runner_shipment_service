@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -144,13 +145,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
@@ -173,30 +171,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Field;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -2844,8 +2822,10 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testExportExcel_NullRequest(){
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
         String errorMessage = "Shipment List Request is Null";
-        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel(httpServletResponse, commonRequestModel));
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel(httpServletResponse, commonRequestModel, exportExcelResponse));
         assertEquals(errorMessage, e.getMessage());
     }
 
@@ -2897,7 +2877,9 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
-        shipmentService.exportExcel(response, commonRequestModel);
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
 
         verify(response, times(1)).setContentType(anyString());
         verify(response, times(1)).setHeader(anyString(), anyString());
@@ -4619,7 +4601,9 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
-        shipmentService.exportExcel(response, commonRequestModel);
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
 
         verify(response, times(1)).setContentType(anyString());
         verify(response, times(1)).setHeader(anyString(), anyString());
