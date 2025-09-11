@@ -8252,26 +8252,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         request.setShipmentId(null);
         ValidationException exception = assertThrows(ValidationException.class, () ->
                 shipmentServiceImplV3.cloneShipment(request));
-        assertEquals("Shipment Id cannot be null", exception.getMessage());
-    }
-
-//    @Test
-    void testCloneShipment_happyPath_returnsClonedShipment() throws RunnerException {
-        Long shipmentId = 123L;
-        CloneFlagsRequest flags = CloneFlagsRequest.builder()
-                .packages(true)
-                .build();
-        CloneRequest request = CloneRequest.builder()
-                .shipmentId(shipmentId)
-                .flags(flags)
-                .build();
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setCarrierDetails(new CarrierDetails());
-        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
-        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.cloneShipment(request);
-        assertNotNull(response);
-        assertNotNull(response.getCarrierDetails());
-        verify(commonUtils, atLeastOnce()).mapIfSelected(anyBoolean(), any(), any());
+        assertEquals("Shipment Id Is Mandatory", exception.getMessage());
     }
 
     @Test
@@ -8568,51 +8549,34 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testValidateShipment_DisallowedMode_ThrowsException() {
         Long shipmentId = 2L;
-
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
-
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setDisableDirectShipment(false);
-
-        // Mocking a shipment present
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
-
-        // Mock permissions check
         doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
-
-        // Mock tenant settings to trigger exception
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
-
-        // Since isSelectedModeOffInBooking returns false, exception is thrown
         ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
         doReturn(false).when(spyService).isSelectedModeOffInBooking("AIR", tenantData);
-
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             spyService.validateShipment(shipmentId);
         });
-
         assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
     }
 
     @Test
     void testValidateShipment_DisallowedTransportModeConfig() {
         Long shipmentId = 3L;
-
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         tenantData.setDisableDirectShipment(true);
         tenantData.setTransportModeConfig(false);
-
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
-
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             shipmentServiceImplV3.validateShipment(shipmentId);
         });
-
         assertEquals("Shipment to Shipment Cloning is not allowed", exception.getMessage());
     }
 
