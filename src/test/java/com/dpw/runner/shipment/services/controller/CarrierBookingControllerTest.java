@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
@@ -143,7 +144,7 @@ class CarrierBookingControllerTest {
 
 
     @Test
-    void syncCarrierBookingToService() {
+    void syncCarrierBookingToService() throws RunnerException {
         // Mock
         doNothing().when(carrierBookingService).syncCarrierBookingToService(any(SyncBookingToService.class));
 

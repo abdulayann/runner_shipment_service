@@ -19,5 +19,6 @@ public interface CarrierBookingInfoProjection {
         public String getBookingNo() {
             return null;
         }
+
     }
 }

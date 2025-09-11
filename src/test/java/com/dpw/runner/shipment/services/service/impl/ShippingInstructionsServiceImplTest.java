@@ -18,10 +18,12 @@ import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,6 +87,8 @@ class ShippingInstructionsServiceImplTest {
     private ShippingInstructionsController controller;
     private static ShippingInstruction testSI;
     private static ObjectMapper objectMapper;
+    @Mock
+    private IPackingV3Service packingV3Service;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -137,6 +141,14 @@ class ShippingInstructionsServiceImplTest {
         return cb;
     }
 
+    private ConsolidationDetails buildConsolidationDetails() {
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setId(200L);
+        consol.setBookingStatus("Confirmed");
+        consol.setConsolidationNumber("CON-001");
+        return consol;
+    }
+
     // ========== POSITIVE CASES ==========
 
     @Test
@@ -151,16 +163,13 @@ class ShippingInstructionsServiceImplTest {
                 .carrierBlNo("BL-001")
                 .build();
 
-
         CarrierBooking cb = buildCarrierBooking();
-        // convert request -> entity
+        ConsolidationDetails consol = buildConsolidationDetails();
+
         when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
-        // fetch CB and no consol (optional empty is fine)
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
-        when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.empty());
-        // save
+        when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
         when(repository.save(any(ShippingInstruction.class))).thenReturn(saved);
-        // convert saved entity -> response
         when(jsonHelper.convertValue(eq(saved), eq(ShippingInstructionResponse.class))).thenReturn(response);
 
         // Act
@@ -174,14 +183,18 @@ class ShippingInstructionsServiceImplTest {
         verify(consolidationDetailsDao, times(1)).findById(200L);
     }
 
+
     @Test
-    void getShippingInstructionsById_ShouldReturnResponse_WhenFound() {
-        // Arrange
+    void getShippingInstructionsById_ShouldReturnResponse_WhenFound() {// Arrange
         ShippingInstruction entity = buildSimpleEntity();
-        // NOTE: method passes Optional<ShippingInstruction> to convertValue (bug in code).
         when(repository.findById(1L)).thenReturn(Optional.of(entity));
-        ShippingInstructionResponse resp = ShippingInstructionResponse.builder().carrierBookingNo("CB-001").build();
-        when(jsonHelper.convertValue(eq(Optional.of(entity)), eq(ShippingInstructionResponse.class))).thenReturn(resp);
+
+        ShippingInstructionResponse resp =
+                ShippingInstructionResponse.builder().carrierBookingNo("CB-001").build();
+
+        // FIX: match by type instead of exact instance
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(resp);
 
         // Act
         ShippingInstructionResponse out = service.getShippingInstructionsById(1L);
@@ -210,6 +223,8 @@ class ShippingInstructionsServiceImplTest {
         when(consol.getCarrierDetails().getDestination()).thenReturn("DEST");
         when(consol.getShipInstructionCutoff()).thenReturn(LocalDateTime.now());
         when(consol.getVerifiedGrossMassCutoff()).thenReturn(LocalDateTime.now());
+
+        when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
 
         when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
         when(consolidationDetailsDao.findById(999L)).thenReturn(Optional.of(consol));
@@ -260,11 +275,15 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void create_ShouldThrow_WhenNonNegoFreightCopies_Negative() {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
+        CarrierBooking cb = buildCarrierBooking();
+
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
         when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNonNegoFreightCopies()).thenReturn(-1); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
+        when(bad.getShippingInstructionType()).thenReturn(ShippingInstructionType.EXPRESS);
+
         when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))
@@ -279,7 +298,6 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
         when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
-        when(bad.getNonNegoFreightCopies()).thenReturn(1);
         when(bad.getNoOfUnFreightCopies()).thenReturn(1000); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
         when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
@@ -301,6 +319,7 @@ class ShippingInstructionsServiceImplTest {
         when(bad.getNoOfUnFreightCopies()).thenReturn(1);
         when(bad.getNonNegoUnFreightCopies()).thenReturn(-5); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
+        when(bad.getShippingInstructionType()).thenReturn(ShippingInstructionType.EXPRESS);
         when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))

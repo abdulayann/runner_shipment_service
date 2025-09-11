@@ -23,5 +23,5 @@ public interface IShippingInstructionDao {
 
     ShippingInstruction save(ShippingInstruction shippingInstruction);
 
-    List<CarrierBookingInfoProjection> findBookingInfoById(Long bookingId);
+    CarrierBookingInfoProjection findBookingInfoById(Long bookingId);
 }
