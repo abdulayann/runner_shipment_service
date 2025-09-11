@@ -3541,33 +3541,81 @@ public class CommonUtils {
         Map<String, Object> entityColumnsMap = new HashMap<>();
 
         for (String column : includeColumns) {
-            String[] parts = column.split("\\.");
+            processColumn(column, mainEntityKey, validEntityKeys, entityColumnsMap);
+        }
 
-            if (parts.length == 1) {
-                extractCoulmnMap(mainEntityKey, validEntityKeys, parts, entityColumnsMap);
-            } else {
-                // Nested field
-                String topLevelEntity = parts[0];
+        return entityColumnsMap;
+    }
 
-                if (!validEntityKeys.contains(topLevelEntity)) {
-                    continue; // Skip unknown entities
+    private void processColumn(String column, String mainEntityKey, Set<String> validEntityKeys,
+                               Map<String, Object> entityColumnsMap) {
+
+        String[] parts = column.split("\\.");
+
+        if (parts.length == 1) {
+            extractCoulmnMap(mainEntityKey, validEntityKeys, parts, entityColumnsMap);
+        } else {
+            String topLevelEntity = parts[0];
+
+            if (!validEntityKeys.contains(topLevelEntity)) {
+                return; // Skip unknown entities
+            }
+
+            // Always create a list for each entity
+            List<Object> entityList = (List<Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<>());
+
+            if (parts.length == 2) {
+                // Simple field - add directly to list if not already present
+                String fieldName = parts[1];
+                if (!entityList.contains(fieldName)) {
+                    entityList.add(fieldName);
                 }
+            } else {
+                // Nested field - find or create the appropriate nested map
+                String nestedEntityKey = parts[1]; // e.g., "notifyParty"
+                String[] remainingParts = Arrays.copyOfRange(parts, 2, parts.length); // e.g., ["orgData"]
 
-                // If it's two levels deep, store as List<String>
-                if (parts.length == 2) {
-                    entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new ArrayList<String>());
-                    List<String> fields = (List<String>) entityColumnsMap.get(topLevelEntity);
-                    fields.add(parts[1]);
-                } else {
-                    // Deep nesting (3 or more parts)
-                    // We assume structure like pickupDetails.transporterDetail.orgData.FullName
-                    Map<String, Object> nested = (Map<String, Object>) entityColumnsMap.computeIfAbsent(topLevelEntity, k -> new HashMap<String, Object>());
-                    buildNestedMap(nested, parts, 1);
+                // Look for existing nested map with this key
+                Map<String, Object> nestedMap = findOrCreateNestedMap(entityList, nestedEntityKey);
+
+                // Build the nested structure
+                buildNestedStructure(nestedMap, nestedEntityKey, remainingParts);
+            }
+        }
+    }
+
+    private void buildNestedStructure(Map<String, Object> nestedMap, String key, String[] remainingParts) {
+        if (remainingParts.length == 1) {
+            // Final level - add to list
+            List<String> fieldList = (List<String>) nestedMap.computeIfAbsent(key, k -> new ArrayList<>());
+            String fieldName = remainingParts[0];
+            if (!fieldList.contains(fieldName)) {
+                fieldList.add(fieldName);
+            }
+        } else {
+            // More nesting required
+            Map<String, Object> nextLevel = (Map<String, Object>) nestedMap.computeIfAbsent(key, k -> new HashMap<>());
+            String nextKey = remainingParts[0];
+            String[] nextRemainingParts = Arrays.copyOfRange(remainingParts, 1, remainingParts.length);
+            buildNestedStructure(nextLevel, nextKey, nextRemainingParts);
+        }
+    }
+
+    private Map<String, Object> findOrCreateNestedMap(List<Object> entityList, String nestedEntityKey) {
+        // Look for existing map that contains this nested entity key
+        for (Object item : entityList) {
+            if (item instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) item;
+                if (map.containsKey(nestedEntityKey)) {
+                    return map;
                 }
             }
         }
 
-        return entityColumnsMap;
+        // Create new map and add to list
+        Map<String, Object> newMap = new HashMap<>();
+        entityList.add(newMap);
+        return newMap;
     }
 
     private static void extractCoulmnMap(String mainEntityKey, Set<String> validEntityKeys, String[] parts, Map<String, Object> entityColumnsMap) {
@@ -3792,6 +3840,10 @@ public class CommonUtils {
     }
 
     public List<String> refineIncludeColumns(List<String> includeColumns) {
+        List<String> requiredFields = Arrays.asList("id", "guid");
+        requiredFields.stream()
+                .filter(field -> !includeColumns.contains(field))
+                .forEach(includeColumns::add);
         return includeColumns.stream()
                 .map(column -> {
                     if (column.contains(Constants.ORG_DATA)) {
@@ -3970,10 +4022,12 @@ public class CommonUtils {
             ListCommonRequest listCommonRequest) {
         List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(root.get("tenantId"), UserContext.getUser().getTenantId()));
+        // Create a join cache for filter predicates too
+        Map<String, Join<?, ?>> filterJoinCache = new HashMap<>();
         List<FilterCriteria> filterCriteria = listCommonRequest.getFilterCriteria();
 
         for (FilterCriteria group : filterCriteria) {
-            Predicate innerPredicate = buildInnerPredicate(cb, root, group.getInnerFilter());
+            Predicate innerPredicate = buildInnerPredicate(cb, root, group.getInnerFilter(), filterJoinCache);
             if (innerPredicate != null) {
                 predicates.add(innerPredicate);
             }
@@ -3984,7 +4038,8 @@ public class CommonUtils {
     private Predicate buildInnerPredicate(
             CriteriaBuilder cb,
             Root<?> root,
-            List<FilterCriteria> innerFilterObj) {
+            List<FilterCriteria> innerFilterObj,
+            Map<String, Join<?, ?>> filterJoinCache) {
         Predicate innerPredicate = null;
         for (FilterCriteria inner : innerFilterObj) {
             Criteria critMap = inner.getCriteria();
@@ -3992,7 +4047,7 @@ public class CommonUtils {
             String operator = critMap.getOperator();
             Object value = critMap.getValue();
 
-            Predicate p = buildPredicateForOperator(cb, root, fieldName, operator, value);
+            Predicate p = buildPredicateForOperator(cb, root, fieldName, operator, value, filterJoinCache);
             innerPredicate = calculateInnerPredicate(cb, inner, innerPredicate, p);
         }
         return innerPredicate;
@@ -4003,94 +4058,163 @@ public class CommonUtils {
             Root<?> root,
             String fieldName,
             String operator,
-            Object value) {
+            Object value,
+            Map<String, Join<?, ?>> filterJoinCache) {
+
+        Path<?> fieldPath = getFieldPath(root, fieldName, filterJoinCache);
+
         return switch (operator.trim().toLowerCase()) {
-            case "=" -> cb.equal(root.get(fieldName), value);
-            case "!=" -> cb.notEqual(root.get(fieldName), value);
-            case "like" -> cb.like(root.get(fieldName), "%" + value + "%");
-            case ">" -> buildGreaterThanPredicate(cb, root, fieldName, value);
-            case "<" -> buildLessThanPredicate(cb, root, fieldName, value);
-            case ">=" -> buildGreaterThanOrEqualPredicate(cb, root, fieldName, value);
-            case "<=" -> buildLessThanOrEqualPredicate(cb, root, fieldName, value);
-            case "contains" -> cb.isMember(value, root.get(fieldName));
-            case "notlike" -> cb.notLike(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase() + "%");
-            case "startswith" -> cb.like(cb.lower(root.get(fieldName)), value.toString().toLowerCase() + "%");
-            case "endswith" -> cb.like(cb.lower(root.get(fieldName)), "%" + value.toString().toLowerCase());
-            case "in" -> root.get(fieldName).in((Collection<?>) value);
-            case "notin" -> cb.not(root.get(fieldName).in((Collection<?>) value));
-            case "isnull" -> cb.isNull(root.get(fieldName));
-            case "isnotnull" -> cb.isNotNull(root.get(fieldName));
+            case "=" -> cb.equal(fieldPath, value);
+            case "!=" -> cb.notEqual(fieldPath, value);
+            case "like" -> {
+                Expression<String> stringPath = fieldPath.as(String.class);
+                yield cb.like(stringPath, "%" + value + "%");
+            }
+            case ">" -> buildGreaterThanPredicate(cb, fieldPath, value);
+            case "<" -> buildLessThanPredicate(cb, fieldPath, value);
+            case ">=" -> buildGreaterThanOrEqualPredicate(cb, fieldPath, value);
+            case "<=" -> buildLessThanOrEqualPredicate(cb, fieldPath, value);
+            case "contains" -> {
+                Expression<String> stringPath = fieldPath.as(String.class);
+                yield cb.like(cb.lower(stringPath), "%" + value.toString().toLowerCase() + "%");
+            }
+            case "notlike" -> {
+                Expression<String> stringPath = fieldPath.as(String.class);
+                yield cb.notLike(cb.lower(stringPath), "%" + value.toString().toLowerCase() + "%");
+            }
+            case "startswith" -> {
+                Expression<String> stringPath = fieldPath.as(String.class);
+                yield cb.like(cb.lower(stringPath), value.toString().toLowerCase() + "%");
+            }
+            case "endswith" -> {
+                Expression<String> stringPath = fieldPath.as(String.class);
+                yield cb.like(cb.lower(stringPath), "%" + value.toString().toLowerCase());
+            }
+            case "in" -> fieldPath.in((Collection<?>) value);
+            case "notin" -> cb.not(fieldPath.in((Collection<?>) value));
+            case "isnull" -> cb.isNull(fieldPath);
+            case "isnotnull" -> cb.isNotNull(fieldPath);
             default -> null;
         };
     }
 
+    private Path<?> getFieldPath(Root<?> root, String fieldName, Map<String, Join<?, ?>> filterJoinCache) {
+        if (!fieldName.contains(".")) {
+            // Simple field on root entity
+            return root.get(fieldName);
+        }
+
+        // Nested field - build join path
+        String[] parts = fieldName.split("\\.");
+        String fieldPart = parts[parts.length - 1]; // Last part is the actual field
+        String joinPath = String.join(".", Arrays.copyOf(parts, parts.length - 1)); // Everything except last part
+
+        // Build or get the join path
+        Path<?> joinedPath = buildJoinPath(root, joinPath, filterJoinCache);
+
+        // Return the field from the joined path
+        return joinedPath.get(fieldPart);
+    }
+
+    @SuppressWarnings("unchecked")
     private Predicate buildGreaterThanPredicate(
             CriteriaBuilder cb,
-            Root<?> root,
-            String fieldName,
+            Path<?> fieldPath,
             Object value) {
         if (value instanceof String string) {
-            return cb.greaterThan(root.get(fieldName), string);
+            Expression<String> stringPath = fieldPath.as(String.class);
+            return cb.greaterThan(stringPath, string);
         } else if (value instanceof Number number) {
-            return cb.gt(root.get(fieldName), number);
+            Expression<Number> numberPath = fieldPath.as(Number.class);
+            return cb.gt(numberPath, number);
         } else if (value instanceof Date date) {
-            return cb.greaterThan(root.get(fieldName), date);
+            Expression<Date> datePath = fieldPath.as(Date.class);
+            return cb.greaterThan(datePath, date);
         } else if (value instanceof LocalDateTime localDateTime) {
-            return cb.greaterThan(root.get(fieldName), localDateTime);
-        } else {
+            Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
+            return cb.greaterThan(dateTimePath, localDateTime);
+        }else if (value instanceof Comparable<?> comparable) {
+            // Generic comparable handling
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
+        }else {
             throw new IllegalArgumentException("Unsupported type for > operator: " + value.getClass());
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Predicate buildLessThanPredicate(
             CriteriaBuilder cb,
-            Root<?> root,
-            String fieldName,
+            Path<?> fieldPath,
             Object value) {
         if (value instanceof String string) {
-            return cb.lessThan(root.get(fieldName), string);
+            Expression<String> stringPath = fieldPath.as(String.class);
+            return cb.lessThan(stringPath, string);
         } else if (value instanceof Number number) {
-            return cb.lt(root.get(fieldName), number);
+            Expression<Number> numberPath = fieldPath.as(Number.class);
+            return cb.lt(numberPath, number);
         } else if (value instanceof Date date) {
-            return cb.lessThan(root.get(fieldName), date);
+            Expression<Date> datePath = fieldPath.as(Date.class);
+            return cb.lessThan(datePath, date);
         } else if (value instanceof LocalDateTime localDateTime) {
-            return cb.lessThan(root.get(fieldName), localDateTime);
+            Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
+            return cb.lessThan(dateTimePath, localDateTime);
+        }else if (value instanceof Comparable<?> comparable) {
+            // Generic comparable handling
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThan((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for < operator: " + value.getClass());
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Predicate buildGreaterThanOrEqualPredicate(
             CriteriaBuilder cb,
-            Root<?> root,
-            String fieldName,
+            Path<?> fieldPath,
             Object value) {
         if (value instanceof String string) {
-            return cb.greaterThanOrEqualTo(root.get(fieldName), string);
+            Expression<String> stringPath = fieldPath.as(String.class);
+            return cb.greaterThanOrEqualTo(stringPath, string);
         } else if (value instanceof Number number) {
-            return cb.gt(root.get(fieldName), number);
+            Expression<Number> numberPath = fieldPath.as(Number.class);
+            return cb.ge(numberPath, number);
         } else if (value instanceof Date date) {
-            return cb.greaterThanOrEqualTo(root.get(fieldName), date);
+            Expression<Date> datePath = fieldPath.as(Date.class);
+            return cb.greaterThanOrEqualTo(datePath, date);
         } else if (value instanceof LocalDateTime localDateTime) {
-            return cb.greaterThanOrEqualTo(root.get(fieldName), localDateTime);
+            Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
+            return cb.greaterThanOrEqualTo(dateTimePath, localDateTime);
+        } else if (value instanceof Comparable<?> comparable) {
+            // Generic comparable handling
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.greaterThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for >= operator: " + value.getClass());
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Predicate buildLessThanOrEqualPredicate(
             CriteriaBuilder cb,
-            Root<?> root,
-            String fieldName,
+            Path<?> fieldPath,
             Object value) {
         if (value instanceof String string) {
-            return cb.lessThanOrEqualTo(root.get(fieldName), string);
+            Expression<String> stringPath = fieldPath.as(String.class);
+            return cb.lessThanOrEqualTo(stringPath, string);
         } else if (value instanceof Number number) {
-            return cb.lt(root.get(fieldName), number);
+            Expression<Number> numberPath = fieldPath.as(Number.class);
+            return cb.le(numberPath, number);
         } else if (value instanceof Date date) {
-            return cb.lessThanOrEqualTo(root.get(fieldName), date);
+            Expression<Date> datePath = fieldPath.as(Date.class);
+            return cb.lessThanOrEqualTo(datePath, date);
         } else if (value instanceof LocalDateTime localDateTime) {
-            return cb.lessThanOrEqualTo(root.get(fieldName), localDateTime);
+            Expression<LocalDateTime> dateTimePath = fieldPath.as(LocalDateTime.class);
+            return cb.lessThanOrEqualTo(dateTimePath, localDateTime);
+        } else if (value instanceof Comparable<?> comparable) {
+            // Generic comparable handling
+            Expression<? extends Comparable<?>> comparablePath = (Expression<? extends Comparable<?>>) fieldPath;
+            return cb.lessThanOrEqualTo((Expression<Comparable<Object>>) comparablePath, (Comparable<Object>) comparable);
         } else {
             throw new IllegalArgumentException("Unsupported type for <= operator: " + value.getClass());
         }
