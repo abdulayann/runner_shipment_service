@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface IShippingInstructionRepository extends MultiTenancyRepository<ShippingInstruction> {
-    @Query(value = "select status as bookingStatus, booking_no as bookingNumber " +
+    @Query(value = "select status as bookingStatus, booking_no as bookingNumber, entity_id as entityId " +
             "from carrier_booking where id = ?1 and is_deleted is false;", nativeQuery = true)
-    List<CarrierBookingInfoProjection> findCarrierBookingInfoById(Long id);
+    CarrierBookingInfoProjection findCarrierBookingInfoById(Long id);
 }
