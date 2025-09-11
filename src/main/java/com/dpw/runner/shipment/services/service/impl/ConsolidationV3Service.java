@@ -3055,23 +3055,25 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consol.get();
     }
 
-    public Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
+    public Optional<ConsolidationDetails> retrieveConsolidationByIdWithQuery(Long id, String xSource) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
         if (!consolidationDetails.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, id, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        List<TriangulationPartner> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
-        Long currentTenant = TenantContext.getCurrentTenant().longValue();
-        if (
-                (triangulationPartners == null && !Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
-                        && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue()))
-                        ||
-                        ((triangulationPartners == null || triangulationPartners.stream().filter(Objects::nonNull).noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
-                                && !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant))
-        ) {
-            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+        if (Objects.equals(xSource, NETWORK_TRANSFER)) {
+            List<TriangulationPartner> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
+            Long currentTenant = TenantContext.getCurrentTenant().longValue();
+            if (
+                    (triangulationPartners == null && !Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                            && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue()))
+                            ||
+                            ((triangulationPartners == null || triangulationPartners.stream().filter(Objects::nonNull).noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                                    && !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant))
+            ) {
+                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+            }
         }
         return consolidationDetails;
     }
@@ -3084,8 +3086,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         Long id = request.getId();
         Optional<ConsolidationDetails> consolidationDetails;
-        if(Objects.equals(source, NETWORK_TRANSFER)){
-            consolidationDetails = retrieveForNte(request.getId());
+        if(CommonUtils.canFetchDetailsWithoutTenantFilter(source)){
+            consolidationDetails = retrieveConsolidationByIdWithQuery(request.getId(), source);
         } else {
             if (id != null) {
                 consolidationDetails = consolidationDetailsDao.findById(id);
@@ -3101,7 +3103,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails consoleDetails = consolidationDetails.get();
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
         ConsolidationDetailsV3Response response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsV3Response.class);
-        if(!Objects.equals(source, NETWORK_TRANSFER))
+        if(!CommonUtils.canFetchDetailsWithoutTenantFilter(source))
             setPendingActionCountInResponse(consoleDetails, response);
         createConsolidationPayload(consoleDetails, response);
         setMainCarriageFlag(consoleDetails, response);
@@ -3321,8 +3323,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     public Map<String, Object> getAllMasterData(Long id, String source) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetailsOptional;
-        if(Objects.equals(source, NETWORK_TRANSFER)){
-            consolidationDetailsOptional = retrieveForNte(id);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+            consolidationDetailsOptional = retrieveConsolidationByIdWithQuery(id, source);
         } else
             consolidationDetailsOptional = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
         if(!consolidationDetailsOptional.isPresent()) {
@@ -5147,9 +5149,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Long pendingForAttachment = 0L;
         Optional<ConsolidationDetails> consoleDetails;
 
-        if(Objects.equals(xSource, NETWORK_TRANSFER)){
-            consoleDetails = retrieveForNte(request.getId());
-        }else {
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource)) {
+            consoleDetails = retrieveConsolidationByIdWithQuery(request.getId(), xSource);
+        } else {
             consoleDetails = consolidationDetailsDao.findById(request.getId());
         }
 

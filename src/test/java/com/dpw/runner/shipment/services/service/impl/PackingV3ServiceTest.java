@@ -832,7 +832,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary2() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.of(testShipment));
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.of(testShipment));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
@@ -843,7 +843,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary3() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.empty());
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
 
@@ -862,7 +862,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary5() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
-        when(consolidationV3Service.retrieveForNte(any())).thenReturn(Optional.of(testconsol));
+        when(consolidationV3Service.retrieveConsolidationByIdWithQuery(any(), any())).thenReturn(Optional.of(testconsol));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);

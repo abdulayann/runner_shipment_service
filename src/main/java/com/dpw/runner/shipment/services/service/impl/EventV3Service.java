@@ -151,7 +151,7 @@ public class EventV3Service implements IEventsV3Service {
         }
         Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
         List<Events> allEvents;
-        if (Objects.equals(source, Constants.NETWORK_TRANSFER)) {
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
             allEvents = eventDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()).getContent();
         } else {
             allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();

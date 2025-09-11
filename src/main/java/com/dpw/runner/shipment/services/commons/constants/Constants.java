@@ -281,6 +281,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
     public static final String NETWORK_TRANSFER = "network_transfer";
+    public static final String CROSS_TENANT_SOURCE = "cross_tenant";
 
     public static final String METER = "M";
     public static final String ANGSTROM = "A";

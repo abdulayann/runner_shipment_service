@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -138,7 +139,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -152,46 +152,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.POD_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.POL_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_CREATE_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_CONSOLIDATION_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
@@ -6844,5 +6805,31 @@ class CommonUtilsTest {
         }
     }
 
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenSourceIsNetworkTransfer_returnsTrue() {
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(NETWORK_TRANSFER);
+        assertTrue(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserDoesNotHaveViewPermission_returnsFalse() {
+        UserContext.getUser().getPermissions().remove(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter("OTHER_SOURCE");
+        assertFalse(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserHasViewPermission_sourceNotCrossTenant_returnsFalse() {
+        UserContext.getUser().getPermissions().put(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS, true);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter("OTHER_SOURCE");
+        assertFalse(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserHasViewPermission_sourceCrossTenant_returnsTrue() {
+        UserContext.getUser().getPermissions().put(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS, true);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(CROSS_TENANT_SOURCE);
+        assertTrue(result);
+    }
 
 }

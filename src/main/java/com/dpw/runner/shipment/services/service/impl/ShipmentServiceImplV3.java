@@ -488,7 +488,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return isNotAllowed;
     }
 
-    public Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+    public Optional<ShipmentDetails> retrieveShipmentByIdWithQuery(CommonGetRequest request, String source) throws RunnerException, AuthenticationException {
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
         if (id != null) {
@@ -502,23 +502,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
-        Long currentTenant = TenantContext.getCurrentTenant().longValue();
-        ConsolidationDetails consolidationDetails = null;
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
-            consolidationDetails = shipmentDetails.get().getConsolidationList().iterator().next();
-        }
-        if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
-            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+        if (Objects.equals(source, NETWORK_TRANSFER)) {
+            List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
+            Long currentTenant = TenantContext.getCurrentTenant().longValue();
+            ConsolidationDetails consolidationDetails = null;
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
+                consolidationDetails = shipmentDetails.get().getConsolidationList().iterator().next();
+            }
+            if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
+                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+            }
         }
         return shipmentDetails;
     }
 
     private Optional<ShipmentDetails> fetchShipmentDetails(String source, CommonGetRequest request) throws AuthenticationException, RunnerException {
         Long requestId = request.getId();
-        if (Objects.equals(source, NETWORK_TRANSFER)) {
-            log.debug("Source is NETWORK_TRANSFER for the input with Request Id {}", requestId);
-            return retrieveForNte(request);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+            log.debug("Source {} can fetch details without tenant filter for the input with Request Id {}", source, requestId);
+            return retrieveShipmentByIdWithQuery(request, source);
         } else {
             log.debug("Source is {} for the input with Request Id {}", source, requestId);
             if (requestId != null) {
@@ -604,8 +606,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
-        if (Objects.equals(source, NETWORK_TRANSFER)) {
-            shipmentDetails = retrieveForNte(request);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+            shipmentDetails = retrieveShipmentByIdWithQuery(request, source);
         } else {
             if (id != null) {
                 shipmentDetails = shipmentDao.findById(id);
@@ -2309,7 +2311,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
         Optional<ShipmentDetails> shipmentDetailsOptional;
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(shipmentId);
         else
             shipmentDetailsOptional = shipmentDao.findById(shipmentId);

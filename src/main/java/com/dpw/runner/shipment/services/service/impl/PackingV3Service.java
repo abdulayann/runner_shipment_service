@@ -779,7 +779,7 @@ public class PackingV3Service implements IPackingV3Service {
         packingV3Util.downloadPacking(response, request);
     }
 
-    private Optional<Packing> retrieveForNte(Long id, String guid) {
+    private Optional<Packing> retrievePackingDetailsByIdWithQuery(Long id, String guid) {
         Optional<Packing> packing;
         if (id != null) {
             packing = packingDao.findByIdWithQuery(id);
@@ -798,8 +798,8 @@ public class PackingV3Service implements IPackingV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Optional<Packing> packing;
-            if (Objects.equals(source, NETWORK_TRANSFER)) {
-                packing = retrieveForNte(id, guid);
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+                packing = retrievePackingDetailsByIdWithQuery(id, guid);
             } else {
                 if (id != null) {
                     packing = packingDao.findById(id);
@@ -840,7 +840,7 @@ public class PackingV3Service implements IPackingV3Service {
         // construct specifications for filter request
         Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class, PackingConstants.TABLES_NAMES);
         Page<Packing> packingPage;
-        if (Objects.equals(source, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source))
             packingPage = packingDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -1047,8 +1047,8 @@ public class PackingV3Service implements IPackingV3Service {
 
     public ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> optionalConsolidationDetails;
-        if (Objects.equals(xSource, NETWORK_TRANSFER)){
-            optionalConsolidationDetails = consolidationV3Service.retrieveForNte(consolidationId);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource)) {
+            optionalConsolidationDetails = consolidationV3Service.retrieveConsolidationByIdWithQuery(consolidationId, xSource);
         }else {
             optionalConsolidationDetails = consolidationV3Service.findById(consolidationId);
         }
@@ -1071,8 +1071,8 @@ public class PackingV3Service implements IPackingV3Service {
 
     private ShipmentDetails getShipmentDetails(Long shipmentId, String xSource) throws RunnerException, AuthenticationException {
         Optional<ShipmentDetails> optionalShipmentDetails;
-        if (Objects.equals(xSource, NETWORK_TRANSFER)){
-            optionalShipmentDetails = shipmentService.retrieveForNte(CommonGetRequest.builder().id(shipmentId).build());
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource)){
+            optionalShipmentDetails = shipmentService.retrieveShipmentByIdWithQuery(CommonGetRequest.builder().id(shipmentId).build(), xSource);
         }else {
             optionalShipmentDetails = shipmentService.findById(shipmentId);
         }
@@ -1364,7 +1364,7 @@ public class PackingV3Service implements IPackingV3Service {
     public Map<String, Object> getAllMasterData(Long id, String source) {
         try {
             Optional<Packing> packingOptional;
-            if (Objects.equals(source, NETWORK_TRANSFER))
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(source))
                 packingOptional = packingDao.findByIdWithQuery(id);
             else
                 packingOptional = packingDao.findById(id);
