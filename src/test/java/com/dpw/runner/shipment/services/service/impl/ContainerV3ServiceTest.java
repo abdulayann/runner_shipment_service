@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -109,6 +110,8 @@ class ContainerV3ServiceTest extends CommonMocks {
     private IShipmentsContainersMappingRepository iShipmentsContainersMappingRepository;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private ShipmentsV3Util shipmentsV3Util;
     @Mock
     private ISBUtils sbUtils;
 
@@ -1218,6 +1221,23 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void calculateContainerSummaryTestForLCLAndLTL() throws RunnerException{
+        List<Containers> containersList = List.of(testContainer);
+        mockShipmentSettings();
+        mockTenantSettings();
+        testPacking.setContainerId(1L);
+        testPacking.setShipmentId(2L);
+        testShipment.setId(2L);
+        testShipment.setShipmentType("LCL");
+        testShipment.setTransportMode("SEA");
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        when(containerDao.findByShipmentId(any())).thenReturn(containersList);
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.ofNullable(testShipment));
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(1L, null, "CONSOLIDATION");
+        assertNotNull(containerSummaryResponse);
+    }
+
+    @Test
     void calculateContainerSummaryTest2() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
@@ -1258,6 +1278,44 @@ class ContainerV3ServiceTest extends CommonMocks {
         IRunnerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerBaseResponse.class);
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
         when(containerDao.findAll(any(), any())).thenReturn(page);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
+        ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(ListCommonRequest.builder().entityId("1").build(), Constants.SHIPMENT);
+        assertNotNull(containerListResponse);
+    }
+
+    @Test
+    void testFetchShipmentContainersForLCLWithContainerAssignedToShipmentCargo() throws RunnerException{
+        testContainer.setId(1L);
+        testPacking.setContainerId(1L);
+        testPacking.setShipmentId(2L);
+        testShipment.setId(2L);
+        testShipment.setShipmentType("LCL");
+        testShipment.setTransportMode("SEA");
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        mockShipmentSettings();
+        IRunnerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerBaseResponse.class);
+        Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.ofNullable(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(page);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
+        ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(ListCommonRequest.builder().entityId("1").build(), Constants.SHIPMENT);
+        assertNotNull(containerListResponse);
+    }
+
+    @Test
+    void testFetchShipmentContainersForLCLWithPackingsAssignedToContainers() throws RunnerException{
+        testContainer.setId(1L);
+        testPacking.setContainerId(1L);
+        testPacking.setShipmentId(2L);
+        testShipment.setId(2L);
+        testShipment.setShipmentType("LCL");
+        testShipment.setTransportMode("SEA");
+        mockShipmentSettings();
+        IRunnerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerBaseResponse.class);
+        Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.ofNullable(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(page);
+        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(testPacking));
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(ListCommonRequest.builder().entityId("1").build(), Constants.SHIPMENT);
         assertNotNull(containerListResponse);
