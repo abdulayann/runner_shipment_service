@@ -69,11 +69,10 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -117,7 +116,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -222,6 +220,12 @@ public class CommonUtils {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -4287,18 +4291,6 @@ public class CommonUtils {
                 .orElse(false);
     }
 
-    public <T> T fetchFromJsonFile(String filePath, Class<T> clazz) throws RunnerException {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.registerModule(new JavaTimeModule());
-            return objectMapper.readValue(new File(filePath), clazz);
-        } catch (IOException e) {
-            log.error("Error reading JSON file", e);
-            throw new RunnerException("Error reading JSON file: " + e.getMessage());
-        }
-    }
-
     public boolean isSelectedModeOffInBooking(String transportMode, V1TenantSettingsResponse tenantData) {
         return switch (transportMode) {
             case TRANSPORT_MODE_AIR -> Boolean.FALSE.equals(tenantData.getBookingTransportModeAir());
@@ -4322,5 +4314,13 @@ public class CommonUtils {
             return UserContext.isAirSecurityUser();
         }
         return true;
+    }
+
+    public CloneFieldResponse getCloneFieldResponse(String type) {
+        try {
+            return objectMapper.readValue(StringUtility.convertToString(applicationConfigService.getValue(type)), CloneFieldResponse.class);
+        } catch (Exception e) {
+            throw new ValidationException("Invalid Type");
+        }
     }
 }

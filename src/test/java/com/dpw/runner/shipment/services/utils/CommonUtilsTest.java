@@ -76,6 +76,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ApplicationConfigServiceImpl;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -290,7 +291,11 @@ class CommonUtilsTest {
     @Mock
     private ShipmentSettingsDetails shipmentSettingsDetails;
 
+    @Mock
+    private ApplicationConfigServiceImpl applicationConfigService;
 
+    @Mock
+    private ObjectMapper objectMapper;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -6996,24 +7001,6 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testFetchFromJsonFile_Success() throws RunnerException {
-        String filePath = "src/main/resources/b2b_clone_flags_response.json";
-        CloneFieldResponse result = commonUtils.fetchFromJsonFile(filePath, CloneFieldResponse.class);
-        assertNotNull(result);
-        assertEquals("Header", result.getHeader().getLabel());
-        assertEquals("header", result.getHeader().getValue());
-    }
-
-    @Test
-    void testFetchFromJsonFile_FileNotFound() {
-        String invalidFilePath = "src/main/resources/testData.json";
-        RunnerException exception = assertThrows(RunnerException.class, () -> {
-            commonUtils.fetchFromJsonFile(invalidFilePath, CloneFieldResponse.class);
-        });
-        assertTrue(exception.getMessage().contains("Error reading JSON file"));
-    }
-
-    @Test
     void isSelectedModeOffInBooking_shouldThrowException_forUnknownMode() {
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
@@ -7122,6 +7109,34 @@ class CommonUtilsTest {
             default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
         }
         assertFalse(commonUtils.isSelectedModeOffInBooking(transportMode, tenantData));
+    }
+
+    @Test
+    void testGetCloneFieldResponse_ReturnsValidResponse() throws Exception {
+        String type = "S2B";
+        String json = "{ \"header\": { \"label\": \"Header\", \"value\": \"header\", \"fields\": [] } }";
+        CloneFieldResponse expectedResponse = new CloneFieldResponse();
+        when(applicationConfigService.getValue(type)).thenReturn(json);
+        when(objectMapper.readValue(json, CloneFieldResponse.class)).thenReturn(expectedResponse);
+        CloneFieldResponse actual = commonUtils.getCloneFieldResponse(type);
+        assertNotNull(actual);
+        assertEquals(expectedResponse, actual);
+        verify(applicationConfigService, times(1)).getValue(type);
+        verify(objectMapper, times(1)).readValue(json, CloneFieldResponse.class);
+    }
+
+    @Test
+    void testGetCloneFieldResponse_WhenJsonParsingFails_ThrowsValidationException() throws Exception {
+        String type = "S2B";
+        String invalidJson = "invalid";
+        when(applicationConfigService.getValue(type)).thenReturn(invalidJson);
+        when(objectMapper.readValue(invalidJson, CloneFieldResponse.class))
+                .thenThrow(new RuntimeException("Parse error"));
+        ValidationException thrown = assertThrows(ValidationException.class,
+                () -> commonUtils.getCloneFieldResponse(type));
+        assertEquals("Invalid Type", thrown.getMessage());
+        verify(applicationConfigService, times(1)).getValue(type);
+        verify(objectMapper, times(1)).readValue(invalidJson, CloneFieldResponse.class);
     }
 
     private static Stream<String> transportModesProvider() {
