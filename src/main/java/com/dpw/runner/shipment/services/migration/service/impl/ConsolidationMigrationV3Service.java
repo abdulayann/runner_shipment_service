@@ -291,7 +291,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             consolidationDetails.getReceivingAgent().setCountryCode(consolidationDetails.getReceivingAgentCountry());
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
-                if(consolidationAddress.getOrgData()!=null && consolidationAddress.getOrgData().get("Country")!=null)
+                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey("Country")
+                        && consolidationAddress.getOrgData().get("Country")!=null)
                     consolidationAddress.setCountryCode((String) consolidationAddress.getOrgData().get("Country"));
             }
         }
@@ -719,8 +720,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                         return migrated.getId();
                     });
                 } catch (Exception e) {
-                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, Arrays.toString(e.getStackTrace()), e);
-                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

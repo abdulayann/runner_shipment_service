@@ -115,9 +115,9 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                         return null;
                     });
                 } catch (Exception e) {
-                    log.error("Booking migration failed [id={}]: {}", id, e.getMessage(), e);
+                    log.error("Booking restore failed [id={}]: {}", id, e.getMessage(), e);
                     migrationUtil.saveErrorResponse(id, Constants.CUSTOMER_BOOKING,
-                            IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                            IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getMessage());
                     failureMap.put(id, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {

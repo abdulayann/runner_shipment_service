@@ -32,6 +32,10 @@ public interface IShipmentBackupRepository extends JpaRepository<ShipmentBackupE
 
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM shipment_backup cb WHERE cb.shipment_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    @Query(value = "UPDATE shipment_backup SET is_deleted = true WHERE shipment_id = ?1 and tenant_id = ?2", nativeQuery = true)
     void deleteBackupByTenantIdAndShipmentId(Long shipmentId, Integer tenantId);
+
+    @Modifying
+    @Query(value = "UPDATE shipment_backup SET is_deleted = true WHERE shipment_id IN ?1 and tenant_id = ?2", nativeQuery = true)
+    void deleteDuplicateBackupByTenantIdAndShipmentIds(Set<Long> shipmentIds, Integer tenantId);
 }
