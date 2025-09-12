@@ -1427,17 +1427,17 @@ public abstract class IReport {
 
     private String populateNameFromUnlocationsResponse(UnlocationsResponse unlocationsResponse) {
 
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-            if (Objects.nonNull(unlocationsResponse.getName()) && Objects.nonNull(unlocationsResponse.getLocCode())
-                    && (unlocationsResponse.getLocCode().length() >= 2)) {
-                // Extract country code from UNLOC using initial 2 characters
-                String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
-                if (US.equalsIgnoreCase(countryCode)) {
-                    return (countryCode + "," + unlocationsResponse.getName()).toUpperCase();
-                }
-
-                return unlocationsResponse.getName().toUpperCase();
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) &&
+                Objects.nonNull(unlocationsResponse.getName()) && Objects.nonNull(unlocationsResponse.getLocCode())
+                && (unlocationsResponse.getLocCode().length() >= 2)) {
+            // Extract country code from UNLOC using initial 2 characters
+            String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
+            if (US.equalsIgnoreCase(countryCode)) {
+                return (countryCode + "," + unlocationsResponse.getName()).toUpperCase();
             }
+
+            return unlocationsResponse.getName().toUpperCase();
+
         }
         return unlocationsResponse.getName();
     }
