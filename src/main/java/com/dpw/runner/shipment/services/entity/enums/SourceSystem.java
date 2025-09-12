@@ -3,12 +3,13 @@ package com.dpw.runner.shipment.services.entity.enums;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum SourceSystem {
 
-    CARGO_RUNNER(0, "Cargo Runner"),
-    CARRIER(1, "Carrier"),
+    CargoRunner(0, "Cargo Runner"),
+    Carrier(1, "Carrier"),
     INTTRA(2, "INTTRA"),
-    OTHER(3, "Other");
+    Other(3, "Other");
 
     private final int value;
     private final String description;
