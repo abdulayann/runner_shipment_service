@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
@@ -101,6 +102,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    IntraCommonKafkaHelper kafkaHelper;
+
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
@@ -123,7 +127,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ConsolidationDetails consolidationDetails;
         ShippingInstruction shippingInstruction = response.getShippingInstruction() != null ? response.getShippingInstruction() : new ShippingInstruction();
 
-        if (EntityType.CARRIER_BOOKING.equals(type)) {
+        if (EntityType.CARRIER_BOOKING == type) {
             Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(entityId);
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
@@ -135,7 +139,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             response.setBookingStatus(carrierBooking.get().getStatus().name());
             setPartiesNumber(shippingInstruction, carrierBooking.get());
 
-        } else if (EntityType.CONSOLIDATION.equals(type)) {
+        } else if (EntityType.CONSOLIDATION == type) {
             consolidationDetails = getConsolidationDetail(entityId);
             response.setBookingStatus(consolidationDetails.getBookingStatus());
             shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
@@ -310,7 +314,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         ShippingInstruction instruction = shippingInstruction.get();
-        if (EntityType.CARRIER_BOOKING.equals(instruction.getEntityType())) {
+        if (EntityType.CARRIER_BOOKING == instruction.getEntityType()) {
             CarrierBookingInfoProjection projection = repository.findBookingInfoById(instruction.getEntityId());
             if (projection != null) {
                 mapper.setBookingStatus(projection.getBookingStatus());
@@ -333,12 +337,27 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         if (shippingInstructionEntity.isEmpty()) {
             throw new ValidationException("Invalid shipping instruction id");
         }
+
+        if (shippingInstructionEntity.get().getStatus() != ShippingInstructionStatus.SISubmitted && shippingInstructionEntity.get().getStatus() != ShippingInstructionStatus.SIAccepted) {
+            throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
+        }
+
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(shippingInstructionRequest, ShippingInstruction.class);
-        shippingInstruction = validateFetchAndSetSI(shippingInstruction, false);
+        validateSIRequest(shippingInstruction);
         shippingInstruction.setCommonContainersList(shippingInstructionEntity.get().getCommonContainersList());
         shippingInstruction.setCommonPackagesList(shippingInstructionEntity.get().getCommonPackagesList());
-        ShippingInstruction information = repository.save(shippingInstruction);
-        return jsonHelper.convertValue(information, ShippingInstructionResponse.class);
+        ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
+        responseMapper.setShippingInstruction(shippingInstruction);
+        populateReadOnlyFields(responseMapper);
+        ShippingInstruction si = responseMapper.getShippingInstruction();
+
+        // Step 3: Mark SI as submitted
+        shippingInstruction.setStatus(ShippingInstructionStatus.SIAmendRequested);
+        ShippingInstruction saved = repository.save(si);
+        sendForDownstreamProcess(shippingInstruction);
+        ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+        response.setBookingStatus(responseMapper.getBookingStatus());
+        return response;
     }
 
     public void deleteShippingInstructions(Long id) {
@@ -463,6 +482,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 throw new ValidationException("Invalid getNonNegoUnFreightCopies!");
             }
         }
+
+        validateFreightDetails(shippingInstruction);
     }
 
     private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
@@ -517,7 +538,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
 
     public void populateFreightDetails(ShippingInstruction si, ConsolidationDetails consol) {
+        if (Objects.nonNull(si.getFreightDetailList()) && !si.getFreightDetailList().isEmpty()) {
+            log.debug("Freight details present in SI. No need to populate from consolidation.");
+            return;
+        }
+
         if (consol == null || consol.getPayment() == null) {
+            log.debug("Either consolidation null or it does not have payment. SI ID {}", si.getId());
             return;
         }
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
@@ -562,56 +589,74 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.getFreightDetailList().add(freightDetail);
     }
 
-    public void submitSI(ShippingInstructionRequest request) {
+    public ShippingInstructionResponse submitShippingInstruction(ShippingInstructionRequest request) {
         ShippingInstruction si = jsonHelper.convertValue(request, ShippingInstruction.class);
-        CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
-                .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
+        if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
+            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
+                    .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
-        // Step 1: Check booking status
-        if ((!CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) && !CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
-            throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+            // Step 1: Check booking status
+            if ((!CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) && !CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
+                throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+            }
+        } else if (si.getEntityType() == EntityType.CONSOLIDATION) {
+            Optional<ShippingInstruction> savedEntity = repository.findById(si.getId());
+            if (savedEntity.get().getStatus() != ShippingInstructionStatus.Draft) {
+                throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
+            }
+        } else {
+            throw new ValidationException("Invalid value of Shipping Instruction Type");
         }
 
         // Step 2: Validate mandatory fields
         validateSIRequest(si);
+        ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
+        responseMapper.setShippingInstruction(si);
+        populateReadOnlyFields(responseMapper);
+        ShippingInstruction shippingInstruction = responseMapper.getShippingInstruction();
 
         // Step 3: Mark SI as submitted
-        si.setStatus(ShippingInstructionStatus.SISubmitted);
-        repository.save(si);
+        shippingInstruction.setStatus(ShippingInstructionStatus.SISubmitted);
+        ShippingInstruction saved = repository.save(si);
+        sendForDownstreamProcess(shippingInstruction);
+        ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+        response.setBookingStatus(responseMapper.getBookingStatus());
+        return response;
     }
 
-//    public void amendSI(ShippingInstructionRequest request) {
-//
-//        ShippingInstruction si = jsonHelper.convertValue(request, ShippingInstruction.class);
-//
-//        if (!ShippingInstructionStatus.SISubmitted.name().equalsIgnoreCase(si.getStatus().name()) && !ShippingInstructionStatus.SIAccepted.name().equalsIgnoreCase(si.getStatus().name())) {
-//            throw new ValidationException("Amendment not allowed. SI is not Submitted/Accepted.");
-//        }
-//
-//        // Enable only editable fields in UI (backend doesn't enforce which fields are editable,
-//        // but you can keep audit logs of what changed here).
-//        si.setStatus(ShippingInstructionStatus.SIAmendRequested);
-//        repository.save(si);
-//    }
-
-    private void populateReadOnlyFields(ShippingInstruction shippingInstruction) {
+    private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {
         ConsolidationDetails consolidationDetails;
-        if (EntityType.CARRIER_BOOKING.equals(shippingInstruction.getEntityType())) {
+        ShippingInstruction shippingInstruction = mapper.getShippingInstruction();
+        if (EntityType.CARRIER_BOOKING == shippingInstruction.getEntityType()) {
             Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(shippingInstruction.getEntityId());
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
             }
             populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
-            consolidationDetails = getConsolidationDetail(carrierBooking.get().getEntityId());
-            setReferenceNumber(shippingInstruction, carrierBooking.get());
-            setPartiesNumber(shippingInstruction, carrierBooking.get());
-
-        } else if (EntityType.CONSOLIDATION.equals(shippingInstruction.getEntityType())) {
+            mapper.setBookingStatus(carrierBooking.get().getStatus().name());
+            shippingInstruction.setEntityNumber(carrierBooking.get().getBookingNo());
+        } else if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
             consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
             shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
+            shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
+            setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         } else {
             throw new ValidationException("Invalid value of Shipping Instruction Type");
         }
+    }
 
+    private void validateFreightDetails(ShippingInstruction si) {
+        if (si.getFreightDetailList() != null) {
+            for (FreightDetail fd : si.getFreightDetailList()) {
+                if (fd.getPayerLocation() == null || fd.getPayerLocation().trim().isEmpty()) {
+                    throw new ValidationException("Payment Location (payerLocation) is mandatory for all Freight Details");
+                }
+            }
+        }
+    }
+
+    private void sendForDownstreamProcess(ShippingInstruction shippingInstruction) {
+        String payload = jsonHelper.convertToJson(shippingInstruction);
+        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI, "",IntraKafkaOperationType.SUBMIT);
     }
 }

@@ -11,20 +11,15 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.ShippingInstruction;
-import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.EntityType;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -37,6 +32,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -75,6 +71,9 @@ class ShippingInstructionsServiceImplTest {
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Mock
     private JsonHelper jsonHelper;
+    @Mock
+    IntraCommonKafkaHelper kafkaHelper;
+
     @Mock
     private MasterDataUtils masterDataUtils;
     @Mock
@@ -214,6 +213,7 @@ class ShippingInstructionsServiceImplTest {
         entity.setEntityType(EntityType.CONSOLIDATION);
         entity.setEntityId(999L);
         entity.setSailingInformation(new SailingInformation());
+        entity.setStatus(ShippingInstructionStatus.SIAccepted);
 
         // Mock ConsolidationDetails deeply to avoid building complex graphs
         ConsolidationDetails consol = mock(ConsolidationDetails.class, RETURNS_DEEP_STUBS);
@@ -406,5 +406,31 @@ class ShippingInstructionsServiceImplTest {
 
         // Verify repository interaction
         verify(repository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void createShippingInstruction_ShouldThrow_WhenFreightDetailMissingPayerLocation() {
+        // Arrange
+        ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setEntityType(EntityType.CONSOLIDATION);
+        si.setEntityId(123L);
+
+        FreightDetail badFreight = new FreightDetail();
+        badFreight.setChargeType("OriginTerminalHandling");
+        badFreight.setPaymentTerms("Prepaid");
+        badFreight.setPayerType(PayerType.SHIPPER);
+        badFreight.setPayerLocation(null); // MISSING mandatory field
+        si.setFreightDetailList(List.of(badFreight));
+
+        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(si);
+
+        // Act + Assert
+        assertThatThrownBy(() -> service.createShippingInstruction(req))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Payment Location (payerLocation) is mandatory");
+
+        verifyNoInteractions(repository); // save should never happen
     }
 }
