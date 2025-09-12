@@ -220,4 +220,5 @@ public class ApiConstants {
     // Dynamic endpoints
     public static final String API_DYNAMIC_LIST = "/dynamic/list";
     public static final String API_DYNAMIC_RETRIEVE = "/dynamic/retrieve";
+    public static final String API_BULK_UPDATE = "/containers/bulk-update";
 }

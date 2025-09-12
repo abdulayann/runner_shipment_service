@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,4 +52,5 @@ public class CommonContainerResponse implements IRunnerResponse {
     private Long verifiedGrossMassId;
     private String commodityGroup;
     private String marksNums;
+    private Parties weighingParty;
 }
