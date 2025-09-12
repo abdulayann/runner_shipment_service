@@ -15,7 +15,7 @@ infra: K8s
 containerRegistryURL: acrcargoesrunner.azurecr.io
 libraryVariableGroupName: runner_runner_shipment_service
 libraryVariableGroupId: 342
-allEnvironments: ['dev', 'qa', 'staging', 'prod','dr']
+allEnvironments: ['dev', 'qa', 'staging', 'prod','dr', 'prod-background']
 bluegreen: True
 artifactAliasName: _config
 artifactVstsFeedPublish: 23a36ede-eaaf-42ed-b849-690d3430f272/fbd15528-c4b5-49c1-beea-5b436be8317c
@@ -226,3 +226,36 @@ dr:
     maxCpu: 3000m
     minMem: 2Gi
     maxMem: 6Gi
+  
+prod-background:
+  cicd: Full
+  envName: prod-background
+  namespace: runner-shipment-service-prod-background
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
+  hostUrlList: 
+  - app-runner.cargoes.com
+  configMap:
+    data:
+      APP_ENV: prod
+      props_profile: prod
+      NEW_RELIC_APP_NAME: runner-shipment-service-prod-background
+  secretName: shipment-service-prod-SECRET
+  deployment:
+    replicaCount: 1
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms2048m -Xmx16384m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 4000m
+    minMem: 2Gi
+    maxMem: 18Gi
+  secretprovider:
+    prodUserAssignedIdentityID: d50883f6-2c0a-4fdb-b659-6176f5fb0be5
+    prodKeyVaultName: kv-cargorunner-prod
+  ingress:
+    rules:
+      - paths:
+          - path: /shipment-service-background
+            pathType: ImplementationSpecific
+            serviceName: runner-shipment-service
+            servicePort: 80
