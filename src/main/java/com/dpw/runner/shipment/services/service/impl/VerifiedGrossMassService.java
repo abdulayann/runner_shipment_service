@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -64,11 +65,12 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
+    private final VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil;
     private final ICommonContainersRepository commonContainersRepository;
 
 
 
-    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, ICommonContainersRepository commonContainersRepository) {
+    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, ICommonContainersRepository commonContainersRepository) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -78,11 +80,42 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.executorServiceMasterData = executorServiceMasterData;
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
         this.commonContainersRepository = commonContainersRepository;
+        this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
     }
 
     @Override
     public VerifiedGrossMassResponse create(VerifiedGrossMassRequest request) {
+        verifiedGrossMassValidationUtil.validateServiceType(request);
+        Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
+        if (EntityType.CONSOLIDATION.equals(request.getEntityType())) {
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            verifiedGrossMass.setEntityNumber(consolidationDetails.getConsolidationNumber());
+            //read only fields
+            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
+            if (Objects.isNull(sailingInformation)) {
+                sailingInformation = new SailingInformation();
+            }
+            if (consolidationDetails.getCarrierDetails() != null) {
+                sailingInformation.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+            }
+            verifiedGrossMass.setSailingInformation(sailingInformation);
+        } else if (EntityType.CARRIER_BOOKING.equals(request.getEntityType())) {
+            CarrierBooking carrierBooking = (CarrierBooking) entity;
+            verifiedGrossMass.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
+            verifiedGrossMass.setCarrierBlNo(carrierBooking.getCarrierBlNo());
+            verifiedGrossMass.setEntityNumber(carrierBooking.getBookingNo());
+            //read only fields
+            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
+            if (Objects.isNull(sailingInformation)) {
+                sailingInformation = new SailingInformation();
+            }
+            if (Objects.nonNull(carrierBooking.getSailingInformation())) {
+                sailingInformation.setCarrier(carrierBooking.getSailingInformation().getCarrier());
+            }
+            verifiedGrossMass.setSailingInformation(sailingInformation);
+        }
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
     }
@@ -223,14 +256,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         verifiedGrossMassResponse.setSailingInformation(sailingInformationResponse);
         //sending agent is origin agent, receivingAgent is destination agent in consol
-        if (Objects.nonNull(consolidationDetails.getSendingAgent())) {
-            PartiesResponse partiesResponse = jsonHelper.convertValue(consolidationDetails.getSendingAgent(), PartiesResponse.class);
-            partiesResponse.setId(null);
-            partiesResponse.setGuid(null);
-            verifiedGrossMassResponse.setRequestor(partiesResponse);
-            verifiedGrossMassResponse.setResponsible(partiesResponse);
-            verifiedGrossMassResponse.setAuthorised(partiesResponse);
-        }
+        setPartiesDataFromConsol(verifiedGrossMassResponse, consolidationDetails);
         List<ReferenceNumberResponse> referenceNumberResponses = getReferenceNumberResponses(consolidationDetails);
         verifiedGrossMassResponse.setReferenceNumbersList(referenceNumberResponses);
         List<CommonContainerResponse> commonContainersList = new ArrayList<>();
@@ -241,6 +267,17 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             }
         }
         verifiedGrossMassResponse.setContainersList(commonContainersList);
+    }
+
+    private void setPartiesDataFromConsol(VerifiedGrossMassResponse verifiedGrossMassResponse, ConsolidationDetails consolidationDetails) {
+        if (Objects.nonNull(consolidationDetails.getSendingAgent())) {
+            PartiesResponse partiesResponse = jsonHelper.convertValue(consolidationDetails.getSendingAgent(), PartiesResponse.class);
+            partiesResponse.setId(null);
+            partiesResponse.setGuid(null);
+            verifiedGrossMassResponse.setRequestor(partiesResponse);
+            verifiedGrossMassResponse.setResponsible(partiesResponse);
+            verifiedGrossMassResponse.setAuthorised(partiesResponse);
+        }
     }
 
     @NotNull
