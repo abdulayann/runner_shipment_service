@@ -161,10 +161,6 @@ public class SeawayBillReport extends IReport {
             this.populateShipmentReportData(dict, null, model.getShipment().getId());
             this.getContainerDetails(model.getShipment(), dict);
             this.getPackingDetails(model.getShipment(), dict);
-            if (Objects.nonNull(model.getShipment().getAdditionalDetails())) {
-                dict.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(processBLTransportDetailsFromShipmentModel(model.getShipment().getAdditionalDetails().getPlaceOfIssue())));
-                dict.put(PAID_PLACE_NAME, StringUtility.toUpperCase(processBLTransportDetailsFromShipmentModel(model.getShipment().getAdditionalDetails().getPaidPlace())));
-            }
         }
 
         return dict;

@@ -1433,7 +1433,14 @@ public abstract class IReport {
             // Extract country code from UNLOC using initial 2 characters
             String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
             if (US.equalsIgnoreCase(countryCode)) {
-                return (countryCode + "," + unlocationsResponse.getName()).toUpperCase();
+                String cityName = unlocationsResponse.getName();
+                String stateName = unlocationsResponse.getCountry();
+                if (Objects.isNull(cityName)) cityName = "";
+                if (Objects.isNull(stateName)) stateName = "";
+                if (cityName.isEmpty() && stateName.isEmpty()) {
+                    return "";
+                }
+                return (cityName + "," + stateName).toUpperCase();
             }
 
             return unlocationsResponse.getName().toUpperCase();
@@ -2681,22 +2688,6 @@ public abstract class IReport {
             dictionary.put(BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblDataDto.getPlaceOfReceipt()));
         }
     }
-
-    public String processBLTransportDetailsFromShipmentModel(String blTransportDetail) {
-        if (Objects.isNull(blTransportDetail)) return "";
-
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-            if (blTransportDetail.length() >= 2) {
-                String countryCode = blTransportDetail.substring(0, 2);
-                if (US.equalsIgnoreCase(countryCode)) {
-                    return (countryCode + "," + blTransportDetail.substring(2));
-                }
-            }
-            return blTransportDetail;
-        }
-        return blTransportDetail;
-    }
-
 
     private List<String> getNotifyParty(Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
         List<String> notify = new ArrayList<>();
