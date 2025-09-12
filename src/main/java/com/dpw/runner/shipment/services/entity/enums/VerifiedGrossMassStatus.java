@@ -6,7 +6,7 @@ import lombok.Getter;
 @SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum VerifiedGrossMassStatus {
     Draft(0, "Draft"),
-    Requested(1, "Booking Requested"),
+    Requested(1, "VGM Requested"),
     AcceptedByINTTRA(2, "Processed By INNTRA"),
     RejectedByINTTRA(3, "Rejected By INTTRA"),
     ConfirmedByCarrier(4, "Confirmed By Carrier"),
