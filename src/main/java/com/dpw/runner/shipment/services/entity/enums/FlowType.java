@@ -3,10 +3,11 @@ package com.dpw.runner.shipment.services.entity.enums;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum FlowType {
 
-    INBOUND(0, "Inbound"),
-    OUTBOUND(1, "Outbound");
+    Inbound(0, "Inbound"),
+    Outbound(1, "Outbound");
 
     private final int value;
     private final String description;
