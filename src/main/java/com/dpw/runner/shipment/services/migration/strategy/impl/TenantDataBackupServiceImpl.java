@@ -175,7 +175,7 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     private void saveNetworkTransferBatch(List<NetworkTransferBackupEntity> networkTransfers, Integer tenantId) {
 
         if (networkTransfers == null || networkTransfers.isEmpty()) {
-            log.info("No bookings are present to save");
+            log.info("No network transfer are present to save");
             return;
         }
         Set<UUID> ids = networkTransfers.stream()
