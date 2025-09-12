@@ -100,6 +100,8 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         if (entityPayload != null) {
             MigrationStatus status = v2Shipment.getMigrationStatus();
             if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
+                networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V2);
+                networkTransferDao.updateWithCustomMigrationStatus(networkTransfer);
                 log.info("Network transfer already migrated from v2 -> Shipment [id={}]", networkTransfer.getId());
                 return networkTransfer;
             }
@@ -126,6 +128,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         MigrationStatus status = existingPayload.getMigrationStatus();
         if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
+            log.info("Network transfer already migrated from v2 -> Consolidation [id={}]", networkTransfer.getId());
+            networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V2);
+            networkTransferDao.updateWithCustomMigrationStatus(networkTransfer);
             return networkTransfer;
         }
 
@@ -367,7 +372,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                     });
                 } catch (Exception e) {
                     log.error("Async failure during networkTransferFutures setup [id={}]", nteId, e);
-                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -413,7 +418,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                 } catch (Exception e) {
                     log.error("Async failure during NetworkTransfer setup [id={}]", nteId, e);
                     networkTransferBackupRepository.deleteBackupByTenantIdAndNetworkTransferId(nteId, tenantId);
-                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(nteId, Constants.NETWORK_TRANSFER, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -422,7 +427,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
             networkTransferFutures.add(future);
         }
         List<Long> migratedNteIds = MigrationUtil.collectAllProcessedIds(networkTransferFutures);
-        map.put("Total Network Transfer Migrated", migratedNteIds.size());
         map.put("Total Network Transfer Migrated ", migratedNteIds.size());
         if(!failureMap.isEmpty()) {
             map.put("Failed Network Transfer Migration: ", failureMap);

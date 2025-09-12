@@ -8,6 +8,10 @@ import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEnti
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.entity.NetworkTransferBackupEntity;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
+import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.INetworkTransferBackupRepository;
+import com.dpw.runner.shipment.services.migration.repository.IShipmentBackupRepository;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import lombok.Generated;
@@ -27,9 +31,12 @@ import org.hibernate.Session;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +53,11 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     @Qualifier("asyncBackupHandlerExecutor")
     private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
+    private final IConsolidationBackupRepository consolidationBackupRepository;
+    private final ICustomerBookingBackupRepository customerBookingBackupRepository;
+    private final INetworkTransferBackupRepository networkTransferBackupRepository;
+    private final IShipmentBackupRepository iShipmentBackupRepository;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -94,7 +106,7 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                batchSaveAll(customerBookings, shipments, consolidations, networkTransfers);
+                batchSaveAll(customerBookings, shipments, consolidations, networkTransfers, tenantId);
                 return null;
             } catch (Exception e) {
                 status.setRollbackOnly();
@@ -109,20 +121,76 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     private void batchSaveAll(List<CustomerBookingBackupEntity> bookings,
                               List<ShipmentBackupEntity> shipments,
                               List<ConsolidationBackupEntity> consolidations,
-                              List<NetworkTransferBackupEntity> networkTransfers) {
+                              List<NetworkTransferBackupEntity> networkTransfers, Integer tenantId) {
         log.info("Started saving in db for tenant id");
+
+        saveBookingBatch(bookings, tenantId);
+        saveShipmentBatch(shipments, tenantId);
+        saveConsolidationBatch(consolidations, tenantId);
+        saveNetworkTransferBatch(networkTransfers, tenantId);
+    }
+
+
+    private void saveBookingBatch(List<CustomerBookingBackupEntity> bookings, Integer tenantId) {
+
+        if (bookings == null || bookings.isEmpty()) {
+            log.info("No bookings are present to save");
+            return;
+        }
+        Set<Long> ids = bookings.stream()
+                .map(CustomerBookingBackupEntity::getBookingId)
+                .collect(Collectors.toSet());
+        customerBookingBackupRepository.deleteDuplicateBackupByTenantIdAndBookingIds(ids, tenantId);
         saveBatch(bookings);
+
+    }
+
+    private void saveShipmentBatch(List<ShipmentBackupEntity> shipments, Integer tenantId) {
+        if (shipments == null || shipments.isEmpty()) {
+            log.info("No shipments are present to save");
+            return;
+        }
+        Set<Long> ids = shipments.stream()
+                .map(ShipmentBackupEntity::getShipmentId)
+                .collect(Collectors.toSet());
+        iShipmentBackupRepository.deleteDuplicateBackupByTenantIdAndShipmentIds(ids, tenantId);
         saveBatch(shipments);
+
+    }
+
+    private void saveConsolidationBatch(List<ConsolidationBackupEntity> consolidations, Integer tenantId) {
+
+        if (consolidations == null || consolidations.isEmpty()) {
+            log.info("No console are present to save");
+            return;
+        }
+        Set<Long> ids = consolidations.stream()
+                .map(ConsolidationBackupEntity::getConsolidationId)
+                .collect(Collectors.toSet());
+        consolidationBackupRepository.deleteDuplicateBackupByTenantIdAndConsolidationIds(ids, tenantId);
         saveBatch(consolidations);
+    }
+
+
+    private void saveNetworkTransferBatch(List<NetworkTransferBackupEntity> networkTransfers, Integer tenantId) {
+
+        if (networkTransfers == null || networkTransfers.isEmpty()) {
+            log.info("No bookings are present to save");
+            return;
+        }
+        Set<UUID> ids = networkTransfers.stream()
+                .map(NetworkTransferBackupEntity::getNetworkTransferGuid)
+                .collect(Collectors.toSet());
+        networkTransferBackupRepository.deleteDuplicateBackupByTenantIdAndNetworkTransferIds(ids, tenantId);
         saveBatch(networkTransfers);
     }
 
     /*
-        Spring Data’s saveAll() doesn’t clear the persistence context. That leads to:
-        High memory usage
-        Slower flush times
-        Potential OutOfMemoryError on large datasets -> Connections leaks as well
-     */
+    Spring Data’s saveAll() doesn’t clear the persistence context. That leads to:
+    High memory usage
+    Slower flush times
+    Potential OutOfMemoryError on large datasets -> Connections leaks as well
+ */
     private <T> void saveBatch(List<T> entities) {
 
         if (entities == null || entities.isEmpty()) return;

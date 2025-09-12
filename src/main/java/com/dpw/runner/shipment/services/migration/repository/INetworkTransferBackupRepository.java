@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Repository
 public interface INetworkTransferBackupRepository extends JpaRepository<NetworkTransferBackupEntity, Long> {
@@ -28,6 +30,10 @@ public interface INetworkTransferBackupRepository extends JpaRepository<NetworkT
 
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM network_transfer_backup cb WHERE cb.network_transfer_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    @Query(value = "UPDATE network_transfer_backup SET is_deleted = true WHERE network_transfer_id = ?1 and tenant_id = ?2", nativeQuery = true)
     void deleteBackupByTenantIdAndNetworkTransferId(Long networkTransferId, Integer tenantId);
+
+    @Modifying
+    @Query(value = "UPDATE network_transfer_backup SET is_deleted = true WHERE network_transfer_guid IN ?1 and tenant_id = ?2", nativeQuery = true)
+    void deleteDuplicateBackupByTenantIdAndNetworkTransferIds(Set<UUID> networkTransferIds, Integer tenantId);
 }
