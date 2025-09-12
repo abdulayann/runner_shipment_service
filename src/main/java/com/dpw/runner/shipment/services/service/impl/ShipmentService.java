@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -4039,7 +4040,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
@@ -4055,7 +4056,8 @@ public class ShipmentService implements IShipmentService {
 
         if(shipmentCount <= exportExcelLimit){
             downloadShipmentListExcel(response, shipmentDetailsPage);
-        }else {
+        } else {
+            exportExcelResponse.setEmailSent(true);
             request.setPageSize(Integer.MAX_VALUE);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
                 TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
@@ -8803,10 +8805,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private DBOperationType determineOperationType(OceanDGStatus dgStatus, boolean isOceanDgUser) {
-        if(dgStatus == OCEAN_DG_REQUESTED && isOceanDgUser) return DG_APPROVE;
-        return dgStatus == OCEAN_DG_REQUESTED
-            ? DBOperationType.DG_REQUEST
-            : COMMERCIAL_REQUEST;
+        if ((dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus ==  OCEAN_DG_REJECTED) && isOceanDgUser) return DG_APPROVE;
+        return (dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_REJECTED) ? DBOperationType.DG_REQUEST : COMMERCIAL_REQUEST;
     }
 
     private OceanDGStatus determineDgStatusAfterApproval(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
@@ -9814,7 +9814,7 @@ public String mdmDGApprovalResponse(OceanDGRequestV3 request) throws RunnerExcep
                 operationType = DBOperationType.DG_REJECT;
             }
         }else if(dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == TaskStatus.REJECTED){
+            if(request.getStatus() == TaskStatus.APPROVED){
                 operationType = COMMERCIAL_APPROVE;
             }else{
                 operationType = DBOperationType.COMMERCIAL_REJECT;

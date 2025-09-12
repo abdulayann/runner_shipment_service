@@ -39,4 +39,10 @@ public class TransportInstructionLegsPackagesResponse implements IRunnerResponse
     private String unNumber;
     private String hazardLabel;
     private String tunnelRestrictionCode;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
+    private String dgClassDescription;
 }
