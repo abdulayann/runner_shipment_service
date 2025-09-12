@@ -44,6 +44,8 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -845,6 +847,132 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentListResponses,
                 totalPages,
                 totalCount);
+    }
+
+    @Override
+    public ShipmentRetrieveLiteResponse cloneShipment(CloneRequest request) throws RunnerException {
+        if (null == request.getShipmentId()) {
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        String responseMsg;
+        try {
+            Long shipemntId = request.getShipmentId();
+            Optional<ShipmentDetails> shipmentData = validateShipment(shipemntId);
+            ShipmentDetails shipmentDetails = shipmentData.get();
+            ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+            CarrierDetails details = shipmentDetails.getCarrierDetails();
+            CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+            setHeadersDetails(request, shipmentDetails, shipmentRetrieveLiteResponse, details, builder);
+            setPartieDetails(request, shipmentDetails, shipmentRetrieveLiteResponse);
+            setCargoDetails(request, shipmentDetails, shipmentRetrieveLiteResponse);
+            setGeneralDetails(request, shipmentDetails, shipmentRetrieveLiteResponse, details, builder);
+            shipmentRetrieveLiteResponse.setCarrierDetails(builder.build());
+            return shipmentRetrieveLiteResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    @Override
+    public CloneFieldResponse getCloneConfig(String type) throws RunnerException {
+        return commonUtils.fetchFromJsonFile(getPathBasedOnType(type), CloneFieldResponse.class);
+    }
+
+    public String getPathBasedOnType(String type) {
+        switch (type) {
+            case "B2B":
+                return "src/main/resources/b2b_clone_flags_response.json";
+            case "S2B":
+                return "src/main/resources/s2b_clone_flags_response.json";
+            case "S2S":
+                return "src/main/resources/s2s_clone_flags_response.json";
+            default:
+                throw new ValidationException("Invalid request");
+        }
+    }
+
+    public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if (request.getFlags().isGeneral()) {
+            commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isCarrier(), details.getShippingLine(), builder::shippingLine);
+            }
+        }
+    }
+
+    public void setCargoDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
+        if (request.getFlags().isCargoSummary()) {
+            commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), shipmentRetrieveLiteResponse::setGoodsDescription);
+            commonUtils.mapIfSelected(request.getFlags().isMarksAndNumbers(), shipmentDetails.getMarksNum(), shipmentRetrieveLiteResponse::setMarksNum);
+            commonUtils.mapIfSelected(request.getFlags().isAdditionalTerms(), shipmentDetails.getAdditionalTerms(), shipmentRetrieveLiteResponse::setAdditionalTerms);
+        }
+    }
+
+    private void setPartieDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
+        if(request.getFlags().isParty()) {
+            commonUtils.mapIfSelected(request.getFlags().isClient(), commonUtils.getPartiesResponse(shipmentDetails.getClient()), shipmentRetrieveLiteResponse::setClient);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), commonUtils.getPartiesResponse(shipmentDetails.getConsignee()), shipmentRetrieveLiteResponse::setConsignee);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), commonUtils.getPartiesResponse(shipmentDetails.getConsigner()), shipmentRetrieveLiteResponse::setConsigner);
+            if (null != shipmentDetails.getAdditionalDetails() && null != shipmentDetails.getAdditionalDetails().getNotifyParty() && request.getFlags().isNotifyParty()) {
+                AdditionalDetailV3LiteResponse additionalDetailV3LiteResponse = new AdditionalDetailV3LiteResponse();
+                commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getNotifyParty()), additionalDetailV3LiteResponse::setNotifyParty);
+                shipmentRetrieveLiteResponse.setAdditionalDetails(additionalDetailV3LiteResponse);
+            }
+            List<Parties> additionParties = shipmentDetails.getShipmentAddresses();
+            if (null != additionParties && !additionParties.isEmpty()) {
+                List<PartiesResponse> additionalParties = new ArrayList<>();
+                for (Parties additionalParty : additionParties) {
+                    additionalParties.add(commonUtils.getPartiesResponse(additionalParty));
+                }
+                commonUtils.mapIfSelected(request.getFlags().isAdditionalParty(), additionalParties, shipmentRetrieveLiteResponse::setShipmentAddresses);
+            }
+        }
+    }
+
+    public void setHeadersDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if(request.getFlags().isHeader()) {
+            commonUtils.mapIfSelected(request.getFlags().isMode(), shipmentDetails.getTransportMode(), shipmentRetrieveLiteResponse::setTransportMode);
+            commonUtils.mapIfSelected(request.getFlags().isServiceType(), shipmentDetails.getServiceType(), shipmentRetrieveLiteResponse::setServiceType);
+            commonUtils.mapIfSelected(request.getFlags().isShipmentType(), shipmentDetails.getDirection(), shipmentRetrieveLiteResponse::setDirection);
+            commonUtils.mapIfSelected(request.getFlags().isCargoType(), shipmentDetails.getShipmentType(), shipmentRetrieveLiteResponse::setShipmentType);
+            commonUtils.mapIfSelected(request.getFlags().isPaymentTerms(), shipmentDetails.getPaymentTerms(), shipmentRetrieveLiteResponse::setPaymentTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOrigin(), builder::origin);
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOriginCountry(), builder::originCountry);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestination(), builder::destination);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestinationCountry(), builder::destinationCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPort(), builder::originPort);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPortCountry(), builder::originPortCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPort(), builder::destinationPort);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPortCountry(), builder::destinationPortCountry);
+            }
+        }
+    }
+
+    public Optional<ShipmentDetails> validateShipment(Long id) {
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+        if (shipmentDetails.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        commonUtils.checkPermissionsForCloning(shipmentDetails.get());
+        V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        if (Objects.nonNull(tenantData)) {
+            if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
+                String shipmentMode = shipmentDetails.get().getTransportMode();
+                if (Objects.nonNull(shipmentMode) && commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
+                    return shipmentDetails;
+                } else {
+                    throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                }
+            }
+            if (Objects.nonNull(tenantData.getTransportModeConfig()) && Boolean.FALSE.equals(tenantData.getTransportModeConfig())) {
+                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+            }
+        }
+        return shipmentDetails;
     }
 
     @Override

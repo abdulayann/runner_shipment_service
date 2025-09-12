@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -12,23 +9,20 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentDynamicRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -54,10 +48,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import java.util.List;
-import java.util.Map;
+import javax.validation.constraints.NotBlank;
 import java.util.Optional;
-import java.util.UUID;
 
 
 @RestController
@@ -302,5 +294,23 @@ public class ShipmentControllerV3 {
     public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         ShipmentDetailsResponse defaultShipment = shipmentService.getDefaultShipment();
         return ResponseHelper.buildSuccessResponse(defaultShipment);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentRetrieveLiteResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> cloneShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipment(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = IRunnerResponse.class)})
+    @GetMapping(ApiConstants.API_CLONE_CONFIG)
+    public ResponseEntity<IRunnerResponse> getCloneConfig(@RequestParam() String type) {
+        log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), type);
+        try {
+            return ResponseHelper.buildSuccessResponse(shipmentService.getCloneConfig(type));
+        } catch (Exception ex) {
+            log.error("Error processing getCloneConfig", ex);
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 }

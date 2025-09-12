@@ -31,27 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -148,6 +128,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
@@ -168,7 +149,6 @@ import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedTyp
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -306,6 +286,11 @@ class CommonUtilsTest {
 
     @Mock
     private CriteriaQuery<Long> countQuery;
+
+    @Mock
+    private ShipmentSettingsDetails shipmentSettingsDetails;
+
+
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -6832,5 +6817,314 @@ class CommonUtilsTest {
         boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(CROSS_TENANT_SOURCE);
         assertTrue(result);
     }
+    @Test
+    void testCheckPermissionsForCloning_permissionCheckPassed_noExceptionThrown() {
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setCountryAirCargoSecurity(false);
+        doReturn(settings).when(commonUtils).getShipmentSettingFromContext();
+        assertDoesNotThrow(() -> commonUtils.checkPermissionsForCloning(shipmentDetails));
+    }
 
+    @Test
+    void testMapIfSelected_flagIsTrueAndValueIsNotNull_setterIsCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(true, testValue, mockSetter);
+        verify(mockSetter, times(1)).accept(testValue);
+    }
+
+    @Test
+    void testMapIfSelected_flagIsFalse_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(false, testValue, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testMapIfSelected_valueIsNull_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        commonUtils.mapIfSelected(true, null, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNull_returnsEmptyResponse() {
+        PartiesResponse response = commonUtils.getPartiesResponse(null);
+        assertNotNull(response);
+        assertNull(response.getEntityId());
+        assertNull(response.getEntityType());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNotNull_returnsMappedResponse() {
+        Parties partyData = new Parties();
+        partyData.setEntityId(1L);
+        partyData.setEntityType("Client");
+        partyData.setTenantId(123);
+        partyData.setType("shipper");
+        partyData.setOrgCode("ORG1");
+        partyData.setAddressCode("ADDR1");
+        PartiesResponse response = commonUtils.getPartiesResponse(partyData);
+        assertNotNull(response);
+        assertEquals(1L, response.getEntityId());
+        assertEquals("Client", response.getEntityType());
+        assertEquals(123, response.getTenantId());
+        assertEquals("shipper", response.getType());
+        assertEquals("ORG1", response.getOrgCode());
+        assertEquals("ADDR1", response.getAddressCode());
+    }
+
+    @Test
+    void testCheckSameParties_bothNull_returnsTrue() {
+        assertTrue(CommonUtils.checkSameParties(null, null));
+    }
+
+    @Test
+    void testCheckSameParties_oneNull_returnsFalse() {
+        assertFalse(CommonUtils.checkSameParties(new Parties(), null));
+        assertFalse(CommonUtils.checkSameParties(null, new Parties()));
+    }
+
+    @Test
+    void testCheckSameParties_idsMatch_returnsTrue() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr1");
+
+        assertTrue(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_orgIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org2");
+        p2.setAddressId("addr1");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_addressIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr2");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckPartyNotNull_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkPartyNotNull(null));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("");
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertTrue(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkAddressNotNull((Parties) null));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_addressIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_bothPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        party.setAddressId("addr123");
+        assertTrue(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckFails_returnsFalse() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(false);
+            assertFalse(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckPasses_returnsTrue() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertTrue(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
+    @Test
+    void testFetchFromJsonFile_Success() throws RunnerException {
+        String filePath = "src/main/resources/b2b_clone_flags_response.json";
+        CloneFieldResponse result = commonUtils.fetchFromJsonFile(filePath, CloneFieldResponse.class);
+        assertNotNull(result);
+        assertEquals("Header", result.getHeader().getLabel());
+        assertEquals("header", result.getHeader().getValue());
+    }
+
+    @Test
+    void testFetchFromJsonFile_FileNotFound() {
+        String invalidFilePath = "src/main/resources/testData.json";
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            commonUtils.fetchFromJsonFile(invalidFilePath, CloneFieldResponse.class);
+        });
+        assertTrue(exception.getMessage().contains("Error reading JSON file"));
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldThrowException_forUnknownMode() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commonUtils.isSelectedModeOffInBooking("unknown", tenantData));
+        assertEquals("Unknown transport mode: unknown", exception.getMessage());
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirImport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_AIR, DIRECTION_IMP);
+        assertTrue(result);
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_SeaTransport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_SEA, DIRECTION_EXP);
+        assertTrue(result);
+    }
+
+    @Test
+    void validateAirSecurityPermission_CountrySecurityDisabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(false);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithAirSecurityUser_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertDoesNotThrow(() ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithoutAirSecurityUser_ShouldThrowValidationException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            ValidationException exception = assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+            assertEquals(AIR_SECURITY_PERMISSION_MSG, exception.getMessage());
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirImportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_IMP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_SeaTransportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_SEA, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_NullCountrySecurity_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(null);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithAirSecurityUser_ShouldReturnTrue() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithoutAirSecurityUser_ShouldReturnFalse() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertFalse(result);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportModesProvider")
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenModeIsOn(String transportMode) {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        switch (transportMode) {
+            case "SEA" -> tenantData.setBookingTransportModeSea(true);
+            case "RAI" -> tenantData.setBookingTransportModeRail(true);
+            case "ROA" -> tenantData.setBookingTransportModeRoad(true);
+            case "AIR" -> tenantData.setBookingTransportModeAir(true);
+            default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
+        }
+        assertFalse(commonUtils.isSelectedModeOffInBooking(transportMode, tenantData));
+    }
+
+    private static Stream<String> transportModesProvider() {
+        return Stream.of("SEA", "RAI", "ROA","AIR");
+    }
 }

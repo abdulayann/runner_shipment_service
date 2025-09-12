@@ -2,14 +2,12 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
@@ -24,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.apache.http.auth.AuthenticationException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,11 +53,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {ShipmentControllerV3.class})
 @ExtendWith(MockitoExtension.class)
@@ -358,6 +353,47 @@ class ShipmentControllerV3Test {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(shipmentService).getDefaultShipment();
+    }
+
+    @Test
+    void testCloneShipment_successfulClone_returns200Ok() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        ShipmentRetrieveLiteResponse mockResponse = new ShipmentRetrieveLiteResponse();
+        when(shipmentService.cloneShipment(request)).thenReturn(mockResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentControllerV3.cloneShipment(request);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCloneShipment_serviceThrowsException_exceptionIsHandledByControllerAdvice() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        RunnerException expectedException = new RunnerException("Test exception");
+        when(shipmentService.cloneShipment(request)).thenThrow(expectedException);
+        try {
+            shipmentControllerV3.cloneShipment(request);
+        } catch (RunnerException e) {
+            assertEquals(expectedException, e);
+        }
+        verify(shipmentService, times(1)).cloneShipment(request);
+    }
+
+    @Test
+    void getCloneConfig_shouldReturnSuccessResponse_whenServiceIsSuccessful() throws Exception {
+        CloneFieldResponse mockResponse = mock(CloneFieldResponse.class);
+        when(shipmentService.getCloneConfig("S2S")).thenReturn(mockResponse);
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.getCloneConfig("S2S");
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentService, times(1)).getCloneConfig("S2S");
+    }
+
+    @Test
+    void getCloneConfig_shouldReturnFailedResponse_whenServiceThrowsException() throws Exception {
+        String errorMessage = "Service unavailable.";
+        when(shipmentService.getCloneConfig("B2B")).thenThrow(new RuntimeException(errorMessage));
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.getCloneConfig("B2B");
+        verify(shipmentService, times(1)).getCloneConfig("B2B");
+        Assertions.assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
 }

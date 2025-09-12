@@ -22,30 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -99,36 +76,12 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -212,10 +165,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -228,6 +178,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -243,6 +194,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -262,12 +214,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -8296,4 +8243,491 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
         verify(typedQuery).getResultList();
     }
+
+    @Test
+    void testCloneShipment_nullShipmentId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                shipmentServiceImplV3.cloneShipment(request));
+        assertEquals("Shipment Id Is Mandatory", exception.getMessage());
+    }
+
+    @Test
+    void testCloneShipment_validateShipmentThrowsException_throwsRunnerException() {
+        Long shipmentId = 123L;
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(shipmentId);
+        doThrow(new DataRetrievalFailureException("Test Exception")).when(shipmentServiceImplV3).validateShipment(anyLong());
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                shipmentServiceImplV3.cloneShipment(request));
+        assertEquals("Test Exception", exception.getMessage());
+    }
+
+    @Test
+    void testSetPartieDetails_additionalPartiesAreNotNullAndNotEmpty_listIsMapped() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setParty(true);
+        flags.setAdditionalParty(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentAddresses(List.of(new Parties(), new Parties()));
+        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
+        when(commonUtils.getPartiesResponse(any())).thenReturn(new PartiesResponse());
+        shipmentServiceImplV3.cloneShipment(request);
+        verify(commonUtils).mapIfSelected(eq(true), any(List.class), any());
+    }
+
+    @Test
+    void testSetPartieDetails_additionalPartiesAreNull_mappingIsSkipped() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setParty(true);
+        flags.setAdditionalParty(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentAddresses(null);
+        doReturn(Optional.of(shipmentDetails)).when(shipmentServiceImplV3).validateShipment(anyLong());
+        shipmentServiceImplV3.cloneShipment(request);
+        verify(commonUtils, never()).mapIfSelected(eq(true), any(List.class), any());
+    }
+
+    @Test
+    void testValidateShipment_shipmentFound_returnsShipmentDetails() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(123L);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+        verify(commonUtils).checkPermissionsForCloning(shipmentDetails);
+    }
+
+    @Test
+    void testValidateShipment_shipmentNotFound_throwsDataRetrievalFailureException() {
+        Long shipmentId = 123L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () ->
+                shipmentServiceImplV3.validateShipment(shipmentId));
+    }
+
+    @Test
+    void testValidateShipment_permissionCheckFails_throwsValidationException() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doThrow(new ValidationException("Permissions failed")).when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        assertThrows(ValidationException.class, () ->
+                shipmentServiceImplV3.validateShipment(shipmentId));
+    }
+
+    @Test
+    void testValidateShipment_tenantDataNull_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(null);
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_directShipmentEnabled_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+        tenantData.setShipmentTransportModeSea(true);
+        tenantData.setBookingTransportModeSea(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(commonUtils.isSelectedModeOffInBooking("SEA", tenantData)).thenReturn(true); // ✅ mock first
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_selectedModeIsOffInBooking_returnsShipmentDetails() {
+        Long shipmentId = 123L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(true);
+        tenantData.setBookingTransportModeAir(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        Optional<ShipmentDetails> result = shipmentServiceImplV3.validateShipment(shipmentId);
+        assertTrue(result.isPresent());
+        assertEquals(shipmentDetails, result.get());
+    }
+
+    @Test
+    void testValidateShipment_unknownMode_throwsIllegalArgumentExceptionDirectly() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("unknown");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
+                shipmentServiceImplV3.validateShipment(123L));
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", thrownException.getMessage());
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenAirModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result =commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenAirModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenAirModeIsNull() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(null); // Null should be treated as not false
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(TRANSPORT_MODE_AIR, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenSeaModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenSeaModeIsEnabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = commonUtils.isSelectedModeOffInBooking(TRANSPORT_MODE_SEA, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenRailModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = commonUtils.isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRailModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_RAI, tenantData);
+        assertFalse(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnTrue_whenRoadModeIsDisabled() {
+        when(commonUtils.isSelectedModeOffInBooking(anyString(), any(V1TenantSettingsResponse.class)))
+                .thenCallRealMethod();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(true);
+        tenantData.setBookingTransportModeSea(true);
+        tenantData.setBookingTransportModeRail(true);
+        tenantData.setBookingTransportModeRoad(false);
+        boolean result = commonUtils.isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
+        assertTrue(result);
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenRoadModeIsEnabled() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setBookingTransportModeAir(false);
+        tenantData.setBookingTransportModeSea(false);
+        tenantData.setBookingTransportModeRail(false);
+        tenantData.setBookingTransportModeRoad(true);
+        boolean result = isSelectedModeOffInBooking(Constants.TRANSPORT_MODE_ROA, tenantData);
+        assertFalse(result);
+    }
+
+    private boolean isSelectedModeOffInBooking(String shipmentMode, V1TenantSettingsResponse tenantData) {
+        try {
+            Method method = CommonUtils.class.getDeclaredMethod(
+                    "isSelectedModeOffInBooking", String.class, V1TenantSettingsResponse.class
+            );
+            method.setAccessible(true);
+            return (Boolean) method.invoke(commonUtils, shipmentMode, tenantData);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to invoke private method", e);
+        }
+    }
+
+    @Test
+    void testGetPathBasedOnType_B2B() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("B2B");
+        assertEquals("src/main/resources/b2b_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_S2B() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("S2B");
+        assertEquals("src/main/resources/s2b_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_S2S() {
+        String path = shipmentServiceImplV3.getPathBasedOnType("S2S");
+        assertEquals("src/main/resources/s2s_clone_flags_response.json", path);
+    }
+
+    @Test
+    void testGetPathBasedOnType_InvalidType() {
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.getPathBasedOnType("INVALID"));
+    }
+
+    @Test
+    void testGetCloneConfig_Success() throws RunnerException {
+        String type = "B2B";
+        String path = shipmentServiceImplV3.getPathBasedOnType(type);
+        CloneFieldResponse expectedResponse = new CloneFieldResponse();
+        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class)).thenReturn(expectedResponse);
+        CloneFieldResponse response = shipmentServiceImplV3.getCloneConfig(type);
+        assertNotNull(response);
+        assertEquals(expectedResponse, response);
+        verify(commonUtils, times(1)).fetchFromJsonFile(path, CloneFieldResponse.class);
+    }
+
+    @Test
+    void testGetCloneConfig_FileNotFound() throws RunnerException {
+        String type = "B2B";
+        String path = shipmentServiceImplV3.getPathBasedOnType(type);
+        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class))
+                .thenThrow(new RunnerException("File not found"));
+        RunnerException exception = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.getCloneConfig(type));
+        assertEquals("File not found", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipment_ShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.validateShipment(shipmentId);
+        });
+        assertEquals("Failed to fetch data for given constraint.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipment_DisallowedMode_ThrowsException() {
+        Long shipmentId = 2L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
+        doReturn(false).when(commonUtils).isSelectedModeOffInBooking("AIR", tenantData);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            spyService.validateShipment(shipmentId);
+        });
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipment_DisallowedTransportModeConfig() {
+        Long shipmentId = 3L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setDisableDirectShipment(true);
+        tenantData.setTransportModeConfig(false);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            shipmentServiceImplV3.validateShipment(shipmentId);
+        });
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", exception.getMessage());
+    }
+
+    @Test
+    void setCargoDetails_shouldNotSetAnyFields_whenCargoSummaryFlagFalse() {
+        CloneRequest request = createCloneRequest(false, true, true, true); // cargoSummary = false
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    @Test
+    void setCargoDetails_shouldOnlySetAdditionalTerms_whenOnlyAdditionalTermsFlagTrue() {
+        CloneRequest request = createCloneRequest(true, false, false, true);
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        verify(commonUtils, times(3)).mapIfSelected(anyBoolean(), anyString(), any());
+        verify(commonUtils, atLeastOnce()).mapIfSelected(eq(true), anyString(), any());
+        verify(commonUtils, atLeast(2)).mapIfSelected(eq(false), anyString(), any());
+    }
+
+    @Test
+    void setCargoDetails_shouldNotSetAnyValues_whenCargoSummaryTrueButAllSubFlagsFalse() {
+        CloneRequest request = createCloneRequest(true, false, false, false); // cargoSummary true, all subflags false
+        ShipmentDetails shipmentDetails = createShipmentDetails();
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        doAnswer(invocation -> {
+            Boolean shouldSet = invocation.getArgument(0);
+            String value = invocation.getArgument(1);
+            Consumer<String> setter = invocation.getArgument(2);
+            if (Boolean.TRUE.equals(shouldSet)) {
+                setter.accept(value);
+            }
+            return null;
+        }).when(commonUtils).mapIfSelected(anyBoolean(), anyString(), any());
+        shipmentServiceImplV3.setCargoDetails(request, shipmentDetails, response);
+        assertNull(response.getGoodsDescription());
+        assertNull(response.getMarksNum());
+        assertNull(response.getAdditionalTerms());
+        verify(commonUtils, times(3)).mapIfSelected(eq(false), anyString(), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Goods Description"), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Marks"), any());
+        verify(commonUtils).mapIfSelected(eq(false), eq("Test Additional Terms"), any());
+    }
+
+    @Test
+    void setGeneralDetails_WhenGeneralFlagIsFalse_ShouldDoNothing() {
+        CloneRequest requestData = new CloneRequest();
+        CloneFlagsRequest request = mock(CloneFlagsRequest.class);
+        when(request.isGeneral()).thenReturn(false);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        requestData.setFlags(request);
+        shipmentServiceImplV3.setGeneralDetails(requestData, shipmentDetails, response, details, builder);
+        verifyNoInteractions(commonUtils);
+    }
+
+    @Test
+    void setGeneralDetails_WhenIncotermsIsNull_ShouldHandleNullGracefully() {
+        CloneRequest requestData = new CloneRequest();
+        CloneFlagsRequest request = mock(CloneFlagsRequest.class);
+        when(request.isGeneral()).thenReturn(true);
+        when(request.isIncoterms()).thenReturn(true);
+        when(request.isCarrier()).thenReturn(true);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getIncoterms()).thenReturn(null);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        when(details.getShippingLine()).thenReturn("Hapag-Lloyd");
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        requestData.setFlags(request);
+        shipmentServiceImplV3.setGeneralDetails(requestData, shipmentDetails, response, details, builder);
+        verify(commonUtils).mapIfSelected(eq(true), eq(null), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("Hapag-Lloyd"), any());
+    }
+
+    @Test
+    void setHeadersDetails_WhenHeaderFlagIsFalse_ShouldDoNothing() {
+        CloneRequest request = mock(CloneRequest.class);
+        CloneFlagsRequest flags = mock(CloneFlagsRequest.class);
+        when(flags.isHeader()).thenReturn(false);
+        when(request.getFlags()).thenReturn(flags);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetails details = mock(CarrierDetails.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        shipmentServiceImplV3.setHeadersDetails(request, shipmentDetails, response, details, builder);
+        verifyNoInteractions(commonUtils);
+    }
+
+    @Test
+    void setHeadersDetails_WhenHeaderFlagIsTrueWithNullDetails_ShouldOnlyCallShipmentMappings() {
+        CloneRequest request = mock(CloneRequest.class);
+        CloneFlagsRequest flags = mock(CloneFlagsRequest.class);
+        when(flags.isHeader()).thenReturn(true);
+        when(flags.isMode()).thenReturn(true);
+        when(flags.isServiceType()).thenReturn(true);
+        when(flags.isShipmentType()).thenReturn(true);
+        when(flags.isCargoType()).thenReturn(true);
+        when(flags.isPaymentTerms()).thenReturn(true);
+        when(request.getFlags()).thenReturn(flags);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getTransportMode()).thenReturn("AIR");
+        when(shipmentDetails.getServiceType()).thenReturn("EXPRESS");
+        when(shipmentDetails.getDirection()).thenReturn("IMPORT");
+        when(shipmentDetails.getShipmentType()).thenReturn("FREIGHT");
+        when(shipmentDetails.getPaymentTerms()).thenReturn("PREPAID");
+        ShipmentRetrieveLiteResponse response = mock(ShipmentRetrieveLiteResponse.class);
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = mock(CarrierDetailResponse.CarrierDetailResponseBuilder.class);
+        shipmentServiceImplV3.setHeadersDetails(request, shipmentDetails, response, null, builder);
+        verify(commonUtils).mapIfSelected(eq(true), eq("AIR"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("EXPRESS"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("IMPORT"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("FREIGHT"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("PREPAID"), any());
+        verify(commonUtils, times(5)).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    private CloneRequest createCloneRequest(boolean cargoSummary, boolean description,
+                                            boolean marksAndNumbers, boolean additionalTerms) {
+        CloneFlagsRequest flags = CloneFlagsRequest.builder()
+                .cargoSummary(cargoSummary)
+                .description(description)
+                .marksAndNumbers(marksAndNumbers)
+                .additionalTerms(additionalTerms)
+                .build();
+
+        return CloneRequest.builder()
+                .flags(flags)
+                .build();
+    }
+
+    private ShipmentDetails createShipmentDetails() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setGoodsDescription("Test Goods Description");
+        details.setMarksNum("Test Marks");
+        details.setAdditionalTerms("Test Additional Terms");
+        return details;
+    }
+
 }

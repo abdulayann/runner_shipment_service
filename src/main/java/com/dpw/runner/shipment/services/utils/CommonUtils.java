@@ -71,6 +71,9 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -114,6 +117,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -130,6 +134,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -2576,7 +2581,10 @@ public class CommonUtils {
     }
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
+        if (null != shipmentDetails.getTransportMode()
+                && null != shipmentDetails.getDirection()
+                && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
             return UserContext.isAirSecurityUser();
         }
         return true;
@@ -4235,6 +4243,38 @@ public class CommonUtils {
         return innerPredicate;
     }
 
+    public void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+            throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+        }
+    }
+
+    public <T> void mapIfSelected(boolean flag, T value, Consumer<T> setter) {
+        if (flag && value != null) {
+            setter.accept(value);
+        }
+    }
+
+    public PartiesResponse getPartiesResponse(Parties partyData) {
+        PartiesResponse partiesResponse = new PartiesResponse();
+        if (null != partyData){
+            partiesResponse.setEntityId(partyData.getEntityId());
+            partiesResponse.setEntityType(partyData.getEntityType());
+            partiesResponse.setTenantId(partyData.getTenantId());
+            partiesResponse.setType(partyData.getType());
+            partiesResponse.setOrgCode(partyData.getOrgCode());
+            partiesResponse.setAddressCode(partyData.getAddressCode());
+            partiesResponse.setOrgId(partyData.getOrgId());
+            partiesResponse.setAddressId(partyData.getAddressId());
+            partiesResponse.setOrgData(partyData.getOrgData());
+            partiesResponse.setAddressData(partyData.getAddressData());
+            partiesResponse.setIsAddressFreeText(partyData.getIsAddressFreeText());
+            partiesResponse.setCountryCode(partyData.getCountryCode());
+        }
+        return partiesResponse;
+    }
     public static boolean canFetchDetailsWithoutTenantFilter(String xSource) {
         if (Objects.equals(xSource, NETWORK_TRANSFER)) {
             return true;
@@ -4245,5 +4285,42 @@ public class CommonUtils {
                 .map(UsersDto::getPermissions)
                 .map(permissions -> Boolean.TRUE.equals(permissions.get(CAN_VIEW_ALL_BRANCH_SHIPMENTS)))
                 .orElse(false);
+    }
+
+    public <T> T fetchFromJsonFile(String filePath, Class<T> clazz) throws RunnerException {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.registerModule(new JavaTimeModule());
+            return objectMapper.readValue(new File(filePath), clazz);
+        } catch (IOException e) {
+            log.error("Error reading JSON file", e);
+            throw new RunnerException("Error reading JSON file: " + e.getMessage());
+        }
+    }
+
+    public boolean isSelectedModeOffInBooking(String transportMode, V1TenantSettingsResponse tenantData) {
+        return switch (transportMode) {
+            case TRANSPORT_MODE_AIR -> Boolean.FALSE.equals(tenantData.getBookingTransportModeAir());
+            case TRANSPORT_MODE_SEA -> Boolean.FALSE.equals(tenantData.getBookingTransportModeSea());
+            case TRANSPORT_MODE_RAI -> Boolean.FALSE.equals(tenantData.getBookingTransportModeRail());
+            case TRANSPORT_MODE_ROA -> Boolean.FALSE.equals(tenantData.getBookingTransportModeRoad());
+            default -> throw new IllegalArgumentException("Unknown transport mode: " + transportMode);
+        };
+    }
+
+    public void validateAirSecurityPermission(String transportType, String direction) {
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !checkAirSecurityForTransportTypeAndDirection(transportType, direction)) {
+            throw new ValidationException(AIR_SECURITY_PERMISSION_MSG);
+        }
+    }
+
+    public boolean checkAirSecurityForTransportTypeAndDirection(String transportType, String direction) {
+        if (transportType.equals(Constants.TRANSPORT_MODE_AIR) && direction.equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
     }
 }
