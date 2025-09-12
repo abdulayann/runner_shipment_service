@@ -1255,6 +1255,9 @@ public class HblService implements IHblService {
             String stateName = v1Data.get(key).getStateName();
             if (Objects.isNull(cityName)) cityName = "";
             if (Objects.isNull(stateName)) stateName = "";
+            if (cityName.isEmpty() && stateName.isEmpty()) {
+                return "";
+            }
             return (cityName + "," +stateName).toUpperCase();
         }
         return v1Data.get(key).getNameWoDiacritics().toUpperCase();

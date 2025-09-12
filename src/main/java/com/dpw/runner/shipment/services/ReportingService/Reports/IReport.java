@@ -1437,7 +1437,10 @@ public abstract class IReport {
                 String stateName = unlocationsResponse.getCountry();
                 if (Objects.isNull(cityName)) cityName = "";
                 if (Objects.isNull(stateName)) stateName = "";
-                return (cityName + "," +stateName).toUpperCase();
+                if (cityName.isEmpty() && stateName.isEmpty()) {
+                    return "";
+                }
+                return (cityName + "," + stateName).toUpperCase();
             }
 
             return unlocationsResponse.getName().toUpperCase();

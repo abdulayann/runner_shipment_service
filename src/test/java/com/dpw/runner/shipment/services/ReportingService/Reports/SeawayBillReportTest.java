@@ -443,7 +443,6 @@ class SeawayBillReportTest extends CommonMocks {
     @Test
     void populateDictionary() {
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
         seawayBillModel.setBlObject(populateHbl());
@@ -489,9 +488,6 @@ class SeawayBillReportTest extends CommonMocks {
         seawayBillModel.setTenant(new TenantModel());
         seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
         populateModel(seawayBillModel);
-
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
         Map<String, Object> containerMap = new HashMap<>();
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
@@ -539,8 +535,6 @@ class SeawayBillReportTest extends CommonMocks {
     void populateDictionaryWithCompleteTransportDetails() {
 
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
-
 
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
         seawayBillModel.setBlObject(populateHblWithTransportDetails());
@@ -629,9 +623,6 @@ class SeawayBillReportTest extends CommonMocks {
 
     @Test
     void populateDictionaryWithDisbalePartyTrue() {
-
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
         seawayBillModel.setBlObject(populateHbl());

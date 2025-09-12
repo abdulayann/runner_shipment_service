@@ -1080,6 +1080,12 @@ class HblServiceTest extends CommonMocks {
         usLoc.setLocCode("USNYC");
         usLoc.setNameWoDiacritics("New York");
 
+        EntityTransferUnLocations usLoc1 = new EntityTransferUnLocations();
+        usLoc1.setLocCode("USNYC");
+        usLoc1.setName("New York");
+        usLoc1.setStateName("XY");
+        usLoc1.setCityName("ABC");
+
         EntityTransferUnLocations inLoc = new EntityTransferUnLocations();
         inLoc.setLocCode("INBLR");
         inLoc.setNameWoDiacritics("Bengaluru");
@@ -1087,6 +1093,7 @@ class HblServiceTest extends CommonMocks {
         Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
         v1Data.put("USKEY", usLoc);
         v1Data.put("INKEY", inLoc);
+        v1Data.put("USKEY1", usLoc1);
 
         try {
             Method method = hblService.getClass().getDeclaredMethod("getUnLocationsName", Map.class, String.class);
@@ -1098,11 +1105,14 @@ class HblServiceTest extends CommonMocks {
 
             // Case 2: RunnerV3 Flag enabled and US key
             String result2 = (String) method.invoke(hblService, v1Data, "USKEY");
-            assertEquals("US,NEW YORK", result2);
+            assertEquals("", result2);
 
             // Case 3: RunnerV3 Flag enabled and Non-US key
             String result3 = (String) method.invoke(hblService, v1Data, "INKEY");
             assertEquals("BENGALURU", result3);
+
+            String result5 = (String) method.invoke(hblService, v1Data, "USKEY1");
+            assertEquals("ABC,XY", result5);
 
             // Case 4: RunnerV3 Flag disabled
             shipmentSettingsDetails.setIsRunnerV3Enabled(false);
