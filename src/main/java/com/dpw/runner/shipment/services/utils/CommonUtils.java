@@ -4318,7 +4318,7 @@ public class CommonUtils {
 
     public CloneFieldResponse getCloneFieldResponse(String type) {
         try {
-            return objectMapper.readValue(applicationConfigService.getValue(type), CloneFieldResponse.class);
+            return objectMapper.readValue(StringUtility.convertToString(applicationConfigService.getValue(type)), CloneFieldResponse.class);
         } catch (Exception e) {
             throw new ValidationException("Invalid Type");
         }
