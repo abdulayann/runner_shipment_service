@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doReturn;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -3007,6 +3008,45 @@ class MasterDataUtilsTest extends CommonMocks {
 
         // Assert
         assertNull(result);
+    }
+
+    @Test
+    void testGetPackTypeDes1() {
+        var masterdata = MasterData.builder().itemValue("BX").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(masterdata));
+
+        var resp = masterDataUtils.getPackTypeDesc("BX");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(masterdata.getItemDescription()), resp);
+    }
+
+    @Test
+    void testGetPackTypeDes2() {
+        var masterdata = MasterData.builder().itemValue("BX1").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        var resp = masterDataUtils.getPackTypeDesc("BX");
+        assertNotNull(resp);
+        assertEquals("BX", resp);
+    }
+
+    @Test
+    void testGetPackTypeDes3() {
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of()).build());
+        var resp = masterDataUtils.getPackTypeDesc("PKG");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(ReportConstants.PACKAGES), resp);
+    }
+
+    @Test
+    void testGetPackTypeDes4() {
+        var masterdata = MasterData.builder().itemValue("BX").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(masterdata));
+
+        var resp = masterDataUtils.getPackTypeDesc("PKG");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(ReportConstants.PACKAGES), resp);
     }
 
 }

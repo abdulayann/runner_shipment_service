@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingLegWarning;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -603,8 +604,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             List<RoutingsResponse> response = convertEntityListToDtoList(routingsPage.getContent());
+            List<RoutingsResponse> mainCarriageList = response.stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                    .toList();
+            Map<String, RoutingLegWarning> legsWarning = new HashMap<>();
+            String validationMessage = routingValidationUtil.getWarningMessage(mainCarriageList, legsWarning);
             Map<String, Object> masterData = this.getMasterDataForList(response);
-            return RoutingListResponse.builder().routings(response).totalCount(routingsPage.getTotalElements())
+            return RoutingListResponse.builder().routings(response).warningMessage(validationMessage).legsWarning(legsWarning).totalCount(routingsPage.getTotalElements())
                     .totalPages(routingsPage.getTotalPages()).masterData(masterData).build();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -696,11 +702,23 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Transactional
     public BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         if (module.equalsIgnoreCase(Constants.SHIPMENT)) {
-            for (RoutingsRequest routingsRequest : request.getRoutings()) {
-                routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest);
+            List<RoutingsRequest> mainCarriageList = request.getRoutings().stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getId() == null)
+                    .toList();
+            if (!CollectionUtils.isEmpty(mainCarriageList)) {
+                routingValidationUtil.checkIfMainCarriageAllowed(mainCarriageList.get(0));
             }
         }
-        return this.updateBulk(request, module);
+        BulkRoutingResponse bulkRoutingResponse = this.updateBulk(request, module);
+        List<RoutingsResponse> mainCarriageList = bulkRoutingResponse.getRoutingsResponseList().stream()
+                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+        Map<String, RoutingLegWarning> legsWarning = new HashMap<>();
+
+        String validationMessage = routingValidationUtil.getWarningMessage(mainCarriageList, legsWarning);
+        bulkRoutingResponse.setWarningMessage(validationMessage);
+        bulkRoutingResponse.setLegsWarning(legsWarning);
+        return bulkRoutingResponse;
     }
 
     @Override

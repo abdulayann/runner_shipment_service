@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingNotific
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -468,7 +470,7 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.EXPORT_LIST)
-    public void exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
         String responseMsg = "Failure executing :(";
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
@@ -477,15 +479,19 @@ public class ShipmentController {
         try {
             CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
             log.debug("Built CommonRequestModel: {}", commonRequestModel);
-
-            shipmentService.exportExcel(response, commonRequestModel);
-
+            ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+            exportExcelResponse.setEmailSent(false);
+            shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
             log.info("Shipment export completed successfully. RequestId: {}", requestId);
+            if (exportExcelResponse.isEmailSent()) {
+                return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+            }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error exporting shipment list";
             log.error("Exception occurred while exporting shipment list. RequestId: {}, Error: {}", requestId, responseMsg, e);
         }
+        return ResponseEntity.ok().build();
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})
@@ -746,10 +752,13 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
-    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequest request) {
         log.info("Received for oceanDGApprovalResponse with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        String warning = shipmentService.dgApprovalResponse(request);
-        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        try {
+            return shipmentService.dgApprovalResponse(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
@@ -907,4 +916,13 @@ public class ShipmentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
+    
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.MDM_OCEAN_DG_APPROVAL_RESPONSE)
+    public ResponseEntity<IRunnerResponse> mdmOceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request) throws RunnerException {
+        log.info("Received for MDM_OCEAN_DG_APPROVAL_RESPONSE with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = shipmentService.mdmDGApprovalResponse(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
 }

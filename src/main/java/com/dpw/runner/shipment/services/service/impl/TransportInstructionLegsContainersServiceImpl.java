@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiContainerDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersListResponse;
@@ -87,7 +86,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         }
         TiLegs tiLegsEntity = tiLegs.get();
         validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
-        validateTransportInstructionLegsContainersDetails(request);
         // Convert DTO to Entity
         TiContainers tiContainers = jsonHelper.convertValue(request, TiContainers.class);
         tiContainers.setTiLegId(tiLegId);
@@ -124,7 +122,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         }
         TiLegs tiLegsEntity = tiLegs.get();
         validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
-        validateTransportInstructionLegsContainersDetails(request);
         // Convert DTO to Entity
         TiContainers tiContainers = jsonHelper.convertValue(request, TiContainers.class);
         tiContainers.setTiLegId(tiLegId);
@@ -226,7 +223,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         TiLegs tiLegsEntity = tiLegs.get();
         request.getContainersRequests().forEach(containersRequest -> {
             validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), containersRequest.getNumber(), containersRequest.getId());
-            validateTransportInstructionLegsContainersDetails(containersRequest);
         });
         // Convert DTO to Entity
         List<TiContainers> tiContainersList = new ArrayList<>();
@@ -290,44 +286,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
 
     private TransportInstructionLegsContainersResponse convertEntityToDto(TiContainers tiLegs) {
         return jsonHelper.convertValue(tiLegs, TransportInstructionLegsContainersResponse.class);
-    }
-
-    private void validateTransportInstructionLegsContainersDetails(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
-
-        if (StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNumber())) {
-            ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(transportInstructionLegsContainersRequest.getNumber());
-            if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
-                throw new ValidationException("Invalid container number format");
-            }
-        }
-        if ((transportInstructionLegsContainersRequest.getGrossWeight() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit())) ||
-                (transportInstructionLegsContainersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit()))) {
-            throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
-        }
-        if ((transportInstructionLegsContainersRequest.getNoOfPackages() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getPackageType())) ||
-                (transportInstructionLegsContainersRequest.getNoOfPackages() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getPackageType()))) {
-            throw new ValidationException("Containers: No of packages and package type must both be provided or both be null.");
-        }
-
-        validateNetWeight(transportInstructionLegsContainersRequest);
-
-        validateVolume(transportInstructionLegsContainersRequest);
-    }
-
-    private static void validateVolume(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
-        // Volume & Unit Validation
-        if ((transportInstructionLegsContainersRequest.getVolume() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getVolumeUnit())) ||
-                (transportInstructionLegsContainersRequest.getVolume() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getVolumeUnit()))) {
-            throw new ValidationException("Containers: Volume and volume unit must both be provided or both be null.");
-        }
-    }
-
-    private static void validateNetWeight(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
-        // Net Weight & Unit Validation
-        if ((transportInstructionLegsContainersRequest.getNetWeight() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getNetWeightUnit())) ||
-                (transportInstructionLegsContainersRequest.getNetWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNetWeightUnit()))) {
-            throw new ValidationException("Containers: Net weight and net weight unit must both be provided or both be null.");
-        }
     }
 
     private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsContainersResponse> responseList, boolean getMasterData) {

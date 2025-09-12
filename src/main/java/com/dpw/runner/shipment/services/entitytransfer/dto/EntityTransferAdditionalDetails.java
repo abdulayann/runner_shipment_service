@@ -141,10 +141,8 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private Map<String, EntityTransferUnLocations> unlocationData;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime pickupDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone

@@ -7756,7 +7756,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         settings.setDefaultShipmentType(DIRECTION_EXP);
         settings.setDefaultContainerType(SHIPMENT_TYPE_LCL);
         settings.setWeightChargeableUnit("KG");
-        settings.setVolumeChargeableUnit("CBM");
+        settings.setVolumeChargeableUnit("M3");
         settings.setIsRunnerV3Enabled(true);
 
         V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
@@ -7793,7 +7793,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(DIRECTION_EXP, response.getDirection());
         assertEquals(SHIPMENT_TYPE_LCL, response.getShipmentType());
         assertEquals("KG", response.getWeightUnit());
-        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals("M3", response.getVolumeUnit());
         assertEquals(SYSTEM, response.getSource());
         assertEquals(UserContext.getUser().getUsername(), response.getCreatedBy());
         assertEquals("HBL-SEA-EXP-001", response.getHouseBill());

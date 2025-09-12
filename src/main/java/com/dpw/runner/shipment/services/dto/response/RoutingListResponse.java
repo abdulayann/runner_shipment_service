@@ -17,9 +17,11 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RoutingListResponse implements IRunnerResponse {
     List<RoutingsResponse> routings = new ArrayList<>();
+    private String warningMessage;
     @JsonIgnore
     private Integer totalPages = 0;
     @JsonIgnore
     private Long totalCount = 0L;
     private Map<String, Object> masterData;
+    private Map<String, RoutingLegWarning> legsWarning;
 }

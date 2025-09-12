@@ -406,6 +406,36 @@ class AWBControllerTest {
     }
 
     @Test
+    void validateAwbBeforeAttachment() {
+        // Mock
+        when(awbService.validateAwbBeforeAttachment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = awbController.validateAwbBeforeAttachment( Optional.empty());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void validateAwbBeforeAttachment2() {
+        // Mock
+        when(awbService.validateAwbBeforeAttachment(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = awbController.validateAwbBeforeAttachment( Optional.empty());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void validateAwbBeforeAttachment3() {
+        // Mock
+        when(awbService.validateAwbBeforeAttachment(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = awbController.validateAwbBeforeAttachment( Optional.empty());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void getChargeTypeMasterData() throws RunnerException {
         // Mock
         when(awbService.getChargeTypeMasterData(any())).thenReturn(ResponseHelper.buildSuccessResponse());

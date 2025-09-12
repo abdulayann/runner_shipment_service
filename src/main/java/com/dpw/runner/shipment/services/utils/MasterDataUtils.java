@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKAGES;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
@@ -2345,5 +2346,11 @@ public class MasterDataUtils{
             }
         }
         return teu;
+    }
+
+    public String getPackTypeDesc(String packType) {
+        var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, packType);
+        var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : packType;
+        return PackingConstants.PKG.equalsIgnoreCase(packType) ?  StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription);
     }
 }

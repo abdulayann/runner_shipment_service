@@ -87,4 +87,5 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String integrationSource;
     private List<Parties> additionalParties;
     private String paymentTerms;
+    private List<ExternalDocumentRequest> externalDocuments;
 }
