@@ -738,12 +738,17 @@ class HblReportTest extends CommonMocks {
 
     @ParameterizedTest
     @CsvSource({
-            "'US MOCK PLACE', true, 'US001'",
-            "'Mumbai', true, 'GB001'",
-            "'Mumbai', false, 'GB001'",
-            "'', true, ''"
+            "'US MOCK PLACE', true, 'US001', '', ''",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', 'AB'",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', null",
+            "'US MOCK PLACE', true, 'US001', null, 'AB'",
+            "'Mumbai', true, 'GB001', '', ''",
+            "'Mumbai', false, 'GB001', '', ''",
+            "'', true, '', '', ''",
+            "'Mumbai', true, '', 'ZBC', ''"
     })
-    void populateDictionaryWithDifferentLocationAndRunnerV3(String placeOfIssue, boolean isRunnerV3Enabled, String expectedLocCode) throws JsonProcessingException {
+    void populateDictionaryWithDifferentLocationAndRunnerV3(String placeOfIssue, boolean isRunnerV3Enabled,
+                                                            String expectedLocCode, String cityName, String stateName) throws JsonProcessingException {
 
         // Setup ShipmentSettings with the varying RunnerV3Enabled flag
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
@@ -800,7 +805,9 @@ class HblReportTest extends CommonMocks {
 
         UnlocationsResponse mockUnlocationsResponse = new UnlocationsResponse();
         mockUnlocationsResponse.setName(placeOfIssue);
-        mockUnlocationsResponse.setLocCode(expectedLocCode); // Mock expected locCode based on the test case
+        mockUnlocationsResponse.setLocCode(expectedLocCode);
+        mockUnlocationsResponse.setName(cityName);
+        mockUnlocationsResponse.setCountry(stateName);
         when(jsonHelper.convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class)))
                 .thenReturn(mockUnlocationsResponse);
 
