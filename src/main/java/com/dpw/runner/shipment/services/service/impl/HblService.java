@@ -282,8 +282,8 @@ public class HblService implements IHblService {
         this. validateBeforeGeneration(shipmentDetails.get());
 
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-        if (! hbls.isEmpty())
-            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
+//        if (! hbls.isEmpty())
+//            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
         
@@ -1251,7 +1251,11 @@ public class HblService implements IHblService {
         // Extract country code from UNLOC using initial 2 characters
         String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
         if (US.equalsIgnoreCase(countryCode)) {
-            return (countryCode + "," + v1Data.get(key).getNameWoDiacritics()).toUpperCase();
+            String cityName = v1Data.get(key).getCityName();
+            String stateName = v1Data.get(key).getStateName();
+            if (Objects.isNull(cityName)) cityName = "";
+            if (Objects.isNull(stateName)) stateName = "";
+            return (cityName + "," +stateName).toUpperCase();
         }
         return v1Data.get(key).getNameWoDiacritics().toUpperCase();
     }
