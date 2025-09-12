@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.COUNTRY;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -285,15 +286,16 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setConsolidationFields(ConsolidationDetails consolidationDetails) {
+
         if(consolidationDetails.getSendingAgent() != null)
             consolidationDetails.getSendingAgent().setCountryCode(consolidationDetails.getSendingAgentCountry());
         if(consolidationDetails.getReceivingAgent() != null)
             consolidationDetails.getReceivingAgent().setCountryCode(consolidationDetails.getReceivingAgentCountry());
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
-                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey("Country")
-                        && consolidationAddress.getOrgData().get("Country")!=null)
-                    consolidationAddress.setCountryCode((String) consolidationAddress.getOrgData().get("Country"));
+                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(COUNTRY)
+                        && consolidationAddress.getOrgData().get(COUNTRY)!=null)
+                    consolidationAddress.setCountryCode((String) consolidationAddress.getOrgData().get(COUNTRY));
             }
         }
     }
