@@ -15,7 +15,7 @@ public class ShipmentForceDetachResponse {
 
     private String shipmentNumber;
     private String containerNumber;
-    private String packageCount;
+    private Integer packageCount;
     private String packageUnit;
     private BigDecimal weight;
     private String weightUnit;

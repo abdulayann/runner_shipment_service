@@ -15,5 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShipmentForceDetachResponseDto implements IRunnerResponse {
-    List<ShipmentForceDetachResponse> shipmentDetachResponses;
+    private List<ShipmentForceDetachResponse> shipmentDetachResponses;
+    private Boolean isContainerOrPackageAttached;
 }
