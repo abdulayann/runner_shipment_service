@@ -498,6 +498,11 @@ public class CarrierBookingService implements ICarrierBookingService {
         return carrierBookingResponse;
     }
 
+    @Override
+    public Optional<CarrierBooking> findById(Long entityId) {
+        return carrierBookingDao.findById(entityId);
+    }
+
     @NotNull
     private static CommonContainerResponse getCommonContainerResponse(Containers containers) {
         CommonContainerResponse commonContainers = new CommonContainerResponse();

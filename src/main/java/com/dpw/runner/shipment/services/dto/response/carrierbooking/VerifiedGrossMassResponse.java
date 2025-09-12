@@ -20,6 +20,7 @@ import java.util.List;
 public class VerifiedGrossMassResponse implements IRunnerResponse {
 
     private Long id;
+    private String serviceType;
     private CarrierBookingStatus bookingStatus;
     private VerifiedGrossMassStatus status;
     private ShippingInstructionStatus siStatus;

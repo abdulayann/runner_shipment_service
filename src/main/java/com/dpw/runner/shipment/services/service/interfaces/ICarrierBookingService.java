@@ -5,10 +5,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Optional;
 
 public interface ICarrierBookingService {
 
@@ -55,5 +58,7 @@ public interface ICarrierBookingService {
     ResponseEntity<IRunnerResponse> getAllMasterData(Long shipmentId);
 
     CarrierBookingResponse getDefaultCarrierBookingValues(EntityType type, Long entityId);
+
+    Optional<CarrierBooking> findById(Long entityId);
 }
 

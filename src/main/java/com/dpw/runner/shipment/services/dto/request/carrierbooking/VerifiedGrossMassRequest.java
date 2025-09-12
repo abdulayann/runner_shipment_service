@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,11 +22,12 @@ import java.util.List;
 @AllArgsConstructor
 public class VerifiedGrossMassRequest implements Serializable {
     private Long id;
+    private String serviceType;
     private VerifiedGrossMassStatus status;
     private String carrierBookingNo;
     private String carrierBlNo;
     @NotBlank(message = "Entity type can not be empty")
-    private String entityType;
+    private EntityType entityType;
     @NotNull(message = "Entity Id can not be null")
     @Min(value = 1, message = "Entity id can not be zero/negative")
     private Long entityId;
