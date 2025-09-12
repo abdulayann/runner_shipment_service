@@ -9,8 +9,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -29,6 +32,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_BULK_UPDATE;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL;
 
 @RestController
 @RequestMapping(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_API_HANDLE)
@@ -124,6 +131,25 @@ public class VerifiedGrossMassController {
             String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving default verified gross mass data";
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL, response = CommonContainerResponse.class, responseContainer = "List")})
+    @PutMapping(API_BULK_UPDATE)
+    public ResponseEntity<IRunnerResponse> bulkUpdateContainers(@RequestBody @Valid VerifiedGrossMassBulkUpdateRequest request) {
+        log.info("Received container bulk update request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        try {
+            List<CommonContainerResponse> response = verifiedGrossMassService.bulkUpdateContainers(request);
+            log.info("Container bulk update successful with RequestId: {} and updated {} containers",
+                    LoggerHelper.getRequestIdFromMDC(), response.size());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (ValidationException e) {
+            log.warn("Validation failed for bulk update: {}", e.getMessage());
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error processing bulk update: {}", e.getMessage(), e);
+            return ResponseHelper.buildFailedResponse("Failed to process bulk update");
         }
     }
 }

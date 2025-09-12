@@ -238,7 +238,8 @@ CREATE TABLE IF NOT EXISTS common_containers (
     container_ref_guid uuid,
     carrier_booking_id BIGINT REFERENCES carrier_booking(id),
     shipping_instruction_id BIGINT REFERENCES shipping_instruction(id),
-    verified_gross_mass_id BIGINT REFERENCES verified_gross_mass(id)
+    verified_gross_mass_id BIGINT REFERENCES verified_gross_mass(id),
+    weighing_party_id BIGINT REFERENCES parties(id)
 );
 
 -- Step 8: Create indexes for better performance
