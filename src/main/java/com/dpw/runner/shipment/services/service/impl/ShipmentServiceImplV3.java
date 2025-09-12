@@ -1002,7 +1002,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
             cq.where(idPredicate);
         } else if(commonGetRequest.getGuid() != null) {
-            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
+            Predicate idPredicate = cb.equal(root.get("guid"), UUID.fromString(commonGetRequest.getGuid()));
             cq.where(idPredicate);
         }
 
