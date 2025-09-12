@@ -158,6 +158,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1487,6 +1488,14 @@ public class AwbService implements IAwbService {
     private void linkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
+        var mawbHawblinkList = mawbHawbLinkDao.findByMawbId(mawb.getId());
+        Set<Long> hawbIds = new HashSet<>();
+        if(!CommonUtils.listIsNullOrEmpty(mawbHawblinkList)) {
+            hawbIds = mawbHawblinkList.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
+        }
+        List<MawbHawbLink> newLinks = new ArrayList<>();
+
+
         for (var awb : awbList) {
             if (awb.getAwbPackingInfo() != null) {
                 for (AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
@@ -1494,11 +1503,27 @@ public class AwbService implements IAwbService {
                 }
             }
             awbDao.save(awb);
+            updateMawbHawbLink(awb, newLinks, hawbIds, mawb);
 
+        }
+        if(!CommonUtils.listIsNullOrEmpty(newLinks))
+            mawbHawbLinkDao.saveAll(newLinks);
+
+        if(!CommonUtils.setIsNullOrEmpty(hawbIds)) {
+            mawbHawbLinkDao.deleteByHawbIdsAndMawbIds(hawbIds, mawb.getId());
+        }
+
+
+    }
+
+    private void updateMawbHawbLink(Awb awb, List<MawbHawbLink> newLinks, Set<Long> hawbIds, Awb mawb) {
+        if(!hawbIds.contains(awb.getId())) {
             MawbHawbLink mawbHawblink = new MawbHawbLink();
             mawbHawblink.setHawbId(awb.getId());
             mawbHawblink.setMawbId(mawb.getId());
-            mawbHawbLinkDao.save(mawbHawblink);
+            newLinks.add(mawbHawblink);
+        } else {
+            hawbIds.remove(awb.getId());
         }
     }
 
