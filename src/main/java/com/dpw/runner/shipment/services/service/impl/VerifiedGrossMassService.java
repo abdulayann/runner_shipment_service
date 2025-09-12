@@ -1,5 +1,4 @@
 package com.dpw.runner.shipment.services.service.impl;
-
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -11,17 +10,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -29,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
@@ -46,6 +37,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,9 +64,11 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
+    private final ICommonContainersRepository commonContainersRepository;
 
 
-    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper) {
+
+    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, ICommonContainersRepository commonContainersRepository) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -82,6 +77,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.masterDataUtils = masterDataUtils;
         this.executorServiceMasterData = executorServiceMasterData;
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
+        this.commonContainersRepository = commonContainersRepository;
     }
 
     @Override
@@ -346,6 +342,42 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
         commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
         return commonContainers;
+    }
+
+    @Transactional
+    @Override
+    public List<CommonContainerResponse> bulkUpdateContainers(VerifiedGrossMassBulkUpdateRequest request) {
+        // Fetch all containers
+        List<CommonContainers> containers = commonContainersRepository.findAllByIdIn(request.getContainerIds());
+        if (Objects.isNull(containers) || containers.size() != request.getContainerIds().size()) {
+            throw new ValidationException("Some containers could not be found");
+        }
+
+        // Update containers with new values (only fields that are provided)
+        for (CommonContainers container : containers) {
+            if (request.getWeightDeterminationMethod() != null) {
+                container.setWeightDeterminationMethod(request.getWeightDeterminationMethod());
+            }
+            if (StringUtility.isNotEmpty(request.getWeightDeterminationLocation())) {
+                container.setWeightDeterminationLocation(request.getWeightDeterminationLocation());
+            }
+            if (request.getWeighingParty() != null) {
+                container.setWeighingParty(request.getWeighingParty());
+            }
+            if (StringUtility.isNotEmpty(request.getApprovalSignature())) {
+                container.setApprovalSignature(request.getApprovalSignature().toUpperCase());
+            }
+            if (request.getApprovalDate() != null) {
+                container.setApprovalDate(request.getApprovalDate());
+            }
+        }
+        // Save all updated containers
+        List<CommonContainers> updatedContainers = commonContainersRepository.saveAll(containers);
+        List<CommonContainerResponse> responseDtos = updatedContainers.stream()
+        .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
+        .collect(Collectors.toList());
+        // Convert to response DTOs
+        return responseDtos;
     }
 }
 
