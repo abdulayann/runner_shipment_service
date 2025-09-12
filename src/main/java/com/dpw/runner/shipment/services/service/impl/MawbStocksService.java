@@ -112,7 +112,7 @@ public class MawbStocksService implements IMawbStocksService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            throw new ValidationException(e.getMessage());
         }
 
         if(isBorrowed && consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getBorrowedFrom().getOrgCode().equals(request.getBorrowedFrom())){
