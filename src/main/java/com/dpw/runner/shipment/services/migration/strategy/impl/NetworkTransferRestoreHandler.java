@@ -85,9 +85,9 @@ public class NetworkTransferRestoreHandler implements RestoreServiceHandler {
                 return null;
             });
         } catch (Exception e) {
-            log.error("Network Transfer migration failed for tenant Id [id={}]: {}", tenantId, e.getMessage(), e);
+            log.error("Network Transfer restore failed for tenant Id [id={}]: {}", tenantId, e.getMessage(), e);
             migrationUtil.saveErrorResponse(Long.valueOf(tenantId), Constants.NETWORK_TRANSFER,
-                    IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    IntegrationType.RESTORE_DATA_SYNC, Status.FAILED, e.getMessage());
             map.put("NetworkTransfer Failed Reason", e.getMessage());
             throw new IllegalArgumentException(e);
         } finally {

@@ -208,7 +208,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
         if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
             for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
-                if(shipmentAddress.getOrgData()!=null && shipmentAddress.getOrgData().get("Country")!=null)
+                if(shipmentAddress.getOrgData()!=null  && shipmentAddress.getOrgData().containsKey("Country")
+                        && shipmentAddress.getOrgData().get("Country")!=null)
                     shipmentAddress.setCountryCode((String) shipmentAddress.getOrgData().get("Country"));
             }
         }
@@ -461,7 +462,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 });
             } catch (Exception e) {
                 log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
-                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                 throw new IllegalArgumentException(e);
             } finally {
                 v1Service.clearAuthContext();

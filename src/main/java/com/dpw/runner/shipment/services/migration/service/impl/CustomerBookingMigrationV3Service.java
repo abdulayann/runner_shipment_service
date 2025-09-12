@@ -184,8 +184,9 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, Arrays.toString(e.getStackTrace()));
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.stream(e.getStackTrace()).toString());
+                    log.error("Async failure during Customer Booking setup [id={}]", booking, e);
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getMessage());
+                    customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
                     failureMap.put(booking, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
@@ -231,9 +232,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, Arrays.toString(e.getStackTrace()));
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
-                    customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
+                    log.error("Async failure during Customer Booking reverse migration [id={}]", booking, e);
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

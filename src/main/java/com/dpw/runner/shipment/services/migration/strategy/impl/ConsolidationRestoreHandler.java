@@ -118,7 +118,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                                     Constants.CONSOLIDATION,
                                     IntegrationType.RESTORE_DATA_SYNC,
                                     Status.FAILED,
-                                    Arrays.toString(e.getStackTrace())
+                                    e.getMessage()
                             );
                             failureMap.put(id, e.getMessage());
                             throw new IllegalArgumentException(e);

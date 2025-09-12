@@ -161,7 +161,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, jsonHelper.convertToJson(response), "Migration From V3 to V2", false);
                 shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
             } catch (Exception e) {
-                log.error("Migration V3 to V2 failed for tenantId: {} due to : {}", tenantId, e.getMessage());
+                log.error("Migration V3 to V2 failed for tenantId: {}", tenantId, e);
                 emailServiceUtility.sendMigrationAndRestoreEmail(tenantId, e.getMessage(), "Migration From V3 to V2", true);
                 shipmentSettingsDao.updateMigrationRunningFlag(false, tenantId);
                 throw new IllegalArgumentException(e);
@@ -271,7 +271,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during shipment setup [id={}]", id, e);
-                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getMessage());
                     shipmentBackupRepository.deleteBackupByTenantIdAndShipmentId(id, tenantId);
                     failureMap.put(id, e.getMessage());
                     throw new IllegalArgumentException(e);
@@ -282,7 +282,6 @@ public class MigrationV3Service implements IMigrationV3Service {
             shipmentFutures.add(future);
         });
         List<Long> migratedShipmentIds = collectAllProcessedIds(shipmentFutures);
-        map.put("Total Shipment Migrated", migratedShipmentIds.size());
         map.put("Total Shipment Migrated " , migratedShipmentIds.size());
         if(!failureMap.isEmpty()) {
             map.put("Failed Shipment Migration: ", failureMap);
@@ -322,7 +321,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     });
                 } catch (Exception e) {
                     log.error("Async failure during consolidation setup [id={}]", id, e);
-                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    migrationUtil.saveErrorResponse(id, Constants.CONSOLIDATION, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getMessage());
                     consolidationBackupRepository.deleteBackupByTenantIdAndConsolidationId(id, tenantId);
                     failureMap.put(id, e.getMessage());
                     throw new IllegalArgumentException(e);
