@@ -2786,6 +2786,10 @@ public class AwbService implements IAwbService {
                 }
             }
         }
+        if(!CommonUtils.setIsNullOrEmpty(linkedHawbIds)) {
+            mawbHawbLinkDao.deleteByHawbIdsAndMawbIds(linkedHawbIds, mawbId);
+        }
+
     }
 
     private void updateHawbMawb(Long mawbId, ShipmentDetails consoleShipment, Set<Long> linkedHawbIds) {
@@ -2799,6 +2803,8 @@ public class AwbService implements IAwbService {
                     mawbHawblink.setHawbId(awb.getId());
                     mawbHawblink.setMawbId(mawbId);
                     mawbHawbLinkDao.save(mawbHawblink);
+                } else if (awb != null) {
+                    linkedHawbIds.remove(awb.getId());
                 }
             }
         }
