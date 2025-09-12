@@ -134,23 +134,20 @@ public class ShippingInstructionsController {
         }
     }
 
-    @PostMapping("/{id}/submit")
-    public ResponseEntity<String> submitSI(@PathVariable ShippingInstructionRequest request) {
+    @PostMapping("/submit")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShippingInstructionsConstants.SUBMIT_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.ERROR_MESSAGE, response = MyResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> submitSI(@RequestBody ShippingInstructionRequest request) {
         try {
-            service.submitSI(request);
-            return ResponseEntity.ok("Shipping Instruction submitted successfully.");
-        } catch (ValidationException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
+            ShippingInstructionResponse response = service.submitShippingInstruction(request);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error retrieving default Shipping Instruction";
+            log.error(responseMsg, ex);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 
-//    @PostMapping("/{id}/amend")
-//    public ResponseEntity<String> amendSI(@PathVariable Long id) {
-//        try {
-//            service.amendSI(id);
-//            return ResponseEntity.ok("Shipping Instruction moved to Draft for amendment.");
-//        } catch (ValidationException ex) {
-//            return ResponseEntity.badRequest().body(ex.getMessage());
-//        }
-//    }
 }

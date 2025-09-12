@@ -22,5 +22,6 @@ public class ShippingInstructionsConstants {
     public static final String PAYMENT_TERM_PREPAID = "PPD";
     public static final String PAYMENT_TERM_COLLECT = "CCX";
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Shipping Instruction Retrieval";
+    public static final String SUBMIT_SUCCESSFUL = "Shipping Instruction submitted successfully.";
 
 }
