@@ -8501,51 +8501,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testGetPathBasedOnType_B2B() {
-        String path = shipmentServiceImplV3.getPathBasedOnType("B2B");
-        assertEquals("src/main/resources/b2b_clone_flags_response.json", path);
-    }
-
-    @Test
-    void testGetPathBasedOnType_S2B() {
-        String path = shipmentServiceImplV3.getPathBasedOnType("S2B");
-        assertEquals("src/main/resources/s2b_clone_flags_response.json", path);
-    }
-
-    @Test
-    void testGetPathBasedOnType_S2S() {
-        String path = shipmentServiceImplV3.getPathBasedOnType("S2S");
-        assertEquals("src/main/resources/s2s_clone_flags_response.json", path);
-    }
-
-    @Test
-    void testGetPathBasedOnType_InvalidType() {
-        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.getPathBasedOnType("INVALID"));
-    }
-
-    @Test
-    void testGetCloneConfig_Success() throws RunnerException {
-        String type = "B2B";
-        String path = shipmentServiceImplV3.getPathBasedOnType(type);
-        CloneFieldResponse expectedResponse = new CloneFieldResponse();
-        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class)).thenReturn(expectedResponse);
-        CloneFieldResponse response = shipmentServiceImplV3.getCloneConfig(type);
-        assertNotNull(response);
-        assertEquals(expectedResponse, response);
-        verify(commonUtils, times(1)).fetchFromJsonFile(path, CloneFieldResponse.class);
-    }
-
-    @Test
-    void testGetCloneConfig_FileNotFound() throws RunnerException {
-        String type = "B2B";
-        String path = shipmentServiceImplV3.getPathBasedOnType(type);
-        when(commonUtils.fetchFromJsonFile(path, CloneFieldResponse.class))
-                .thenThrow(new RunnerException("File not found"));
-        RunnerException exception = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.getCloneConfig(type));
-        assertEquals("File not found", exception.getMessage());
-    }
-
-    @Test
     void testValidateShipment_ShipmentNotFound() {
         Long shipmentId = 1L;
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
@@ -8706,6 +8661,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(commonUtils).mapIfSelected(eq(true), eq("FREIGHT"), any());
         verify(commonUtils).mapIfSelected(eq(true), eq("PREPAID"), any());
         verify(commonUtils, times(5)).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void testGetCloneConfig_ReturnsExpectedResponse() throws RunnerException {
+        String type = "S2B";
+        CloneFieldResponse expectedResponse = new CloneFieldResponse();
+        when(commonUtils.getCloneFieldResponse(type)).thenReturn(expectedResponse);
+        CloneFieldResponse actual = shipmentServiceImplV3.getCloneConfig(type);
+        assertNotNull(actual);
+        assertEquals(expectedResponse, actual);
+        verify(commonUtils, times(1)).getCloneFieldResponse(type);
     }
 
     private CloneRequest createCloneRequest(boolean cargoSummary, boolean description,

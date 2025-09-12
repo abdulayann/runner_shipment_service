@@ -878,20 +878,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public CloneFieldResponse getCloneConfig(String type) throws RunnerException {
-        return commonUtils.fetchFromJsonFile(getPathBasedOnType(type), CloneFieldResponse.class);
-    }
-
-    public String getPathBasedOnType(String type) {
-        switch (type) {
-            case "B2B":
-                return "src/main/resources/b2b_clone_flags_response.json";
-            case "S2B":
-                return "src/main/resources/s2b_clone_flags_response.json";
-            case "S2S":
-                return "src/main/resources/s2s_clone_flags_response.json";
-            default:
-                throw new ValidationException("Invalid request");
-        }
+        return commonUtils.getCloneFieldResponse(type);
     }
 
     public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
