@@ -3014,6 +3014,247 @@ if (unitConversionUtilityMockedStatic != null) {
         ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
         assertNotNull(response);
     }
+    @Test
+    void detachShipments_SuccessLCLWithNullContainerId() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.FALSE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getTestShipmentForAutoDetach();
+        shipmentDetails1.setShipmentType(CARGO_TYPE_LCL);
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = jsonTestUtility.getTestPacking();
+        packing.setContainerId(null);
+        List<Packing> packingList = List.of(packing);
+        ShipmentsContainersMapping mockShipContainerMapping = new ShipmentsContainersMapping();
+        mockShipContainerMapping.setShipmentId(1L);
+        mockShipContainerMapping.setContainerId(5L);
+        List<ShipmentsContainersMapping> mockShipContainerList = List.of(mockShipContainerMapping);
+        when(shipmentsContainersMappingDao.findByShipmentIdIn(any())).thenReturn(mockShipContainerList);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(commonUtils.isFCLorFTL(any())).thenReturn(Boolean.FALSE);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        lenient().when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        lenient().when(packingDao.findByShipmentId(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+    @Test
+    void detachShipments_SuccessLCLWithNullContainerId2() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.FALSE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getTestShipmentForAutoDetach();
+        shipmentDetails1.setShipmentType(CARGO_TYPE_LCL);
+        shipmentDetails1.setContainerAssignedToShipmentCargo(5L);
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = jsonTestUtility.getTestPacking();
+        packing.setContainerId(null);
+        List<Packing> packingList = List.of(packing);
+        ShipmentsContainersMapping mockShipContainerMapping = new ShipmentsContainersMapping();
+        mockShipContainerMapping.setShipmentId(1L);
+        mockShipContainerMapping.setContainerId(5L);
+        List<ShipmentsContainersMapping> mockShipContainerList = List.of(mockShipContainerMapping);
+        when(shipmentsContainersMappingDao.findByShipmentIdIn(any())).thenReturn(mockShipContainerList);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(commonUtils.isFCLorFTL(any())).thenReturn(Boolean.FALSE);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        lenient().when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        lenient().when(packingDao.findByShipmentId(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void detachShipments_Success8FCL() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.FALSE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getTestShipmentForAutoDetach();
+        shipmentDetails1.setShipmentType(CARGO_TYPE_FCL);
+        shipmentDetails1.setContainerAssignedToShipmentCargo(5L);
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = jsonTestUtility.getTestPacking();
+        packing.setContainerId(null);
+        List<Packing> packingList = List.of(packing);
+        ShipmentsContainersMapping mockShipContainerMapping = new ShipmentsContainersMapping();
+        mockShipContainerMapping.setShipmentId(1L);
+        mockShipContainerMapping.setContainerId(5L);
+        List<ShipmentsContainersMapping> mockShipContainerList = List.of(mockShipContainerMapping);
+        when(shipmentsContainersMappingDao.findByShipmentIdIn(any())).thenReturn(mockShipContainerList);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(commonUtils.isFCLorFTL(any())).thenReturn(Boolean.TRUE);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        lenient().when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        lenient().when(packingDao.findByShipmentId(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void detachShipments_Success9FCL() throws RunnerException {
+        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+        request.setShipmentIds(Set.of(1L,2L));
+        request.setConsolidationId(1L);
+        request.setIsFCLDelete(Boolean.FALSE);
+        request.setIsForcedDetach(Boolean.FALSE);
+
+
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setEventsList(List.of(Events.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>());
+        shipmentDetails.setContainsHazardous(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getTestShipmentForAutoDetach();
+        shipmentDetails1.setShipmentType(CARGO_TYPE_FCL);
+        shipmentDetails1.setContainerAssignedToShipmentCargo(5L);
+        ShipmentDetails shipmentDetails2 = shipmentDetails;
+        shipmentDetails2.setId(2L);
+        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setOverride(true);
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(Boolean.TRUE);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1);
+        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+        var spyService = Mockito.spy(consolidationV3Service);
+        Packing packing = jsonTestUtility.getTestPacking();
+        packing.setContainerId(1L);
+        List<Packing> packingList = List.of(packing);
+        ShipmentsContainersMapping mockShipContainerMapping = new ShipmentsContainersMapping();
+        mockShipContainerMapping.setShipmentId(1L);
+        mockShipContainerMapping.setContainerId(5L);
+        List<ShipmentsContainersMapping> mockShipContainerList = List.of(mockShipContainerMapping);
+        when(shipmentsContainersMappingDao.findByShipmentIdIn(any())).thenReturn(mockShipContainerList);
+
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(commonUtils.isFCLorFTL(any())).thenReturn(Boolean.TRUE);
+        mockShipmentSettings();
+        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        lenient().when(packingDao.findByContainerIdIn(any())).thenReturn(packingList);
+        lenient().when(packingDao.findByShipmentId(any())).thenReturn(packingList);
+        List<UnAssignContainerParams> unAssignContainerParamsList = new ArrayList<>();
+
+        ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+        assertNotNull(response);
+    }
 
 
 

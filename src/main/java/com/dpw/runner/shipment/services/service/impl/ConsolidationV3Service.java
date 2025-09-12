@@ -249,7 +249,6 @@ import javax.persistence.criteria.Selection;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
-import org.apache.kafka.common.protocol.types.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
@@ -3942,8 +3941,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(Boolean.FALSE.equals(isForcedDetach)) {
             validateShipmentContainersAndPack(isFromEt, shipmentDetails, shipmentForceDetachResponseDto);
         }
-        if(shipmentForceDetachResponseDto != null && shipmentForceDetachResponseDto.getShipmentDetachResponses() != null
-                && shipmentForceDetachResponseDto.getIsContainerOrPackageAttached()){
+        if(Boolean.TRUE.equals(shipmentForceDetachResponseDto.getIsContainerOrPackageAttached())){
             return ResponseHelper.buildSuccessResponse(shipmentForceDetachResponseDto);
         }
 
@@ -3963,7 +3961,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         .collect(Collectors.toList());
                 detachAllContainerShipmentPresent(removedShipmentDetails, isForcedDetach, isFCLDelete);
             }
-            detachShipmentAndResetEventList(isFromEt, isForcedDetach, removedShipmentIds, shipmentDetailsMap, packingList, shipmentForceDetachResponseDto);
+            detachShipmentAndResetEventList(removedShipmentIds, shipmentDetailsMap, packingList);
             List<ShipmentDetails> shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave, isForcedDetach);
             //delete routings from shipment which has isFromConsolidation as true
@@ -3993,7 +3991,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    private void detachShipmentAndResetEventList(Boolean isFromEt, Boolean isForcedDetach, List<Long> removedShipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, List<Packing> packingList, ShipmentForceDetachResponseDto shipmentForceDetachResponseDto) throws RunnerException {
+    private void detachShipmentAndResetEventList(List<Long> removedShipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, List<Packing> packingList) {
         for(Long shipId : removedShipmentIds) {
             ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
             if(shipmentDetail != null) {
@@ -4128,7 +4126,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     protected void validateDetachedShipment(List<ShipmentDetails> shipmentDetails, ShipmentForceDetachResponseDto shipmentForceDetachResponseDto) throws RunnerException {
         for(ShipmentDetails shipmentDetail: shipmentDetails){
             List<ShipmentForceDetachResponse> shipmentForceDetachResponses = new ArrayList<>();
-            List<Long> shipmentIds = shipmentDetails.stream().map(ship -> ship.getId()).collect(Collectors.toList());
+            List<Long> shipmentIds = shipmentDetails.stream().map(ShipmentDetails::getId).toList();
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByShipmentIdIn(shipmentIds);
             if (shipmentsContainersMappings == null || shipmentsContainersMappings.stream().noneMatch(mapping -> mapping.getContainerId() != null)) {
                 return;
@@ -4170,21 +4168,23 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
             Set<Long> processedContainerIds = new HashSet<>();
             for (Packing packing : packings) {
-                if (packing.getContainerId() != null) {
-                    Containers container  = containersMap.get(packing.getContainerId());
-                        if (container.getId() != null) {
-                            if (processedContainerIds.add(container.getId())) {
-                                containerV3Util.resetContainerDataForRecalculation(container);
-                            }
-                        containerV3Service.addPackageDataToContainer(container, packing);
-                        shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder().shipmentNumber(shipmentDetail.getShipmentId()).
-                                containerNumber(container.getContainerNumber()).packageUnit(container.getPacksType()).packageCount(Integer.parseInt(container.getPacks())).packageAssigned(Boolean.TRUE).
-                                weight(container.getGrossWeight()).weightUnit(container.getGrossWeightUnit()).volume(container.getGrossVolume()).volumeUnit(container.getGrossVolumeUnit()).
-                                build());
-                        }
-                }
+                extractcontainerDetailsFromPacking(shipmentDetail, containersMap, shipmentForceDetachResponses, packing, processedContainerIds);
             }
          }
+    }
+
+    private void extractcontainerDetailsFromPacking(ShipmentDetails shipmentDetail, Map<Long, Containers> containersMap, List<ShipmentForceDetachResponse> shipmentForceDetachResponses, Packing packing, Set<Long> processedContainerIds) throws RunnerException {
+        if (packing.getContainerId() != null) {
+            Containers container  = containersMap.get(packing.getContainerId());
+                    if (processedContainerIds.add(container.getId())) {
+                        containerV3Util.resetContainerDataForRecalculation(container);
+                    }
+                containerV3Service.addPackageDataToContainer(container, packing);
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder().shipmentNumber(shipmentDetail.getShipmentId()).
+                        containerNumber(container.getContainerNumber()).packageUnit(container.getPacksType()).packageCount(Integer.parseInt(container.getPacks())).packageAssigned(Boolean.TRUE).
+                        weight(container.getGrossWeight()).weightUnit(container.getGrossWeightUnit()).volume(container.getGrossVolume()).volumeUnit(container.getGrossVolumeUnit()).
+                        build());
+        }
     }
 
     private void calculateContainersDetailsAttachedToShipmentForFCL(ShipmentDetails shipmentDetail, List<Containers> containersList, List<ShipmentForceDetachResponse> shipmentForceDetachResponses) {
@@ -4203,7 +4203,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
         Boolean isPackageAssigned = Boolean.FALSE;
         for (Packing packing : packings) {
-            if (packing.getContainerId() != null && container.getId() == packing.getContainerId() ) {
+            if (packing.getContainerId() != null && container.getId().equals(packing.getContainerId())) {
                 isPackageAssigned = Boolean.TRUE;
                 break;
             }
