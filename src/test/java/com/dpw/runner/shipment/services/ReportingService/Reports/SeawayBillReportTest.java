@@ -442,10 +442,13 @@ class SeawayBillReportTest extends CommonMocks {
 
     @Test
     void populateDictionary() {
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
         seawayBillModel.setBlObject(populateHbl());
         seawayBillModel.setTenant(new TenantModel());
-        seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
+        seawayBillModel.setShipmentSettingsDetails(shipmentSettingsDetails);
         populateModel(seawayBillModel);
 
         Map<String, Object> containerMap = new HashMap<>();
@@ -477,7 +480,159 @@ class SeawayBillReportTest extends CommonMocks {
     }
 
     @Test
+    void populateDictionaryWithNullHblData() {
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(null);
+        SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
+        seawayBillModel.setBlObject(hbl);
+        seawayBillModel.setTenant(new TenantModel());
+        seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
+        populateModel(seawayBillModel);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+
+        doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> chargeMap = new HashMap<>();
+        chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
+        dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        dictionary.put(ReportConstants.ORDER_MANAGEMENT_NUMBER, "1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567");
+        when(hblReport.getData(any())).thenReturn(dictionary);
+        mockTenantSettings();
+        Map<String, Object> dict = seawayBillReport.populateDictionary(seawayBillModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
+    }
+
+    private Hbl populateHblWithTransportDetails() {
+        Hbl hbl = new Hbl();
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setCargoGrossVolumeUnit("M3");
+        hblDataDto.setCargoGrossWeightUnit("KG");
+        hblDataDto.setPackageCount(10);
+        hblDataDto.setPlaceOfDelivery("MOCK PLACE");
+        hblDataDto.setPlaceOfReceipt("US MOCK PLACE");
+        hblDataDto.setPortOfDischarge("MOCK PORT");
+        hblDataDto.setPortOfLoad("MOCK PORT");
+        hbl.setHblData(hblDataDto);
+        return hbl;
+    }
+
+    @Test
+    void populateDictionaryWithCompleteTransportDetails() {
+
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+
+        SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
+        seawayBillModel.setBlObject(populateHblWithTransportDetails());
+        seawayBillModel.setTenant(new TenantModel());
+        seawayBillModel.setShipmentSettingsDetails(shipmentSettingsDetails);
+        populateModel(seawayBillModel);
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+
+        doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> chargeMap = new HashMap<>();
+        chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
+        dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        dictionary.put(ReportConstants.ORDER_MANAGEMENT_NUMBER, "1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567");
+        when(hblReport.getData(any())).thenReturn(dictionary);
+        mockTenantSettings();
+        Map<String, Object> dict = seawayBillReport.populateDictionary(seawayBillModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
+    }
+
+    private Hbl populateHblWithTransportDetailsNullPortOfLoad() {
+        Hbl hbl = new Hbl();
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setCargoGrossVolumeUnit("M3");
+        hblDataDto.setCargoGrossWeightUnit("KG");
+        hblDataDto.setPackageCount(10);
+        hblDataDto.setPlaceOfDelivery("MOCK PLACE");
+        hblDataDto.setPlaceOfReceipt("US MOCK PLACE");
+        hblDataDto.setPortOfDischarge("MOCK PORT");
+        hbl.setHblData(hblDataDto);
+        return hbl;
+    }
+
+    @Test
+    void populateDictionaryWithNullPortOfLoad() {
+
+        SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
+        seawayBillModel.setBlObject(populateHblWithTransportDetailsNullPortOfLoad());
+        seawayBillModel.setTenant(new TenantModel());
+        seawayBillModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
+        populateModel(seawayBillModel);
+        seawayBillModel.getShipment().setAdditionalDetails(null);
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
+        containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+
+        doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, Object> chargeMap = new HashMap<>();
+        chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
+        dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        dictionary.put(ReportConstants.ORDER_MANAGEMENT_NUMBER, "1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567");
+        when(hblReport.getData(any())).thenReturn(dictionary);
+        mockTenantSettings();
+        Map<String, Object> dict = seawayBillReport.populateDictionary(seawayBillModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
+    }
+
+    @Test
     void populateDictionaryWithDisbalePartyTrue() {
+
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder().disableBlPartiesName(false).isRunnerV3Enabled(true).build();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
         SeawayBillModel seawayBillModel = SeawayBillModel.builder().build();
         seawayBillModel.setBlObject(populateHbl());
         seawayBillModel.setTenant(new TenantModel());
