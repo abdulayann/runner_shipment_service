@@ -548,7 +548,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         return masterDataResponse;
     }
 
-    private void setCarrierRoutings(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
+    protected void setCarrierRoutings(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
         List<TransportLeg> transportLegs = inttraCarrierBookingEventDto.getTransportLegs();
         if (!CollectionUtils.isEmpty(transportLegs)) {
             List<CarrierRouting> carrierRoutings = new ArrayList<>();
@@ -584,7 +584,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
     }
 
-    private void setContainerEmptyAndDropOffLocationDetails(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
+    protected void setContainerEmptyAndDropOffLocationDetails(InttraCarrierBookingEventDto inttraCarrierBookingEventDto, CarrierBooking carrierBooking) {
         Map<String, Object> loadedContainerDropOff = new HashMap<>();
         Map<String, Object> emptyContainerPickup = new HashMap<>();
         List<Equipment> equipments = inttraCarrierBookingEventDto.getEquipments();
@@ -651,7 +651,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
 
-    private LocalDateTime getETD(List<LocationDate> startLocationLocationDates) {
+    LocalDateTime getETD(List<LocationDate> startLocationLocationDates) {
         if (CollectionUtils.isEmpty(startLocationLocationDates)) {
             return null;
         }
@@ -662,7 +662,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 .orElse(null);
     }
 
-    private LocalDateTime getETA(List<LocationDate> endLocationLocationDates) {
+    LocalDateTime getETA(List<LocationDate> endLocationLocationDates) {
         if (CollectionUtils.isEmpty(endLocationLocationDates)) {
             return null;
         }
