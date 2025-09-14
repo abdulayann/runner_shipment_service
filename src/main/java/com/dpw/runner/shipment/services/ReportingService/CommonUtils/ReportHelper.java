@@ -113,20 +113,6 @@ public class ReportHelper {
         return list;
     }
 
-//    private static String formatCountryCode(String countryCode) {
-//        if (Strings.isNullOrEmpty(countryCode)) {
-//            return null;
-//        }
-//        if (countryCode.length() == 2) {
-//            return countryCode.toUpperCase();
-//        }
-//        if (countryCode.length() == 3) {
-//            return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
-//        }
-//        return countryCode;
-//    }
-
-
     public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
     {
         List<String> details = new ArrayList<>();
