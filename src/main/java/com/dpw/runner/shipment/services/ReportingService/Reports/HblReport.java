@@ -369,7 +369,6 @@ public class HblReport extends IReport {
         addCargoLocationTag(hblModel, dictionary);
         processNotifyParty(hblModel, dictionary);
         processConsignerConsignee(hblModel, dictionary);
-
         List<String> deliveryParty = getOrgAddress(hblModel.shipment.getAdditionalDetails().getNotifyParty());
         if (hblModel.blObject.getHblNotifyParty() != null && !hblModel.blObject.getHblNotifyParty().isEmpty())
             dictionary.put(NOTIFY_PARTY_ADDRESS, getAddressList(hblModel.blObject.getHblNotifyParty().get(0).getAddress()));
@@ -983,12 +982,28 @@ public class HblReport extends IReport {
                         getValueFromMap(consigneeAddress, ADDRESS2),
                         ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
                         getValueFromMap(consigneeAddress, EMAIL), getValueFromMap(consigneeAddress, CONTACT_PHONE),
-                        getValueFromMap(consigneeAddress, "Zip_PostCode"));
+                        getValueFromMap(consigneeAddress, ZIP_POSTCODE));
                 dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON, getValueFromMap(consigneeAddress, CONTACT_PERSON));
             }
         }
         return consignee;
+    }
+
+    private List<String> getShipmentConsigner(HblModel hblModel, List<String> consigner, Map<String, Object> dictionary) {
+        PartiesModel shipmentConsigner = hblModel.shipment.getConsigner();
+        if (shipmentConsigner != null) {
+            Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
+            if (consignerAddress != null) {
+                consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
+                        getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                        getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                        getValueFromMap(consignerAddress, ZIP_POSTCODE));
+                dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON));
+            }
+        }
+        return consigner;
     }
 
     private void addDeliverToTag(HblModel hblModel, Map<String, Object> dictionary) {
@@ -1057,6 +1072,7 @@ public class HblReport extends IReport {
             dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
             dictionary.put(BL_DELIVERYAGENT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgent()));
             dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
+            populatePartyTagsV3(hblModel.blObject.getHblData(), dictionary);
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoTermsDescription()));
             dictionary.put(BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getBlRemarksDescription()));
             dictionary.put(BL_REMARKS, hblModel.blObject.getHblData().getBlRemark());
@@ -1064,6 +1080,43 @@ public class HblReport extends IReport {
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
+        }
+    }
+
+    private void populatePartyTagsV3(HblDataDto hblDataDto, Map<String, Object> dictionary) {
+
+        // Populate new Party Tags if V3 Feature Flag is Enabled
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+
+            // Populating Shipper Tag
+            processPartyTagsV3(hblDataDto.getShipperName(), hblDataDto.getShipperAddressLine1(), hblDataDto.getShipperAddressLine2(),
+                    hblDataDto.getShipperCity(), hblDataDto.getShipperState(), hblDataDto.getShipperZipCode(),
+                    hblDataDto.getShipperCountry(), dictionary, BL_NEW_SHIPPER);
+
+            // Populating Consignee Tag
+            processPartyTagsV3(hblDataDto.getConsigneeName(), hblDataDto.getConsigneeAddressLine1(), hblDataDto.getConsigneeAddressLine2(),
+                    hblDataDto.getConsigneeCity(), hblDataDto.getConsigneeState(), hblDataDto.getConsigneeZipCode(),
+                    hblDataDto.getConsigneeCountry(), dictionary, BL_NEW_CONSIGNEE);
+
+            // Populating Delivery Tag
+            processPartyTagsV3(hblDataDto.getDeliveryAgentName(),
+                    hblDataDto.getDeliveryAgentAddressLine1(), hblDataDto.getDeliveryAgentAddressLine2(),
+                    hblDataDto.getDeliveryAgentCity(), hblDataDto.getDeliveryAgentState(), hblDataDto.getDeliveryAgentZipCode(),
+                    hblDataDto.getDeliveryAgentCountry(), dictionary, BL_DELIVERY);
+
+            // Populating Forwarding Tag
+            processPartyTagsV3(hblDataDto.getForwarderName(), hblDataDto.getForwarderAddressLine1(), hblDataDto.getForwarderAddressLine2(),
+                    hblDataDto.getForwarderCity(), hblDataDto.getForwarderState(), hblDataDto.getForwarderZipCode(),
+                    hblDataDto.getForwarderCountry(), dictionary, BL_FORWARDER);
+        }
+    }
+
+    private void processPartyTagsV3(String orgName, String address1, String address2,
+                                    String city, String state, String zipCode, String country, Map<String, Object> dictionary, String partyTagKey) {
+
+        List<String> partyV3 = ReportHelper.getOrgAddressWithNameAndCity(orgName, address1, address2, city, state, zipCode, country);
+        if (!partyV3.isEmpty()) {
+            dictionary.put(partyTagKey, partyV3);
         }
     }
 
