@@ -7,6 +7,7 @@ public interface CarrierBookingInfoProjection {
     String getBookingStatus();
 
     String getBookingNo();
+    String getSiStatus();
 
     class NullCarrierBookingInfoProjection implements CarrierBookingInfoProjection {
 
@@ -17,6 +18,11 @@ public interface CarrierBookingInfoProjection {
 
         @Override
         public String getBookingNo() {
+            return null;
+        }
+
+        @Override
+        public String getSiStatus() {
             return null;
         }
 

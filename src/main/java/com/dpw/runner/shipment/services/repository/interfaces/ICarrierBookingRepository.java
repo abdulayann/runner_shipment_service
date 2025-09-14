@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,5 +16,9 @@ public interface ICarrierBookingRepository extends MultiTenancyRepository<Carrie
     CarrierBooking findByBookingNo(String bookingNo);
 
     Page<CarrierBooking> findAll(Specification<CarrierBooking> spec, Pageable pageable);
+
+    @Query(value = "select cb.status as bookingStatus,si.status as siStatus " +
+            "from carrier_booking cb LEFT JOIN shipping_instruction si where cb.id = ?1 and cb.is_deleted = false;", nativeQuery = true)
+    CarrierBookingInfoProjection findCarrierBookingInfoById(Long id);
 
 }

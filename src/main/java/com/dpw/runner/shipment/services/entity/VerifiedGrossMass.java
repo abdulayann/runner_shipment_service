@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import lombok.AllArgsConstructor;
@@ -43,7 +44,8 @@ public class VerifiedGrossMass extends MultiTenancy {
     private String carrierBookingNo;
 
     @Column(name = "entity_type", length = 50)
-    private String entityType;
+    @Enumerated(value = EnumType.STRING)
+    private EntityType entityType;
 
     @Column(name = "entity_id")
     private Long entityId;

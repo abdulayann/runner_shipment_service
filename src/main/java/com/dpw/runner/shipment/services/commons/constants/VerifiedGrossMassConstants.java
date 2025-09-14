@@ -47,5 +47,5 @@ public class VerifiedGrossMassConstants {
     public static final String VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
-    public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
+    public static final List<String> serviceTypes = List.of("P2P","D2D","D2P","P2D");
 }

@@ -33,7 +33,7 @@ public class VerifiedGrossMassValidationUtil {
 
     public void validateServiceType(VerifiedGrossMassRequest request) {
         if (!VerifiedGrossMassConstants.serviceTypes.contains(request.getServiceType())) {
-            throw new ValidationException("Unsupported service type. Please select one of: P2P, F2P, P2F, F2F.");
+            throw new ValidationException("Unsupported service type. Please select one of: P2P,D2D,D2P,P2D");
         }
     }
 
