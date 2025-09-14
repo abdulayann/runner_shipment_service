@@ -4124,8 +4124,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     protected void validateDetachedShipment(List<ShipmentDetails> shipmentDetails, ShipmentForceDetachResponseDto shipmentForceDetachResponseDto) throws RunnerException {
+        List<ShipmentForceDetachResponse> shipmentForceDetachResponses = new ArrayList<>();
         for(ShipmentDetails shipmentDetail: shipmentDetails){
-            List<ShipmentForceDetachResponse> shipmentForceDetachResponses = new ArrayList<>();
             List<Long> shipmentIds = shipmentDetails.stream().map(ShipmentDetails::getId).toList();
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByShipmentIdIn(shipmentIds);
             if (shipmentsContainersMappings == null || shipmentsContainersMappings.stream().noneMatch(mapping -> mapping.getContainerId() != null)) {
@@ -4138,11 +4138,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }else{
                 calculateContainersDetailsAttachedToShipmentForLCL(shipmentDetail, containerIdMap, shipmentForceDetachResponses);
             }
-            if(!shipmentForceDetachResponses.isEmpty()){
-                shipmentForceDetachResponseDto.setIsContainerOrPackageAttached(Boolean.TRUE);
-            }
-            shipmentForceDetachResponseDto.setShipmentDetachResponses(shipmentForceDetachResponses);
         }
+        if(!shipmentForceDetachResponses.isEmpty()){
+            shipmentForceDetachResponseDto.setIsContainerOrPackageAttached(Boolean.TRUE);
+        }
+        shipmentForceDetachResponseDto.setShipmentDetachResponses(shipmentForceDetachResponses);
     }
 
 
@@ -4159,10 +4159,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(shipmentDetail.getContainerAssignedToShipmentCargo() != null){
             Containers container = containersMap.get(shipmentDetail.getContainerAssignedToShipmentCargo());
             if (container.getId() != null) {
-                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder().shipmentNumber(shipmentDetail.getShipmentId()).
-                        containerNumber(container.getContainerNumber()).packageUnit(shipmentDetail.getPacksUnit()).packageCount(shipmentDetail.getNoOfPacks()).packageAssigned(Boolean.TRUE).
-                        weight(shipmentDetail.getWeight()).weightUnit(shipmentDetail.getWeightUnit()).volume(shipmentDetail.getVolume()).volumeUnit(shipmentDetail.getVolumeUnit()).
-                        build());
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(shipmentDetail.getPacksUnit()).orElse(""))
+                        .packageCount(Optional.ofNullable(shipmentDetail.getNoOfPacks()).orElse(0))
+                        .packageAssigned(Boolean.TRUE)
+                        .weight(Optional.ofNullable(shipmentDetail.getWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(shipmentDetail.getWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(shipmentDetail.getVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(shipmentDetail.getVolumeUnit()).orElse(""))
+                        .build());
             }
         }else{
             List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
@@ -4180,21 +4187,39 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         containerV3Util.resetContainerDataForRecalculation(container);
                     }
                 containerV3Service.addPackageDataToContainer(container, packing);
-                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder().shipmentNumber(shipmentDetail.getShipmentId()).
-                        containerNumber(container.getContainerNumber()).packageUnit(container.getPacksType()).packageCount(Integer.parseInt(container.getPacks())).packageAssigned(Boolean.TRUE).
-                        weight(container.getGrossWeight()).weightUnit(container.getGrossWeightUnit()).volume(container.getGrossVolume()).volumeUnit(container.getGrossVolumeUnit()).
-                        build());
+            shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                    .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
+                    .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                    .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
+                    .packageCount(Optional.ofNullable(container.getPacks())
+                            .filter(packs -> packs.matches("\\d+"))
+                            .map(Integer::parseInt)
+                            .orElse(0))
+                    .packageAssigned(Boolean.TRUE)
+                    .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
+                    .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
+                    .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
+                    .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
+                    .build());
+
         }
     }
 
     private void calculateContainersDetailsAttachedToShipmentForFCL(ShipmentDetails shipmentDetail, List<Containers> containersList, List<ShipmentForceDetachResponse> shipmentForceDetachResponses) {
         for (Containers container : containersList) {
             if (container.getId() != null) {
-                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder().shipmentNumber(shipmentDetail.getShipmentId()).
-                        containerNumber(container.getContainerNumber()).packageUnit(container.getPacksType()).packageCount(Integer.parseInt(container.getPacks())).packageAssigned(isPackageAttached(shipmentDetail, container)).
-                        weight(container.getGrossWeight()).weightUnit(container.getGrossWeightUnit()).volume(container.getGrossVolume()).volumeUnit(container.getGrossVolumeUnit()).
-                        build());
-
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(shipmentDetail != null ? Optional.ofNullable(shipmentDetail.getShipmentId()).orElse("") : "")
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
+                        .packageCount(container != null && container.getPacks() != null && container.getPacks().matches("\\d+") ?
+                                Optional.ofNullable(Integer.parseInt(container.getPacks())).orElse(0) : 0)
+                        .packageAssigned(shipmentDetail != null && container != null ? isPackageAttached(shipmentDetail, container) : false)
+                        .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
+                        .build());
             }
         }
     }
