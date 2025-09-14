@@ -101,6 +101,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -149,6 +152,7 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -167,6 +171,7 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
@@ -204,6 +209,7 @@ import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -341,6 +347,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IRoutingsV3Service routingsV3Service;
     @Mock
+    private CarrierDetailsMapper carrierDetailsMapper;
+    @Mock
     private ShipmentValidationV3Util shipmentValidationV3Util;
     @Mock
     private IDateTimeChangeLogService dateTimeChangeLogService;
@@ -364,6 +372,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
     @Mock
     private IDocumentManagerService documentManagerService;
+    @Mock
+    private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ILogsHistoryService logsHistoryService;
     @Mock
@@ -497,18 +507,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         ShipmentDetails details = new ShipmentDetails();
-        details.setWeight(BigDecimal.valueOf(1l));
-        details.setVolume(BigDecimal.valueOf(1l));
-        details.setVolumetricWeight(BigDecimal.valueOf(1l));
-        details.setChargable(BigDecimal.valueOf(1l));
-        details.setIsReefer(false);
+        details.setWeight(BigDecimal.valueOf(1));
+        details.setVolume(BigDecimal.valueOf(1));
+        details.setVolumetricWeight(BigDecimal.valueOf(1));
+        details.setChargable(BigDecimal.valueOf(1));
+        details.setIsReefer(null);
         ShipmentListResponse shipmentListResponse = new ShipmentListResponse();
         shipmentListResponse.setContainsHazardous(false);
-        shipmentListResponse.setWeight(BigDecimal.valueOf(1l));
-        shipmentListResponse.setVolume(BigDecimal.valueOf(1l));
-        shipmentListResponse.setVolumetricWeight(BigDecimal.valueOf(1l));
-        shipmentListResponse.setChargable(BigDecimal.valueOf(1l));
-        shipmentListResponse.setIsReefer(false);
+        shipmentListResponse.setWeight(BigDecimal.valueOf(1));
+        shipmentListResponse.setVolume(BigDecimal.valueOf(1));
+        shipmentListResponse.setVolumetricWeight(BigDecimal.valueOf(1));
+        shipmentListResponse.setChargable(BigDecimal.valueOf(1));
+        shipmentListResponse.setIsReefer(null);
         shipmentDetailsList.add(details);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         PageImpl<Long> shipmentIdPage = new PageImpl<>(List.of(1L));
@@ -8981,6 +8991,163 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertFalse(polField.isSelected());
         assertFalse(podField.isEditable());
         assertFalse(podField.isSelected());
+    }
+
+
+    @Test
+    void testPartialUpdate_Success_ById() throws RunnerException {
+        // Arrange
+        Long shipmentId = 1L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        patchRequest.setJobType(JsonNullable.of("DRT"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setJobType("STD");
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+
+        ShipmentDetails updatedShipment = new ShipmentDetails();
+        updatedShipment.setId(shipmentId);
+        updatedShipment.setJobType("DRT");
+
+        ShipmentDetailsV3Response expectedResponse = new ShipmentDetailsV3Response();
+        expectedResponse.setId(shipmentId);
+        expectedResponse.setJobType("DRT");
+        mockTenantSettings();
+        mockShipmentSettings();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(existingShipment));
+        when(jsonHelper.convertValue(any(ShipmentDetails.class), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        doNothing().when(shipmentDetailsMapper).updateFromV3Patch(any(ShipmentPatchV3Request.class), any(ShipmentDetails.class));
+        when(shipmentDao.update(any(ShipmentDetails.class), eq(false))).thenReturn(updatedShipment);
+        doNothing().when(dependentServiceHelper).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        when(shipmentDetailsMapper.mapV3Response(any(ShipmentDetails.class))).thenReturn(expectedResponse);
+
+        // Act
+        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.partialUpdate(commonRequestModel);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getJobType(), actualResponse.getJobType());
+        verify(shipmentDao).findById(shipmentId);
+        verify(shipmentDao).update(any(ShipmentDetails.class), eq(false));
+    }
+
+    @Test
+    void testPartialUpdate_Success_ByShipmentId_WithChildAndCollectionUpdates() throws RunnerException {
+        // Arrange
+        String shipmentIdStr = "SHIP-001";
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setShipmentId(JsonNullable.of(shipmentIdStr));
+        patchRequest.setAdditionalDetails(new AdditionalDetailV3Request());
+        patchRequest.setCarrierDetails(new CarrierPatchV3Request());
+        patchRequest.setReferenceNumbersList(List.of(new ReferenceNumbersRequest()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(1L);
+        existingShipment.setShipmentId(shipmentIdStr);
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+
+        mockTenantSettings();
+        mockShipmentSettings();
+        when(shipmentDao.findByShipmentIdIn(List.of(shipmentIdStr))).thenReturn(List.of(existingShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        when(shipmentDao.update(any(ShipmentDetails.class), eq(false))).thenReturn(existingShipment);
+        when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(new AdditionalDetails());
+        doNothing().when(carrierDetailsMapper).updateCarrierPatchV3(any(), any());
+        when(referenceNumbersDao.updateEntityFromShipment(any(), anyLong())).thenReturn(List.of(new ReferenceNumbers()));
+        when(shipmentDetailsMapper.mapV3Response(any(ShipmentDetails.class))).thenReturn(new ShipmentDetailsV3Response());
+
+        // Act
+        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.partialUpdate(commonRequestModel);
+
+        // Assert
+        assertNotNull(actualResponse);
+        verify(shipmentDao).findByShipmentIdIn(List.of(shipmentIdStr));
+        verify(additionalDetailDao).updateEntityFromShipment(any());
+        verify(carrierDetailsMapper).updateCarrierPatchV3(any(), any());
+        verify(referenceNumbersDao).updateEntityFromShipment(any(), eq(1L));
+    }
+
+    @Test
+    void testPartialUpdate_Failure_NoIdentifierProvided() {
+        // Arrange
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request(); // All identifiers are null
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals("Request Id is null", exception.getMessage());
+    }
+
+    @Test
+    void testPartialUpdate_Failure_ShipmentNotFoundById() {
+        // Arrange
+        Long shipmentId = 999L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testPartialUpdate_Failure_MultipleShipmentsFoundByShipmentId() {
+        // Arrange
+        String shipmentIdStr = "SHIP-DUPLICATE";
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setShipmentId(JsonNullable.of(shipmentIdStr));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        when(shipmentDao.findByShipmentIdIn(List.of(shipmentIdStr)))
+                .thenReturn(List.of(new ShipmentDetails(), new ShipmentDetails())); // Return two results
+
+        // Act & Assert
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals(DaoConstants.DAO_INCORRECT_RESULT_SIZE_EXCEPTION_MSG, exception.getMessage());
+    }
+
+    @Test
+    void testPartialUpdate_Failure_ValidationException() {
+        // Arrange
+        Long shipmentId = 1L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setConsignee(new Parties());
+        existingShipment.setConsigner(new Parties());
+
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+        mockShipmentSettings();
+
+        // Return the existing shipment as the "cloned" object
+        when(jsonHelper.convertValue(any(ShipmentDetails.class), eq(ShipmentDetails.class))).thenReturn(existingShipment);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(existingShipment));
+        doThrow(new ValidationException("Invalid job type change"))
+                .when(shipmentValidationV3Util).validateShipmentCreateOrUpdate(any(), any());
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals("Invalid job type change", exception.getMessage());
     }
 
 }

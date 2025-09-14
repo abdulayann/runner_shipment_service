@@ -61,6 +61,7 @@ import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -179,6 +180,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ObjectMapper objectMapper;
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
+
+    @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
     @Autowired
     private INotesDao notesDao;
     @Autowired
@@ -199,6 +203,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private INetworkTransferDao networkTransferDao;
     private IDateTimeChangeLogService dateTimeChangeLogService;
     private IConsolidationDetailsDao consolidationDetailsDao;
+    private IAdditionalDetailDao additionalDetailDao;
     private IPartiesDao partiesDao;
     private IRoutingsDao routingsV3Dao;
     private IPackingDao packingDao;
@@ -263,6 +268,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ILogsHistoryService logsHistoryService,
             IDateTimeChangeLogService dateTimeChangeLogService,
             IConsolidationDetailsDao consolidationDetailsDao,
+            IAdditionalDetailDao additionalDetailDao,
             IPartiesDao partiesDao,
             IRoutingsDao routingsDao,
             IContainerDao containerDao,
@@ -302,6 +308,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.logsHistoryService = logsHistoryService;
         this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.consolidationDetailsDao = consolidationDetailsDao;
+        this.additionalDetailDao = additionalDetailDao;
         this.partiesDao = partiesDao;
         this.routingsV3Dao = routingsDao;
         this.orderManagementAdapter = orderManagementAdapter;
@@ -5224,6 +5231,134 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
         } catch (Exception e) {
             log.error("Failed in fetching the tenant data from V1 with error : {}", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public ShipmentDetailsV3Response partialUpdate(CommonRequestModel commonRequestModel) throws  RunnerException{
+
+        ShipmentPatchV3Request shipmentPatchRequest = (ShipmentPatchV3Request) commonRequestModel.getData();
+
+        final String shipmentIdValue = (shipmentPatchRequest.getShipmentId() != null && shipmentPatchRequest.getShipmentId().isPresent())
+                ? shipmentPatchRequest.getShipmentId().get() : null;
+
+        validatePatchRequest(shipmentPatchRequest, shipmentIdValue);
+
+        AdditionalDetailV3Request additionalDetailRequest = shipmentPatchRequest.getAdditionalDetails();
+        CarrierPatchV3Request carrierDetailRequest =  shipmentPatchRequest.getCarrierDetails();
+
+        Long id = null;
+        Optional<ShipmentDetails> oldShipmentDetails;
+        ShipmentV3Request fetchShipmentRequest = new ShipmentV3Request();
+        fetchShipmentRequest.setId(
+                (shipmentPatchRequest.getId() != null && shipmentPatchRequest.getId().isPresent())
+                        ? shipmentPatchRequest.getId().get() : null);
+
+        fetchShipmentRequest.setGuid(shipmentPatchRequest.getGuid());
+        if ((shipmentPatchRequest.getId() != null && shipmentPatchRequest.getId().isPresent()) || shipmentPatchRequest.getGuid() != null) {
+            oldShipmentDetails = retrieveByIdOrGuid(fetchShipmentRequest);
+        } else {
+            List<ShipmentDetails> shipmentDetails = shipmentDao.findByShipmentIdIn(List.of(shipmentIdValue));
+            if (CollectionUtils.isEmpty(shipmentDetails)) {
+                log.error("Shipment is not available for partial update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if (shipmentDetails.size() != 1) {
+                log.error("Multiple shipments available for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INCORRECT_RESULT_SIZE_EXCEPTION_MSG);
+            }
+            oldShipmentDetails = Optional.of(shipmentDetails.get(0));
+        }
+
+        id = oldShipmentDetails.get().getId();
+        if (!oldShipmentDetails.isPresent()) {
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentPatchRequest.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        return getPartialUpdateResponse(oldShipmentDetails, shipmentPatchRequest, id, additionalDetailRequest, carrierDetailRequest);
+    }
+
+    private void validatePatchRequest(ShipmentPatchV3Request shipmentPatchRequest, String shipmentIdValue) throws RunnerException{
+        if ( (shipmentPatchRequest.getId() == null || !shipmentPatchRequest.getId().isPresent())
+                && (shipmentPatchRequest.getGuid() == null)
+                && (shipmentPatchRequest.getShipmentId() == null || !shipmentPatchRequest.getShipmentId().isPresent()
+                || shipmentIdValue == null || shipmentIdValue.isEmpty()) ) {
+            log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Request Id is null");
+        }
+    }
+
+    public ShipmentDetailsV3Response getPartialUpdateResponse(Optional<ShipmentDetails> oldShipmentDetails,
+                                                              ShipmentPatchV3Request shipmentRequest, Long id,
+                                                              AdditionalDetailV3Request additionalDetailRequest, CarrierPatchV3Request carrierDetailRequest) throws RunnerException {
+        try {
+            ShipmentDetails newShipmentDetails = oldShipmentDetails.get();
+
+            ShipmentDetails oldEntity = jsonHelper.convertValue(newShipmentDetails, ShipmentDetails.class);
+            shipmentDetailsMapper.updateFromV3Patch(shipmentRequest, newShipmentDetails);
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            newShipmentDetails.setId(oldShipmentDetails.get().getId());
+
+            AdditionalDetails updatedAdditionalDetails = null;
+            if (additionalDetailRequest != null) {
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(
+                        jsonHelper.convertValue(additionalDetailRequest, AdditionalDetails.class));
+                newShipmentDetails.setAdditionalDetails(updatedAdditionalDetails);
+            }
+
+            CarrierDetails updatedCarrierDetails = null;
+            if (carrierDetailRequest != null) {
+                updatedCarrierDetails = oldShipmentDetails.get().getCarrierDetails();
+                carrierDetailsMapper.updateCarrierPatchV3(carrierDetailRequest, updatedCarrierDetails);
+                newShipmentDetails.setCarrierDetails(updatedCarrierDetails);
+            }
+
+            validateBeforeSave(newShipmentDetails, oldEntity);
+
+            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(newShipmentDetails, oldShipmentDetails.get());
+            if (!Objects.isNull(consolidationDetails)) {
+                newShipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
+            }
+            newShipmentDetails = shipmentDao.update(newShipmentDetails, false);
+
+            if (additionalDetailRequest != null) {
+                newShipmentDetails.setAdditionalDetails(updatedAdditionalDetails);
+            }
+            if (carrierDetailRequest != null) {
+                newShipmentDetails.setCarrierDetails(updatedCarrierDetails);
+            }
+            processListTypeRequests(id, newShipmentDetails, oldEntity, shipmentSettingsDetails, shipmentRequest);
+
+            createAuditLog(newShipmentDetails, jsonHelper.convertToJson(oldEntity), DBOperationType.UPDATE.name());
+            triggerPushToDownStream(newShipmentDetails, oldEntity, false);
+            processSyncV1AndAsyncFunctions(newShipmentDetails, oldEntity, shipmentSettingsDetails, false, null);
+
+            dependentServiceHelper.pushShipmentDataToDependentService(
+                    newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
+
+            return shipmentDetailsMapper.mapV3Response(newShipmentDetails);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void processListTypeRequests(Long id, ShipmentDetails newShipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentPatchV3Request shipmentPatchRequest) throws RunnerException {
+        List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentPatchRequest.getTruckDriverDetails();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentPatchRequest.getReferenceNumbersList();
+
+        if (truckDriverDetailsRequestList != null) {
+            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+            newShipmentDetails.setTruckDriverDetails(updatedTruckDriverDetails);
+        }
+
+        if (referenceNumbersRequestList != null) {
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+            newShipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
     }
 }
