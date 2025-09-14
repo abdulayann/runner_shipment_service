@@ -2249,7 +2249,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test

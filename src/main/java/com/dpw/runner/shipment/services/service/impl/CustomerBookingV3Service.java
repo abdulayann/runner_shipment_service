@@ -56,18 +56,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.QuoteContracts;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -166,9 +155,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     ExecutorService executorService = Executors.newFixedThreadPool(10);
     private static final Random rnd = new SecureRandom();
-
-    @Value("${booking.event.kafka.queue}")
-    private String senderQueue;
 
     @Autowired
     @Qualifier("executorServiceMasterData")
@@ -353,7 +339,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
                 // Triggering Event for customer booking for DependentServices update
-                triggerPushToDownStreamForCustomerBooking(customerBooking);
+                triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_PLATFORM_SYNC);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -362,24 +348,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
-    private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking) {
+    private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking, boolean isCreate, String sourceInfo) {
         Long bookingId = customerBooking.getId();
         String transactionId = bookingId.toString();
 
-        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | bookingId={} | transactionId={}",
-                bookingId, transactionId);
+        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | bookingId={} | transactionId={} | sourceInfo={}",
+                bookingId, transactionId, sourceInfo);
 
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(bookingId)
                 .parentEntityName(Constants.CUSTOMER_BOOKING)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .tenantId(customerBooking.getTenantId())
-                        .isCreate(true).build())
+                        .sourceInfo(sourceInfo)
+                        .isCreate(isCreate).build())
                 .build();
         dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);
 
-        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | bookingId={} | transactionId={}",
-               bookingId, bookingId);
+        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | bookingId={} | transactionId={} | sourceInfo={}",
+               bookingId, bookingId, sourceInfo);
     }
 
     @Override
@@ -424,7 +411,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
 
                 // Triggering Event for customer booking for DependentServices update
-                triggerPushToDownStreamForCustomerBooking(customerBooking);
+                triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_PLATFORM_SYNC);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -1685,7 +1672,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         processBookingChargesRequest(customerBooking, bookingChargesRequest, containerMap);
         if(request.getOrderManagementId() != null)
         {
-            pushCustomerBookingDataToDependentService(customerBooking, true);
+            triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_OMS_SYNC);
         }
         try {
             auditLogService.addAuditLog(
@@ -1935,18 +1922,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {
-        try {
-            OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder().orderManagementId(customerBooking.getOrderManagementId()).orderManagementNumber(customerBooking.getOrderManagementNumber()).moduleId(customerBooking.getBookingNumber()).moduleGuid(customerBooking.getGuid().toString()).tenantId(TenantContext.getCurrentTenant()).build();
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(orderManagement, isCreate);
-            log.info("Producing order management data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(customerBooking.getGuid()));
-        }
-        catch (Exception e) {
-            log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
-        }
-    }
-
     private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
@@ -2014,6 +1989,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             customerBooking = processReadyForShipmentBooking(customerBooking, request, tenantSettingsResponse);
         }
+        removeOrderLinkageOnCancellation(customerBooking, request);
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -2031,6 +2007,20 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(e.getMessage());
         }
         return customerBooking;
+    }
+
+    private void removeOrderLinkageOnCancellation(CustomerBooking customerBooking, CustomerBookingV3Request request) {
+        if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
+            return;
+        }
+
+        customerBooking.setOrderManagementId(null);
+        customerBooking.setOrderManagementNumber(null);
+        customerBooking = customerBookingDao.save(customerBooking);
+
+        if (request.getOrderManagementId() != null) {
+            triggerPushToDownStreamForCustomerBooking(customerBooking, false, CUSTOMER_BOOKING_TO_OMS_SYNC);
+        }
     }
 
     public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {

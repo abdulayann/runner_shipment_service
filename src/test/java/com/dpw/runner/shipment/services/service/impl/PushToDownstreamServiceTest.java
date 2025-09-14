@@ -1,10 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -17,11 +18,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -33,10 +31,8 @@ import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -333,5 +329,58 @@ class PushToDownstreamServiceTest {
         when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
         when(pickupDeliveryDetailsService.findByShipmentId(anyLong())).thenReturn(List.of(pickupDeliveryDetails));
         assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_PLATFORM_SYNC() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_PLATFORM_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_OMS_SYNC() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_OMS_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_OMS_SYNC_shouldProduceToKafka() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_OMS_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        CustomerBooking fakeCustomerBooking = CustomerBooking.builder().build();
+        fakeCustomerBooking.setOrderManagementId("ORD_NUM_00001");
+        fakeCustomerBooking.setOrderManagementNumber("ORD_MGMT_00001");
+        fakeCustomerBooking.setBookingStatus(BookingStatus.CANCELLED);
+        fakeCustomerBooking.setBookingNumber("BOOKING_NUM_00001");
+        fakeCustomerBooking.setGuid(UUID.randomUUID());
+        fakeCustomerBooking.setTenantId(100);
+
+        when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(fakeCustomerBooking));
+
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        verify(producer).produceToKafka(any(), any(), any());
     }
 }
