@@ -4192,7 +4192,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                     .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
                     .packageCount(Optional.ofNullable(container.getPacks())
-                            .filter(packs -> packs.matches("\\d+"))
                             .map(Integer::parseInt)
                             .orElse(0))
                     .packageAssigned(Boolean.TRUE)
@@ -4212,9 +4211,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         .shipmentNumber(shipmentDetail != null ? Optional.ofNullable(shipmentDetail.getShipmentId()).orElse("") : "")
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
-                        .packageCount(container != null && container.getPacks() != null && container.getPacks().matches("\\d+") ?
+                        .packageCount(container != null && container.getPacks() != null ?
                                 Optional.ofNullable(Integer.parseInt(container.getPacks())).orElse(0) : 0)
-                        .packageAssigned(shipmentDetail != null && container != null ? isPackageAttached(shipmentDetail, container) : false)
+                        .packageAssigned(isPackageAttached(shipmentDetail, container))
                         .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
                         .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
                         .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
