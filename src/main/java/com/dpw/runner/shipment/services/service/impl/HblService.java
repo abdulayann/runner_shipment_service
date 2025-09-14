@@ -70,6 +70,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.analysis.function.Add;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -505,11 +506,7 @@ public class HblService implements IHblService {
         Routings routing = getRoutingsForShipment(shipmentDetail);
 
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
-        PartyMapper mapper = (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
-                ? this::mapPartiesV3
-                : this::mapPartiesLegacy;
-
-        mapper.apply(shipmentDetail, additionalDetails, hblData);
+        mapParties(shipmentDetail, additionalDetails, hblData);
 
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
@@ -591,19 +588,23 @@ public class HblService implements IHblService {
         }
     }
 
+    private void mapParties(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            mapPartiesV3(shipmentDetail, additionalDetails, hblData);
+        } else {
+            mapPartiesLegacy(shipmentDetail, additionalDetails, hblData);
+        }
+    }
+
     private void mapPartiesV3(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
-        mapDeliveryDataInHblV3(additionalDetails, hblData);
+        mapDeliveryAgentDataInHblV3(additionalDetails, hblData);
         mapConsignerConsigneeToHblV3(shipmentDetail, hblData);
-        mapForwardDataInHblV3(additionalDetails, hblData);
+        mapForwardingAgentDataInHblV3(additionalDetails, hblData);
     }
 
     private void mapPartiesLegacy(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData) {
         mapConsignerConsigneeToHbl(shipmentDetail, hblData);
         mapDeliveryDataInHbl(additionalDetails, hblData);
-    }
-    @FunctionalInterface
-    interface PartyMapper {
-        void apply(ShipmentDetails shipmentDetail, AdditionalDetails additionalDetails, HblDataDto hblData);
     }
 
     private String generateNumberAndKindOfPack(String noOfPack, String packType) {
@@ -644,14 +645,14 @@ public class HblService implements IHblService {
         return routing;
     }
 
-    private void mapDeliveryDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
-        if (!Objects.isNull(additionalDetails.getImportBroker())) {
-            Parties broker = additionalDetails.getImportBroker();
-            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
-                hblData.setDeliveryAgentName(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
+    private void mapDeliveryAgentDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
+        if (Objects.nonNull(additionalDetails.getImportBroker())) {
+            Parties importBroker = additionalDetails.getImportBroker();
+            if (Objects.nonNull(importBroker.getOrgData()) && importBroker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
+                hblData.setDeliveryAgentName(String.valueOf(importBroker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
-            if (additionalDetails.getImportBroker().getAddressData() != null) {
-                Map<String, String> addressComponents = extractAddressComponents(additionalDetails.getImportBroker().getAddressData());
+            if (Objects.nonNull(importBroker.getAddressData())) {
+                Map<String, String> addressComponents = extractAddressComponents(importBroker.getAddressData());
                 hblData.setDeliveryAgentAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());
                 hblData.setDeliveryAgentAddressLine2(addressComponents.get(PartiesConstants.ADDRESS2).toUpperCase());
                 hblData.setDeliveryAgentCity(addressComponents.get(PartiesConstants.CITY).toUpperCase());
@@ -662,14 +663,14 @@ public class HblService implements IHblService {
         }
     }
 
-    private void mapForwardDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
-        if (!Objects.isNull(additionalDetails.getExportBroker())) {
-            Parties broker = additionalDetails.getExportBroker();
-            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
-                hblData.setForwarderName(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
+    private void mapForwardingAgentDataInHblV3(AdditionalDetails additionalDetails, HblDataDto hblData) {
+        if (Objects.nonNull(additionalDetails.getExportBroker())) {
+            Parties exportBroker = additionalDetails.getExportBroker();
+            if (Objects.nonNull(exportBroker.getOrgData()) && exportBroker.getOrgData().containsKey(PartiesConstants.FULLNAME)) {
+                hblData.setForwarderName(String.valueOf(exportBroker.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
             }
-            if (additionalDetails.getExportBroker().getAddressData() != null) {
-                Map<String, String> addressComponents = extractAddressComponents(additionalDetails.getExportBroker().getAddressData());
+            if (Objects.nonNull(exportBroker.getAddressData())) {
+                Map<String, String> addressComponents = extractAddressComponents(exportBroker.getAddressData());
                 hblData.setForwarderAddressLine1(addressComponents.get(PartiesConstants.ADDRESS1).toUpperCase());
                 hblData.setForwarderAddressLine2(addressComponents.get(PartiesConstants.ADDRESS2).toUpperCase());
                 hblData.setForwarderCity(addressComponents.get(PartiesConstants.CITY).toUpperCase());
@@ -681,7 +682,7 @@ public class HblService implements IHblService {
     }
 
     private void mapConsignerConsigneeToHblV3(ShipmentDetails shipmentDetail, HblDataDto hblData) {
-        if (shipmentDetail.getConsigner() != null) {
+        if (Objects.nonNull(shipmentDetail) && Objects.nonNull(shipmentDetail.getConsigner())) {
             if (shipmentDetail.getConsigner().getOrgData() != null) {
                 hblData.setShipperName(StringUtility.convertToString(
                         shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
@@ -696,7 +697,7 @@ public class HblService implements IHblService {
                 hblData.setShipperCountry(convertCountryCodeTo2Letters(addressComponents.get(PartiesConstants.COUNTRY).toUpperCase()));
             }
         }
-        if (shipmentDetail.getConsignee() != null) {
+        if (Objects.nonNull(shipmentDetail) && Objects.nonNull(shipmentDetail.getConsignee())) {
             if (shipmentDetail.getConsignee().getOrgData() != null) {
                 hblData.setConsigneeName(StringUtility.convertToString(
                         shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
@@ -712,6 +713,7 @@ public class HblService implements IHblService {
             }
         }
     }
+
     private String convertCountryCodeTo2Letters(String countryCode) {
         if (countryCode != null && countryCode.length() == 3) {
             return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
@@ -730,8 +732,6 @@ public class HblService implements IHblService {
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
         if (addressData.containsKey(PartiesConstants.COUNTRY))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
-        if (addressData.containsKey(PartiesConstants.STATE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.STATE)));
         if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
             sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
         if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
@@ -742,7 +742,7 @@ public class HblService implements IHblService {
 
     private Map<String, String> extractAddressComponents(Map<String, Object> addressData) {
         Map<String, String> components = new HashMap<>();
-        if (addressData == null) {
+        if (Objects.isNull(addressData)) {
             return components;
         }
         components.put(PartiesConstants.ADDRESS1, StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
@@ -990,13 +990,13 @@ public class HblService implements IHblService {
                 hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
                 hblParties.add(hblParty);
-            }else {
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            hblParty.setAddress(constructAddress(party.getAddressData()));
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            hblParties.add(hblParty);
-        }
+            } else {
+                hblParty.setIsShipmentCreated(true);
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                hblParty.setAddress(constructAddress(party.getAddressData()));
+                hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+                hblParties.add(hblParty);
+            }
         }
         return hblParties;
     }
@@ -1359,11 +1359,12 @@ public class HblService implements IHblService {
                 hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
                 hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            }else
+            } else {
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
                 hblParty.setAddress(constructAddress(party.getAddressData()));
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            }
             if(hbl.getHblNotifyParty() == null){
                 hbl.setHblNotifyParty(new ArrayList<>());
             }

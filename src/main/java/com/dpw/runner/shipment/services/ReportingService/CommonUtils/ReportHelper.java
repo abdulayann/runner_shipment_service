@@ -113,18 +113,18 @@ public class ReportHelper {
         return list;
     }
 
-    private static String formatCountryCode(String countryCode) {
-        if (Strings.isNullOrEmpty(countryCode)) {
-            return null;
-        }
-        if (countryCode.length() == 2) {
-            return countryCode.toUpperCase();
-        }
-        if (countryCode.length() == 3) {
-            return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
-        }
-        return countryCode;
-    }
+//    private static String formatCountryCode(String countryCode) {
+//        if (Strings.isNullOrEmpty(countryCode)) {
+//            return null;
+//        }
+//        if (countryCode.length() == 2) {
+//            return countryCode.toUpperCase();
+//        }
+//        if (countryCode.length() == 3) {
+//            return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
+//        }
+//        return countryCode;
+//    }
 
 
     public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
@@ -277,34 +277,56 @@ public class ReportHelper {
         return list;
 
     }
-    public static List<String> getOrgAddressWithPhoneEmailLine(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
-    {
-        List<String> list = new ArrayList<>();
-        if(StringUtility.isNotEmpty(name))
-            list.add(name);
-        if(StringUtility.isNotEmpty(address1))
-            list.add(address1);
-        if(StringUtility.isNotEmpty(address2))
-            list.add(address2);
 
+    public static List<String> getOrgAddressWithNameAndCity(String name, String address1, String address2,
+                                                            String city, String stateCode, String pinCode, String countryCode) {
+        List<String> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
 
-        if (StringUtility.isNotEmpty(city))
-            sb.append(city).append(" ");
-        if (StringUtility.isNotEmpty(stateCode))
-            sb.append(stateCode).append(" ");
-        if (StringUtility.isNotEmpty(pinCode))
-            sb.append(pinCode).append(" ");
-        // Convert 3-letter country code to 2-letter if needed
-        String formattedCountryCode = formatCountryCode(countryCode);
-        if (!Strings.isNullOrEmpty(formattedCountryCode)) {
-            sb.append(formattedCountryCode).append(" ");
+        // Add Name in the first Line to the list if not empty
+        if (StringUtility.isNotEmpty(name)) {
+            sb.append(name).append("\n");
         }
-        if (StringUtility.isNotEmpty(sb.toString()))
-            list.add(sb.toString());
 
-        return list;
+        // Add Address lines (address1 and address2) with a line difference in between if both are present
+        if (StringUtility.isNotEmpty(address1)) {
+            sb.append(address1).append("\n");
+        }
+        if (StringUtility.isNotEmpty(address2)) {
+            sb.append(address2).append("\n");
+        }
 
+        // Add City, State, Zipcode, and Country in the same line, with space between them if present/non-empty
+        StringBuilder addressLine2 = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city)) {
+            addressLine2.append(city).append(" ");
+        }
+        if (StringUtility.isNotEmpty(stateCode)) {
+            addressLine2.append(stateCode).append(" ");
+        }
+        if (StringUtility.isNotEmpty(pinCode)) {
+            addressLine2.append(pinCode).append(" ");
+        }
+
+        if (StringUtility.isNotEmpty(countryCode)) {
+            addressLine2.append(countryCode);
+        }
+
+        // Add address line 2 to the main StringBuilder if it's not empty
+        // and remove trailing space if any
+        if (StringUtility.isNotEmpty(addressLine2.toString())) {
+            sb.append(addressLine2.toString().trim());
+        }
+
+        // Only add the line to the list if something is in it
+        // Trim to remove any leading/trailing spaces
+        if (sb.length() > 0) {
+            list.add(sb.toString().trim());
+        }
+
+        // Return the list (empty list if no valid information is available)
+        return list.isEmpty() ? Collections.emptyList() : list;
     }
 
     public static List<String> getOrgAddress(PartiesModel party) {
