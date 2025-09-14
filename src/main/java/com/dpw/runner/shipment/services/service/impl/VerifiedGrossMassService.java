@@ -10,15 +10,29 @@ import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -88,33 +102,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         verifiedGrossMassValidationUtil.validateServiceType(request);
         Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
-        if (EntityType.CONSOLIDATION.equals(request.getEntityType())) {
-            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
-            verifiedGrossMass.setEntityNumber(consolidationDetails.getConsolidationNumber());
-            //read only fields
-            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
-            if (Objects.isNull(sailingInformation)) {
-                sailingInformation = new SailingInformation();
-            }
-            if (consolidationDetails.getCarrierDetails() != null) {
-                sailingInformation.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-            }
-            verifiedGrossMass.setSailingInformation(sailingInformation);
-        } else if (EntityType.CARRIER_BOOKING.equals(request.getEntityType())) {
-            CarrierBooking carrierBooking = (CarrierBooking) entity;
-            verifiedGrossMass.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
-            verifiedGrossMass.setCarrierBlNo(carrierBooking.getCarrierBlNo());
-            verifiedGrossMass.setEntityNumber(carrierBooking.getBookingNo());
-            //read only fields
-            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
-            if (Objects.isNull(sailingInformation)) {
-                sailingInformation = new SailingInformation();
-            }
-            if (Objects.nonNull(carrierBooking.getSailingInformation())) {
-                sailingInformation.setCarrier(carrierBooking.getSailingInformation().getCarrier());
-            }
-            verifiedGrossMass.setSailingInformation(sailingInformation);
-        }
+        updateReadOnlyDataToEntity(request, entity, verifiedGrossMass);
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
@@ -126,7 +114,14 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         if (verifiedGrossMass.isEmpty()) {
             throw new ValidationException("Invalid vgm id");
         }
-        return jsonHelper.convertValue(verifiedGrossMass.get(), VerifiedGrossMassResponse.class);
+        VerifiedGrossMass verifiedGrossMassEntity = verifiedGrossMass.get();
+        VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(verifiedGrossMassEntity, VerifiedGrossMassResponse.class);
+        if (EntityType.CARRIER_BOOKING.equals(verifiedGrossMassEntity.getEntityType())) {
+            CarrierBookingInfoProjection carrierBookingInfo = carrierBookingDao.findCarrierBookingInfoById(verifiedGrossMassEntity.getEntityId());
+            verifiedGrossMassResponse.setBookingStatus(carrierBookingInfo.getBookingStatus() != null ? CarrierBookingStatus.valueOf(carrierBookingInfo.getBookingStatus()) : null);
+            verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
+        }
+        return verifiedGrossMassResponse;
     }
 
     @Override
@@ -162,8 +157,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
 
-        List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
-        return responseList;
+        return new ArrayList<>(verifiedGrossMassListResponses);
     }
 
     @Override
@@ -175,9 +169,60 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         if (verifiedGrossMassOptional.isEmpty()) {
             throw new ValidationException("Invalid verified gross mass id");
         }
+        VerifiedGrossMass verifiedGrossMassEntity = verifiedGrossMassOptional.get();
+        if (!Objects.equals(verifiedGrossMassEntity.getEntityId(), request.getEntityId())) {
+            throw new ValidationException("Entity Id mismatch with existing entity id");
+        }
+        verifiedGrossMassValidationUtil.validateServiceType(request);
+        Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
+        //update header information from existing entity
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
+        if (EntityType.CONSOLIDATION.equals(request.getEntityType())) {
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            verifiedGrossMass.setEntityNumber(consolidationDetails.getConsolidationNumber());
+        } else if (EntityType.CARRIER_BOOKING.equals(request.getEntityType())) {
+            CarrierBooking carrierBooking = (CarrierBooking) entity;
+            verifiedGrossMass.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
+            verifiedGrossMass.setCarrierBlNo(carrierBooking.getCarrierBlNo());
+            verifiedGrossMass.setEntityNumber(carrierBooking.getBookingNo());
+        }
+        if (Objects.isNull(verifiedGrossMass.getSailingInformation())) {
+            verifiedGrossMass.setSailingInformation(new SailingInformation());
+        }
+        verifiedGrossMass.setStatus(verifiedGrossMassEntity.getStatus());
+        verifiedGrossMass.getSailingInformation().setCarrier(verifiedGrossMassEntity.getSailingInformation().getCarrier());
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+    }
+
+    private static void updateReadOnlyDataToEntity(VerifiedGrossMassRequest request, Object entity, VerifiedGrossMass verifiedGrossMass) {
+        if (EntityType.CONSOLIDATION.equals(request.getEntityType())) {
+            ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
+            verifiedGrossMass.setEntityNumber(consolidationDetails.getConsolidationNumber());
+            //read only fields
+            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
+            if (Objects.isNull(sailingInformation)) {
+                sailingInformation = new SailingInformation();
+            }
+            if (consolidationDetails.getCarrierDetails() != null) {
+                sailingInformation.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+            }
+            verifiedGrossMass.setSailingInformation(sailingInformation);
+        } else if (EntityType.CARRIER_BOOKING.equals(request.getEntityType())) {
+            CarrierBooking carrierBooking = (CarrierBooking) entity;
+            verifiedGrossMass.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
+            verifiedGrossMass.setCarrierBlNo(carrierBooking.getCarrierBlNo());
+            verifiedGrossMass.setEntityNumber(carrierBooking.getBookingNo());
+            //read only fields
+            SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
+            if (Objects.isNull(sailingInformation)) {
+                sailingInformation = new SailingInformation();
+            }
+            if (Objects.nonNull(carrierBooking.getSailingInformation())) {
+                sailingInformation.setCarrier(carrierBooking.getSailingInformation().getCarrier());
+            }
+            verifiedGrossMass.setSailingInformation(sailingInformation);
+        }
     }
 
     @Override
@@ -253,6 +298,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         verifiedGrossMassResponse.setEntityNumber(consolidationDetails.getConsolidationNumber());
         SailingInformationResponse sailingInformationResponse = new SailingInformationResponse();
         sailingInformationResponse.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        sailingInformationResponse.setVerifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff());
 
         verifiedGrossMassResponse.setSailingInformation(sailingInformationResponse);
         //sending agent is origin agent, receivingAgent is destination agent in consol
@@ -312,7 +358,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         SailingInformationResponse sailingInformationResponse = new SailingInformationResponse();
         sailingInformationResponse.setCarrier(carrierBooking.getSailingInformation().getCarrier());
-
+        sailingInformationResponse.setVerifiedGrossMassCutoff(carrierBooking.getSailingInformation().getVerifiedGrossMassCutoff());
         verifiedGrossMassResponse.setSailingInformation(sailingInformationResponse);
         //reference numbers
         List<ReferenceNumberResponse> referenceNumbersResponses = new ArrayList<>();

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierBookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -56,5 +57,10 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     @Override
     public CarrierBooking findByBookingNo(String bookingNo) {
         return carrierBookingRepository.findByBookingNo(bookingNo);
+    }
+
+    @Override
+    public CarrierBookingInfoProjection findCarrierBookingInfoById(Long entityId) {
+        return carrierBookingRepository.findCarrierBookingInfoById(entityId);
     }
 }
