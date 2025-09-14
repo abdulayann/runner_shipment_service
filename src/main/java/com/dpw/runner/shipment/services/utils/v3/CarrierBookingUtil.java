@@ -98,8 +98,5 @@ public class CarrierBookingUtil {
             String randomBookingNumber = StringUtility.getRandomString(10);
             carrierBookingEntity.setBookingNo(prefix + randomBookingNumber);
         }
-
     }
-
-
 }

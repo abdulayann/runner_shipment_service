@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -153,6 +156,71 @@ class CarrierBookingControllerTest {
 
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDefault_Success() throws Exception {
+        // Mock
+        Long entityId = 123L;
+        EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
+        CarrierBookingResponse mockResponse = new CarrierBookingResponse();
+
+        when(carrierBookingService.getDefaultCarrierBookingValues(type, entityId))
+                .thenReturn(mockResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.getDefault(entityId, type);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(carrierBookingService).getDefaultCarrierBookingValues(type, entityId);
+    }
+
+    @Test
+    void getDefault_Exception_WithMessage() throws Exception {
+        // Mock
+        Long entityId = 123L;
+        EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
+        String errorMessage = "Custom error message";
+
+        when(carrierBookingService.getDefaultCarrierBookingValues(type, entityId))
+                .thenThrow(new RuntimeException(errorMessage));
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.getDefault(entityId, type);
+
+        // Assert
+        verify(carrierBookingService).getDefaultCarrierBookingValues(type, entityId);
+    }
+
+    @Test
+    void getDefault_Exception_WithoutMessage() throws Exception {
+        // Mock
+        Long entityId = 123L;
+        EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
+
+        when(carrierBookingService.getDefaultCarrierBookingValues(type, entityId))
+                .thenThrow(new RuntimeException((String) null));
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.getDefault(entityId, type);
+
+        // Assert
+        verify(carrierBookingService).getDefaultCarrierBookingValues(type, entityId);
+    }
+
+    @Test
+    void cancel_Success() throws Exception {
+        // Mock
+        Long id = 123L;
+        doNothing().when(carrierBookingService).cancel(id);
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.cancel(id);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(carrierBookingService).cancel(id);
     }
 
 }
