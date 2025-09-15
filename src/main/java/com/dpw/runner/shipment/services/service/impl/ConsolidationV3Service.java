@@ -378,6 +378,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
             beforeSave(consolidationDetails, null, true);
 
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getDestinationLocCode()!=null) {
+                    consolidationDetails.setReceivingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
+                }
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getOriginLocCode()!=null) {
+                    consolidationDetails.setSendingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
+                }
+            }
+
             getConsolidation(consolidationDetails);
             Long id = consolidationDetails.getId();
             containerAssignedToShipmentCargo = setContainerAndPackingList(consolidationDetails, true, shipmentSettingsDetails, true, false, customerBookingV3Request.getContainersList(), id, customerBookingV3Request.getPackingList(), customerBookingV3Request);

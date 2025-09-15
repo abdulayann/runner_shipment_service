@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
@@ -203,23 +204,37 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void setCountryFilterInParties(ShipmentDetails shipmentDetails) {
-        if(shipmentDetails.getClient() != null)
-            shipmentDetails.getClient().setCountryCode(shipmentDetails.getClientCountry());
-        if(shipmentDetails.getConsigner() != null)
+        if(shipmentDetails.getClient() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getClientCountry());
+            shipmentDetails.getClient().setCountryCode(country);
+        }
+        if(shipmentDetails.getConsigner() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsignorCountry());
             shipmentDetails.getConsigner().setCountryCode(shipmentDetails.getConsignorCountry());
-        if(shipmentDetails.getConsignee() != null)
-            shipmentDetails.getConsignee().setCountryCode(shipmentDetails.getConsigneeCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null)
-            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(shipmentDetails.getNotifyPartyCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null)
-            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
-            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+        }
+        if(shipmentDetails.getConsignee() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsigneeCountry());
+            shipmentDetails.getConsignee().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getNotifyPartyCountry());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(country);
+        }
         if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
             for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
                 if(shipmentAddress.getOrgData()!=null  && shipmentAddress.getOrgData().containsKey("Country")
-                        && shipmentAddress.getOrgData().get("Country")!=null)
-                    shipmentAddress.setCountryCode((String) shipmentAddress.getOrgData().get("Country"));
+                        && shipmentAddress.getOrgData().get("Country")!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) shipmentAddress.getOrgData().get("Country"));
+                    shipmentAddress.setCountryCode(country);
+                }
             }
         }
     }
