@@ -214,6 +214,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
@@ -7504,8 +7505,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentRetrieveExternalResponse.setStatus(0);
 
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
-        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class))).thenReturn(shipmentRetrieveExternalResponse);
-        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(commonUtils.setIncludedFieldsToResponse(same(shipmentDetailsEntity), anySet(), any(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());

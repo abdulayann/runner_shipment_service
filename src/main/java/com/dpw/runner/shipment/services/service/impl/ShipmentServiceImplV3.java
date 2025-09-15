@@ -517,33 +517,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private ShipmentRetrieveExternalResponse fetchShipmentRetrieveExternalResponse(String source, CommonGetRequest request, double start) throws AuthenticationException, RunnerException {
-        if (request.getId() == null && request.getGuid() == null) {
-            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
-            throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
-        }
-        Long id = request.getId();
-        Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
-        if (!shipmentDetails.isPresent()) {
-            log.debug(SHIPMENT_DETAILS_IS_NULL_MESSAGE, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        double current = System.currentTimeMillis();
-        log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, id, LoggerHelper.getRequestIdFromMDC(), current - start);
+        ShipmentDetails shipmentDetailsEntity = fetchShipmentDetailsForExternal(source, request, start);
 
-        ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
         ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
         var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
         containerTeuFuture.join();
-
+        double current = System.currentTimeMillis();
         ShipmentRetrieveExternalResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveExternalResponse.class);
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-        if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length) {
-            response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
-        }
-        setDgPackCountAndTypeExternalResponse(shipmentDetailsEntity, response);
-        setRoutingsExternalResponse(shipmentDetailsEntity, response);
-        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
-        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
     }
 
@@ -565,19 +546,51 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     public ResponseEntity<IRunnerResponse> retrieveShipmentDataByIdUsingIncludeColumns(CommonRequestModel commonRequestModel, String source) {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            double start = System.currentTimeMillis();
             if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
                 throw new ValidationException(SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
             }
             Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
             CommonUtils.includeRequiredColumns(includeColumns);
-            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalResponse(source, request, start);
+            double start = System.currentTimeMillis();
+            ShipmentRetrieveExternalResponse response = fetchShipmentRetrieveExternalPartialResponse(source, request, start, includeColumns);
             ShipmentRetrieveExternalResponse filteredResponse = (ShipmentRetrieveExternalResponse) commonUtils.setIncludedFieldsToResponse(response, includeColumns, new ShipmentRetrieveExternalResponse());
             return ResponseHelper.buildSuccessResponse(filteredResponse);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private ShipmentRetrieveExternalResponse fetchShipmentRetrieveExternalPartialResponse(String source, CommonGetRequest request, double start, Set<String> includeColumns) throws AuthenticationException, RunnerException {
+        ShipmentDetails shipmentDetailsEntity = fetchShipmentDetailsForExternal(source, request, start);
+
+        handleContainerAndTeuCount(includeColumns, shipmentDetailsEntity);
+
+        return (ShipmentRetrieveExternalResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetailsEntity, includeColumns, new ShipmentRetrieveExternalResponse());
+    }
+
+    private ShipmentDetails fetchShipmentDetailsForExternal(String source, CommonGetRequest request, double start) throws RunnerException, AuthenticationException{
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
+        }
+        Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
+        if (!shipmentDetails.isPresent()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_MESSAGE, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        double current = System.currentTimeMillis();
+        log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, request.getId(), LoggerHelper.getRequestIdFromMDC(), current - start);
+        return shipmentDetails.get();
+    }
+
+    private void handleContainerAndTeuCount(Set<String> includeColumns, ShipmentDetails shipmentDetailsEntity){
+        if (includeColumns.containsAll(Arrays.asList("containerCount", "teuCount"))) {
+            ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+            var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
+            containerTeuFuture.join();
         }
     }
 

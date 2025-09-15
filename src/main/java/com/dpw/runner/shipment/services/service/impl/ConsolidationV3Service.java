@@ -4943,7 +4943,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // validate id's and non empty includedColumns in request
         validateRequest(request);
-
         Long id = request.getId();
 
         // get consolidation details acc to source
@@ -4955,11 +4954,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
         CommonUtils.includeRequiredColumns(includeColumns);
 
-        ConsolidationDetailsV3ExternalResponse response = (ConsolidationDetailsV3ExternalResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, includeColumns, new ConsolidationDetailsV3ExternalResponse());
-        // calculate Shipment Weight and Volume for external resp
-        calculateShipmentWtVolDetail(consolDetails, response);
-
-        return response;
+        return (ConsolidationDetailsV3ExternalResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, includeColumns, new ConsolidationDetailsV3ExternalResponse());
     }
 
     private void validateRequest(CommonGetRequest request) throws RunnerException{
