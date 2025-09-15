@@ -180,7 +180,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 shipmentDetails.setParentContractId(parentContactId);
             }
             if(!Objects.isNull(shipmentDetails.getDestinationContractId())) {
-                String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
+                String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getDestinationContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
                 shipmentDetails.setDestinationParentContractId(destinationParentContactId);
             }
         }
