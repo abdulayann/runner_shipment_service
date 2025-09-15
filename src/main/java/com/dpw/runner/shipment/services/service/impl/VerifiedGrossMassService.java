@@ -68,7 +68,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final ExecutorService executorServiceMasterData;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final ICommonContainersRepository commonContainersRepository;
-    private PartiesResponseMapper partiesResponseMapper;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, ICommonContainersRepository commonContainersRepository) {
