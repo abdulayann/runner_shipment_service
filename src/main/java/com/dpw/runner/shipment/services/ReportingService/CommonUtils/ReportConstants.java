@@ -1566,4 +1566,6 @@ public class ReportConstants {
 
     public static final String PACKAGE_STRING = "PACKAGE(S)";
     public static final String CONTAINERS_STRING = "CONTAINERS";
+    public static final String BL_RELEASE_TYPE = "BL_ReleaseType";
+    public static final String S_MASTER_BILL = "S_MasterBill";
 }
