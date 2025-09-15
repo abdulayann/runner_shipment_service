@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,5 +21,5 @@ public interface ITransactionHistoryDao {
 
     TransactionHistory save(TransactionHistory transactionHistory);
 
-    List<TransactionHistory> findAllByVerifiedGrossMassId(Long verifiedGrossMassId);
+    List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType);
 }
