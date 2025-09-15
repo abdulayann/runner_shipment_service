@@ -504,7 +504,7 @@ public class HblReport extends IReport {
             this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
-
+        dictionary.put(BL_RELEASE_TYPE, ORIGINAL);
         return dictionary;
     }
 

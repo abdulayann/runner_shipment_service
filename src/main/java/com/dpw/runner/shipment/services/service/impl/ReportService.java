@@ -2174,9 +2174,7 @@ public class ReportService implements IReportService {
 
     private byte[] getBytesForMainDoc(DocPages pages, String reportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int copyCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
         if (copyCount > 0) {
-            json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
-            json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
-            json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+            setCopyDetailsInJson(json, reportRequest);
             if (reportRequest.isPrintForParties()) {
                 mainDoc = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null ? "" : json.get(ReportConstants.HAWB_NO).toString(), json, pages);
             } else {
@@ -2189,6 +2187,16 @@ public class ReportService implements IReportService {
 
         }
         return mainDoc;
+    }
+
+    private void setCopyDetailsInJson(Map<String, Object> json, ReportRequest reportRequest) {
+        json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
+        json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
+        json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+
+        switch (reportRequest.getReportInfo()) {
+            case HOUSE_BILL, SEAWAY_BILL -> json.put(ReportConstants.BL_RELEASE_TYPE, "NON-NEGOTIABLE COPY");
+        }
     }
 
     private String getLogopath(DocPages pages, String reportInfo, Map<String, Object> json, String hbltype) {
