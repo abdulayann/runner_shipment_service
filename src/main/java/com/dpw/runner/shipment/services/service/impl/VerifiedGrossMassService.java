@@ -28,8 +28,6 @@ import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
-import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
-import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -42,7 +40,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersR
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
@@ -87,13 +84,11 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil;
     private final ICommonContainersRepository commonContainersRepository;
     private final ITransactionHistoryDao transactionHistoryDao;
-    private final IntraCommonKafkaHelper kafkaHelper;
-
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
-                                    ICommonContainersRepository commonContainersRepository, ITransactionHistoryDao transactionHistoryDao, IntraCommonKafkaHelper kafkaHelper, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil) {
+                                    ICommonContainersRepository commonContainersRepository, ITransactionHistoryDao transactionHistoryDao, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -105,7 +100,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.commonContainersRepository = commonContainersRepository;
         this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
         this.transactionHistoryDao = transactionHistoryDao;
-        this.kafkaHelper = kafkaHelper;
     }
 
     @Override
@@ -164,7 +158,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                     response.setActionStatusDescription(vgmStatusDescription);
                     return response;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         // Return a success response with the list of TransactionHistoryResponse
         List<IRunnerResponse> runnerResponseList = new ArrayList<>(responseList);
@@ -505,7 +499,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         List<CommonContainers> updatedContainers = commonContainersRepository.saveAll(containers);
         List<CommonContainerResponse> responseDtos = updatedContainers.stream()
         .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
-        .collect(Collectors.toList());
+                .toList();
         // Convert to response DTOs
         return responseDtos;
     }
