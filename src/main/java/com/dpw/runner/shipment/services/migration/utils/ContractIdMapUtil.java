@@ -53,6 +53,7 @@ public class ContractIdMapUtil {
         // First check AppConfig
         String appConfigParentContractId = getParentContractIdFromAppConfig(contractId, env, type);
         if (appConfigParentContractId != null) {
+            log.info("ParentContractId fetched from AppConfig is {}", appConfigParentContractId);
             return appConfigParentContractId;
         }
 
@@ -63,7 +64,9 @@ public class ContractIdMapUtil {
             log.error("No contract map found for key: " + key);
             throw new IllegalArgumentException("No contract map found for key: " + key);
         }
-        return innerContractMap.get(contractId);
+        String parentContractId = innerContractMap.get(contractId);
+        log.info("ParentContractId fetched from Local contractMap is {}", parentContractId);
+        return parentContractId;
     }
 
     private String getParentContractIdFromAppConfig(String contractId, String env, String type) {
