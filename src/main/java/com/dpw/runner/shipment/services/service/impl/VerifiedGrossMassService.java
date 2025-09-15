@@ -156,12 +156,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
             VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
-            //  added logic for setting consolNo and carrierBookingNo based on entityType
-            if (Constants.CONSOLIDATION.equalsIgnoreCase(String.valueOf(verifiedGrossMass.getEntityType()))) {
-                verifiedGrossMassListResponse.setConsolNo(verifiedGrossMass.getEntityNumber());
-            } else if (CARRIER_BOOKING.equalsIgnoreCase(String.valueOf(verifiedGrossMass.getEntityType()))) {
-                verifiedGrossMassListResponse.setCarrierBookingNo(verifiedGrossMass.getEntityNumber());
-            }
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
 
