@@ -5636,6 +5636,8 @@ public abstract class IReport {
                 additional.getOwnership() != null ? additional.getOwnership().getDescription() : null);
         dictionary.put(S_PASSED_BY,
                 additional.getPassedBy() != null ? additional.getPassedBy().getDescription() : null);
+
+        dictionary.put(ReportConstants.S_MASTER_BILL, details.getMasterBill());
     }
 
     private void addNullAdditionalFields(Map<String, Object> dictionary) {
