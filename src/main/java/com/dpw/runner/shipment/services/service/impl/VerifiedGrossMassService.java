@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -7,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.mapper.PartiesResponseMapper;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -51,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
@@ -65,7 +68,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final ExecutorService executorServiceMasterData;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final ICommonContainersRepository commonContainersRepository;
-
+    private PartiesResponseMapper partiesResponseMapper;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, ICommonContainersRepository commonContainersRepository) {
@@ -126,6 +129,12 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
             VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
+            //  added logic for setting consolNo and carrierBookingNo based on entityType
+            if (Constants.CONSOLIDATION.equalsIgnoreCase(verifiedGrossMass.getEntityType())) {
+                verifiedGrossMassListResponse.setConsolNo(verifiedGrossMass.getEntityNumber());
+            } else if (CARRIER_BOOKING.equalsIgnoreCase(verifiedGrossMass.getEntityType())) {
+                verifiedGrossMassListResponse.setCarrierBookingNo(verifiedGrossMass.getEntityNumber());
+            }
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
 
