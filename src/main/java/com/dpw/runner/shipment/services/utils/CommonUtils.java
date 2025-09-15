@@ -3058,5 +3058,72 @@ public class CommonUtils {
         }
         return null;
     }
+
+    public static String constructAddress(Map<String, Object> addressData) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+
+        if (addressData != null) {
+            // Address1
+            if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
+                ));
+            }
+
+            // Address2
+            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+                sb.append(newLine).append(
+                        StringUtility.toUpperCase(
+                                StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
+                        )
+                );
+            }
+
+            // City + State + Zip + Country in one line
+            StringBuilder line3 = new StringBuilder(constructAddressL3(addressData));
+
+            if (!line3.isEmpty()) {
+                sb.append(newLine).append(line3);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static String constructAddressL3(Map<String, Object> addressData) {
+        StringBuilder line3 = new StringBuilder();
+        if (addressData.containsKey(PartiesConstants.CITY)) {
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.STATE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
+            ));
+        }
+        return line3.toString();
+    }
+
+    private static String getCountryName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        String countryName = CountryListHelper.ISO3166.getCountryNameByCode(code);
+        return StringUtility.isNotEmpty(countryName) ? countryName : code;
+    }
     
 }
