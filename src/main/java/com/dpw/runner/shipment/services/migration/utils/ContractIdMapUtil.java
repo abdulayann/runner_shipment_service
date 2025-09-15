@@ -25,7 +25,7 @@ public class ContractIdMapUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Map<String, String>> contractMap;
-    private static final String CONTRACT_FILE_PATH = "src/main/java/com/dpw/runner/shipment/services/migration/utils/ContractIdsJsonMap.json";
+    private static final String CONTRACT_FILE_PATH = "src/main/resources/ContractIdsJsonMap.json";
 
     public ContractIdMapUtil() {
         Map<String, Map<String, String>> tempMap = new HashMap<>();
