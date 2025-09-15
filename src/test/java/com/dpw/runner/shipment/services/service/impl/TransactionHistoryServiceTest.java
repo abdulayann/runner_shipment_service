@@ -80,7 +80,7 @@ public class TransactionHistoryServiceTest {
         responseMock.setActionStatusDescription("Confirmed By Carrier");
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(transactionHistoryDao.findAllByEntityIdAndEntityType(1L, EntityTypeTransactionHistory.VGM)).thenReturn(List.of(history));
+        when(transactionHistoryDao.findAllByEntityIdAndEntityType(1L, EntityTypeTransactionHistory.VGM.name())).thenReturn(List.of(history));
         when(jsonHelper.convertValue(eq(history), eq(TransactionHistoryResponse.class))).thenReturn(responseMock);
 
         ResponseEntity<IRunnerResponse> response = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
@@ -99,7 +99,7 @@ public class TransactionHistoryServiceTest {
         vgm.setStatus(VerifiedGrossMassStatus.ConfirmedByCarrier);
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(transactionHistoryDao.findAllByEntityIdAndEntityType(1L, EntityTypeTransactionHistory.VGM)).thenReturn(Collections.emptyList());
+        when(transactionHistoryDao.findAllByEntityIdAndEntityType(1L, EntityTypeTransactionHistory.VGM.name())).thenReturn(Collections.emptyList());
 
         ResponseEntity<IRunnerResponse> response = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
 
@@ -131,7 +131,7 @@ public class TransactionHistoryServiceTest {
         mockResponse.setActionStatusDescription("Booking Requested");
 
         when(carrierBookingDao.findById(2L)).thenReturn(Optional.of(cb));
-        when(transactionHistoryDao.findAllByEntityIdAndEntityType(2L, EntityTypeTransactionHistory.CARRIER_BOOKING)).thenReturn(List.of(history));
+        when(transactionHistoryDao.findAllByEntityIdAndEntityType(2L, EntityTypeTransactionHistory.CARRIER_BOOKING.name())).thenReturn(List.of(history));
         when(jsonHelper.convertValue(eq(history), eq(TransactionHistoryResponse.class))).thenReturn(mockResponse);
 
         ResponseEntity<IRunnerResponse> response = transactionHistoryService.retrieveById(2L, EntityTypeTransactionHistory.CARRIER_BOOKING);
@@ -164,7 +164,7 @@ public class TransactionHistoryServiceTest {
         mockResponse.setActionStatusDescription("SI accepted");
 
         when(shippingInstructionDao.findById(3L)).thenReturn(Optional.of(si));
-        when(transactionHistoryDao.findAllByEntityIdAndEntityType(3L, EntityTypeTransactionHistory.SI)).thenReturn(List.of(history));
+        when(transactionHistoryDao.findAllByEntityIdAndEntityType(3L, EntityTypeTransactionHistory.SI.name())).thenReturn(List.of(history));
         when(jsonHelper.convertValue(eq(history), eq(TransactionHistoryResponse.class))).thenReturn(mockResponse);
 
         ResponseEntity<IRunnerResponse> response = transactionHistoryService.retrieveById(3L, EntityTypeTransactionHistory.SI);
