@@ -24,18 +24,18 @@ public class ContractIdMapUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Map<String, String>> contractMap;
-    private static final String path = "src/main/java/com/dpw/runner/shipment/services/migration/utils/ContractIdsJsonMap.json";
+    private static final String CONTRACT_FILE_PATH = "src/main/java/com/dpw/runner/shipment/services/migration/utils/ContractIdsJsonMap.json";
 
-    public ContractIdMapUtil() throws IOException {
+    public ContractIdMapUtil() {
         Map<String, Map<String, String>> tempMap = new HashMap<>();
         try {
             tempMap = objectMapper.readValue(
-                    new File(path),
+                    new File(CONTRACT_FILE_PATH),
                     new TypeReference<Map<String, Map<String, String>>>() {}
             );
         } catch (IOException e) {
-            log.error("Failed to load contract map from JSON file: {}", path, e);
-            // Optionally: throw new RuntimeException(e);
+            log.error("Failed to load contract map from JSON file: {}", CONTRACT_FILE_PATH, e);
+            throw new IllegalArgumentException(e);
         }
         contractMap = tempMap;
     }
@@ -58,6 +58,7 @@ public class ContractIdMapUtil {
         // Fallback to local JSON
         Map<String, String> innerContractMap = contractMap.get(key);
         if (innerContractMap == null) {
+            log.error("No contract map found for key: " + key);
             throw new IllegalArgumentException("No contract map found for key: " + key);
         }
         return innerContractMap.get(contractId);
@@ -70,14 +71,20 @@ public class ContractIdMapUtil {
         }
 
         try {
-            Map<String, String> appConfigContractMap = objectMapper.readValue(
+            Map<String, Map<String, String>> appConfigContractMap = objectMapper.readValue(
                     appConfigContractMapString,
-                    new TypeReference<Map<String, String>>() {}
+                    new TypeReference<Map<String, Map<String, String>>>() {}
             );
-            return appConfigContractMap.get(contractId);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse contract map from AppConfig for key: {}_{}", env, type, e);
-            return null;
+            String key = env + "_" + type;
+            Map<String, String> innerAppConfigContractMap = appConfigContractMap.get(key);
+            if (innerAppConfigContractMap == null) {
+                log.error("No contract map found in AppConfig for key: " + key);
+                throw new IllegalArgumentException("No contract map found in AppConfig for key: " + key);
+            }
+            return innerAppConfigContractMap.get(contractId);
+        } catch (Exception e) {
+            log.error("Failed to fetch contract map from AppConfig: {}", e.getMessage());
+            throw new IllegalArgumentException(e);
         }
     }
 }
