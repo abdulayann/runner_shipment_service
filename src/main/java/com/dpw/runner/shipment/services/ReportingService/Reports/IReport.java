@@ -4161,7 +4161,7 @@ public abstract class IReport {
     }
 
     // Helper to safely convert to BigDecimal or zero if null or invalid
-    private BigDecimal convertToKg(Object weightValue, String unit) {
+    BigDecimal convertToKg(Object weightValue, String unit) {
         BigDecimal weight = safeBigDecimal(weightValue);
         if (weight.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
 
@@ -4182,7 +4182,7 @@ public abstract class IReport {
         };
     }
 
-    private BigDecimal safeBigDecimal(Object value) {
+    BigDecimal safeBigDecimal(Object value) {
         if (value == null) return BigDecimal.ZERO;
         if (value instanceof BigDecimal) return (BigDecimal) value;
         try {
@@ -4192,7 +4192,7 @@ public abstract class IReport {
         }
     }
 
-    private BigDecimal convertToM3(Object volumeValue, String unit) {
+    BigDecimal convertToM3(Object volumeValue, String unit) {
         BigDecimal volume = safeBigDecimal(volumeValue);
         if (volume.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
 
