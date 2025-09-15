@@ -946,10 +946,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         commonUtils.checkPermissionsForCloning(shipmentDetails.get());
         V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        String shipmentMode = StringUtility.convertToString(shipmentDetails.get().getTransportMode());
         if (Objects.nonNull(tenantData)) {
+            if (Boolean.TRUE.equals(tenantData.getTransportModeConfig()) && commonUtils.isSelectedModeOffInShipment(shipmentMode, tenantData)) {
+                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+            }
             if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
-                String shipmentMode = shipmentDetails.get().getTransportMode();
-                if (Objects.nonNull(shipmentMode) && commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
+                if (commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
                     return shipmentDetails;
                 } else {
                     throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");

@@ -8545,6 +8545,23 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
+    void testValidateShipment_WhenTransportModeMismatch_ThrowsIllegalStateException() {
+        Long shipmentId = 1L;
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setTransportModeConfig(true);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(commonUtils).checkPermissionsForCloning(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(commonUtils.isSelectedModeOffInShipment("AIR", tenantData)).thenReturn(true);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            shipmentServiceImplV3.validateShipment(shipmentId);
+        });
+        assertEquals("Clone Shipment is not allowed. Please check the Transport Config.", exception.getMessage());
+    }
+
+    @Test
     void setCargoDetails_shouldNotSetAnyFields_whenCargoSummaryFlagFalse() {
         CloneRequest request = createCloneRequest(false, true, true, true); // cargoSummary = false
         ShipmentDetails shipmentDetails = createShipmentDetails();

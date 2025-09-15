@@ -7111,6 +7111,28 @@ class CommonUtilsTest {
         assertFalse(commonUtils.isSelectedModeOffInBooking(transportMode, tenantData));
     }
 
+    @ParameterizedTest
+    @MethodSource("transportModesProvider")
+    void isSelectedModeOffInShipment_shouldReturnFalse_whenModeIsOn(String transportMode) {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        switch (transportMode) {
+            case "SEA" -> tenantData.setBookingTransportModeSea(true);
+            case "RAI" -> tenantData.setBookingTransportModeRail(true);
+            case "ROA" -> tenantData.setBookingTransportModeRoad(true);
+            case "AIR" -> tenantData.setBookingTransportModeAir(true);
+            default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
+        }
+        assertFalse(commonUtils.isSelectedModeOffInShipment(transportMode, tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInShipment_shouldThrowException_forUnknownMode() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commonUtils.isSelectedModeOffInShipment("unknown", tenantData));
+        assertEquals("Unknown transport mode: unknown", exception.getMessage());
+    }
+
     @Test
     void testGetCloneFieldResponse_ReturnsValidResponse() throws Exception {
         String type = "S2B";

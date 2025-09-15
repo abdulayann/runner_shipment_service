@@ -4301,6 +4301,16 @@ public class CommonUtils {
         };
     }
 
+    public boolean isSelectedModeOffInShipment(String transportMode, V1TenantSettingsResponse tenantData) {
+        return switch (transportMode) {
+            case TRANSPORT_MODE_AIR -> Boolean.FALSE.equals(tenantData.getShipmentTransportModeAir());
+            case TRANSPORT_MODE_SEA -> Boolean.FALSE.equals(tenantData.getShipmentTransportModeSea());
+            case TRANSPORT_MODE_RAI -> Boolean.FALSE.equals(tenantData.getShipmentTransportModeRail());
+            case TRANSPORT_MODE_ROA -> Boolean.FALSE.equals(tenantData.getShipmentTransportModeRoad());
+            default -> throw new IllegalArgumentException("Unknown transport mode: " + transportMode);
+        };
+    }
+
     public void validateAirSecurityPermission(String transportType, String direction) {
         ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingFromContext();
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
