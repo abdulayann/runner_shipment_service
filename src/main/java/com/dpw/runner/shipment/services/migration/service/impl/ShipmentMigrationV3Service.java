@@ -174,13 +174,15 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void updateParentContractIdInShipment(ShipmentDetails shipmentDetails) {
-        if(List.of("qa", PROD_ENV, DEMO_ENV).contains(currentEnvironment)) {
+        if(List.of(PROD_ENV, DEMO_ENV).contains(currentEnvironment)) {
             if(!Objects.isNull(shipmentDetails.getContractId())) {
                 String parentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), CONTRACT_TYPE, currentEnvironment);
+                log.info("Updating parentContractId in Shipment id {} with parentContractId {}", shipmentDetails.getId(), parentContactId);
                 shipmentDetails.setParentContractId(parentContactId);
             }
             if(!Objects.isNull(shipmentDetails.getDestinationContractId())) {
                 String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getDestinationContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
+                log.info("Updating destinationParentContractId in Shipment id {} with destinationParentContractId {}", shipmentDetails.getId(), destinationParentContactId);
                 shipmentDetails.setDestinationParentContractId(destinationParentContactId);
             }
         }

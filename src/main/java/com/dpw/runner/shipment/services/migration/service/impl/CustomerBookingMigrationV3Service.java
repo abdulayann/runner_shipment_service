@@ -305,6 +305,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     private void updateParentContractIdInBooking(CustomerBooking customerBooking) {
         if(List.of(DEMO_ENV, PROD_ENV).contains(currentEnvironment) && !Objects.isNull(customerBooking.getContractId())) {
             String parentContactId = contractIdMapUtil.getParentContractId(customerBooking.getContractId(), CONTRACT_TYPE, currentEnvironment);
+            log.info("Updating parentContractId in Booking id {} with parentContractId {}", customerBooking.getId(), parentContactId);
             customerBooking.setParentContractId(parentContactId);
         }
     }
