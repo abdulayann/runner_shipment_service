@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigSer
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ public class ContractIdMapUtil {
     }
 
     public String getParentContractId(String contractId, String contractType, String currentEnvironment) {
-        if (contractId == null || contractType == null || currentEnvironment == null) {
+        if (Strings.isNullOrEmpty(contractId) || Strings.isNullOrEmpty(contractType) || Strings.isNullOrEmpty(currentEnvironment)) {
             return null;
         }
 
@@ -56,6 +57,7 @@ public class ContractIdMapUtil {
         }
 
         // Fallback to local JSON
+        log.info("Fetching local contract config map for key "+ key);
         Map<String, String> innerContractMap = contractMap.get(key);
         if (innerContractMap == null) {
             log.error("No contract map found for key: " + key);
@@ -65,7 +67,7 @@ public class ContractIdMapUtil {
     }
 
     private String getParentContractIdFromAppConfig(String contractId, String env, String type) {
-        String appConfigContractMapString = applicationConfigService.getValue(env + "_" + type);
+        String appConfigContractMapString = applicationConfigService.getValue("CONTRACT_MAP");
         if (appConfigContractMapString == null || appConfigContractMapString.isBlank()) {
             return null;
         }
@@ -76,6 +78,7 @@ public class ContractIdMapUtil {
                     new TypeReference<Map<String, Map<String, String>>>() {}
             );
             String key = env + "_" + type;
+            log.info("Fetching AppConfig map for key "+ key);
             Map<String, String> innerAppConfigContractMap = appConfigContractMap.get(key);
             if (innerAppConfigContractMap == null) {
                 log.error("No contract map found in AppConfig for key: " + key);
