@@ -70,8 +70,11 @@ public class NotesUtil {
         StringBuilder text = new StringBuilder();
 
         text.append("Please note that below is the Historic Cargo Details which were Entered/available in CR2:").append("\n");
-        text.append(nullSafe(shipmentDetails.getShipmentId())).append("\n");
-
+        text.append("\n");
+        text.append("Shipment Number: ").append(nullSafe(shipmentDetails.getShipmentId())).append("\n");
+        text.append("\n");
+        text.append("Shipment Cargo Summary:").append("\n");
+        text.append(commodity).append(nullSafe(shipmentDetails.getCommodity())).append("\n");
         text.append("Total Gross Weight: ").append(nullSafe(shipmentDetails.getWeight())).append(" ").append(nullSafe(shipmentDetails.getWeightUnit())).append("\n");
         text.append(netWeight).append(nullSafe(shipmentDetails.getNetWeight())).append(" ").append(nullSafe(shipmentDetails.getNetWeightUnit())).append("\n");
         text.append("Total Gross Volume: ").append(nullSafe(shipmentDetails.getVolume())).append(" ").append(nullSafe(shipmentDetails.getVolumeUnit())).append("\n");
@@ -106,6 +109,7 @@ public class NotesUtil {
         }
         Integer i =1;
         log.info("containerList: {}", containersList);
+        text.append("Container Details:").append("\n");
         for (Containers container : containersList) {
             text.append("Container Details #").append(i).append("\n");
             text.append(nullSafe(container.getContainerNumber())).append("\n");
@@ -136,7 +140,7 @@ public class NotesUtil {
             }
         }
 
-        text.append("Packages# ").append("\n");
+        text.append("Package Details: ").append("\n");
         for(Packing packing: packingList){
             text.append("No Of Package: ").append(nullSafe(packing.getPacks())).append(" ").append(nullSafe(packing.getPacksType())).append("\n");
             text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
