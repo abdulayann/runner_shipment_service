@@ -23,6 +23,8 @@ public interface IShippingInstructionsService {
 
     ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType type, Long entityId);
 
-    ShippingInstructionResponse submitShippingInstruction(ShippingInstructionRequest request);
+    ShippingInstructionResponse submitShippingInstruction(Long shippingInstId);
+
+    ShippingInstructionResponse amendShippingInstruction(Long shippingInstId);
 
 }

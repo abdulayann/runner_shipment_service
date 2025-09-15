@@ -253,6 +253,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
+    @Autowired
+    private ICommonContainersDao commonContainersDao;
+
+    @Autowired
+    ICommonPackagesDao commonPackagesDao;
+
     @Override
     @Transactional
     public ConsolidationDetailsV3Response create(ConsolidationDetailsV3Request request) {
@@ -697,6 +703,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, consolidationAddressRequest);
 
         syncShipmentDataInPlatform(consolidationDetails);
+        syncCommonContainersAndPacking(consolidationDetails);
         if(oldEntity!=null)
             consolidationDetails.setTenantId(oldEntity.getTenantId());
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
@@ -784,6 +791,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setConsolidationAddresses(updatedParties);
         }
     }
+
+
 
     private String getConsolidationSerialNumber() {
         return v1Service.getMaxConsolidationId();
@@ -4993,6 +5002,66 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
             } catch (Exception e) {
                 log.error("Error while sending email");
+            }
+        }
+    }
+
+    public void syncCommonContainersAndPacking(ConsolidationDetails consolidationDetails) {
+        // Sync containers → common_container
+        List<Containers> containers = consolidationDetails.getContainersList();
+        if (containers != null && !containers.isEmpty()) {
+            // collect guids
+            List<UUID> guids = containers.stream()
+                    .map(Containers::getGuid)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            if (!guids.isEmpty()) {
+                // fetch all common containers in one go
+                List<CommonContainers> commons = commonContainersDao.getAll(guids);
+
+                // map for quick lookup
+                Map<UUID, CommonContainers> commonMap = commons.stream()
+                        .collect(Collectors.toMap(CommonContainers::getContainerRefGuid, c -> c));
+
+                // update all
+                for (Containers container : containers) {
+                    CommonContainers common = commonMap.get(container.getGuid());
+                    if (common != null) {
+                        consolidationV3Util.updateCommonContainerFromContainer(common, container);
+                    }
+                }
+
+                // bulk save
+                commonContainersDao.saveAll(commons);
+            }
+        }
+
+        List<Packing> packings = consolidationDetails.getPackingList();
+        if (packings != null && !packings.isEmpty()) {
+            List<UUID> guids = packings.stream()
+                    .map(Packing::getGuid)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            if (!guids.isEmpty()) {
+                // fetch all common packings in one go
+                List<CommonPackages> commons = commonPackagesDao.findByPackingRefGuidIn(guids);
+
+                // map for quick lookup
+                Map<UUID, CommonPackages> commonMap = commons.stream()
+                        .collect(Collectors.toMap(CommonPackages::getPackingRefGuid, p -> p));
+
+                // update all
+                for (Packing packing : packings) {
+                    CommonPackages common = commonMap.get(packing.getGuid());
+                    if (common != null) {
+                        consolidationV3Util.updateCommonPackingFromPacking(common, packing);
+                    }
+                }
+
+                // bulk save
+                commonPackagesDao.saveAll(commons);
             }
         }
     }

@@ -338,10 +338,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Invalid shipping instruction id");
         }
 
-        if (shippingInstructionEntity.get().getStatus() != ShippingInstructionStatus.SISubmitted && shippingInstructionEntity.get().getStatus() != ShippingInstructionStatus.SIAccepted) {
-            throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
-        }
-
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(shippingInstructionRequest, ShippingInstruction.class);
         validateSIRequest(shippingInstruction);
         shippingInstruction.setCommonContainersList(shippingInstructionEntity.get().getCommonContainersList());
@@ -350,11 +346,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         responseMapper.setShippingInstruction(shippingInstruction);
         populateReadOnlyFields(responseMapper);
         ShippingInstruction si = responseMapper.getShippingInstruction();
-
-        // Step 3: Mark SI as submitted
-        shippingInstruction.setStatus(ShippingInstructionStatus.SIAmendRequested);
         ShippingInstruction saved = repository.save(si);
-        sendForDownstreamProcess(shippingInstruction);
+
         ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
         response.setBookingStatus(responseMapper.getBookingStatus());
         return response;
@@ -589,39 +582,31 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.getFreightDetailList().add(freightDetail);
     }
 
-    public ShippingInstructionResponse submitShippingInstruction(ShippingInstructionRequest request) {
-        ShippingInstruction si = jsonHelper.convertValue(request, ShippingInstruction.class);
+    public ShippingInstructionResponse submitShippingInstruction(Long id ) { //Take only Id
+        Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
+        ShippingInstruction si = shippingInstruction.get();
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
             CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             // Step 1: Check booking status
-            if ((!CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) && !CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
+            if (!(CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) || CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
                 throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
             }
         } else if (si.getEntityType() == EntityType.CONSOLIDATION) {
-            Optional<ShippingInstruction> savedEntity = repository.findById(si.getId());
-            if (savedEntity.get().getStatus() != ShippingInstructionStatus.Draft) {
+            if (si.getStatus() != ShippingInstructionStatus.Draft) {
                 throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
             }
         } else {
             throw new ValidationException("Invalid value of Shipping Instruction Type");
         }
 
-        // Step 2: Validate mandatory fields
-        validateSIRequest(si);
-        ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
-        responseMapper.setShippingInstruction(si);
-        populateReadOnlyFields(responseMapper);
-        ShippingInstruction shippingInstruction = responseMapper.getShippingInstruction();
-
         // Step 3: Mark SI as submitted
-        shippingInstruction.setStatus(ShippingInstructionStatus.SISubmitted);
+        si.setStatus(ShippingInstructionStatus.SISubmitted);
         ShippingInstruction saved = repository.save(si);
-        sendForDownstreamProcess(shippingInstruction);
+        sendForDownstreamProcess(si);
         ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
-        response.setBookingStatus(responseMapper.getBookingStatus());
-        return response;
+        return response; //send only response not entity
     }
 
     private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {
@@ -637,7 +622,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             shippingInstruction.setEntityNumber(carrierBooking.get().getBookingNo());
         } else if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
             consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
-            shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
+        //    shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
             shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
             setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         } else {
@@ -657,6 +642,27 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private void sendForDownstreamProcess(ShippingInstruction shippingInstruction) {
         String payload = jsonHelper.convertToJson(shippingInstruction);
-        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI, "",IntraKafkaOperationType.SUBMIT);
+        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI,IntraKafkaOperationType.ORIGINAL);
+    }
+
+    public ShippingInstructionResponse amendShippingInstruction(Long id ) {
+        Optional<ShippingInstruction> shippingInstructionEntity = repository.findById(id);
+        if (shippingInstructionEntity.isEmpty()) {
+            throw new ValidationException("Invalid shipping instruction id");
+        }
+        ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
+
+
+        if (!(ShippingInstructionStatus.SISubmitted == shippingInstructionEntity.get().getStatus() ||  ShippingInstructionStatus.SIAccepted == shippingInstructionEntity.get().getStatus())) {
+            throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
+        }
+
+        validateSIRequest(shippingInstruction);
+
+        // Step 3: Mark SI as submitted
+        shippingInstruction.setStatus(ShippingInstructionStatus.SIAmendRequested);
+        ShippingInstruction saved = repository.save(shippingInstruction);
+        sendForDownstreamProcess(shippingInstruction);
+        return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 }
