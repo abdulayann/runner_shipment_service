@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.TILegType;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -173,6 +172,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         setCountryFilterInParties(shipmentDetails);
 
+        setDeliveryPartiesInGeneral(shipmentDetails);
+
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
             //Existing values from Additional Details → HBL Details → Agent Reference field should be migrated to the References section with the type AGR
@@ -190,6 +191,14 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         // migrated deprecated shipment status
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+        }
+    }
+    private void setDeliveryPartiesInGeneral(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getDeliveryDetails()!=null){
+            if(shipmentDetails.getDeliveryDetails().getBrokerDetail()!=null && shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()!=null)
+                shipmentDetails.setBrokerageAtDestination(Long.valueOf(shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()));
+            if(shipmentDetails.getDeliveryDetails().getAgentDetail()!=null  && shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgId()!=null)
+                shipmentDetails.setDeliveryAtDestination(Long.valueOf(shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgId()));
         }
     }
 
