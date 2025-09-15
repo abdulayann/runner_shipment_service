@@ -322,5 +322,5 @@ CREATE TABLE IF NOT EXISTS transaction_history (
     actual_date_time TIMESTAMP WITHOUT TIME ZONE,
     error_message TEXT
     verified_gross_mass_id BIGINT NOT NULL,
-        CONSTRAINT fk_verified_gross_mass FOREIGN KEY (verified_gross_mass_id) REFERENCES verified_gross_mass(id) ON DELETE CASCADE
+        CONSTRAINT fk_verified_gross_mass FOREIGN KEY (verified_gross_mass_id) REFERENCES verified_gross_mass(id)
 );
