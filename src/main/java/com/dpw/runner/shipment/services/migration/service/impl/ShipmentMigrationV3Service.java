@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -56,6 +58,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -93,6 +96,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     @Autowired
     private MigrationUtil migrationUtil;
+    @Autowired
+    private ContractIdMapUtil contractIdMapUtil;
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
     public static final Map<String, String> airMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
@@ -160,9 +167,23 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             updateTransportInstruction(shipmentDetails);
 
         // Migrated shipment fields
+        updateParentContractIdInShipment(shipmentDetails);
         updateShipmentFields(shipmentDetails);
 
         return shipmentDetails;
+    }
+
+    private void updateParentContractIdInShipment(ShipmentDetails shipmentDetails) {
+        if(List.of("qa", PROD_ENV, DEMO_ENV).contains(currentEnvironment)) {
+            if(!Objects.isNull(shipmentDetails.getContractId())) {
+                String parentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), CONTRACT_TYPE, currentEnvironment);
+                shipmentDetails.setParentContractId(parentContactId);
+            }
+            if(!Objects.isNull(shipmentDetails.getDestinationContractId())) {
+                String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
+                shipmentDetails.setDestinationParentContractId(destinationParentContactId);
+            }
+        }
     }
 
     private void updateShipmentFields(ShipmentDetails shipmentDetails) {
