@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.ITransactionHistoryRepository;
 import org.springframework.data.domain.Page;
@@ -32,8 +33,8 @@ public class TransactionHistoryDao implements ITransactionHistoryDao {
     }
 
     @Override
-    public List<TransactionHistory> findAllByVerifiedGrossMassId(Long verifiedGrossMassId) {
-        return transactionHistoryRepository.findAllByVerifiedGrossMassId(verifiedGrossMassId);
+    public List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType) {
+        return transactionHistoryRepository.findAllByEntityIdAndEntityType(entityId, entityType);
     }
 
     @Override
