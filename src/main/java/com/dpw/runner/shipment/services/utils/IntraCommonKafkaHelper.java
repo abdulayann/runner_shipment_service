@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.kafka.dto.GenericKafkaPayload;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,7 +16,10 @@ public class IntraCommonKafkaHelper {
     @Autowired
     private KafkaProducer producer;
 
-    public void sendDataToKafka(String payload, GenericKafkaMsgType msgType, String topic, IntraKafkaOperationType operationType) {
+    @Value("${bridge.inttra.messages.kafka.producer.topic}")
+    String topic;
+
+    public void sendDataToKafka(String payload, GenericKafkaMsgType msgType, IntraKafkaOperationType operationType) {
         try {
             // Wrap it inside your generic payload with the provided msgType
             GenericKafkaPayload genericKafkaMsg =

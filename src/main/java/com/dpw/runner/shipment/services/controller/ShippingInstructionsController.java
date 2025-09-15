@@ -134,17 +134,33 @@ public class ShippingInstructionsController {
         }
     }
 
-    @PostMapping("/submit")
+    @PostMapping("/submit/{id}")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShippingInstructionsConstants.SUBMIT_SUCCESSFUL, response = MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.ERROR_MESSAGE, response = MyResponseClass.class)
     })
-    public ResponseEntity<IRunnerResponse> submitSI(@RequestBody ShippingInstructionRequest request) {
+    public ResponseEntity<IRunnerResponse> submitSI(@PathVariable("id") Long id) {
         try {
-            ShippingInstructionResponse response = service.submitShippingInstruction(request);
-            return ResponseHelper.buildSuccessResponse(response);
+            ShippingInstructionResponse response = service.submitShippingInstruction(id);
+            return ResponseHelper.buildSuccessResponse(ShippingInstructionsConstants.SUBMIT_SUCCESSFUL);
         } catch (Exception ex) {
-            String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error retrieving default Shipping Instruction";
+            String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error submitting Shipping Instruction";
+            log.error(responseMsg, ex);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @PostMapping("/amend/{id}")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShippingInstructionsConstants.AMEND_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.ERROR_MESSAGE, response = MyResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> amendSI(@PathVariable("id") Long id) {
+        try {
+            ShippingInstructionResponse response = service.amendShippingInstruction(id);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error amending Shipping Instruction";
             log.error(responseMsg, ex);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
