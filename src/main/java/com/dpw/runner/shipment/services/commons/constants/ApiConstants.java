@@ -43,6 +43,7 @@ public class ApiConstants {
 
     public static final String API_RETRIEVE = "/retrieve";
 
+    public static final String API_TRANSACTION_HISTORY_RETRIEVE_BY_ID = "/transaction-history/retrieve/id";
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
     public static final String API_RETRIEVE_BY_ID_EXT = "/retrieve/external/id";
     public  static final String API_RETRIEVE_BY_ID_EXT_PARTIAL = "/retrieve/external/partial/id";

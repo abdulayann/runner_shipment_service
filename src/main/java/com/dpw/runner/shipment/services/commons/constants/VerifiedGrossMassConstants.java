@@ -32,10 +32,11 @@ public class VerifiedGrossMassConstants {
     public static final String VERIFIED_GROSS_MASS_API_HANDLE = "/api/v3/vgm";
 
     public static final String VERIFIED_GROSS_MASS_CREATE_SUCCESSFUL = "Successful Verified Gross Mass Data Creation";
-    public static final String CARRIER_BOOKING_UPDATE_SUCCESSFUL = "Successful Verified Gross Mass Data Update";
+    public static final String VERIFIED_GROSS_MASS_UPDATE_SUCCESSFUL = "Successful Verified Gross Mass Data Update";
     public static final String CARRIER_BOOKING_LIST_SUCCESSFUL = "Successful Verified Gross Mass Data List Retrieval";
     public static final String VERIFIED_GROSS_MASS_DELETE_SUCCESSFUL = "Successful Verified Gross Mass Delete";
     public static final String VERIFIED_GROSS_MASS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Verified Gross Mass Data Retrieval By Id";
+    public static final String VERIFIED_GROSS_MASS_TRANSACTION_HISTORY_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Verified Gross Mass Transaction History Data Retrieval By Id";
 
     public static final String CARRIER_BOOKING_ID = "Verified Gross Mass Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";

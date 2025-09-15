@@ -44,4 +44,7 @@ public class TransactionHistory extends MultiTenancy {
 
     @Column(name = "error_message")
     private String errorMessage;
+
+    @Column(name = "verified_gross_mass_id")
+    private Long verifiedGrossMassId;
 }
