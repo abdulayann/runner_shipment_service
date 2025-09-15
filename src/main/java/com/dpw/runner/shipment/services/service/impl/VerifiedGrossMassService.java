@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.TransactionHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
@@ -22,9 +24,12 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
+import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -37,6 +42,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersR
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
@@ -53,7 +59,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.transaction.Transactional;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,10 +86,14 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil;
     private final ICommonContainersRepository commonContainersRepository;
+    private final ITransactionHistoryDao transactionHistoryDao;
+    private final IntraCommonKafkaHelper kafkaHelper;
 
 
 
-    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, ICommonContainersRepository commonContainersRepository) {
+    public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
+                                    MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
+                                    ICommonContainersRepository commonContainersRepository, ITransactionHistoryDao transactionHistoryDao, IntraCommonKafkaHelper kafkaHelper, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -95,6 +104,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
         this.commonContainersRepository = commonContainersRepository;
         this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
+        this.transactionHistoryDao = transactionHistoryDao;
+        this.kafkaHelper = kafkaHelper;
     }
 
     @Override
@@ -122,6 +133,42 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
         }
         return verifiedGrossMassResponse;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> transactionHistoryRetrieveById(Long verifiedGrossMassId) {
+
+        // Fetch VerifiedGrossMass by ID
+        Optional<VerifiedGrossMass> verifiedGrossMassOptional = verifiedGrossMassDao.findById(verifiedGrossMassId);
+        if (verifiedGrossMassOptional.isEmpty()) {
+            throw new DataRetrievalFailureException("Verified Gross Mass not found for ID: " + verifiedGrossMassId);
+        }
+
+        VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
+
+        // Fetch transaction history records for the given VGM ID
+        List<TransactionHistory> transactionHistoryList = transactionHistoryDao.findAllByVerifiedGrossMassId(verifiedGrossMassId);
+
+        // Return empty transaction if not found for the given VGM ID
+        if (transactionHistoryList.isEmpty()) {
+            return ResponseHelper.buildListSuccessResponse(new ArrayList<>());
+        }
+
+        // Get the VerifiedGrossMassStatus description from the VerifiedGrossMass object
+        String vgmStatusDescription = verifiedGrossMass.getStatus().getDescription();
+
+        // Map each TransactionHistory to a TransactionHistoryResponse and set the status description
+        List<TransactionHistoryResponse> responseList = transactionHistoryList.stream()
+                .map(transactionHistory -> {
+                    TransactionHistoryResponse response = jsonHelper.convertValue(transactionHistory, TransactionHistoryResponse.class);
+                    response.setActionStatusDescription(vgmStatusDescription);
+                    return response;
+                })
+                .collect(Collectors.toList());
+
+        // Return a success response with the list of TransactionHistoryResponse
+        List<IRunnerResponse> runnerResponseList = new ArrayList<>(responseList);
+        return ResponseHelper.buildListSuccessResponse(runnerResponseList);
     }
 
     @Override

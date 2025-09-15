@@ -21,6 +21,7 @@ public class TransactionHistoryResponse implements IRunnerResponse {
 
     private Long id;
     private VerifiedGrossMassStatus actionStatus;
+    private String actionStatusDescription;
     private FlowType flowType;
     private String description;
     private SourceSystem sourceSystem;

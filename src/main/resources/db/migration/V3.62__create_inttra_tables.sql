@@ -321,4 +321,6 @@ CREATE TABLE IF NOT EXISTS transaction_history (
     source_system VARCHAR(50),           -- ENUM: CARGO_RUNNER, CARRIER, INTTRA, OTHER
     actual_date_time TIMESTAMP WITHOUT TIME ZONE,
     error_message TEXT
+    verified_gross_mass_id BIGINT NOT NULL,
+        CONSTRAINT fk_verified_gross_mass FOREIGN KEY (verified_gross_mass_id) REFERENCES verified_gross_mass(id) ON DELETE CASCADE
 );
