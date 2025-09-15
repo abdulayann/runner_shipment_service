@@ -1706,6 +1706,16 @@ class MasterDataUtilsTest extends CommonMocks {
     }
 
     @Test
+    void getMultipleMasterListData() {
+
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(MasterData.builder().build())).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(MasterData.builder().id(11).itemValue("PKG").build()));
+        var responseEntity = masterDataUtils.getMultipleMasterListData(MasterDataType.COMMODITY_GROUP, Set.of("1234"));
+        assertNotNull(responseEntity);
+        assertEquals(11, responseEntity.get("PKG").getId());
+    }
+
+    @Test
     void getVesselName() {
         var mockVesselGuid = UUID.randomUUID();
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(mockVesselGuid).Name("Mark").build()));
