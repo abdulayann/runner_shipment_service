@@ -4187,19 +4187,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         containerV3Util.resetContainerDataForRecalculation(container);
                     }
                 containerV3Service.addPackageDataToContainer(container, packing);
-            shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
-                    .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
-                    .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
-                    .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
-                    .packageCount(Optional.ofNullable(container.getPacks())
-                            .map(Integer::parseInt)
-                            .orElse(0))
-                    .packageAssigned(Boolean.TRUE)
-                    .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
-                    .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
-                    .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
-                    .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
-                    .build());
+            String containerNumber = Optional.ofNullable(container.getContainerNumber()).orElse("");
+
+            // Check if response already exists for this container
+            Optional<ShipmentForceDetachResponse> existingResponse = shipmentForceDetachResponses.stream()
+                    .filter(response -> containerNumber.equals(response.getContainerNumber()))
+                    .findFirst();
+
+            if (existingResponse.isPresent()) {
+                // Update the package count in existing response
+                ShipmentForceDetachResponse response = existingResponse.get();
+                response.setPackageCount(Optional.ofNullable(container.getPacks())
+                        .map(Integer::parseInt)
+                        .orElse(0));
+                response.setVolume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO));
+                response.setWeight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO));
+                response.setVolumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""));
+                response.setWeightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""));
+                response.setPackageUnit(Optional.ofNullable(container.getPacksType()).orElse(""));
+            } else {
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
+                        .packageCount(Optional.ofNullable(container.getPacks())
+                                .map(Integer::parseInt)
+                                .orElse(0))
+                        .packageAssigned(Boolean.TRUE)
+                        .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
+                        .build());
+                 }
+
 
         }
     }
