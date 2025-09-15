@@ -77,18 +77,6 @@ public class VerifiedGrossMassController {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_TRANSACTION_HISTORY_RETRIEVE_BY_ID_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @GetMapping(ApiConstants.API_TRANSACTION_HISTORY_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> transactionHistoryRetrieveById(@RequestParam Long id) {
-        log.info("Received Verified Gross Mass GET BY ID request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
-        ResponseEntity<IRunnerResponse> response = verifiedGrossMassService.transactionHistoryRetrieveById(id);
-        log.info("Verified Gross Mass GET BY ID successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
-        return ResponseHelper.buildSuccessResponse(response);
-    }
-
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Verified Gross Mass LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());

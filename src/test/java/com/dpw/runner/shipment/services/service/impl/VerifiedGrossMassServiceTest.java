@@ -1,17 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.TransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.impl.VerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.TransactionHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.TransactionHistory;
-import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
-import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -22,15 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,62 +46,6 @@ public class VerifiedGrossMassServiceTest {
     private JsonHelper jsonHelper;
     @Mock
     private ResponseHelper responseHelper;
-
-    @Test
-    void transactionHistoryRetrieveById_shouldThrowException_whenVgmNotFound() {
-        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () ->
-                verifiedGrossMassService.transactionHistoryRetrieveById(1L)
-        );
-    }
-
-    @Test
-    void transactionHistoryRetrieveById_shouldReturnEmptyList_whenNoHistoryFound() {
-        VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setStatus(VerifiedGrossMassStatus.Requested);
-
-        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(transactionHistoryDao.findAllByVerifiedGrossMassId(1L)).thenReturn(Collections.emptyList());
-
-        ResponseEntity<IRunnerResponse> response = verifiedGrossMassService.transactionHistoryRetrieveById(1L);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    void transactionHistoryRetrieveById_shouldReturnResponseWithHistory() {
-        VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setStatus(VerifiedGrossMassStatus.ConfirmedByCarrier);
-
-        TransactionHistory history = new TransactionHistory();
-        history.setId(1L);
-        history.setDescription("Test Desc");
-
-        TransactionHistoryResponse mockResponse = new TransactionHistoryResponse();
-        mockResponse.setId(1L);
-        mockResponse.setDescription("Test Desc");
-        mockResponse.setActionStatusDescription("Confirmed By Carrier");
-
-        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(transactionHistoryDao.findAllByVerifiedGrossMassId(1L)).thenReturn(List.of(history));
-        when(jsonHelper.convertValue(eq(history), eq(TransactionHistoryResponse.class))).thenReturn(mockResponse);
-
-        ResponseEntity<IRunnerResponse> response = verifiedGrossMassService.transactionHistoryRetrieveById(1L);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-
-        RunnerListResponse runnerListResponse = (RunnerListResponse) response.getBody();
-        assertNotNull(runnerListResponse);
-        List<IRunnerResponse> resultList = runnerListResponse.getData();
-        assertNotNull(resultList);
-        assertEquals(1, resultList.size());
-
-        TransactionHistoryResponse result = (TransactionHistoryResponse) resultList.get(0);
-        assertEquals("Confirmed By Carrier", result.getActionStatusDescription());
-        assertEquals("Test Desc", result.getDescription());
-    }
 
     @Test
     public void bulkUpdateContainers_ShouldThrowValidationException_WhenLessThanTwoIds() {
