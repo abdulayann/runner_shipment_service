@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -489,6 +490,10 @@ public class HblReport extends IReport {
 
         addDeliverToTag(hblModel, dictionary);
 
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            buildCargoSectionForV3FromShipment(dictionary, hblModel);
+        }
+
         if (hblModel.consolidation != null) {
             this.populateConsolidationReportData(dictionary, null, hblModel.consolidation.getId());
         }
@@ -500,6 +505,202 @@ public class HblReport extends IReport {
         }
 
         return dictionary;
+    }
+
+    public String getContainerSummary(List<ContainerModel> containers) {
+        if (containers == null || containers.isEmpty()) return null;
+
+        // Sort
+        containers.sort(Comparator.comparing(ContainerModel::getContainerCode));
+
+        // Group by containerCode and sum counts
+        Map<String, Long> containerCodeCountMap = containers.stream()
+                .collect(Collectors.groupingBy(
+                        ContainerModel::getContainerCode,
+                        Collectors.summingLong(ContainerModel::getContainerCount)
+                ));
+
+        // Build summary
+        return  containerCodeCountMap.entrySet().stream()
+                .map(e -> e.getValue() + "X" + e.getKey())
+                .collect(Collectors.joining(", "));
+    }
+
+    public String getPackingSummary(List<PackingModel> packages, Map<String, MasterData> packTypeMap) {
+        if (packages == null || packages.isEmpty()) return null;
+
+        // Sort
+        packages.sort(Comparator.comparing(PackingModel::getPacksType));
+
+        // Group by packType and sum counts
+        Map<String, Long> packageTypeCountMap = packages.stream()
+                .collect(Collectors.groupingBy(
+                        PackingModel::getPacksType,
+                        Collectors.summingLong(p -> Long.parseLong(p.getPacks()))
+                ));
+
+        // Total count
+        long totalCount = packageTypeCountMap.values().stream().mapToLong(Long::longValue).sum();
+
+        // Build summary
+        return totalCount + " PACKAGE(S)" + " (" + packageTypeCountMap.entrySet().stream()
+                .map(e -> {
+                    if(packTypeMap.containsKey(e.getKey())) {
+                        return e.getValue() + " " + StringUtility.toUpperCase(packTypeMap.get(e.getKey()).getItemDescription()) + "(S)";
+                    }
+                    return e.getValue() + " " + StringUtility.toUpperCase(e.getKey()) + "(S)";
+
+                })
+                .collect(Collectors.joining(", ")) + ")";
+    }
+
+    private void buildCargoSectionForV3FromShipment(Map<String, Object> dictionary, HblModel hblModel) {
+
+        if(!Strings.isNullOrEmpty(hblModel.shipment.getGoodsDescription()))
+            dictionary.put(ReportConstants.SHIPMENT_DESCRIPTION, StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
+        else
+            dictionary.put(ReportConstants.SHIPMENT_DESCRIPTION, "AS MENTIONED IN THE CONTAINER/PACKAGE DESCRIPTION");
+        if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+            dictionary.put(ReportConstants.SLACFCL, "SHIPPER’S LOAD, STOWAGE,COUNT AND SEAL");
+        }
+        List<Map<String, Object>> cargoSectionList = new ArrayList<>();
+        Map<Long, List<PackingModel>> cargoMap;
+        Set<String> packTypes = new HashSet<>();
+        if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
+            cargoMap = hblModel.shipment.getPackingList().stream().filter(pack -> pack.getContainerId() != null)
+                    .collect(Collectors.groupingBy(PackingModel::getContainerId));
+            packTypes = hblModel.shipment.getPackingList().stream().map(PackingModel::getPacksType)
+                    .filter(StringUtility::isNotEmpty).collect(Collectors.toSet());
+            long totalCount = hblModel.shipment.getPackingList().stream().filter(x->StringUtility.isNotEmpty(x.getPacksType())).map(x ->Long.parseLong(x.getPacks())).mapToLong(Long::longValue).sum();
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) ||
+                Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_ROR) ||
+                    Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_BBK))
+                dictionary.put(ReportConstants.TOTAL_TOTAL_CONTAINERS_OR_PACKS, totalCount + " " + ReportConstants.PACKAGE_STRING);
+
+        } else {
+            cargoMap = new HashMap<>();
+        }
+        List<ContainerModel> containerList = hblModel.shipment.getContainersList();
+        if(!CommonUtils.listIsNullOrEmpty(containerList)) {
+            packTypes.addAll(containerList.stream().map(ContainerModel::getPacksType)
+                    .filter(StringUtility::isNotEmpty).collect(Collectors.toSet()));
+
+            dictionary.put(ReportConstants.TOTAL_CONTAINERS_AND_TYPE, getContainerSummary(containerList));
+            long totalCount = containerList.stream().map(ContainerModel::getContainerCount).mapToLong(Long::longValue).sum();
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.CARGO_TYPE_FCL))
+                dictionary.put(ReportConstants.TOTAL_TOTAL_CONTAINERS_OR_PACKS, totalCount + " " + ReportConstants.CONTAINERS_STRING);
+
+        }
+
+        var packTypeMap = masterDataUtils.getMultipleMasterListData(MasterDataType.PACKS_UNIT, packTypes);
+
+        if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
+            dictionary.put(ReportConstants.TOTAL_PACKS_AND_TYPE, getPackingSummary(hblModel.shipment.getPackingList(), packTypeMap));
+        }
+        if(!CommonUtils.listIsNullOrEmpty(containerList)) {
+            cargoSectionList = prepareContainerListTags(containerList, hblModel, cargoMap, packTypeMap);
+        }
+
+        dictionary.put(ReportConstants.S_CONTAINERS, cargoSectionList);
+
+    }
+
+    private List<Map<String, Object>> prepareContainerListTags(List<ContainerModel> containerList, HblModel hblModel, Map<Long, List<PackingModel>> cargoMap, Map<String, MasterData> packTypeMap) {
+        List<Map<String, Object>> cargoSectionList = new ArrayList<>();
+        containerList.forEach(cont -> {
+            Map<String, Object> mp = new HashMap<>();
+            String info = buildContainerInfo(hblModel, cont);
+
+            mp.put(INFO, StringUtility.toUpperCase(info));
+            cargoSectionList.add(mp);
+
+            BigDecimal totalPacks = BigDecimal.ZERO;
+            BigDecimal totalWeight = BigDecimal.ZERO;
+            BigDecimal totalVolume = BigDecimal.ZERO;
+
+            if(cargoMap.containsKey(cont.getId())) {
+                List<PackingModel> assignedPackList = cargoMap.get(cont.getId());
+                if (!CommonUtils.listIsNullOrEmpty(assignedPackList)) {
+                    for (var pack: assignedPackList){
+                        Map<String, Object> packMp = buildPackingMap(pack, packTypeMap);
+
+                        totalPacks = totalPacks.add(safeBigDecimal(pack.getPacks()));
+                        totalWeight = totalWeight.add(convertToKg(pack.getWeight(), pack.getWeightUnit()));
+                        totalVolume = totalVolume.add(convertToM3(pack.getVolume(), pack.getVolumeUnit()));
+                        cargoSectionList.add(packMp);
+                    }
+                }
+            }
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)){
+                mp.put(WEIGHT, totalWeight + " " + Constants.WEIGHT_UNIT_KG);
+                mp.put(VOLUME, totalVolume + " " + Constants.VOLUME_UNIT_M3);
+                mp.put(PACKS, totalPacks + " " + ReportConstants.PACKAGE_STRING);
+            }
+            else {
+                prepareContainersField(cont, mp, packTypeMap);
+            }
+
+        });
+        return cargoSectionList;
+    }
+
+    private void prepareContainersField(ContainerModel cont, Map<String, Object> mp, Map<String, MasterData> packTypeMap) {
+        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(cont.getMarksNums()));
+        mp.put(DESCRIPTION, StringUtility.toUpperCase(cont.getDescriptionOfGoods()));
+        if (cont.getGrossWeight() != null)
+            mp.put(WEIGHT, cont.getGrossWeight() + " " + cont.getGrossWeightUnit());
+        if (cont.getGrossVolume() != null)
+            mp.put(VOLUME, cont.getGrossVolume() + " " + cont.getGrossVolumeUnit());
+        if (StringUtility.isNotEmpty(cont.getPacks())) {
+            if (packTypeMap.containsKey(cont.getPacksType())) {
+                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(cont.getPacksType()).getItemDescription()) + "(S)");
+            } else
+                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(cont.getPacksType()));
+        }
+
+    }
+
+    private Map<String, Object> buildPackingMap(PackingModel assignedPack, Map<String, MasterData> packTypeMap) {
+        Map<String, Object> mp = new HashMap<>();
+        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(assignedPack.getMarksnNums()));
+        mp.put(DESCRIPTION, StringUtility.toUpperCase(assignedPack.getGoodsDescription()));
+        if(assignedPack.getWeight() != null)
+            mp.put(WEIGHT, assignedPack.getWeight() + " " + assignedPack.getWeightUnit());
+        if(assignedPack.getVolume() != null)
+            mp.put(VOLUME, assignedPack.getVolume() + " " + assignedPack.getVolumeUnit());
+        if(StringUtility.isNotEmpty(assignedPack.getPacks())) {
+            if(packTypeMap.containsKey(assignedPack.getPacksType())) {
+                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(assignedPack.getPacksType()).getItemDescription()) + "(S)");
+            } else
+                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(assignedPack.getPacksType()));
+        }
+        return mp;
+    }
+
+    private String buildContainerInfo(HblModel hblModel, ContainerModel container) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\n";
+        if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+            sb.append("STOWED IN CONTAINER: ");
+        }
+        if(!Strings.isNullOrEmpty(container.getContainerCode())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getContainerCode());
+        }
+        if(!Strings.isNullOrEmpty(container.getContainerNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getContainerNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getCarrierSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getCarrierSealNumber());
+        }
+        return sb.toString();
+    }
+
+    private static void checkAndAppendDelimiter(StringBuilder sb, String delimiter) {
+        if(!sb.isEmpty())
+            sb.append(delimiter);
     }
 
     private void processAdditionalDetails(HblModel hblModel, Map<String, Object> dictionary) {
