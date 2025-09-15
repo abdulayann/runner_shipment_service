@@ -7116,10 +7116,10 @@ class CommonUtilsTest {
     void isSelectedModeOffInShipment_shouldReturnFalse_whenModeIsOn(String transportMode) {
         V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
         switch (transportMode) {
-            case "SEA" -> tenantData.setBookingTransportModeSea(true);
-            case "RAI" -> tenantData.setBookingTransportModeRail(true);
-            case "ROA" -> tenantData.setBookingTransportModeRoad(true);
-            case "AIR" -> tenantData.setBookingTransportModeAir(true);
+            case "SEA" -> tenantData.setShipmentTransportModeSea(true);
+            case "RAI" -> tenantData.setShipmentTransportModeRail(true);
+            case "ROA" -> tenantData.setShipmentTransportModeRoad(true);
+            case "AIR" -> tenantData.setShipmentTransportModeAir(true);
             default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
         }
         assertFalse(commonUtils.isSelectedModeOffInShipment(transportMode, tenantData));

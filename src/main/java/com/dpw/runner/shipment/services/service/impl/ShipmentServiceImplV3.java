@@ -246,6 +246,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
+    private static final String CLONE_SHIPMENT_NOT_ALLOWED = "Clone Shipment is not allowed. Please check the Transport Config.";
+
     @Autowired
     public ShipmentServiceImplV3(
             IConsoleShipmentMappingDao consoleShipmentMappingDao,
@@ -949,17 +951,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         String shipmentMode = StringUtility.convertToString(shipmentDetails.get().getTransportMode());
         if (Objects.nonNull(tenantData)) {
             if (Boolean.TRUE.equals(tenantData.getTransportModeConfig()) && commonUtils.isSelectedModeOffInShipment(shipmentMode, tenantData)) {
-                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
             }
             if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
                 if (commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
                     return shipmentDetails;
                 } else {
-                    throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                    throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
                 }
             }
             if (Objects.nonNull(tenantData.getTransportModeConfig()) && Boolean.FALSE.equals(tenantData.getTransportModeConfig())) {
-                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
             }
         }
         return shipmentDetails;
