@@ -70,8 +70,6 @@ public class HblDataDto {
     private String cargoTerms;
     private String deliveryAgentAddress;
     private String deliveryAgent;
-    private String forwardingAgent;
-    private String forwardingAgentAddress;
     private String quantityCode;
     private String invoiceNumbers;
     private String jsonFiled;
@@ -116,5 +114,4 @@ public class HblDataDto {
     private String deliveryAgentState;
     private String deliveryAgentZipCode;
     private String deliveryAgentCountry;
-
 }

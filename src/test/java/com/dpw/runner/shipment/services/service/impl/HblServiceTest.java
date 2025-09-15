@@ -1645,8 +1645,8 @@ class HblServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         HblDataDto dto = new HblDataDto();
-        Method method = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
-        Method method1 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method = HblService.class.getDeclaredMethod("mapDeliveryAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapForwardingAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method.setAccessible(true);
         method1.setAccessible(true);
         method.invoke(hblService, ad, dto);
@@ -1718,10 +1718,10 @@ class HblServiceTest extends CommonMocks {
         // ---------- Execute mapping ----------
         HblDataDto dto = new HblDataDto();
         HblService svc = new HblService();   // replace with actual class
-        Method method = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method = HblService.class.getDeclaredMethod("mapForwardingAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method.setAccessible(true);
         method.invoke(hblService, additional, dto);
-        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method1 = HblService.class.getDeclaredMethod("mapDeliveryAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method1.setAccessible(true);
         method1.invoke(hblService, additional, dto);
         Method method2 = HblService.class.getDeclaredMethod("mapConsignerConsigneeToHblV3", ShipmentDetails.class, HblDataDto.class);
@@ -1783,7 +1783,7 @@ class HblServiceTest extends CommonMocks {
         AdditionalDetails addl = new AdditionalDetails();
         addl.setImportBroker(party("Import Broker"));
         HblDataDto dto = HblDataDto.builder().build();
-        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapDeliveryAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, addl, dto);
         assertEquals("IMPORT BROKER", dto.getDeliveryAgentName());
@@ -1800,7 +1800,7 @@ class HblServiceTest extends CommonMocks {
         addl.setExportBroker(party("Forwarder"));
 
         HblDataDto dto = HblDataDto.builder().build();
-        Method method2 = HblService.class.getDeclaredMethod("mapForwardDataInHblV3", AdditionalDetails.class, HblDataDto.class);
+        Method method2 = HblService.class.getDeclaredMethod("mapForwardingAgentDataInHblV3", AdditionalDetails.class, HblDataDto.class);
         method2.setAccessible(true);
         method2.invoke(hblService, addl, dto);
         assertEquals("FORWARDER", dto.getForwarderName());
@@ -2177,7 +2177,7 @@ class HblServiceTest extends CommonMocks {
         when(exportBroker.getAddressData()).thenReturn(null); // Null addressData
 
         when(additionalDetails.getExportBroker()).thenReturn(exportBroker);
-        ReflectionTestUtils.invokeMethod(hblService, "mapForwardDataInHblV3", additionalDetails, hblData);
+        ReflectionTestUtils.invokeMethod(hblService, "mapForwardingAgentDataInHblV3", additionalDetails, hblData);
 
         // Assert - Should not throw any exceptions and handle nulls gracefully
         assertNull(hblData.getForwarderName());
@@ -2202,7 +2202,7 @@ class HblServiceTest extends CommonMocks {
 
         when(additionalDetails.getImportBroker()).thenReturn(importBroker);
 
-        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryDataInHblV3", additionalDetails, hblData);
+        ReflectionTestUtils.invokeMethod(hblService, "mapDeliveryAgentDataInHblV3", additionalDetails, hblData);
 
         // Assert - Should not throw any exceptions and handle nulls gracefully
         assertNull(hblData.getDeliveryAgentName());
