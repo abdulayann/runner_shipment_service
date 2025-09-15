@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface IConsolidationBackupRepository extends JpaRepository<ConsolidationBackupEntity, Long> {
@@ -28,6 +29,10 @@ public interface IConsolidationBackupRepository extends JpaRepository<Consolidat
 
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM consolidation_backup cb WHERE cb.consolidation_id = ?1 and cb.tenant_id = ?2", nativeQuery = true)
+    @Query(value = "UPDATE consolidation_backup SET is_deleted = true WHERE consolidation_id = ?1 and tenant_id = ?2", nativeQuery = true)
     void deleteBackupByTenantIdAndConsolidationId(Long consolidationId, Integer tenantId);
+
+    @Modifying
+    @Query(value = "UPDATE consolidation_backup SET is_deleted = true WHERE consolidation_id IN ?1 and tenant_id = ?2", nativeQuery = true)
+    void deleteDuplicateBackupByTenantIdAndConsolidationIds(Set<Long> consolidationIds, Integer tenantId);
 }

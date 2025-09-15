@@ -204,7 +204,7 @@ public class ArrivalNoticeReport extends IReport {
         List<BillChargesResponse> charges = new ArrayList<>();
         if(billingsList != null && !billingsList.isEmpty()) {
             for(BillingResponse billingResponse : billingsList) {
-                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse);
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse, false);
                 if(billChargesResponses != null) {
                     charges.addAll(billChargesResponses);
                 }

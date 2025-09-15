@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.COUNTRY;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -728,8 +729,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                         return migrated.getId();
                     });
                 } catch (Exception e) {
-                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, Arrays.toString(e.getStackTrace()), e);
-                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, Arrays.toString(e.getStackTrace()));
+                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
