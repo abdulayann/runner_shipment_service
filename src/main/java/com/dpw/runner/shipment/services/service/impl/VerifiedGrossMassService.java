@@ -1,5 +1,4 @@
 package com.dpw.runner.shipment.services.service.impl;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -54,7 +53,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.transaction.Transactional;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,7 +65,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
