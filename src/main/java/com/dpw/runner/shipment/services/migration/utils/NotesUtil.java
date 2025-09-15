@@ -69,7 +69,7 @@ public class NotesUtil {
         List<Packing> packingList = shipmentDetails.getPackingList();
         StringBuilder text = new StringBuilder();
 
-        text.append("Please note that the Cargo details have been amended since it is a V2 shipment opened in V3.").append("\n");
+        text.append("Please note that below is the Historic Cargo Details which were Entered/available in CR2:").append("\n");
         text.append(nullSafe(shipmentDetails.getShipmentId())).append("\n");
 
         text.append("Total Gross Weight: ").append(nullSafe(shipmentDetails.getWeight())).append(" ").append(nullSafe(shipmentDetails.getWeightUnit())).append("\n");
@@ -176,7 +176,7 @@ public class NotesUtil {
             }
         }
 
-        text.append("Please note that the Cargo details have been amended since it is a V2 consolidation opened in V3.");
+        text.append("Please note that below is the Historic Cargo Details which were Entered/available in CR2:");
         text.append(nullSafe(consolidationDetails.getConsolidationNumber())).append("\n");
 
         appendContainerDataInText(containersSet, text);
