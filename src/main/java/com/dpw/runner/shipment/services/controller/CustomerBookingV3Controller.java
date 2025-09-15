@@ -311,4 +311,16 @@ public class CustomerBookingV3Controller {
     public ResponseEntity<IRunnerResponse> getDefaultBooking() {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getDefaultBooking());
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
+    @PostMapping(ApiConstants.API_CLONE_FROM_SHIPMENT)
+        public ResponseEntity<IRunnerResponse> cloneBookingFromShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingFromShipmentIfExist(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
+    @PostMapping(ApiConstants.API_CLONE_BOOKING)
+    public ResponseEntity<IRunnerResponse> cloneBookingById(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingById(request));
+    }
 }

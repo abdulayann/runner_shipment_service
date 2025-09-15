@@ -3,14 +3,20 @@ package com.dpw.runner.shipment.services.dto.v3.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.PackCategory;
 import io.swagger.annotations.ApiModel;
-import lombok.*;
-
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
@@ -99,4 +105,10 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
+    private PackCategory packCategory;
+    private BigDecimal lineNo;
+    private BigDecimal subLineNo;
+    private String productCode;
+    private Long shipmentOrderId;
+
 }

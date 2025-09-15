@@ -8,14 +8,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -120,6 +113,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -144,6 +138,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstan
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN_PORT_LOC_CODE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -195,7 +190,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
     private final IFusionServiceAdapter fusionServiceAdapter;
-    private final ConsolidationV3Service consolidationService;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -308,7 +302,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
         this.fusionServiceAdapter = fusionServiceAdapter;
-        this.consolidationService = consolidationService;
     }
 
     @Override
@@ -357,7 +350,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(bookingId)
-                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .parentEntityName(CUSTOMER_BOOKING)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .tenantId(customerBooking.getTenantId())
                         .sourceInfo(sourceInfo)
@@ -381,7 +374,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         boolean eventPersisted = false;
-        Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
+        Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), BOOKING);
         if(persistedEvent.isPresent())
             eventPersisted = true;
         if(!eventPersisted && request.getBookingStatus().equals(BookingStatus.PENDING_FOR_KYC) && oldEntity.get().getBookingStatus().equals(BookingStatus.PENDING_FOR_REVIEW)) {
@@ -480,6 +473,208 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setPackingList(packings);
             customerBooking.setContainersList(containers);
             customerBookingDao.save(customerBooking);
+        }
+    }
+
+    // shipment to CB
+    @Override
+    public CustomerBookingV3Response cloneBookingFromShipmentIfExist(CloneRequest request) throws RunnerException {
+        if (null == request.getShipmentId()) {
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        String responseMsg;
+        try {
+            Optional<ShipmentDetails> shipmentData = shipmentDao.findById(request.getShipmentId());
+            if (shipmentData.isEmpty()) {
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getShipmentId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentDetails shipmentDetails = shipmentData.get();
+            commonUtils.validateAirSecurityPermission(StringUtility.convertToString(shipmentDetails.getTransportMode()), StringUtility.convertToString(shipmentDetails.getDirection()));
+            V1TenantSettingsResponse tenantData = validateBranchConfig(shipmentDetails.getTransportMode());
+            CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+            CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+            CarrierDetails details = shipmentDetails.getCarrierDetails();
+            //HEADERS
+            setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+            // Party
+            setPartyDetailsFromShipment(request, shipmentDetails, customerBookingResponse);
+            // General
+            setGenetalDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+            customerBookingResponse.setCarrierDetails(builder.build());
+            //Container
+            setContainerDetailsFromShipment(request, customerBookingResponse, (Objects.isNull(tenantData.getWeightDecimalPlace()) ? 2 : tenantData.getWeightDecimalPlace()));
+            //Packing
+            setPackingDetailsFromShipment(request, customerBookingResponse);
+            // Cargo summary
+            setCargoDetailsFromShipment(request, shipmentDetails, customerBookingResponse);
+            return customerBookingResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void setCargoDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {
+        if (request.getFlags().isCargoSummary()) {
+            commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), customerBookingResponse::setDescription);
+            commonUtils.mapIfSelected(request.getFlags().isMarksAndNumbers(), shipmentDetails.getMarksNum(), customerBookingResponse::setMarksnNumbers);
+            commonUtils.mapIfSelected(request.getFlags().isAdditionalTerms(), shipmentDetails.getAdditionalTerms(), customerBookingResponse::setAdditionalTerms);
+        }
+    }
+
+    private void setPackingDetailsFromShipment(CloneRequest request, CustomerBookingV3Response customerBookingResponse) {
+        List<Packing> packings = packingDao.findByShipmentId(request.getShipmentId());
+        setPackingData(request, customerBookingResponse, packings);
+    }
+
+    private void setPackingData(CloneRequest request, CustomerBookingV3Response customerBookingResponse, List<Packing> packings) {
+        if (!packings.isEmpty() && request.getFlags().isPackages()) {
+            customerBookingResponse.setPackingList(packings.stream().map(packingResponse -> {
+                PackingResponse p = new PackingResponse();
+                if (request.getFlags().isDimensionPerPack()) {
+                    p.setLength(packingResponse.getLength());
+                    p.setLengthUnit(packingResponse.getLengthUnit());
+                    p.setWidth(packingResponse.getWidth());
+                    p.setWidthUnit(packingResponse.getWidthUnit());
+                    p.setHeight(packingResponse.getHeight());
+                    p.setHeightUnit(packingResponse.getHeightUnit());
+                }
+                commonUtils.mapIfSelected(request.getFlags().isPackageCount(), packingResponse.getPacks(), p::setPacks);
+                commonUtils.mapIfSelected(request.getFlags().isPackageType(), packingResponse.getPacksType(), p::setPacksType);
+                commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPack(), p::setVolumePerPack);
+                commonUtils.mapIfSelected(request.getFlags().isVolumePerPack(), packingResponse.getVolumePerPackUnit(), p::setVolumePerPackUnit);
+                commonUtils.mapIfSelected(request.getFlags().isVolume(), packingResponse.getVolume(), p::setVolume);
+                commonUtils.mapIfSelected(request.getFlags().isVolume(), packingResponse.getVolumeUnit(), p::setVolumeUnit);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerPack(), packingResponse.getCargoWeightPerPack(), p::setCargoWeightPerPack);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerPack(), packingResponse.getPackWeightUnit(), p::setPackWeightUnit);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeight(), packingResponse.getWeight(), p::setWeight);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeight(), packingResponse.getWeightUnit(), p::setWeightUnit);
+                commonUtils.mapIfSelected(request.getFlags().isPackageCommodityCategory(), packingResponse.getCommodityGroup(), p::setCommodityGroup);
+                return p;
+            }).toList());
+        }
+    }
+
+    private void setContainerDetailsFromShipment(CloneRequest request, CustomerBookingV3Response customerBookingResponse, Integer weightDecimalPlace) {
+        if (request.getFlags().isContainers()) {
+            List<ContainerResponse> containersList = new ArrayList<>();
+            List<Containers> containers = containerDao.findByShipmentId(request.getShipmentId());
+            if (!containers.isEmpty()) {
+                Map<String, List<Containers>> groupedByType = containers.stream().filter(c -> c.getContainerCode() != null)
+                        .collect(Collectors.groupingBy(Containers::getContainerCode));
+                setContainersDetails(request, groupedByType, containersList, weightDecimalPlace);
+                customerBookingResponse.setContainersList(containersList);
+            }
+        }
+    }
+
+    private void setGenetalDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if (request.getFlags().isGeneral()) {
+            commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), customerBookingResponse::setIncoTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isCarrier(), details.getShippingLine(), builder::shippingLine);
+            }
+        }
+    }
+
+    private void setPartyDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {
+        if(request.getFlags().isParty()) {
+            commonUtils.mapIfSelected(request.getFlags().isClient(), commonUtils.getPartiesResponse(shipmentDetails.getClient()), customerBookingResponse::setCustomer);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), commonUtils.getPartiesResponse(shipmentDetails.getConsignee()), customerBookingResponse::setConsignee);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), commonUtils.getPartiesResponse(shipmentDetails.getConsigner()), customerBookingResponse::setConsignor);
+            if (null != shipmentDetails.getAdditionalDetails() && null != shipmentDetails.getAdditionalDetails().getNotifyParty()) {
+                commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getNotifyParty()), customerBookingResponse::setNotifyParty);
+            }
+            List<Parties> additionParties = shipmentDetails.getShipmentAddresses();
+            if (null != additionParties && !additionParties.isEmpty()){
+                List<PartiesResponse> additionalParties = new ArrayList<>();
+                for (Parties additionalParty : additionParties){
+                    additionalParties.add(commonUtils.getPartiesResponse(additionalParty));
+                }
+                commonUtils.mapIfSelected(request.getFlags().isAdditionalParty(), additionalParties, customerBookingResponse::setAdditionalParties);
+            }
+        }
+    }
+
+    public void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if(request.getFlags().isHeader()) {
+            commonUtils.mapIfSelected(request.getFlags().isMode(), shipmentDetails.getTransportMode(), customerBookingResponse::setTransportType);
+            commonUtils.mapIfSelected(request.getFlags().isServiceType(), shipmentDetails.getServiceType(), customerBookingResponse::setServiceMode);
+            commonUtils.mapIfSelected(request.getFlags().isShipmentType(), shipmentDetails.getDirection(), customerBookingResponse::setDirection);
+            commonUtils.mapIfSelected(request.getFlags().isCargoType(), shipmentDetails.getShipmentType(), customerBookingResponse::setCargoType);
+            commonUtils.mapIfSelected(request.getFlags().isPaymentTerms(), shipmentDetails.getPaymentTerms(), customerBookingResponse::setPaymentTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOrigin(), builder::origin);
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOriginCountry(), builder::originCountry);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestination(), builder::destination);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestinationCountry(), builder::destinationCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPort(), builder::originPort);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPortCountry(), builder::originPortCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPort(), builder::destinationPort);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPortCountry(), builder::destinationPortCountry);
+            }
+        }
+    }
+
+    private void setContainersDetails(CloneRequest request, Map<String, List<Containers>> groupedByType, List<ContainerResponse> containersList, Integer weightDecimalPlace) {
+        for (Map.Entry<String, List<Containers>> entry : groupedByType.entrySet()) {
+            ContainerResponse container = new ContainerResponse();
+            if (request.getFlags().isContainerType()) {
+                String type = entry.getKey();
+                container.setContainerCode(type);
+            }
+            List<Containers> list = entry.getValue();
+            long count = list.size();
+            if (request.getFlags().isContainerCount()) {
+                container.setContainerCount(count);
+            }
+            setCargoWeight(request, list, count, container, weightDecimalPlace);
+            setCommodityCategory(request, list, container);
+            containersList.add(container);
+        }
+    }
+
+    public static void setCommodityCategory(CloneRequest request, List<Containers> list, ContainerResponse container) {
+        // commodity category
+        if (request.getFlags().isContainerCommodityCategory()) {
+            // Collect all categories, keeping blanks as null/empty
+            List<String> categories = list.stream().map(Containers::getCommodityGroup).toList();
+            // If any blank OR all blank → FAK
+            boolean hasBlank = categories.stream().anyMatch(c -> c == null || c.isBlank());
+            boolean allBlank = categories.stream().allMatch(c -> c == null || c.isBlank());
+            String commodityCategory;
+            if (allBlank || hasBlank) {
+                commodityCategory = "FAK";
+            } else {
+                // Keep only non-blank unique values
+                Set<String> uniqueCategories = categories.stream().filter(c -> c != null && !c.isBlank()).collect(Collectors.toSet());
+                commodityCategory = uniqueCategories.size() == 1 ? uniqueCategories.iterator().next() : "FAK";
+            }
+            container.setCommodityGroup(commodityCategory);
+        }
+    }
+
+    public static void setCargoWeight(CloneRequest request, List<Containers> list, long count, ContainerResponse container, Integer weightDecimalPlace) {
+        // cargo weight (convert all to KG first)
+        if (request.getFlags().isCargoWeightPerContainer()) {
+            double totalWeightKg = list.stream()
+                    .mapToDouble(c -> {
+                        if (c.getGrossWeight() == null || c.getGrossWeightUnit() == null) {
+                            return 0.0;
+                        }
+                        try {
+                            return (double) convertUnit(MASS, c.getGrossWeight(), c.getGrossWeightUnit(), WEIGHT_UNIT_KG);
+                        } catch (RunnerException e) {
+                            log.warn("Failed to convert weight for container {}: {}", c.getContainerCode(), e.getMessage());
+                            return 0.0;
+                        }
+                    }).sum();
+            BigDecimal cargoWtPerContainer = BigDecimal.valueOf(count == 0 ? 0.0 : totalWeightKg / count);
+            container.setCargoWeightPerContainer(cargoWtPerContainer.setScale(weightDecimalPlace, RoundingMode.HALF_UP));
+            container.setContainerWeightUnit(WEIGHT_UNIT_KG);
         }
     }
 
@@ -870,23 +1065,24 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    // old cb to cb
     @Override
     public CustomerBookingV3Response cloneBooking(Long id) throws RunnerException {
         if(Objects.isNull(id)) {
             log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Booking Id cannot be null");
+            throw new ValidationException("Booking Id Is Mandatory");
         }
         String responseMsg;
         try {
-            Optional<CustomerBooking> customerBooking = getValidatedCustomerBooking(id);
-            CustomerBookingV3Response customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingV3Response.class);
+            CustomerBooking customerBooking = getValidatedCustomerBooking(id);
+            CustomerBookingV3Response customerBookingResponse = jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
             customerBookingResponse.setId(null);
             customerBookingResponse.setGuid(null);
             customerBookingResponse.setBookingNumber(null);
             customerBookingResponse.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
             customerBookingResponse.setSource(null);
             customerBookingResponse.setCreatedBy(null);
-            customerBookingResponse.setSourceGuid(customerBooking.get().getGuid());
+            customerBookingResponse.setSourceGuid(customerBooking.getGuid());
             customerBookingResponse.setBookingDate(LocalDateTime.now());
             if(customerBookingResponse.getCustomer() != null)
             {
@@ -1000,7 +1196,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             //fields related to order
             customerBookingResponse.setOrderManagementId(null);
             customerBookingResponse.setOrderManagementNumber(null);
-            createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            createCustomerBookingResponse(customerBooking, customerBookingResponse);
 
             return customerBookingResponse;
         } catch (Exception e) {
@@ -1008,6 +1204,132 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
+        }
+    }
+
+    // new cb to cb
+    @Override
+    public CustomerBookingV3Response cloneBookingById(CloneRequest request) throws RunnerException {
+        if(Objects.isNull(request.getBookingId())) {
+            log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Booking Id Is Mandatory");
+        }
+        String responseMsg;
+        try {
+            CustomerBooking customerBooking = getValidatedCustomerBooking(request.getBookingId());
+            validateBranchConfig(customerBooking.getTransportType());
+            CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+            CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+            CarrierDetails details = customerBooking.getCarrierDetails();
+            setCBHeaderDetails(request, customerBooking, customerBookingResponse, details, builder);
+            setCBPartyDetails(request, customerBooking, customerBookingResponse);
+            setCBGeneralDetails(request, customerBooking, customerBookingResponse, details, builder);
+            customerBookingResponse.setCarrierDetails(builder.build());
+            setCBContainerDetails(request, customerBooking, customerBookingResponse);
+            setCBPackingDetails(request, customerBooking, customerBookingResponse);
+            setCBCargoDetails(request, customerBooking, customerBookingResponse);
+            return customerBookingResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    public V1TenantSettingsResponse validateBranchConfig(String transportType) {
+        V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        if (Objects.nonNull(tenantData)
+                && Objects.nonNull(transportType)
+                && Boolean.TRUE.equals(tenantData.getTransportModeConfig())
+                && commonUtils.isSelectedModeOffInBooking(transportType, tenantData)) {
+            throw new IllegalStateException("Clone Booking is not allowed. Please check the Transport Config.");
+        }
+        return tenantData;
+    }
+
+    private void setCBCargoDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {
+        if (request.getFlags().isCargoSummary()) {
+            commonUtils.mapIfSelected(request.getFlags().isDescription(), customerBooking.getDescription(), customerBookingResponse::setDescription);
+            commonUtils.mapIfSelected(request.getFlags().isMarksAndNumbers(), customerBooking.getMarksnNumbers(), customerBookingResponse::setMarksnNumbers);
+            commonUtils.mapIfSelected(request.getFlags().isAdditionalTerms(), customerBooking.getAdditionalTerms(), customerBookingResponse::setAdditionalTerms);
+        }
+    }
+
+    public void setCBPackingDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {
+        List<Packing> packings = customerBooking.getPackingList();
+        setPackingData(request, customerBookingResponse, packings);
+    }
+
+    public void setCBContainerDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {
+        List<Containers> containers = customerBooking.getContainersList();
+        if (!containers.isEmpty() && request.getFlags().isContainers()) {
+            customerBookingResponse.setContainersList(containers.stream().map(containerResponse -> {
+                ContainerResponse c = new ContainerResponse();
+                c.setTenantId(containerResponse.getTenantId());
+                commonUtils.mapIfSelected(request.getFlags().isContainerType(), containerResponse.getContainerCode(), c::setContainerCode);
+                commonUtils.mapIfSelected(request.getFlags().isContainerCount(), containerResponse.getContainerCount(), c::setContainerCount);
+                commonUtils.mapIfSelected(request.getFlags().isPackagesPerContainer(), containerResponse.getPackagesPerContainer(), c::setPackagesPerContainer);
+                commonUtils.mapIfSelected(request.getFlags().isPackagesPerContainer(), containerResponse.getContainerPackageType(), c::setContainerPackageType);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerContainer(), containerResponse.getCargoWeightPerContainer(), c::setCargoWeightPerContainer);
+                commonUtils.mapIfSelected(request.getFlags().isCargoWeightPerContainer(), containerResponse.getContainerWeightUnit(), c::setContainerWeightUnit);
+                commonUtils.mapIfSelected(request.getFlags().isContainerCommodityCategory(), containerResponse.getCommodityGroup(), c::setCommodityGroup);
+                return c;
+            }).toList());
+        }
+    }
+
+    private void setCBGeneralDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if (request.getFlags().isGeneral()) {
+            commonUtils.mapIfSelected(request.getFlags().isIncoterms(), customerBooking.getIncoTerms(), customerBookingResponse::setIncoTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isCarrier(), details.getShippingLine(), builder::shippingLine);
+            }
+        }
+    }
+
+    private void setCBPartyDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse) {
+        if(request.getFlags().isParty()) {
+            commonUtils.mapIfSelected(request.getFlags().isClient(), commonUtils.getPartiesResponse(customerBooking.getCustomer()), customerBookingResponse::setCustomer);
+            commonUtils.mapIfSelected(request.getFlags().isClient(), customerBooking.getIsCustomerFreeText(), customerBookingResponse::setIsCustomerFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isClient(), customerBooking.getIsCustomerAddressFreeText(), customerBookingResponse::setIsCustomerAddressFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), commonUtils.getPartiesResponse(customerBooking.getConsignee()), customerBookingResponse::setConsignee);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), customerBooking.getIsConsigneeFreeText(), customerBookingResponse::setIsConsigneeFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), customerBooking.getIsConsigneeAddressFreeText(), customerBookingResponse::setIsConsigneeAddressFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), commonUtils.getPartiesResponse(customerBooking.getConsignor()), customerBookingResponse::setConsignor);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), customerBooking.getIsConsignorFreeText(), customerBookingResponse::setIsConsignorFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), customerBooking.getIsConsignorAddressFreeText(), customerBookingResponse::setIsConsignorAddressFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), commonUtils.getPartiesResponse(customerBooking.getNotifyParty()), customerBookingResponse::setNotifyParty);
+            commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), customerBooking.getIsNotifyPartyFreeText(), customerBookingResponse::setIsNotifyPartyFreeText);
+            commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), customerBooking.getIsNotifyPartyAddressFreeText(), customerBookingResponse::setIsNotifyPartyAddressFreeText);
+            List<Parties> additionParties = customerBooking.getAdditionalParties();
+            if (null != additionParties && !additionParties.isEmpty()) {
+                List<PartiesResponse> additionalParties = new ArrayList<>();
+                for (Parties additionalParty : additionParties) {
+                    additionalParties.add(commonUtils.getPartiesResponse(additionalParty));
+                }
+                commonUtils.mapIfSelected(request.getFlags().isAdditionalParty(), additionalParties, customerBookingResponse::setAdditionalParties);
+            }
+        }
+    }
+
+    private void setCBHeaderDetails(CloneRequest request, CustomerBooking customerBooking, CustomerBookingV3Response customerBookingResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if(request.getFlags().isHeader()) {
+            commonUtils.mapIfSelected(request.getFlags().isMode(), customerBooking.getTransportType(), customerBookingResponse::setTransportType);
+            commonUtils.mapIfSelected(request.getFlags().isServiceType(), customerBooking.getServiceMode(), customerBookingResponse::setServiceMode);
+            commonUtils.mapIfSelected(request.getFlags().isShipmentType(), customerBooking.getDirection(), customerBookingResponse::setDirection);
+            commonUtils.mapIfSelected(request.getFlags().isCargoType(), customerBooking.getCargoType(), customerBookingResponse::setCargoType);
+            commonUtils.mapIfSelected(request.getFlags().isPaymentTerms(), customerBooking.getPaymentTerms(), customerBookingResponse::setPaymentTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOrigin(), builder::origin);
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOriginCountry(), builder::originCountry);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestination(), builder::destination);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestinationCountry(), builder::destinationCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPort(), builder::originPort);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPortCountry(), builder::originPortCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPort(), builder::destinationPort);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPortCountry(), builder::destinationPortCountry);
+            }
         }
     }
 
@@ -1563,7 +1885,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         String bookingNumber = request.getBookingNumber();
         String shipmentReferenceNumber = request.getShipmentReferenceNumber();
         Optional<CustomerBooking> optional;
-        if (Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource())) {
+        if (TESLA.equalsIgnoreCase(request.getIntegrationSource())) {
             optional = customerBookingDao.findByShipmentReferenceNumber(shipmentReferenceNumber);
             request.setBookingNumber(optional.map(CustomerBooking::getBookingNumber).orElse(null));
         }
@@ -1594,7 +1916,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return customerBookingV3Response;
     }
 
-    private Optional<CustomerBooking> getValidatedCustomerBooking(Long id) {
+    public CustomerBooking getValidatedCustomerBooking(Long id) {
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
         if(customerBooking.isEmpty())
         {
@@ -1603,9 +1925,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(customerBooking.get())) {
-            throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+            throw new ValidationException(AIR_SECURITY_PERMISSION_MSG);
         }
-        return customerBooking;
+        return customerBooking.get();
     }
 
     private void setReferenceNumbersForClonedBookings(CustomerBookingV3Response customerBookingResponse) {
@@ -1693,7 +2015,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private void npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) {
-        if (Objects.equals(current.getTransportType(), Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
+        if (Objects.equals(current.getTransportType(), TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
             if (!loadInfoRequestList.isEmpty() || !Boolean.TRUE.equals(isAlteration)) {
@@ -1720,7 +2042,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private void generateBookingAcknowledgementEvent(CustomerBookingV3Request request) {
         // create booking acknowledged event for Tesla
-        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()))
+        if(TESLA.equalsIgnoreCase(request.getIntegrationSource()))
             createAutomatedEvents(request, EventConstants.BKAC, LocalDateTime.now(), null, EventConstants.BKAC_DESCRIPTION);
     }
 
@@ -1740,9 +2062,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         // Set event fields from booking request
         events.setActual(actualDateTime);
         events.setEstimated(estimatedDateTime);
-        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        events.setSource(MASTER_DATA_SOURCE_CARGOES_RUNNER);
         events.setIsPublicTrackingEvent(true);
-        events.setEntityType(Constants.BOOKING);
+        events.setEntityType(BOOKING);
         events.setEntityId(request.getId());
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
@@ -1805,7 +2127,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         LoadInfoRequest loadInfoRequest = new LoadInfoRequest();
         loadInfoRequest.setOperation(operation);
         loadInfoRequest.setLoad_details(LoadDetailsRequest.builder()
-                .load_type(Constants.CARGO_TYPE_FCL)
+                .load_type(CARGO_TYPE_FCL)
                 .cargo_type(container.getContainerCode())
                 .product_category_code(container.getCommodityGroup())
                 .hazardous_info(HazardousInfoRequest.builder().is_hazardous(false).build())
@@ -2090,7 +2412,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                 CreateShipmentTaskFromBookingTaskRequest.builder()
                                         .currentEntityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
                                         .currentEntityUuid(StringUtility.convertToString(customerBooking.getGuid()))
-                                        .newEntityType(Constants.SHIPMENT)
+                                        .newEntityType(SHIPMENT)
                                         .newEntityUuid(StringUtility.convertToString(shipmentResponse.getGuid()))
                                         .build()));
             }
@@ -2117,14 +2439,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         else {
             boolean hasAirDGPermission = UserContext.isAirDgUser();
-            if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
+            if (Objects.equals(request.getTransportType(), TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
                 throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
             }
         }
     }
 
     public static boolean checkAirSecurityForBookingRequest(CustomerBookingV3Request customerBooking) {
-        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+        if (customerBooking.getTransportType().equals(TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
             return UserContext.isAirSecurityUser();
         }
         return true;

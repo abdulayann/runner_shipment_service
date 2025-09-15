@@ -105,18 +105,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -3937,6 +3926,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt, Boolean isForcedDetach, Boolean isFCLDelete) throws RunnerException {
+        ShipmentForceDetachResponseDto shipmentForceDetachResponseDto = new ShipmentForceDetachResponseDto();
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
         Long consolidationId = consol.getId();
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
@@ -3947,6 +3937,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if (Boolean.TRUE.equals(consol.getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
+        }
+        if(Boolean.FALSE.equals(isForcedDetach)) {
+            validateShipmentContainersAndPack(isFromEt, shipmentDetails, shipmentForceDetachResponseDto);
+        }
+        if(Boolean.TRUE.equals(shipmentForceDetachResponseDto.getIsContainerOrPackageAttached())){
+            return ResponseHelper.buildSuccessResponse(shipmentForceDetachResponseDto);
         }
 
         List<Packing> packingList = new ArrayList<>();
@@ -3965,8 +3961,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         .collect(Collectors.toList());
                 detachAllContainerShipmentPresent(removedShipmentDetails, isForcedDetach, isFCLDelete);
             }
-            detachShipmentAndResetEventList(isFromEt, isForcedDetach, removedShipmentIds, shipmentDetailsMap, packingList);
-
+            detachShipmentAndResetEventList(removedShipmentIds, shipmentDetailsMap, packingList);
             List<ShipmentDetails> shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave, isForcedDetach);
             //delete routings from shipment which has isFromConsolidation as true
@@ -3975,7 +3970,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
             }
-
             List<ShipmentDetails> shipmentDetailsList = getShipmentDetailsListFromConsoleMapping(consolidationDetails.getId());
             updateConsolidationCargoSummary(consolidationDetails, shipmentDetailsList, oldShipmentWtVolResponse);
 
@@ -3984,7 +3978,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 consolidationDetailsDao.updateV3(consol, true);
             }
         }
-
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
@@ -3998,13 +3991,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    private void detachShipmentAndResetEventList(Boolean isFromEt, Boolean isForcedDetach, List<Long> removedShipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, List<Packing> packingList) {
+    private void detachShipmentAndResetEventList(List<Long> removedShipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, List<Packing> packingList) {
         for(Long shipId : removedShipmentIds) {
             ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
-            if(Boolean.FALSE.equals(isForcedDetach)) {
-                validateShipmentContainersAndPack(isFromEt, shipmentDetail);
-            }
-
             if(shipmentDetail != null) {
                 packingList = getPackingList(shipmentDetail, packingList);
                 setEventsList(shipmentDetail);
@@ -4061,9 +4050,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void validateShipmentContainersAndPack(Boolean isFromEt, ShipmentDetails shipmentDetail) {
+    private void validateShipmentContainersAndPack(Boolean isFromEt, List<ShipmentDetails> shipmentDetails, ShipmentForceDetachResponseDto shipmentForceDetachResponseDto) throws RunnerException {
         if(!Boolean.TRUE.equals(isFromEt))
-            validateDetachedShipment(shipmentDetail);
+            validateDetachedShipment(shipmentDetails, shipmentForceDetachResponseDto);
     }
 
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
@@ -4134,18 +4123,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return packingList;
     }
 
-    protected void validateDetachedShipment(ShipmentDetails shipmentDetail)  {
-        if (shipmentDetail == null || shipmentDetail.getContainersList() == null) {
-            return;
+    protected void validateDetachedShipment(List<ShipmentDetails> shipmentDetails, ShipmentForceDetachResponseDto shipmentForceDetachResponseDto) throws RunnerException {
+        List<ShipmentForceDetachResponse> shipmentForceDetachResponses = new ArrayList<>();
+        for(ShipmentDetails shipmentDetail: shipmentDetails){
+            List<Long> shipmentIds = shipmentDetails.stream().map(ShipmentDetails::getId).toList();
+            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByShipmentIdIn(shipmentIds);
+            if (shipmentsContainersMappings == null || shipmentsContainersMappings.stream().noneMatch(mapping -> mapping.getContainerId() != null)) {
+                return;
+            }
+            List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
+            Map<Long, Containers> containerIdMap = buildContainerIdMap(containersList);
+            if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
+                calculateContainersDetailsAttachedToShipmentForFCL(shipmentDetail, containersList, shipmentForceDetachResponses);
+            }else{
+                calculateContainersDetailsAttachedToShipmentForLCL(shipmentDetail, containerIdMap, shipmentForceDetachResponses);
+            }
         }
-
-        List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
-        Map<Long, Containers> containerIdMap = buildContainerIdMap(containersList);
-
-        validatePacksAgainstContainers(shipmentDetail, containerIdMap);
-        validateContainersAttachedToShipment(shipmentDetail, containersList);
-
+        if(!shipmentForceDetachResponses.isEmpty()){
+            shipmentForceDetachResponseDto.setIsContainerOrPackageAttached(Boolean.TRUE);
+        }
+        shipmentForceDetachResponseDto.setShipmentDetachResponses(shipmentForceDetachResponses);
     }
+
+
 
     private Map<Long, Containers> buildContainerIdMap(List<Containers> containersList) {
         return containersList.stream()
@@ -4155,60 +4155,108 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Function.identity()
             ));
     }
-
-    private void validatePacksAgainstContainers(ShipmentDetails shipmentDetail, Map<Long, Containers> containersMap){
-        List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
-
-        if (!isSeaPackingList(shipmentDetail, packings)) {
-            return;
-        }
-
-        for (Packing packing : packings) {
-            if (packing.getContainerId() != null) {
-                Containers containers  = containersMap.get(packing.getContainerId());
-                String containerNumber = packing.getPacksType();
-                if(containers != null) {
-                    containerNumber = containerV3Util.getContainerNumberOrType(containers);
-                }
-                String errorMsg;
-                if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
-                    errorMsg = String.format("Selected %s Shipment - %s is available with Container and Packages, please unassign packages/ remove containers to detach the shipment.",
-                            shipmentDetail.getShipmentType(),
-                            shipmentDetail.getShipmentId());
-                } else {
-                    errorMsg = String.format(
-                            "Selected Shipment - %s - %s packs is assigned to the container(s): %s. Please unassign to detach.",
-                            shipmentDetail.getShipmentId(),
-                            packing.getPacks(),
-                            containerNumber
-                    );
-                }
-                throw new ValidationException(errorMsg);
+    private void calculateContainersDetailsAttachedToShipmentForLCL(ShipmentDetails shipmentDetail, Map<Long, Containers> containersMap, List<ShipmentForceDetachResponse> shipmentForceDetachResponses) throws RunnerException {
+        if(shipmentDetail.getContainerAssignedToShipmentCargo() != null){
+            Containers container = containersMap.get(shipmentDetail.getContainerAssignedToShipmentCargo());
+            if (container.getId() != null) {
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(shipmentDetail.getPacksUnit()).orElse(""))
+                        .packageCount(Optional.ofNullable(shipmentDetail.getNoOfPacks()).orElse(0))
+                        .packageAssigned(Boolean.TRUE)
+                        .weight(Optional.ofNullable(shipmentDetail.getWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(shipmentDetail.getWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(shipmentDetail.getVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(shipmentDetail.getVolumeUnit()).orElse(""))
+                        .build());
             }
+        }else{
+            List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
+            Set<Long> processedContainerIds = new HashSet<>();
+            for (Packing packing : packings) {
+                extractcontainerDetailsFromPacking(shipmentDetail, containersMap, shipmentForceDetachResponses, packing, processedContainerIds);
+            }
+         }
+    }
+
+    private void extractcontainerDetailsFromPacking(ShipmentDetails shipmentDetail, Map<Long, Containers> containersMap, List<ShipmentForceDetachResponse> shipmentForceDetachResponses, Packing packing, Set<Long> processedContainerIds) throws RunnerException {
+        if (packing.getContainerId() != null) {
+            Containers container  = containersMap.get(packing.getContainerId());
+                    if (processedContainerIds.add(container.getId())) {
+                        containerV3Util.resetContainerDataForRecalculation(container);
+                    }
+                containerV3Service.addPackageDataToContainer(container, packing);
+            String containerNumber = Optional.ofNullable(container.getContainerNumber()).orElse("");
+
+            // Check if response already exists for this container
+            Optional<ShipmentForceDetachResponse> existingResponse = shipmentForceDetachResponses.stream()
+                    .filter(response -> containerNumber.equals(response.getContainerNumber()))
+                    .findFirst();
+
+            if (existingResponse.isPresent()) {
+                // Update the package count in existing response
+                ShipmentForceDetachResponse response = existingResponse.get();
+                response.setPackageCount(Optional.ofNullable(container.getPacks())
+                        .map(Integer::parseInt)
+                        .orElse(0));
+                response.setVolume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO));
+                response.setWeight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO));
+                response.setVolumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""));
+                response.setWeightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""));
+                response.setPackageUnit(Optional.ofNullable(container.getPacksType()).orElse(""));
+            } else {
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
+                        .packageCount(Optional.ofNullable(container.getPacks())
+                                .map(Integer::parseInt)
+                                .orElse(0))
+                        .packageAssigned(Boolean.TRUE)
+                        .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
+                        .build());
+                 }
+
+
         }
     }
 
-    private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) {
+    private void calculateContainersDetailsAttachedToShipmentForFCL(ShipmentDetails shipmentDetail, List<Containers> containersList, List<ShipmentForceDetachResponse> shipmentForceDetachResponses) {
         for (Containers container : containersList) {
             if (container.getId() != null) {
-                String containerNumber = containerV3Util.getContainerNumberOrType(container);
-                String errorMsg;
-                if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
-                    errorMsg = String.format("Selected %s Shipment - %s is available with Container : %s, please remove the same to detach.",
-                            shipmentDetail.getShipmentType(),
-                            shipmentDetail.getShipmentId(),
-                            containerNumber);
-                } else {
-                    errorMsg = String.format(
-                            "Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
-                            shipmentDetail.getShipmentId(),
-                            containerNumber
-                    );
-                }
-                throw new ValidationException(errorMsg);
+                shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentNumber(shipmentDetail != null ? Optional.ofNullable(shipmentDetail.getShipmentId()).orElse("") : "")
+                        .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
+                        .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
+                        .packageCount(container != null && container.getPacks() != null ?
+                                Optional.ofNullable(Integer.parseInt(container.getPacks())).orElse(0) : 0)
+                        .packageAssigned(isPackageAttached(shipmentDetail, container))
+                        .weight(Optional.ofNullable(container.getGrossWeight()).orElse(BigDecimal.ZERO))
+                        .weightUnit(Optional.ofNullable(container.getGrossWeightUnit()).orElse(""))
+                        .volume(Optional.ofNullable(container.getGrossVolume()).orElse(BigDecimal.ZERO))
+                        .volumeUnit(Optional.ofNullable(container.getGrossVolumeUnit()).orElse(""))
+                        .build());
             }
         }
     }
+
+    private Boolean isPackageAttached(ShipmentDetails shipmentDetail, Containers container){
+        List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
+        Boolean isPackageAssigned = Boolean.FALSE;
+        for (Packing packing : packings) {
+            if (packing.getContainerId() != null && container.getId().equals(packing.getContainerId())) {
+                isPackageAssigned = Boolean.TRUE;
+                break;
+            }
+        }
+        return isPackageAssigned;
+    }
+
+
 
 
     boolean isSeaPackingList(ShipmentDetails shipmentDetail, List<Packing> packingList) {
@@ -5503,7 +5551,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
             cq.where(idPredicate);
         } else if(commonGetRequest.getGuid() != null) {
-            Predicate idPredicate = cb.equal(root.get("guid"), commonGetRequest.getGuid());
+            Predicate idPredicate = cb.equal(root.get("guid"), UUID.fromString(commonGetRequest.getGuid()));
             cq.where(idPredicate);
         }
 

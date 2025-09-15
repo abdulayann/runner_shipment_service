@@ -53,10 +53,8 @@ import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -72,6 +70,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -83,6 +82,7 @@ import java.util.concurrent.Executors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -2550,7 +2550,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             customerBookingService.cloneBooking(null);
         });
-        assertEquals("Booking Id cannot be null", exception.getMessage());
+        assertEquals("Booking Id Is Mandatory", exception.getMessage());
     }
 
     @Test
@@ -3794,4 +3794,636 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
 
+    @Test
+    void testCloneBookingWhenShipmentIdIsNull() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+
+        assertThatThrownBy(() -> customerBookingService.cloneBookingFromShipmentIfExist(request))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("Shipment Id Is Mandatory");
+    }
+
+    @Test
+    void testCloneBooking_nullShipmentId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertEquals("Shipment Id Is Mandatory", exception.getMessage());
+    }
+
+    @Test
+    void testCloneBooking_shipmentNotFound_throwsRunnerException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.empty());
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testCloneBooking_happyPath_allFlagsTrue() throws RunnerException {
+        Long shipmentId = 123L;
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(shipmentId);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setHeader(true);
+        flags.setParty(true);
+        flags.setGeneral(true);
+        flags.setContainers(true);
+        flags.setPackages(true);
+        flags.setCargoSummary(true);
+        request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.findByShipmentId(shipmentId)).thenReturn(List.of(new Packing()));
+        when(containerDao.findByShipmentId(shipmentId)).thenReturn(List.of(new Containers()));
+        doNothing().when(commonUtils).mapIfSelected(anyBoolean(), any(), any());
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNotNull(response);
+        verify(shipmentDao).findById(shipmentId);
+        verify(packingDao).findByShipmentId(shipmentId);
+        verify(containerDao).findByShipmentId(shipmentId);
+    }
+
+    @Test
+    void testCloneBooking_internalException_throwsRunnerException() {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        when(shipmentDao.findById(anyLong())).thenThrow(new RuntimeException("Simulated internal error"));
+        RunnerException exception = assertThrows(RunnerException.class, () ->
+                customerBookingService.cloneBookingFromShipmentIfExist(request));
+        assertTrue(exception.getMessage().contains("Simulated internal error") || exception.getMessage().contains(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG));
+    }
+
+    @Test
+    void testSetCargoDetails_allCargoFlagsTrue_methodsCalled() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setCargoSummary(true);
+        flags.setDescription(true);
+        flags.setMarksAndNumbers(true);
+        flags.setAdditionalTerms(true);
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setGoodsDescription("desc");
+        shipmentDetails.setMarksNum("marks");
+        shipmentDetails.setAdditionalTerms("terms");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        customerBookingService.cloneBookingFromShipmentIfExist(request);
+        verify(commonUtils).mapIfSelected(eq(true), eq("desc"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("marks"), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq("terms"), any());
+    }
+
+    @Test
+    void testSetPackingDetails_dataExistsAndFlagsTrue_packingListIsSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setPackages(true);
+        flags.setDimensionPerPack(true);
+        request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        Packing mockPacking = new Packing();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(packingDao.findByShipmentId(123L)).thenReturn(List.of(mockPacking));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertFalse(response.getPackingList().isEmpty());
+        verify(packingDao).findByShipmentId(123L);
+    }
+
+    @Test
+    void testSetPackingDetails_dataExistsButPackagesFlagIsFalse_packingListIsNotSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setPackages(false); // Flag is false
+        request.setFlags(flags);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(packingDao.findByShipmentId(123L)).thenReturn(List.of(new Packing()));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNull(response.getPackingList());
+    }
+
+    @Test
+    void testSetContainerDetails_dataExistsAndFlagsTrue_containersListIsSet() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        flags.setContainers(true);
+        request.setFlags(flags);
+        Containers mockContainer1 = new Containers();
+        mockContainer1.setContainerCode("20GP");
+        Containers mockContainer2 = new Containers();
+        mockContainer2.setContainerCode("40HC");
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(containerDao.findByShipmentId(123L)).thenReturn(List.of(mockContainer1, mockContainer2));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertFalse(response.getContainersList().isEmpty());
+        verify(containerDao).findByShipmentId(123L);
+    }
+
+    @Test
+    void testCloneBooking_nullCarrierDetails_doesNotThrowException() throws RunnerException {
+        CloneRequest request = new CloneRequest();
+        request.setShipmentId(123L);
+        CloneFlagsRequest flags = new CloneFlagsRequest();
+        request.setFlags(flags);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(null);
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        tenantData.setWeightDecimalPlace(3);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantData);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
+        assertDoesNotThrow(() -> customerBookingService.cloneBookingFromShipmentIfExist(request));
+        CustomerBookingV3Response response = customerBookingService.cloneBookingFromShipmentIfExist(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCloneBookingById_nullRequestId_throwsValidationException() {
+        CloneRequest request = new CloneRequest();
+        request.setBookingId(null);
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                customerBookingService.cloneBookingById(request));
+        assertEquals("Booking Id Is Mandatory", exception.getMessage());
+    }
+
+    @Test
+    void cloneBookingById_shouldReturnCustomerBookingV3Response_whenBookingExists() throws Exception {
+        CloneRequest request = CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder().header(true).build())
+                .build();
+        CustomerBooking customerBooking = createMockCustomerBooking();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doReturn(customerBooking).when(spyService).getValidatedCustomerBooking(1L);
+        CustomerBookingV3Response response = spyService.cloneBookingById(request);
+        assertNotNull(response);
+        verify(commonUtils, atLeastOnce()).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void cloneBookingById_shouldThrowRunnerException_whenExceptionOccurs() {
+        CloneRequest request = CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder().build())
+                .build();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doThrow(new RuntimeException("Database error")).when(spyService).getValidatedCustomerBooking(1L);
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            spyService.cloneBookingById(request);
+        });
+        assertEquals("Database error", exception.getMessage());
+    }
+
+    @Test
+    void cloneBookingById_shouldReturnResponse_whenBookingIsValid() throws RunnerException {
+        CloneRequest request = createRequestWithAllFlags(true);
+        CustomerBooking booking = createMockCustomerBooking();
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doReturn(booking).when(spyService).getValidatedCustomerBooking(request.getBookingId());
+        CustomerBookingV3Response response = spyService.cloneBookingById(request);
+        assertNotNull(response);
+        assertNotNull(response.getCarrierDetails());
+    }
+
+    @Test
+    void cloneBookingById_shouldHandleExceptionGracefully() {
+        CloneRequest request = createRequestWithAllFlags(true);
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doThrow(new RuntimeException("Database error")).when(spyService).getValidatedCustomerBooking(request.getBookingId());
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            spyService.cloneBookingById(request);
+        });
+        assertTrue(exception.getMessage().contains("Database error"));
+    }
+
+    @Test
+    void getValidatedCustomerBooking_shouldReturnBooking_whenExists() {
+        Long bookingId = 1L;
+        CustomerBooking mockBooking = createMockCustomerBooking();
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(mockBooking));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+        CustomerBooking result = customerBookingService.getValidatedCustomerBooking(bookingId);
+        assertNotNull(result);
+        assertEquals(mockBooking.getTransportType(), result.getTransportType());
+    }
+
+    @Test
+    void getValidatedCustomerBooking_shouldThrowException_whenNotFound() {
+        Long bookingId = 1L;
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingService.getValidatedCustomerBooking(bookingId);
+        });
+    }
+
+    @Test
+    void testSetCBPackingDetails_withFlagsEnabled_shouldMapFields() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .packages(true)
+                        .dimensionPerPack(true)
+                        .volumePerPack(true)
+                        .volume(true)
+                        .cargoWeightPerPack(true)
+                        .cargoWeight(true)
+                        .packageCommodityCategory(true)
+                        .build())
+                .build();
+        Packing packing = new Packing();
+        packing.setPacks("100");
+        packing.setPacksType("Box");
+        packing.setVolumePerPack(BigDecimal.valueOf(1.5));
+        packing.setVolumePerPackUnit("CBM");
+        packing.setVolume(BigDecimal.valueOf(150.0));
+        packing.setVolumeUnit("L");
+        packing.setCargoWeightPerPack(BigDecimal.valueOf(50.0));
+        packing.setPackWeightUnit("KG");
+        packing.setWeight(BigDecimal.valueOf(500.0));
+        packing.setWeightUnit("KG");
+        packing.setCommodityGroup("Group1");
+        packing.setLength(BigDecimal.valueOf(2.0));
+        packing.setLengthUnit("M");
+        packing.setWidth(BigDecimal.valueOf(1.0));
+        packing.setWidthUnit("M");
+        packing.setHeight(BigDecimal.valueOf(0.5));
+        packing.setHeightUnit("M");
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setPackingList(List.of(packing));
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        customerBookingService.setCBPackingDetails(request, customerBooking, customerBookingResponse);
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPack()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumePerPackUnit()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolume()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getVolumeUnit()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getCargoWeightPerPack()), any());
+        verify(commonUtils).mapIfSelected(eq(true), eq(packing.getCommodityGroup()), any());
+        assertNotNull(customerBookingResponse.getPackingList());
+        assertEquals(1, customerBookingResponse.getPackingList().size());
+    }
+
+
+    @Test
+    void testSetCBContainerDetails_withFlagsEnabled_shouldMapFields() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .containers(true)
+                        .containerType(true)
+                        .containerCount(true)
+                        .packagesPerContainer(true)
+                        .cargoWeightPerContainer(true)
+                        .containerCommodityCategory(true)
+                        .build())
+                .build();
+        Containers container = new Containers();
+        container.setTenantId(123);
+        container.setContainerCode("CONT123");
+        container.setContainerCount(10L);
+        container.setPackagesPerContainer(10L);
+        container.setContainerPackageType("Box");
+        container.setCargoWeightPerContainer(BigDecimal.valueOf(1000));
+        container.setContainerWeightUnit("KG");
+        container.setCommodityGroup("GroupA");
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setContainersList(List.of(container));
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        customerBookingService.setCBContainerDetails(request, customerBooking, customerBookingResponse);
+        assertNotNull(customerBookingResponse.getContainersList());
+        assertEquals(1, customerBookingResponse.getContainersList().size());
+        ContainerResponse response = customerBookingResponse.getContainersList().get(0);
+        assertEquals(123, response.getTenantId());
+        verify(commonUtils).mapIfSelected(eq(true), eq(container.getContainerCode()), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldSetCarrierDetails_whenDetailsNotNullAndHeaderFlagTrue() {
+        // Arrange
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)
+                        .destination(true)
+                        .pol(true)
+                        .pod(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("Air");
+        shipmentDetails.setServiceType("Express");
+        shipmentDetails.setDirection("Import");
+        shipmentDetails.setShipmentType("General");
+        shipmentDetails.setPaymentTerms("Prepaid");
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        CarrierDetails details = new CarrierDetails();
+        details.setOrigin("JFK");
+        details.setOriginCountry("USA");
+        details.setDestination("LHR");
+        details.setDestinationCountry("UK");
+        details.setOriginPort("New York");
+        details.setOriginPortCountry("USA");
+        details.setDestinationPort("London");
+        details.setDestinationPortCountry("UK");
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, times(13)).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldNotSetCarrierDetails_whenDetailsNull() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)
+                        .destination(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, null, builder);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::origin));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::originCountry));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::destination));
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), anyString(), eq(builder::destinationCountry));
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldNotSetAnyDetails_whenHeaderFlagFalse() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(false) // Header flag is false
+                        .origin(true)
+                        .destination(true)
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetails details = new CarrierDetails();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, never()).mapIfSelected(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void setHeaderDetailsFromShipment_shouldOnlyCallMapIfSelectedForEnabledFlags() {
+        CloneRequest request = CloneRequest.builder()
+                .flags(CloneFlagsRequest.builder()
+                        .header(true)
+                        .origin(true)    // Enabled
+                        .destination(false) // Disabled
+                        .pol(true)       // Enabled
+                        .pod(false)      // Disabled
+                        .build())
+                .build();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        CustomerBookingV3Response customerBookingResponse = new CustomerBookingV3Response();
+        CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+        CarrierDetails details = new CarrierDetails();
+        details.setOrigin("JFK");
+        details.setOriginCountry("USA");
+        details.setDestination("LHR");
+        details.setDestinationCountry("UK");
+        details.setOriginPort("New York");
+        details.setOriginPortCountry("USA");
+        details.setDestinationPort("London");
+        details.setDestinationPortCountry("UK");
+        setHeaderDetailsFromShipment(request, shipmentDetails, customerBookingResponse, details, builder);
+        verify(commonUtils, times(8)).mapIfSelected(anyBoolean(), anyString(), any());
+    }
+
+    @Test
+    void testSetCommodityCategory_flagFalse_doesNothing() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        ContainerResponse container = new ContainerResponse();
+        request.getFlags().setContainerCommodityCategory(false);
+        Containers container1 = new Containers();
+        List<Containers> containers = List.of(container1);
+        CustomerBookingV3Service.setCommodityCategory(request, containers, container);
+        assertNull(container.getCommodityGroup());
+    }
+
+    @Test
+    void testSetCommodityCategory_allBlank_setsFAK() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setContainerCommodityCategory(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setCommodityGroup(null);
+        Containers container2 = new Containers();
+        container2.setCommodityGroup(StringUtils.EMPTY);
+        Containers container3 = new Containers();
+        container3.setCommodityGroup(" ");
+        Containers container4 = new Containers();
+        List<Containers> containers = List.of(container1, container2, container3, container4);
+        CustomerBookingV3Service.setCommodityCategory(request, containers, container);
+        assertEquals("FAK", container.getCommodityGroup());
+    }
+
+    @Test
+    void testSetCommodityCategory_someBlank_setsFAK() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setContainerCommodityCategory(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setCommodityGroup("Electronics");
+        Containers container2 = new Containers();
+        container2.setCommodityGroup(StringUtils.EMPTY);
+        Containers container3 = new Containers();
+        container3.setCommodityGroup("Electronics");
+        List<Containers> containers = List.of(container1, container2, container3);
+        CustomerBookingV3Service.setCommodityCategory(request, containers, container);
+        assertEquals("FAK", container.getCommodityGroup());
+    }
+
+    @Test
+    void testSetCommodityCategory_sameCategory_setsCategory() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setContainerCommodityCategory(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setCommodityGroup("Electronics");
+        Containers container2 = new Containers();
+        container2.setCommodityGroup("Electronics");
+        Containers container3 = new Containers();
+        container3.setCommodityGroup("Electronics");
+        List<Containers> containers = List.of(container1, container2, container3);
+        CustomerBookingV3Service.setCommodityCategory(request, containers, container);
+        assertEquals("Electronics", container.getCommodityGroup());
+    }
+
+    @Test
+    void testSetCommodityCategory_differentCategories_setsFAK() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setContainerCommodityCategory(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setCommodityGroup("Electronics");
+        Containers container2 = new Containers();
+        container2.setCommodityGroup("Furniture");
+        Containers container3 = new Containers();
+        container3.setCommodityGroup("Electronics");
+        List<Containers> containers = List.of(container1, container2, container3);
+        CustomerBookingV3Service.setCommodityCategory(request, containers, container);
+        assertEquals("FAK", container.getCommodityGroup());
+    }
+
+    @Test
+    void testSetCargoWeight_flagFalse_doesNothing() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setCargoWeightPerContainer(false);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setGrossWeight(new BigDecimal(100));
+        container1.setGrossWeightUnit("KG");
+        List<Containers> containers = List.of(container1);
+        CustomerBookingV3Service.setCargoWeight(request, containers, 1, container, 2);
+        assertNull(container.getCargoWeightPerContainer());
+        assertNull(container.getContainerWeightUnit());
+    }
+
+    @Test
+    void testSetCargoWeight_validData_setsWeight() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setCargoWeightPerContainer(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setGrossWeight(new BigDecimal("100.0"));
+        container1.setGrossWeightUnit("KG");
+        Containers container2 = new Containers();
+        container2.setGrossWeight(new BigDecimal("200.0"));
+        container2.setGrossWeightUnit("KG");
+        List<Containers> containers = List.of(container1, container2);
+        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container, 2);
+        assertEquals(0, container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(150.0)));
+        assertEquals("KG", container.getContainerWeightUnit());
+    }
+
+    @Test
+    void testSetCargoWeight_nullWeightOrUnit_treatedAsZero() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setCargoWeightPerContainer(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setGrossWeight(null);
+        container1.setGrossWeightUnit("KG");
+        Containers container2 = new Containers();
+        container2.setGrossWeight(new BigDecimal("200.0"));
+        container2.setGrossWeightUnit("KG");
+        List<Containers> containers = List.of(container1, container2);
+        CustomerBookingV3Service.setCargoWeight(request, containers, 2, container,2);
+        assertEquals(0, container.getCargoWeightPerContainer().compareTo(BigDecimal.valueOf(100.0)));
+    }
+
+    @Test
+    void testSetCargoWeight_countZero_setsZeroWeight() {
+        CloneRequest request = new CloneRequest();
+        CloneFlagsRequest cloneFlagsRequest = new CloneFlagsRequest();
+        request.setFlags(cloneFlagsRequest);
+        request.getFlags().setCargoWeightPerContainer(true);
+        ContainerResponse container = new ContainerResponse();
+        Containers container1 = new Containers();
+        container1.setGrossWeight(new BigDecimal("100.0"));
+        container1.setGrossWeightUnit("KG");
+        Containers container2 = new Containers();
+        container2.setGrossWeight(new BigDecimal("200.0"));
+        container2.setGrossWeightUnit("KG");
+        List<Containers> containers = List.of(container1, container2);
+        CustomerBookingV3Service.setCargoWeight(request, containers, 0, container,2);
+        BigDecimal expectedWeight = new BigDecimal("0.00");
+        BigDecimal actualWeight = container.getCargoWeightPerContainer();
+        System.out.println(expectedWeight +" for reference "+ actualWeight);
+        Assertions.assertEquals(expectedWeight, actualWeight);
+    }
+
+    private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails,
+                                              CustomerBookingV3Response customerBookingResponse,
+                                              CarrierDetails details,
+                                              CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        try {
+            Method method = CustomerBookingV3Service.class.getDeclaredMethod(
+                    "setHeaderDetailsFromShipment",
+                    CloneRequest.class,
+                    ShipmentDetails.class,
+                    CustomerBookingV3Response.class,
+                    CarrierDetails.class,
+                    CarrierDetailResponse.CarrierDetailResponseBuilder.class
+            );
+            method.setAccessible(true);
+            method.invoke(customerBookingService, request, shipmentDetails, customerBookingResponse, details, builder);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to invoke private method", e);
+        }
+    }
+
+    private CloneRequest createRequestWithAllFlags(boolean value) {
+        return CloneRequest.builder()
+                .bookingId(1L)
+                .flags(CloneFlagsRequest.builder()
+                        .header(value)
+                        .general(value)
+                        .party(value)
+                        .containers(value)
+                        .packages(value)
+                        .cargoSummary(value)
+                        .build())
+                .build();
+    }
+
+    private CustomerBooking createMockCustomerBooking() {
+        CustomerBooking booking = new CustomerBooking();
+        booking.setTransportType("Air");
+        booking.setServiceMode("Express");
+        booking.setDirection("Import");
+        booking.setCargoType("General");
+        booking.setPaymentTerms("Prepaid");
+        booking.setCarrierDetails(new CarrierDetails());
+        booking.setPackingList(new ArrayList<>());
+        booking.setContainersList(new ArrayList<>());
+        booking.setDescription("Desc");
+        booking.setMarksnNumbers("Marks");
+        booking.setAdditionalTerms("Terms");
+        booking.setCustomer(new Parties());
+        booking.setConsignee(new Parties());
+        booking.setConsignor(new Parties());
+        booking.setNotifyParty(new Parties());
+        booking.setAdditionalParties(new ArrayList<>());
+        return booking;
+    }
 }

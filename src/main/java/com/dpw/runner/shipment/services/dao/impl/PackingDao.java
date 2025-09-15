@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -11,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -21,6 +26,16 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -28,15 +43,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -383,6 +389,61 @@ public class PackingDao implements IPackingDao {
             res.add(req);
         }
         return res;
+    }
+
+    @Override
+    public List<Packing> saveEntityFromShipmentOrder(List<Packing> packings, Long shipmentOrderId) {
+        // Prepare response list
+        List<Packing> savedPackings = new ArrayList<>();
+
+        // Fetch existing packings mapped to this ShipmentOrder
+        ListCommonRequest request = constructListCommonRequest("shipmentOrderId", shipmentOrderId, "=");
+        Pair<Specification<Packing>, Pageable> pair = fetchData(request, Packing.class);
+        Map<Long, Packing> existingPackings = findAll(pair.getLeft(), pair.getRight())
+                .stream()
+                .collect(Collectors.toMap(Packing::getId, Function.identity()));
+
+        for (Packing packing : packings) {
+            String previousDataJson = null;
+            String operation = DBOperationType.CREATE.name();
+
+            // If packing already exists → update
+            if (packing.getId() != null) {
+                Packing existing = existingPackings.get(packing.getId());
+                if (existing == null) {
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, packing.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                previousDataJson = jsonHelper.convertToJson(existing);
+                operation = DBOperationType.UPDATE.name();
+            }
+
+            // Set FK and persist
+            packing.setShipmentOrderId(shipmentOrderId);
+            Packing saved = save(packing);
+
+            // Audit log
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId())
+                                .userName(UserContext.getUser().Username)
+                                .newData(saved)
+                                .prevData(previousDataJson != null ? jsonHelper.readFromJson(previousDataJson, Packing.class) : null)
+                                .parent(ShipmentOrder.class.getSimpleName())
+                                .parentId(shipmentOrderId)
+                                .operation(operation)
+                                .build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error("Failed to add audit log for Packing ID {}: {}", packing.getId(), e.getMessage());
+            }
+
+            savedPackings.add(saved);
+        }
+
+        return savedPackings;
     }
 
     @Override

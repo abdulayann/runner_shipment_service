@@ -55,6 +55,7 @@ public class Constants {
     public static final String CONSOLIDATION_CAMELCASE = "Consolidation";
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String BOOKING = "BOOKING";
+    public static final String SHIPMENT_ORDER = "SHIPMENT_ORDER";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
@@ -731,6 +732,10 @@ public class Constants {
     public static final String SHIPMENT_ROOT_KEY_NAME = "shipmentDetails";
     public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
     public static final String DOT = ".";
+
+    public static final String ATTACH = "ATTACH";
+    public static final String DETACH = "DETACH";
+
 
     private Constants() {
     }
