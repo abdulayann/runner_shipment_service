@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -66,6 +67,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
@@ -154,6 +156,12 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
             VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
+            //  added logic for setting consolNo and carrierBookingNo based on entityType
+            if (Constants.CONSOLIDATION.equalsIgnoreCase(String.valueOf(verifiedGrossMass.getEntityType()))) {
+                verifiedGrossMassListResponse.setConsolNo(verifiedGrossMass.getEntityNumber());
+            } else if (CARRIER_BOOKING.equalsIgnoreCase(String.valueOf(verifiedGrossMass.getEntityType()))) {
+                verifiedGrossMassListResponse.setCarrierBookingNo(verifiedGrossMass.getEntityNumber());
+            }
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
 
