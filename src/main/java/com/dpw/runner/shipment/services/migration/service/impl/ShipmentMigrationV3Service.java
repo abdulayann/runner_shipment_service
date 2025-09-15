@@ -231,7 +231,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
         if(shipmentDetails.getConsigner() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsignorCountry());
-            shipmentDetails.getConsigner().setCountryCode(shipmentDetails.getConsignorCountry());
+            shipmentDetails.getConsigner().setCountryCode(country);
         }
         if(shipmentDetails.getConsignee() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsigneeCountry());
@@ -244,10 +244,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
             shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setImportBrokerCountry(country);
         }
         if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
             shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setExportBrokerCountry(country);
         }
         if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
             for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){

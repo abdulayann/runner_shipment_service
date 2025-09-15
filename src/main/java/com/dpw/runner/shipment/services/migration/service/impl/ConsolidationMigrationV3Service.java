@@ -290,10 +290,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if(consolidationDetails.getSendingAgent() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
             consolidationDetails.getSendingAgent().setCountryCode(country);
+            consolidationDetails.setSendingAgentCountry(country);
         }
         if(consolidationDetails.getReceivingAgent() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getReceivingAgentCountry());
             consolidationDetails.getReceivingAgent().setCountryCode(country);
+            consolidationDetails.setReceivingAgentCountry(country);
         }
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
