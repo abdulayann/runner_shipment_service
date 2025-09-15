@@ -315,12 +315,20 @@ CREATE TABLE IF NOT EXISTS transaction_history (
     is_deleted BOOLEAN DEFAULT FALSE,
     tenant_id INTEGER,
 
-    action_status VARCHAR(50),            -- ENUM: VGM_REQUESTED, ACCEPTED, REJECTED, AMENDED
+    action_status VARCHAR,
     flow_type VARCHAR(50),                -- ENUM: INBOUND, OUTBOUND
     description TEXT,
     source_system VARCHAR(50),           -- ENUM: CARGO_RUNNER, CARRIER, INTTRA, OTHER
     actual_date_time TIMESTAMP WITHOUT TIME ZONE,
-    error_message TEXT
-    verified_gross_mass_id BIGINT NOT NULL,
-        CONSTRAINT fk_verified_gross_mass FOREIGN KEY (verified_gross_mass_id) REFERENCES verified_gross_mass(id)
+    error_message TEXT,
+    entity_type VARCHAR(50),                -- ENUM: VGM, CARRIER_BOOKING, SI
+    entity_id BIGINT
 );
+
+-- Index for (tenant_id, is_deleted) for soft deletes / multitenancy
+CREATE INDEX IF NOT EXISTS idx_transaction_history_tenant_deleted
+ON transaction_history (tenant_id, is_deleted);
+
+-- Index for (entity_id, entity_type) to speed up lookup
+CREATE INDEX IF NOT EXISTS idx_transaction_history_entity_type_id
+ON transaction_history (entity_id, entity_type);

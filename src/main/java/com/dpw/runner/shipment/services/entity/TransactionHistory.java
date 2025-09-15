@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
-import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,9 +24,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TransactionHistory extends MultiTenancy {
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "action_status")
-    private VerifiedGrossMassStatus actionStatus;
+    private String actionStatusDescription;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "flow_type")
@@ -45,6 +44,10 @@ public class TransactionHistory extends MultiTenancy {
     @Column(name = "error_message")
     private String errorMessage;
 
-    @Column(name = "verified_gross_mass_id")
-    private Long verifiedGrossMassId;
+    @Column(name = "entity_type", length = 50)
+    @Enumerated(value = EnumType.STRING)
+    private EntityTypeTransactionHistory entityType;
+
+    @Column(name = "entity_id")
+    private Long entityId;
 }
