@@ -2092,7 +2092,7 @@ public abstract class IReport {
         }
     }
 
-    public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse) {
+    public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse, boolean onlyRevenue) {
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
 
             if(StringUtility.isEmpty(billingResponse.getBillId())) {
@@ -2104,7 +2104,7 @@ public abstract class IReport {
             request.setBillId(billIds);
 
             List<BillChargesBaseResponse> billChargesFromBilling = billingServiceAdapter.fetchBillCharges(request);
-            return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling);
+            return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling, onlyRevenue);
         } else {
             List<Object> criteria = new ArrayList<>();
             criteria.add(Arrays.asList(List.of("BillId"), "=", billingResponse.getGuid()));
@@ -2116,7 +2116,7 @@ public abstract class IReport {
         }
     }
 
-    private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses) {
+    private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses, boolean onlyRevenue) {
         List<BillChargesResponse> v1BillCharges = new ArrayList<>();
 
         for (BillChargesBaseResponse billingBillCharge : billChargesBaseResponses) {
@@ -2129,6 +2129,11 @@ public abstract class IReport {
             Optional<BillChargeRevenueDetailsResponse> revenueDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeRevenueDetails());
             Optional<BillChargeCostDetailsResponse> costDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeCostDetails());
             Optional<ChargeTypeBaseResponse> chargeTypeDetailsOpt = Optional.ofNullable(billingBillCharge.getChargeTypeDetails());
+
+            if (onlyRevenue && revenueDetailsOpt.isEmpty()) {
+                continue; // Skip if revenue details are needed but not present
+            }
+
 
             v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
             v1BillCharge.setBillingChargeTypeGuid(
@@ -4399,7 +4404,7 @@ public abstract class IReport {
         } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
     }
 
-    public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary) {
+    public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary, boolean onlyRevenue) {
         List<BillingResponse> billingsList = null;
         try {
             billingsList = getBillingData(shipment.getGuid());
@@ -4407,7 +4412,7 @@ public abstract class IReport {
         catch (Exception e) {
             log.error(e.getMessage());
         }
-        List<BillChargesResponse> charges = getBillChargesResponses(dictionary, billingsList);
+        List<BillChargesResponse> charges = getBillChargesResponses(dictionary, billingsList, onlyRevenue);
 
         List<BillChargesResponse> originalChargesRows = new ArrayList<>();
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
@@ -4438,13 +4443,13 @@ public abstract class IReport {
         dictionary.put(COPY_CHARGES, copyChargesRows);
     }
 
-    private List<BillChargesResponse> getBillChargesResponses(Map<String, Object> dictionary, List<BillingResponse> billingsList) {
+    private List<BillChargesResponse> getBillChargesResponses(Map<String, Object> dictionary, List<BillingResponse> billingsList, boolean onlyRevenue) {
         List<BillChargesResponse> charges = new ArrayList<>();
         BillingResponse billRow = null;
         if(billingsList != null && !billingsList.isEmpty()) {
             billRow = billingsList.get(0);
             for(BillingResponse billingResponse : billingsList) {
-                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse);
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse, onlyRevenue);
                 if(billChargesResponses != null) {
                     charges.addAll(billChargesResponses);
                 }
