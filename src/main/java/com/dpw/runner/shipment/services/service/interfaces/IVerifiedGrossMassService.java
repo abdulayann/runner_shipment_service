@@ -28,6 +28,14 @@ public interface IVerifiedGrossMassService {
      */
     VerifiedGrossMassResponse retrieveById(Long id);
 
+    /**
+     * Retrieve Transaction History of Verified Gross mass by its ID.
+     *
+     * @param id booking id
+     * @return VerifiedGrossMassResponse
+     */
+    ResponseEntity<IRunnerResponse> transactionHistoryRetrieveById(Long id);
+
     ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
 
     /**
