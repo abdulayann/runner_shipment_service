@@ -2299,6 +2299,12 @@ public class CommonUtils {
         return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
     }
 
+    public String getTwoDigitCountryFromUnLocCode(String unLocCode) {
+        if (isStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return unLocCode.substring(0, 2);
+    }
+
     public void checkForMandatoryHsCodeForUAE(Awb awb) {
         String destinationPortLocCode = null;
         if (awb.getShipmentId() != null) {
