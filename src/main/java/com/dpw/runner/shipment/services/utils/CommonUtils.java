@@ -3081,30 +3081,7 @@ public class CommonUtils {
             }
 
             // City + State + Zip + Country in one line
-            StringBuilder line3 = new StringBuilder();
-            if (addressData.containsKey(PartiesConstants.CITY)) {
-                line3.append(StringUtility.toUpperCase(
-                        StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
-                ));
-            }
-            if (addressData.containsKey(PartiesConstants.STATE)) {
-                if (!line3.isEmpty()) line3.append(" ");
-                line3.append(StringUtility.toUpperCase(
-                        StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
-                ));
-            }
-            if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
-                if (!line3.isEmpty()) line3.append(" ");
-                line3.append(StringUtility.toUpperCase(
-                        StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
-                ));
-            }
-            if (addressData.containsKey(PartiesConstants.COUNTRY)) {
-                if (!line3.isEmpty()) line3.append(" ");
-                line3.append(StringUtility.toUpperCase(
-                        getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
-                ));
-            }
+            StringBuilder line3 = new StringBuilder(constructAddressL3(addressData));
 
             if (!line3.isEmpty()) {
                 sb.append(newLine).append(line3);
@@ -3112,6 +3089,34 @@ public class CommonUtils {
         }
 
         return sb.toString();
+    }
+
+    private static String constructAddressL3(Map<String, Object> addressData) {
+        StringBuilder line3 = new StringBuilder();
+        if (addressData.containsKey(PartiesConstants.CITY)) {
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.STATE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
+            ));
+        }
+        return line3.toString();
     }
 
     private static String getCountryName(String code) {
