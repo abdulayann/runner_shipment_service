@@ -361,7 +361,7 @@ public class HblReport extends IReport {
         processAdditionalDetails(hblModel, dictionary);
         processReferenceNumber(hblModel, dictionary);
 
-        populateBillChargesFields(hblModel.shipment, dictionary);
+        populateBillChargesFields(hblModel.shipment, dictionary, true);
         processReferenceNumbersList(hblModel, dictionary);
         addCargoLocationTag(hblModel, dictionary);
         processNotifyParty(hblModel, dictionary);

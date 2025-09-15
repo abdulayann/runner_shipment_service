@@ -229,7 +229,7 @@ public class FreightCertificationReport extends IReport{
     }
 
     private void processBillCharges(BillingResponse bill, BillingSummary summary) {
-        List<BillChargesResponse> billChargesList = getBillChargesData(bill);
+        List<BillChargesResponse> billChargesList = getBillChargesData(bill, false);
         if (billChargesList == null || billChargesList.isEmpty()) {
             return;
         }
