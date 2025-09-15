@@ -729,6 +729,10 @@ public class Constants {
     public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
     public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
 
+    public static final String PROD_ENV = "prod";
+    public static final String DEMO_ENV = "demo";
+    public static final String CONTRACT_TYPE = "CONTRACT";
+    public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     private Constants() {
     }
 
