@@ -365,5 +365,8 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
 
     public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
+    public static final String DESTINATION_AGENT_IS_MANDATORY = "Destination Agent is mandatory";
+    public static final String ORIGIN_AGENT_IS_MANDATORY = "Origin Agent is mandatory";
+    public static final String ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY = "Origin and Destination Agent are mandatory";
 
 }
