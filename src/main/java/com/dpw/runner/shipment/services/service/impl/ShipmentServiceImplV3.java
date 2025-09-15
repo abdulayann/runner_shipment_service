@@ -154,7 +154,6 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -5379,8 +5378,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return ResponseHelper.buildSuccessResponse();
 
         } catch (Exception ex) {
-            log.error("Failed to process attach/detach order: {}", ex.getMessage(), ex);
-            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            throw new ValidationException("Failed to process attach/detach order: " + ex.getMessage());
         }
     }
 
@@ -5402,46 +5400,55 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .collect(Collectors.toMap(ShipmentOrder::getOrderGuid, Function.identity()));
     }
 
-    private void attachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> requestedOrders,
-            Map<UUID, ShipmentOrder> existingShipmentOrders, Long shipmentId) throws RunnerException {
-        for (var requestedOrder : requestedOrders) {
-            UUID orderGuid = requestedOrder.getOrderGuid();
-            List<PackingV3Request> requestedOrderPackings = requestedOrder.getOrderPackings();
-            if (orderGuid != null && !existingShipmentOrders.containsKey(orderGuid)) {
-                ShipmentOrder shipmentOrder = ShipmentOrder.builder()
+    private void attachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList,
+            Map<UUID, ShipmentOrder> existingOrdersByGuid, Long shipmentId) throws RunnerException {
+        for (var orderDetails : orderDetailsList) {
+            UUID orderGuid = orderDetails.getOrderGuid();
+            List<PackingV3Request> packingRequests = orderDetails.getOrderPackings();
+
+            if (orderGuid != null && !existingOrdersByGuid.containsKey(orderGuid)) {
+                ShipmentOrder newOrder = ShipmentOrder.builder()
                         .shipmentId(shipmentId)
                         .orderGuid(orderGuid)
-                        .orderNumber(requestedOrder.getOrderNumber())
-                        .orderDate(requestedOrder.getOrderDate()).build();
-                ShipmentOrder newShipmentOrder = shipmentOrderDao.save(shipmentOrder);
+                        .orderNumber(orderDetails.getOrderNumber())
+                        .orderDate(orderDetails.getOrderDate()).build();
 
-                requestedOrderPackings.forEach(p -> {
-                    p.setShipmentOrderId(newShipmentOrder.getId());
+                ShipmentOrder savedOrder = shipmentOrderDao.save(newOrder);
+
+                packingRequests.forEach(p -> {
+                    p.setShipmentOrderId(savedOrder.getId());
                     p.setShipmentId(shipmentId);
                     p.setPackCategory(PackCategory.PURCHASE_ORDER);
                 });
 
-                for (PackingV3Request requestedOrderPacking : requestedOrderPackings) {
-                    PackingResponse packingResponse = packingV3Service.create(requestedOrderPacking, SHIPMENT_ORDER);
+                for (PackingV3Request packingRequest : packingRequests) {
+                    packingV3Service.create(packingRequest, SHIPMENT_ORDER);
                 }
             }
         }
     }
 
-    private void detachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> requestedOrders,
-            Map<UUID, ShipmentOrder> existingShipmentOrders) {
-        for (var requestedOrder : requestedOrders) {
-            UUID orderGuid = requestedOrder.getOrderGuid();
-            boolean hasContainerLink = requestedOrder.getOrderPackings().stream()
+    private void detachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList,
+            Map<UUID, ShipmentOrder> existingOrdersByGuid) throws RunnerException {
+        for (var orderDetails : orderDetailsList) {
+            UUID orderGuid = orderDetails.getOrderGuid();
+
+            boolean hasLinkedContainer = orderDetails.getOrderPackings().stream()
                     .filter(p -> PackCategory.PURCHASE_ORDER.equals(p.getPackCategory()))
                     .anyMatch(p -> p.getContainerId() != null);
 
-            if (hasContainerLink) {
+            if (hasLinkedContainer) {
                 throw new ValidationException("Cannot detach since container is linked with one of the Order line items.");
             }
 
-            if (orderGuid != null && existingShipmentOrders.containsKey(orderGuid)) {
-                shipmentOrderDao.delete(existingShipmentOrders.get(orderGuid));
+            if (orderGuid != null && existingOrdersByGuid.containsKey(orderGuid)) {
+                ShipmentOrder existingOrder = existingOrdersByGuid.get(orderGuid);
+
+                List<PackingV3Request> packingRequests =
+                        jsonHelper.convertValueToList(existingOrder.getOrderPackings(), PackingV3Request.class);
+
+                packingV3Service.deleteBulk(packingRequests, SHIPMENT_ORDER);
+                shipmentOrderDao.delete(existingOrder);
             }
         }
     }
