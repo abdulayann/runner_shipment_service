@@ -2194,9 +2194,8 @@ public class ReportService implements IReportService {
         json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
         json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
 
-        switch (reportRequest.getReportInfo()) {
-            case HOUSE_BILL, SEAWAY_BILL -> json.put(ReportConstants.BL_RELEASE_TYPE, "NON-NEGOTIABLE COPY");
-        }
+        if (Objects.equals(reportRequest.getReportInfo(), HOUSE_BILL) || Objects.equals(reportRequest.getReportInfo(), SEAWAY_BILL))
+            json.put(ReportConstants.BL_RELEASE_TYPE, "NON-NEGOTIABLE COPY");
     }
 
     private String getLogopath(DocPages pages, String reportInfo, Map<String, Object> json, String hbltype) {
