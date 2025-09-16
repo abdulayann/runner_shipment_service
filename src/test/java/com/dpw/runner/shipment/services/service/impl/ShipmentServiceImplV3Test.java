@@ -82,7 +82,6 @@ import com.dpw.runner.shipment.services.dto.request.notification.AibNotification
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -8697,53 +8696,4 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         return details;
     }
 
-    @Test
-    void testSetShipmentOrderFromCustomerBookingRequest_withNullOrderId() {
-        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
-        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder().build();
-        assertDoesNotThrow(() -> {
-            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
-        });
-    }
-
-    @Test
-    void testSetShipmentOrderFromCustomerBookingRequest() throws RunnerException {
-        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
-        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
-                .orderManagementId("ORD_MGMT_ID")
-                .build();
-        doReturn(null).when(orderManagementAdapter).getOrderManagementDTOByGuid("ORD_MGMT_ID");
-        assertDoesNotThrow(() -> {
-            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
-        });
-    }
-
-    @Test
-    void testSetShipmentOrderFromCustomerBookingRequest_throwError() throws RunnerException {
-        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
-        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
-                .orderManagementId("ORD_MGMT_ID")
-                .build();
-        doThrow(new RunnerException("Failed to call Order Management"))
-                .when(orderManagementAdapter)
-                .getOrderManagementDTOByGuid(anyString());
-
-        assertThrows(RunnerException.class, () -> {
-            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
-        });
-    }
-
-    @Test
-    void testSetShipmentOrderFromCustomerBookingRequest_returnsDTO() throws RunnerException {
-        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
-        UUID uuid = UUID.randomUUID();
-        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
-                .orderManagementId(uuid.toString())
-                .build();
-        OrderManagementDTO dto = OrderManagementDTO.builder().build();
-        doReturn(dto).when(orderManagementAdapter).getOrderManagementDTOByGuid(uuid.toString());
-        assertDoesNotThrow(() -> {
-            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
-        });
-    }
 }

@@ -254,5 +254,5 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
-    private List<ShipmentOrderV3Request> shipmentOrders;
+
 }

@@ -22,14 +22,18 @@ import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -7137,52 +7141,5 @@ class CommonUtilsTest {
 
     private static Stream<String> transportModesProvider() {
         return Stream.of("SEA", "RAI", "ROA","AIR");
-    }
-
-    @Test
-    void testMapToOrderDetailsList_returnEmptyList() {
-        List<ShipmentOrderV3Request> list = new ArrayList<>();
-        List<ShipmentOrderAttachDetachRequest.OrderDetails> response = CommonUtils.mapToOrderDetailsList(list);
-        assertTrue(response.isEmpty());
-    }
-
-
-    @Test
-    void testMapToOrderDetailsList() {
-        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
-        element.setId(1L);
-        element.setOrderGuid(UUID.randomUUID());
-        element.setOrderNumber("ORD_00001");
-        element.setShipmentId(2L);
-
-        PackingV3Request packingReq = PackingV3Request.builder()
-                .packs("test packs")
-                .packsType("test type")
-                .build();
-        element.setOrderPackings(List.of(packingReq));
-
-        List<ShipmentOrderV3Request> list = new ArrayList<>();
-        list.add(element);
-
-        List<ShipmentOrderAttachDetachRequest.OrderDetails> response = CommonUtils.mapToOrderDetailsList(list);
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void testMapToOrderDetail_returnNull() {
-        ShipmentOrderAttachDetachRequest.OrderDetails response = CommonUtils.mapToOrderDetails(null);
-        assertNull(response);
-    }
-
-    @Test
-    void testMapToOrderDetail_orderPackingIsNull() {
-        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
-        element.setId(1L);
-        element.setOrderGuid(UUID.randomUUID());
-        element.setOrderNumber("ORD_00001");
-        element.setShipmentId(2L);
-
-        ShipmentOrderAttachDetachRequest.OrderDetails response = CommonUtils.mapToOrderDetails(element);
-        assertNotNull(response);
     }
 }
