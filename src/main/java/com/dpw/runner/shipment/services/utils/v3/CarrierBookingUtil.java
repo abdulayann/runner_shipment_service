@@ -5,7 +5,9 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMis
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -18,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -97,6 +101,33 @@ public class CarrierBookingUtil {
             //generate the random number and add prefix
             String randomBookingNumber = StringUtility.getRandomString(10);
             carrierBookingEntity.setBookingNo(prefix + randomBookingNumber);
+        }
+    }
+
+    public void mapSailingToConsolidation(SailingInformation sailingInformation,
+                                                 ConsolidationDetails consolidationDetails) {
+        mapIfNotNull(sailingInformation::getVerifiedGrossMassCutoff, consolidationDetails::setVerifiedGrossMassCutoff);
+        mapIfNotNull(sailingInformation::getReeferCutoff, consolidationDetails::setReeferCutoff);
+        mapIfNotNull(sailingInformation::getShipInstructionCutoff, consolidationDetails::setShipInstructionCutoff);
+        mapIfNotNull(sailingInformation::getHazardousBookingCutoff, consolidationDetails::setHazardousBookingCutoff);
+        mapIfNotNull(sailingInformation::getEmptyContainerPickupCutoff, consolidationDetails::setEarliestEmptyEquPickUp);
+        mapIfNotNull(sailingInformation::getLoadedContainerGateInCutoff, consolidationDetails::setTerminalCutoff);
+    }
+
+    public void mapConsolidationToSailing(ConsolidationDetails consolidationDetails,
+                                                 SailingInformation sailingInformation) {
+        mapIfNotNull(consolidationDetails::getVerifiedGrossMassCutoff, sailingInformation::setVerifiedGrossMassCutoff);
+        mapIfNotNull(consolidationDetails::getReeferCutoff, sailingInformation::setReeferCutoff);
+        mapIfNotNull(consolidationDetails::getShipInstructionCutoff, sailingInformation::setShipInstructionCutoff);
+        mapIfNotNull(consolidationDetails::getHazardousBookingCutoff, sailingInformation::setHazardousBookingCutoff);
+        mapIfNotNull(consolidationDetails::getEarliestEmptyEquPickUp, sailingInformation::setEmptyContainerPickupCutoff);
+        mapIfNotNull(consolidationDetails::getTerminalCutoff, sailingInformation::setLoadedContainerGateInCutoff);
+    }
+
+    private static <T> void mapIfNotNull(Supplier<T> getter, Consumer<T> setter) {
+        T value = getter.get();
+        if (value != null) {
+            setter.accept(value);
         }
     }
 }
