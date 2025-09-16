@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
@@ -27,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -93,6 +95,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING_ADDITIONAL_PARTIES;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
@@ -116,10 +119,11 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IConsolidationDetailsDao consolidationDetailsDao;
     private final IConsolidationV3Service consolidationV3Service;
     private final IShipmentDao shipmentDao;
+    private final IPartiesDao partiesDao;
 
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingValidationUtil = carrierBookingValidationUtil;
@@ -133,10 +137,11 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.consolidationDetailsDao = consolidationDetailsDao;
         this.consolidationV3Service = consolidationV3Service;
         this.shipmentDao = shipmentDao;
+        this.partiesDao = partiesDao;
     }
 
     @Override
-    public CarrierBookingResponse create(CarrierBookingRequest request) {
+    public CarrierBookingResponse create(CarrierBookingRequest request) throws RunnerException {
         log.info("CarrierBookingService.create() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         carrierBookingValidationUtil.validateServiceType(request);
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
@@ -167,6 +172,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setCarrierBookingNo(null);
         carrierBookingEntity.setStatus(CarrierBookingStatus.Draft);
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
+
+        if(request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()){
+            partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, true), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
+        }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
@@ -227,7 +236,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public CarrierBookingResponse update(CarrierBookingRequest request) {
+    public CarrierBookingResponse update(CarrierBookingRequest request) throws RunnerException {
         log.info("CarrierBookingService.update() called with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBooking existingCarrierBooking = carrierBookingDao.findById(request.getId()).orElseThrow(() -> new ValidationException("Invalid carrier booking Id"));
         carrierBookingValidationUtil.validateServiceType(request);
@@ -261,6 +270,10 @@ public class CarrierBookingService implements ICarrierBookingService {
             carrierBookingEntity.setStatus(existingCarrierBooking.getStatus());
         }
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
+
+        if(request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()){
+            partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, false), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
+        }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
         log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;

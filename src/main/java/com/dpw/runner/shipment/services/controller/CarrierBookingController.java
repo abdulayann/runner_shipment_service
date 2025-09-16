@@ -57,7 +57,7 @@ public class CarrierBookingController {
     })
     @PostMapping(ApiConstants.API_CREATE)
    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
-    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) throws RunnerException {
         log.info("Received Carrier Booking CREATE request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.create(request);
         log.info("Carrier Booking CREATE successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
@@ -90,7 +90,7 @@ public class CarrierBookingController {
     })
     @PutMapping(ApiConstants.API_UPDATE)
    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
-    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) throws RunnerException {
         log.info("Received Carrier Booking UPDATE request with RequestId: {}, and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.update(request);
         log.info("Carrier Booking UPDATE successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
