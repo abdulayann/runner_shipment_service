@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
+import com.dpw.runner.shipment.services.dto.request.QuoteResetRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
@@ -394,6 +395,13 @@ class ShipmentControllerV3Test {
         verify(shipmentService, times(1)).getCloneConfig("B2B");
         Assertions.assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void resetQuoteInfoInShipment() {
+        when(shipmentService.resetResetShipmentQuoteInfo(any())).thenReturn(new ShipmentDetailsV3Response());
+        var response = shipmentControllerV3.resetQuoteDataInShipment(new QuoteResetRequest());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }

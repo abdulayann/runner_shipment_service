@@ -114,4 +114,5 @@ public interface IShipmentServiceV3 {
     ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException;
     ShipmentRetrieveLiteResponse cloneShipment(@Valid CloneRequest request) throws RunnerException;
     CloneFieldResponse getCloneConfig(String type) throws RunnerException;
+    ShipmentDetailsV3Response resetResetShipmentQuoteInfo(QuoteResetRequest quoteResetRequest);
 }

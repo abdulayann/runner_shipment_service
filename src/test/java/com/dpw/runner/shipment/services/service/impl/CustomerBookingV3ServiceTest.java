@@ -4372,6 +4372,67 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Assertions.assertEquals(expectedWeight, actualWeight);
     }
 
+    @Test
+    void testResetBookingQuoteInfo_whenBookingIdNull_shouldThrowValidationException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setBookingId(null);
+
+        assertThrows(ValidationException.class,
+                () -> customerBookingService.resetResetBookingQuoteInfo(request));
+    }
+
+    @Test
+    void testResetBookingQuoteInfo_whenBookingNotFound_shouldThrowDataRetrievalFailureException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setBookingId(123L);
+
+        when(customerBookingDao.findById(123L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class,
+                () -> customerBookingService.resetResetBookingQuoteInfo(request));
+    }
+
+    @Test
+    void testResetBookingQuoteInfo_whenBookingFound_shouldReturnUpdatedResponse() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setBookingId(123L);
+        request.setQuotePartyResetFlag(Boolean.TRUE);
+        request.setCargoTypeResetFlag(Boolean.TRUE);
+        request.setOriginResetFlag(Boolean.TRUE);
+        request.setPodResetFlag(Boolean.TRUE);
+        request.setPrimaryEmailResetFlag(Boolean.TRUE);
+        request.setTransportModeResetFlag(Boolean.TRUE);
+        request.setPolResetFlag(Boolean.TRUE);
+        request.setDestinationResetFlag(Boolean.TRUE);
+        request.setServiceTypeResetFlag(Boolean.TRUE);
+        request.setSecondaryEmailResetFlag(Boolean.TRUE);
+        request.setSalesBranchResetFlag(Boolean.TRUE);
+
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder().origin("origin").destination("destionation").originPort("originPort").destinationPort("destinationPort").build();
+        CustomerBooking booking = new CustomerBooking();
+        CustomerBookingV3Response response = new CustomerBookingV3Response();
+        response.setCarrierDetails(carrierDetailResponse);
+        response.setCargoType("FCL");
+        response.setTransportType("AIR");
+        response.setSecondarySalesAgentEmail("secondary@dpworld.com");
+        response.setPrimarySalesAgentEmail("primary@dpworld.com");
+        response.setServiceMode("A2A");
+
+        when(customerBookingDao.findById(123L)).thenReturn(Optional.of(booking));
+        when(jsonHelper.convertValue(booking, CustomerBookingV3Response.class)).thenReturn(response);
+
+        CustomerBookingV3Response result = customerBookingService.resetResetBookingQuoteInfo(request);
+        assertNull(result.getCargoType());
+        assertNull(result.getTransportType());
+        assertNull(result.getServiceMode());
+        assertNull(result.getSecondarySalesAgentEmail());
+        assertNull(result.getPrimarySalesAgentEmail());
+        assertNull(result.getCarrierDetails().getOrigin());
+        assertNull(result.getCarrierDetails().getDestination());
+        assertNull(result.getCarrierDetails().getOriginPort());
+        assertNull(result.getCarrierDetails().getDestinationPort());
+    }
+
     private void setHeaderDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails,
                                               CustomerBookingV3Response customerBookingResponse,
                                               CarrierDetails details,

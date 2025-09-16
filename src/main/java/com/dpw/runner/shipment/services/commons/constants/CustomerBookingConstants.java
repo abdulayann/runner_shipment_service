@@ -23,6 +23,7 @@ public class CustomerBookingConstants {
     public static final String UPDATE_SUCCESSFUL = "Successful Customer Booking Data Update";
     public static final String DELETE_SUCCESSFUL = "Successful Customer Booking Delete";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Customer Booking Data Retrieval By Id";
+    public static final String RESET_QUOTE_SUCCESSFUL = "Successfully reset quote Data";
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String BOOKING_ID = "Booking Id";
     public static final String BILLABLE_IDENTIFIER = "&identifierCode=Yes&identifierCodeType=BILLABLE_FLAG";

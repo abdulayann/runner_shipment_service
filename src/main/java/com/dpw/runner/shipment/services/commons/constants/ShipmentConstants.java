@@ -248,6 +248,7 @@ public class ShipmentConstants {
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
     public static final String FETCH_SUCCESSFUL = "Fetch Successful";
+    public static final String RESET_QUOTE_SUCCESSFUL = "Reset quote successful";
 
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Data Update";
     public static final String IMPORT_SUCCESSFUL = "Import Successful";

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.QuoteResetRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
@@ -32,4 +33,5 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
     CustomerBookingV3Response cloneBookingFromShipmentIfExist(@Valid CloneRequest request) throws RunnerException;
+    CustomerBookingV3Response resetResetBookingQuoteInfo(QuoteResetRequest quoteResetRequest);
 }

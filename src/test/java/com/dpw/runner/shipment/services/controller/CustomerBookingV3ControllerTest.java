@@ -295,4 +295,11 @@ class CustomerBookingV3ControllerTest {
         var response = customerBookingV3Controller.cloneById(123L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+
+    @Test
+    void resetQuote_Success() throws RunnerException {
+        when(customerBookingV3Service.resetResetBookingQuoteInfo(any())).thenReturn(new CustomerBookingV3Response());
+        var response = customerBookingV3Controller.resetQuoteDataInBooking(new QuoteResetRequest());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 }

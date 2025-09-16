@@ -323,4 +323,10 @@ public class CustomerBookingV3Controller {
     public ResponseEntity<IRunnerResponse> cloneBookingById(@RequestBody @Valid CloneRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingById(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RESET_QUOTE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
+    @PostMapping(ApiConstants.API_RESET_QUOTE)
+    public ResponseEntity<IRunnerResponse> resetQuoteDataInBooking(@RequestBody @Valid QuoteResetRequest quoteResetRequest) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.resetResetBookingQuoteInfo(quoteResetRequest));
+    }
 }

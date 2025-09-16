@@ -8691,6 +8691,107 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(commonUtils, times(1)).getCloneFieldResponse(type);
     }
 
+    @Test
+    void testResetShipmentQuoteInfo_whenShipmentIdIsNull_shouldThrowValidationException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(null);
+
+        assertThrows(ValidationException.class,
+                () -> shipmentServiceImplV3.resetResetShipmentQuoteInfo(request));
+    }
+
+    @Test
+    void testResetShipmentQuoteInfo_whenShipmentNotFound_shouldThrowDataRetrievalFailureException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(999L);
+
+        when(shipmentDao.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class,
+                () -> shipmentServiceImplV3.resetResetShipmentQuoteInfo(request));
+    }
+
+    @Test
+    void testValidateQuoteRequestForShipment_whenCargoTypeResetFlag_shouldThrowValidationException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(1L);
+        request.setCargoTypeResetFlag(true);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        assertThrows(ValidationException.class,
+                () -> shipmentServiceImplV3.resetResetShipmentQuoteInfo(request));
+    }
+
+    @Test
+    void testValidateQuoteRequestForShipment_whenServiceTypeResetFlag_shouldThrowValidationException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(1L);
+        request.setServiceTypeResetFlag(true);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        assertThrows(ValidationException.class,
+                () -> shipmentServiceImplV3.resetResetShipmentQuoteInfo(request));
+    }
+
+    @Test
+    void testValidateQuoteRequestForShipment_whenPolOrPodAndMainCarriage_shouldThrowValidationException() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(1L);
+        request.setPolResetFlag(true);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Routings routing = new Routings();
+        routing.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        shipmentDetails.setRoutingsList(List.of(routing));
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        assertThrows(ValidationException.class,
+                () -> shipmentServiceImplV3.resetResetShipmentQuoteInfo(request));
+    }
+
+    @Test
+    void testResetShipmentQuoteInfo_whenValidRequest_shouldApplyResets() {
+        QuoteResetRequest request = new QuoteResetRequest();
+        request.setShipmentId(1L);
+        request.setQuotePartyResetFlag(Boolean.TRUE);
+        request.setOriginResetFlag(Boolean.TRUE);
+        request.setDestinationResetFlag(Boolean.TRUE);
+        request.setPolResetFlag(Boolean.TRUE);
+        request.setPodResetFlag(Boolean.TRUE);
+        request.setPrimaryEmailResetFlag(Boolean.TRUE);
+        request.setSecondaryEmailResetFlag(Boolean.TRUE);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Routings routings = new Routings();
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        shipmentDetails.setRoutingsList(List.of(routings));
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder().origin("origin").destination("destionation").originPort("originPort").destinationPort("destinationPort").build();
+        ShipmentDetailsV3Response response = new ShipmentDetailsV3Response();
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("DXB");
+        carrierDetails.setDestinationPort("NYC");
+        response.setCarrierDetails(carrierDetailResponse);
+        response.setCurrentPartyForQuote("Some Party");
+        response.setPrimarySalesAgentEmail("test@test.com");
+
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class)).thenReturn(response);
+
+        ShipmentDetailsV3Response result =
+                shipmentServiceImplV3.resetResetShipmentQuoteInfo(request);
+
+        assertNull(result.getCurrentPartyForQuote());
+        assertNull(result.getCarrierDetails().getOrigin());
+        assertNull(result.getCarrierDetails().getDestinationPort());
+        assertNull(result.getPrimarySalesAgentEmail());
+    }
+
     private CloneRequest createCloneRequest(boolean cargoSummary, boolean description,
                                             boolean marksAndNumbers, boolean additionalTerms) {
         CloneFlagsRequest flags = CloneFlagsRequest.builder()

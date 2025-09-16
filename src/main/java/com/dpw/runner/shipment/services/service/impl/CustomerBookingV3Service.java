@@ -530,6 +530,56 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    @Override
+    public CustomerBookingV3Response resetResetBookingQuoteInfo(QuoteResetRequest quoteResetRequest) {
+        if(Objects.isNull(quoteResetRequest.getBookingId())) {
+            log.error("BookingId is null for booking reset quote data with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Booking Id Is Mandatory");
+        }
+        Optional<CustomerBooking> optionalCustomerBooking = customerBookingDao.findById(quoteResetRequest.getBookingId());
+        if(optionalCustomerBooking.isEmpty()) {
+            log.error("No Booking found with BookingId {} for request {}", quoteResetRequest.getBookingId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException("No Booking found with Booking Id {}" + quoteResetRequest.getBookingId());
+        }
+        CustomerBooking customerBooking = optionalCustomerBooking.get();
+        CustomerBookingV3Response customerBookingResponse = jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+        updateBookingResponseWithQuoteReset(customerBookingResponse, quoteResetRequest);
+        return customerBookingResponse;
+    }
+
+    private void updateBookingResponseWithQuoteReset(CustomerBookingV3Response customerBookingV3Response, QuoteResetRequest quoteResetRequest) {
+        if (Boolean.TRUE.equals(quoteResetRequest.getQuotePartyResetFlag())) {
+            customerBookingV3Response.setCurrentPartyForQuote(null);
+        }
+        if (Boolean.TRUE.equals(quoteResetRequest.getTransportModeResetFlag())) {
+            customerBookingV3Response.setTransportType(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getCargoTypeResetFlag())) {
+            customerBookingV3Response.setCargoType(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getServiceTypeResetFlag())) {
+            customerBookingV3Response.setServiceMode(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getOriginResetFlag())) {
+            customerBookingV3Response.getCarrierDetails().setOrigin(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getDestinationResetFlag())) {
+            customerBookingV3Response.getCarrierDetails().setDestination(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPolResetFlag())) {
+            customerBookingV3Response.getCarrierDetails().setOriginPort(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPodResetFlag())) {
+            customerBookingV3Response.getCarrierDetails().setDestinationPort(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPrimaryEmailResetFlag())) {
+            customerBookingV3Response.setPrimarySalesAgentEmail(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getSecondaryEmailResetFlag())) {
+            customerBookingV3Response.setSecondarySalesAgentEmail(null);
+        }
+    }
+
     private void setCargoDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {
         if (request.getFlags().isCargoSummary()) {
             commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), customerBookingResponse::setDescription);

@@ -883,6 +883,65 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return commonUtils.getCloneFieldResponse(type);
     }
 
+    @Override
+    public ShipmentDetailsV3Response resetResetShipmentQuoteInfo(QuoteResetRequest quoteResetRequest){
+        if(Objects.isNull(quoteResetRequest.getShipmentId())) {
+            log.error("ShipmentId is null for Shipment reset quote data with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(quoteResetRequest.getShipmentId());
+        if(optionalShipmentDetails.isEmpty()) {
+            log.error("No Shipment found with ShipmentId {} for request {}", quoteResetRequest.getShipmentId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException("No Booking found with Shipment Id {}" + quoteResetRequest.getShipmentId());
+        }
+        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+        validateQuoteRequestForShipment(quoteResetRequest, shipmentDetails);
+        ShipmentDetailsV3Response shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
+        updateShipmentResponseWithQuoteReset(shipmentDetailsResponse, quoteResetRequest);
+        return shipmentDetailsResponse;
+    }
+
+    private void validateQuoteRequestForShipment(QuoteResetRequest quoteResetRequest, ShipmentDetails shipmentDetails) {
+        if(Boolean.TRUE.equals(quoteResetRequest.getCargoTypeResetFlag())) {
+            throw new ValidationException("CargoType cannot be reset for Shipment");
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getServiceTypeResetFlag())) {
+            throw new ValidationException("ServiceType cannot be reset for Shipment");
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPodResetFlag()) || Boolean.TRUE.equals(quoteResetRequest.getPolResetFlag())) {
+            boolean hasMainCarriage = shipmentDetails.getRoutingsList().stream()
+                    .map(Routings::getCarriage)
+                    .anyMatch(carriage -> RoutingCarriage.MAIN_CARRIAGE.equals(carriage));
+            if (hasMainCarriage) {
+                throw new ValidationException("POL/POD reset not allowed when routing has MAIN_CARRIAGE");
+            }
+        }
+    }
+
+    private void updateShipmentResponseWithQuoteReset(ShipmentDetailsV3Response shipmentDetailsV3Response, QuoteResetRequest quoteResetRequest) {
+        if (Boolean.TRUE.equals(quoteResetRequest.getQuotePartyResetFlag())) {
+            shipmentDetailsV3Response.setCurrentPartyForQuote(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getOriginResetFlag())) {
+            shipmentDetailsV3Response.getCarrierDetails().setOrigin(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getDestinationResetFlag())) {
+            shipmentDetailsV3Response.getCarrierDetails().setDestination(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPolResetFlag())) {
+            shipmentDetailsV3Response.getCarrierDetails().setOriginPort(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPodResetFlag())) {
+            shipmentDetailsV3Response.getCarrierDetails().setDestinationPort(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getPrimaryEmailResetFlag())) {
+            shipmentDetailsV3Response.setPrimarySalesAgentEmail(null);
+        }
+        if(Boolean.TRUE.equals(quoteResetRequest.getSecondaryEmailResetFlag())) {
+            shipmentDetailsV3Response.setSecondarySalesAgentEmail(null);
+        }
+    }
+
     public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if (request.getFlags().isGeneral()) {
             commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);

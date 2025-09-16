@@ -216,6 +216,7 @@ public class ApiConstants {
     public static final String API_CLONE_BOOKING = "/clone/booking";
     public static final String API_CLONE_SHIPMENT = "/clone/shipment";
     public static final String API_CLONE_CONFIG = "/getCloneConfig";
+    public static final String API_RESET_QUOTE = "/reset/quote";
 
     // Dynamic endpoints
     public static final String API_DYNAMIC_LIST = "/dynamic/list";

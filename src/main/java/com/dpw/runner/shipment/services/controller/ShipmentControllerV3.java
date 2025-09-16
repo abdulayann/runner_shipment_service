@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneRequest;
-import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
@@ -312,5 +309,11 @@ public class ShipmentControllerV3 {
             log.error("Error processing getCloneConfig", ex);
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RESET_QUOTE_SUCCESSFUL, response = ShipmentDetailsV3Response.class)})
+    @PostMapping(ApiConstants.API_RESET_QUOTE)
+    public ResponseEntity<IRunnerResponse> resetQuoteDataInShipment(@RequestBody @Valid QuoteResetRequest quoteResetRequest) {
+        return ResponseHelper.buildSuccessResponse(shipmentService.resetResetShipmentQuoteInfo(quoteResetRequest));
     }
 }
