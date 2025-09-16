@@ -237,7 +237,9 @@ public class ReportConstants {
     public static final String SMTPIGM_NUMBER = "SMTPIGMNumber";
     public static final String LOCAL_LINE_NUMBER = "LocalLineNumber";
     public static final String ISSUE_PLACE_NAME = "IssuePlaceName";
+    public static final String ISSUE_PLACE_NAME_V2 = "IssuePlaceNameV2";
     public static final String ISSUE_PLACE_COUNTRY = "IssuePlaceCountry";
+    public static final String ISSUE_PLACE_COUNTRY_V2 = "IssuePlaceCountryV2";
     public static final String PAID_PLACE_NAME = "PaidPlaceName";
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_NAME_IN_CAPS = "PaidPlaceNameInCaps";
