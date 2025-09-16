@@ -44,7 +44,7 @@ class CarrierBookingControllerTest {
     private CarrierBookingController carrierBookingController;
 
     @Test
-    void create() {
+    void create() throws RunnerException {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(carrierBookingService.create(any(CarrierBookingRequest.class))).thenReturn(new CarrierBookingResponse());
@@ -97,7 +97,7 @@ class CarrierBookingControllerTest {
 
 
     @Test
-    void update() {
+    void update() throws RunnerException {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(carrierBookingService.update(any(CarrierBookingRequest.class))).thenReturn(new CarrierBookingResponse());
