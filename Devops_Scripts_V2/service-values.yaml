@@ -20,7 +20,6 @@ bluegreen: True
 artifactAliasName: _config
 artifactVstsFeedPublish: 23a36ede-eaaf-42ed-b849-690d3430f272/fbd15528-c4b5-49c1-beea-5b436be8317c
 CONFIG_FOLDER_PATH: src/main/resources
-db_folder_path: src/main/resources/db
 containerRegistrySC: ACR_Cargoes Runner
 artifactsFeeds: runner-artifactory
 jdkVersion: 1.17
