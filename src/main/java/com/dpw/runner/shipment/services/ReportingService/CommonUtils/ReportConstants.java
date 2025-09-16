@@ -245,7 +245,9 @@ public class ReportConstants {
     public static final String SMTPIGM_NUMBER = "SMTPIGMNumber";
     public static final String LOCAL_LINE_NUMBER = "LocalLineNumber";
     public static final String ISSUE_PLACE_NAME = "IssuePlaceName";
+    public static final String ISSUE_PLACE_NAME_V2 = "IssuePlaceNameV2";
     public static final String ISSUE_PLACE_COUNTRY = "IssuePlaceCountry";
+    public static final String ISSUE_PLACE_COUNTRY_V2 = "IssuePlaceCountryV2";
     public static final String PAID_PLACE_NAME = "PaidPlaceName";
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_NAME_IN_CAPS = "PaidPlaceNameInCaps";
@@ -1563,9 +1565,9 @@ public class ReportConstants {
     public static final String C_PACK_TYPE = "C_PackType";
     public static final String S_PACK = "S_Pack";
     public static final String S_PACK_TYPE = "S_PackType";
+    public static final String BL_RELEASE_TYPE = "BL_ReleaseType";
+    public static final String S_MASTER_BILL = "S_MasterBill";
 
     public static final String PACKAGE_STRING = "PACKAGE(S)";
     public static final String CONTAINERS_STRING = "CONTAINERS";
-    public static final String BL_RELEASE_TYPE = "BL_ReleaseType";
-    public static final String S_MASTER_BILL = "S_MasterBill";
 }
