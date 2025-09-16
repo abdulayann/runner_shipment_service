@@ -161,6 +161,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
             }
+            carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
         }
         carrierBookingEntity.setCarrierRoutingList(null);// we will get it from carrier
@@ -257,6 +258,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
             }
+            carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
         }
         carrierBookingEntity.setCarrierRoutingList(existingCarrierBooking.getCarrierRoutingList());// we will get it from carrier
@@ -323,26 +325,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         if (sailingInformation.getVerifiedGrossMassCutoff() != null) {
             consolidationDetails.setVerifiedGrossMassCutoff(sailingInformation.getVerifiedGrossMassCutoff());
         }
-
-        if (sailingInformation.getReeferCutoff() != null) {
-            consolidationDetails.setReeferCutoff(sailingInformation.getReeferCutoff());
-        }
-
-        if (sailingInformation.getShipInstructionCutoff() != null) {
-            consolidationDetails.setShipInstructionCutoff(sailingInformation.getShipInstructionCutoff());
-        }
-
-        if (sailingInformation.getHazardousBookingCutoff() != null) {
-            consolidationDetails.setHazardousBookingCutoff(sailingInformation.getHazardousBookingCutoff());
-        }
-
-        if (sailingInformation.getEmptyContainerPickupCutoff() != null) {
-            consolidationDetails.setEarliestEmptyEquPickUp(sailingInformation.getEmptyContainerPickupCutoff());
-        }
-
-        if (sailingInformation.getLoadedContainerGateInCutoff() != null) {
-            consolidationDetails.setTerminalCutoff(sailingInformation.getLoadedContainerGateInCutoff());
-        }
+        carrierBookingUtil.mapSailingToConsolidation(sailingInformation, consolidationDetails);
         updateShipmentCutoffFields(consolidationDetails);
     }
 
@@ -761,6 +744,9 @@ public class CarrierBookingService implements ICarrierBookingService {
     private static SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
         String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
         toEmails += carrierBooking.getCreateByUserEmail();
+        if(!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())){
+            toEmails += "," + carrierBooking.getSubmitByUserEmail();
+        }
         SendEmailBaseRequest request = new SendEmailBaseRequest();
         request.setTo(toEmails);
         request.setSubject(carrierBookingTemplate.getSubject());
