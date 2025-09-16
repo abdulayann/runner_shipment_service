@@ -9,7 +9,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @Aspect
 @Component
@@ -32,6 +36,10 @@ public class ControllerLoggingAspect {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    @Qualifier("executorServiceLogging")
+    ExecutorService executorServiceForLogging;
+
     // Pointcut to intercept any method within a class annotated with @RestController or @Controller
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *) || within(@org.springframework.stereotype.Controller *)")
     public void controllerMethods() {}
@@ -41,14 +49,15 @@ public class ControllerLoggingAspect {
         HttpServletRequest request =
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
 
-        this.logRequest(joinPoint, request);
+        CompletableFuture.runAsync(withMdc(() -> this.logRequest(joinPoint, request)), executorServiceForLogging);
 
         Object response = null;
         try {
             response = joinPoint.proceed();
             return response;
         } finally {
-            this.logResponse(response);
+            Object finalResponse = response;
+            CompletableFuture.runAsync(withMdc(() -> this.logResponse(finalResponse)), executorServiceForLogging);
         }
     }
 
@@ -114,5 +123,17 @@ public class ControllerLoggingAspect {
         }
 
         log.info("{} | RESPONSE RETURNED [HTTP-STATUS={}] [RESPONSE={}]", LoggerHelper.getRequestIdFromMDC(), status, responseLog);
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        return () -> {
+            try {
+                MDC.setContextMap(mdc);
+                runnable.run();
+            } finally {
+                MDC.clear();
+            }
+        };
     }
 }
