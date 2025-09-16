@@ -21,7 +21,7 @@ public interface ICarrierBookingService {
      * @param request CarrierBookingRequest
      * @return CarrierBookingResponse
      */
-    CarrierBookingResponse create(CarrierBookingRequest request);
+    CarrierBookingResponse create(CarrierBookingRequest request) throws RunnerException;
 
     /**
      * Retrieve a Carrier Booking by its ID.
@@ -40,7 +40,7 @@ public interface ICarrierBookingService {
      * @param request CarrierBookingRequest
      * @return CarrierBookingResponse
      */
-    CarrierBookingResponse update(CarrierBookingRequest request);
+    CarrierBookingResponse update(CarrierBookingRequest request) throws RunnerException;
 
     /**
      * Delete a Carrier Booking by its ID.
