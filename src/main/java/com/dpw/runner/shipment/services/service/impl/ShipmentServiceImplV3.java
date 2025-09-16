@@ -2567,10 +2567,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
                 if (!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getImportBroker())) {
-                    shipmentDetails.getAdditionalDetails().setImportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getDestinationLocCode()));
+                    shipmentDetails.getAdditionalDetails().setImportBrokerCountry(commonUtils.getTwoDigitCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getDestinationLocCode()));
                 }
                 if (!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getExportBroker())) {
-                    shipmentDetails.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getOriginLocCode()));
+                    shipmentDetails.getAdditionalDetails().setExportBrokerCountry(commonUtils.getTwoDigitCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getOriginLocCode()));
                 }
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);

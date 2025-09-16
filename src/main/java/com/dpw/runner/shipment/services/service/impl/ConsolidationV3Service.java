@@ -375,6 +375,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
+
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getDestinationPortLocCode()!=null && !commonUtils.checkIfPartyExists(consolidationDetails.getReceivingAgent())) {
+                    consolidationDetails.setReceivingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
+                }
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getOriginPortLocCode()!=null && !commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
+                    consolidationDetails.setSendingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
+                }
+            }
+
             populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
             beforeSave(consolidationDetails, null, true);
 
@@ -1274,17 +1284,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             factor = BigDecimal.valueOf(ROAD_FACTOR_FOR_VOL_WT);
                         }
                         BigDecimal wvInKG = vlInM3.multiply(factor);
-                        BigDecimal tempValue;
-                        if (wtInKG.compareTo(wvInKG) < 0) {
-                            tempValue = wvInKG;
-                        } else
-                            tempValue = wtInKG;
-                        tempValue = CommonUtils.roundBigDecimal(tempValue.multiply(BigDecimal.valueOf(100)), 0, RoundingMode.CEILING);
 
-                        vwOb.setChargeable(tempValue.divide(BigDecimal.valueOf(100)));
+                        vwOb.setChargeable(wtInKG.max(wvInKG));
                         vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
                         vwOb.setVolumeWeight(wvInKG);
                         vwOb.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+
+                        vwOb.setChargeable(vwOb.getChargeable()
+                                .multiply(BigDecimal.valueOf(2))
+                                .setScale(0, RoundingMode.CEILING)
+                                .divide(BigDecimal.valueOf(2)));
                         break;
                     default:
                 }

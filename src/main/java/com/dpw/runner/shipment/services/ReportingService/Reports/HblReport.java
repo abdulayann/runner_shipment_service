@@ -394,6 +394,8 @@ public class HblReport extends IReport {
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
+        dictionary.put(ISSUE_PLACE_NAME_V2, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getName()) : "");
+        dictionary.put(ISSUE_PLACE_COUNTRY_V2, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getCountry()) : "");
         dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()));
         EntityTransferAddress address = commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode());
         dictionary.put(ISSUE_PLACE_COUNTRY, address != null ? StringUtility.toUpperCase(address.getCountry()) : StringUtils.EMPTY);

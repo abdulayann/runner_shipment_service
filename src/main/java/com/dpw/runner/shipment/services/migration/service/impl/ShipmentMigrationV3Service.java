@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
@@ -31,12 +32,14 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -56,6 +59,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -93,6 +97,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     @Autowired
     private MigrationUtil migrationUtil;
+    @Autowired
+    private ContractIdMapUtil contractIdMapUtil;
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
     public static final Map<String, String> airMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
@@ -160,9 +168,27 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             updateTransportInstruction(shipmentDetails);
 
         // Migrated shipment fields
+        updateParentContractIdInShipment(shipmentDetails);
         updateShipmentFields(shipmentDetails);
 
         return shipmentDetails;
+    }
+
+    private void updateParentContractIdInShipment(ShipmentDetails shipmentDetails) {
+        if(!Objects.isNull(shipmentDetails.getContractId())) {
+            String parentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), CONTRACT_TYPE, currentEnvironment);
+            if(!Objects.isNull(parentContactId)) {
+                log.info("Updating parentContractId in Shipment id {} with parentContractId {}", shipmentDetails.getId(), parentContactId);
+                shipmentDetails.setParentContractId(parentContactId);
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getDestinationContractId())) {
+            String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getDestinationContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
+            if(!Objects.isNull(destinationParentContactId)) {
+                log.info("Updating destinationParentContractId in Shipment id {} with destinationParentContractId {}", shipmentDetails.getId(), destinationParentContactId);
+                shipmentDetails.setDestinationParentContractId(destinationParentContactId);
+            }
+        }
     }
 
     private void updateShipmentFields(ShipmentDetails shipmentDetails) {
@@ -203,23 +229,39 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void setCountryFilterInParties(ShipmentDetails shipmentDetails) {
-        if(shipmentDetails.getClient() != null)
-            shipmentDetails.getClient().setCountryCode(shipmentDetails.getClientCountry());
-        if(shipmentDetails.getConsigner() != null)
-            shipmentDetails.getConsigner().setCountryCode(shipmentDetails.getConsignorCountry());
-        if(shipmentDetails.getConsignee() != null)
-            shipmentDetails.getConsignee().setCountryCode(shipmentDetails.getConsigneeCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null)
-            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(shipmentDetails.getNotifyPartyCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null)
-            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
-            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+        if(shipmentDetails.getClient() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getClientCountry());
+            shipmentDetails.getClient().setCountryCode(country);
+        }
+        if(shipmentDetails.getConsigner() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsignorCountry());
+            shipmentDetails.getConsigner().setCountryCode(country);
+        }
+        if(shipmentDetails.getConsignee() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsigneeCountry());
+            shipmentDetails.getConsignee().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getNotifyPartyCountry());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setImportBrokerCountry(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setExportBrokerCountry(country);
+        }
         if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
             for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
                 if(shipmentAddress.getOrgData()!=null  && shipmentAddress.getOrgData().containsKey("Country")
-                        && shipmentAddress.getOrgData().get("Country")!=null)
-                    shipmentAddress.setCountryCode((String) shipmentAddress.getOrgData().get("Country"));
+                        && shipmentAddress.getOrgData().get("Country")!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) shipmentAddress.getOrgData().get("Country"));
+                    shipmentAddress.setCountryCode(country);
+                }
             }
         }
     }

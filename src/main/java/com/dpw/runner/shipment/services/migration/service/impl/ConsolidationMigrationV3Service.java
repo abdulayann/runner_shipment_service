@@ -50,6 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -286,16 +287,23 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setConsolidationFields(ConsolidationDetails consolidationDetails) {
-
-        if(consolidationDetails.getSendingAgent() != null)
-            consolidationDetails.getSendingAgent().setCountryCode(consolidationDetails.getSendingAgentCountry());
-        if(consolidationDetails.getReceivingAgent() != null)
-            consolidationDetails.getReceivingAgent().setCountryCode(consolidationDetails.getReceivingAgentCountry());
+        if(consolidationDetails.getSendingAgent() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
+            consolidationDetails.getSendingAgent().setCountryCode(country);
+            consolidationDetails.setSendingAgentCountry(country);
+        }
+        if(consolidationDetails.getReceivingAgent() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getReceivingAgentCountry());
+            consolidationDetails.getReceivingAgent().setCountryCode(country);
+            consolidationDetails.setReceivingAgentCountry(country);
+        }
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
-                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(COUNTRY)
-                        && consolidationAddress.getOrgData().get(COUNTRY)!=null)
-                    consolidationAddress.setCountryCode((String) consolidationAddress.getOrgData().get(COUNTRY));
+                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(Constants.COUNTRY)
+                        && consolidationAddress.getOrgData().get(Constants.COUNTRY)!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) consolidationAddress.getOrgData().get(Constants.COUNTRY));
+                    consolidationAddress.setCountryCode(country);
+                }
             }
         }
     }
@@ -466,6 +474,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
             // If count is null or <= 1, keep container as-is (no splitting needed)
             if (count == null || count <= 1) {
+                setTeuInContainers(codeTeuMap, container);
                 resultContainers.add(container);
                 continue;
             }
