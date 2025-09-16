@@ -538,7 +538,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         Optional<CustomerBooking> optionalCustomerBooking = customerBookingDao.findById(quoteResetRequest.getBookingId());
         if(optionalCustomerBooking.isEmpty()) {
-            log.error("No Booking found with BookingId {} for request {}", quoteResetRequest.getBookingId(), LoggerHelper.getRequestIdFromMDC());
+            log.error("No Booking found for request {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException("No Booking found with Booking Id {}" + quoteResetRequest.getBookingId());
         }
         CustomerBooking customerBooking = optionalCustomerBooking.get();

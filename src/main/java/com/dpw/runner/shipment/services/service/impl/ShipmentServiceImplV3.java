@@ -911,7 +911,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if(Boolean.TRUE.equals(quoteResetRequest.getPodResetFlag()) || Boolean.TRUE.equals(quoteResetRequest.getPolResetFlag())) {
             boolean hasMainCarriage = shipmentDetails.getRoutingsList().stream()
                     .map(Routings::getCarriage)
-                    .anyMatch(carriage -> RoutingCarriage.MAIN_CARRIAGE.equals(carriage));
+                    .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
             if (hasMainCarriage) {
                 throw new ValidationException("POL/POD reset not allowed when routing has MAIN_CARRIAGE");
             }

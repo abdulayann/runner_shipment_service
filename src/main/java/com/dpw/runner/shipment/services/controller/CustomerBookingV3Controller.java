@@ -326,7 +326,7 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RESET_QUOTE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PostMapping(ApiConstants.API_RESET_QUOTE)
-    public ResponseEntity<IRunnerResponse> resetQuoteDataInBooking(@RequestBody @Valid QuoteResetRequest quoteResetRequest) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> resetQuoteDataInBooking(@RequestBody @Valid QuoteResetRequest quoteResetRequest) {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.resetResetBookingQuoteInfo(quoteResetRequest));
     }
 }
