@@ -1,17 +1,17 @@
 package com.dpw.runner.shipment.services.migration.utils;
 
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,18 +25,18 @@ public class ContractIdMapUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Map<String, String>> contractMap;
-    private static final String CONTRACT_FILE_PATH = "src/main/resources/ContractIdsJsonMap.json";
+    private static final String CONTRACT_FILE_NAME = "ContractIdsJsonMap.json";
 
     public ContractIdMapUtil() {
         Map<String, Map<String, String>> tempMap = new HashMap<>();
-        try {
+        try (InputStream inputStream = new ClassPathResource(CONTRACT_FILE_NAME).getInputStream()) {
             tempMap = objectMapper.readValue(
-                    new File(CONTRACT_FILE_PATH),
+                    inputStream,
                     new TypeReference<Map<String, Map<String, String>>>() {}
             );
         } catch (IOException e) {
-            log.error("Failed to load contract map from JSON file: {}", CONTRACT_FILE_PATH, e);
-            throw new IllegalArgumentException(e);
+            log.error("Failed to load contract map from JSON file in resources", e);
+            throw new IllegalStateException("Could not load contract map", e);
         }
         contractMap = tempMap;
     }
@@ -60,18 +60,18 @@ public class ContractIdMapUtil {
         // Fallback to local JSON
         log.info("Fetching local contract config map for key "+ key);
         Map<String, String> innerContractMap = contractMap.get(key);
-        if (innerContractMap == null) {
-            log.error("No contract map found for key: " + key);
-            throw new IllegalArgumentException("No contract map found for key: " + key);
+        if (innerContractMap != null) {
+            String parentContractId = innerContractMap.get(contractId);
+            log.info("ParentContractId fetched from Local contractMap is {}", parentContractId);
+            return parentContractId;
         }
-        String parentContractId = innerContractMap.get(contractId);
-        log.info("ParentContractId fetched from Local contractMap is {}", parentContractId);
-        return parentContractId;
+        log.error("No contract map found for key {} in local contract config map: ", key);
+        return null;
     }
 
     private String getParentContractIdFromAppConfig(String contractId, String env, String type) {
         String appConfigContractMapString = applicationConfigService.getValue("CONTRACT_MAP");
-        if (appConfigContractMapString == null || appConfigContractMapString.isBlank()) {
+        if (Strings.isNullOrEmpty(appConfigContractMapString)) {
             return null;
         }
 
@@ -81,13 +81,15 @@ public class ContractIdMapUtil {
                     new TypeReference<Map<String, Map<String, String>>>() {}
             );
             String key = env + "_" + type;
-            log.info("Fetching AppConfig map for key "+ key);
+            log.info("Fetching AppConfig map for key {}", key);
             Map<String, String> innerAppConfigContractMap = appConfigContractMap.get(key);
-            if (innerAppConfigContractMap == null) {
-                log.error("No contract map found in AppConfig for key: " + key);
-                throw new IllegalArgumentException("No contract map found in AppConfig for key: " + key);
+            if(innerAppConfigContractMap != null) {
+                String parentContractId = innerAppConfigContractMap.get(contractId);
+                log.info("ParentContractId {} fetched from AppConfig contractMap is for key {}", parentContractId, key);
+                return parentContractId;
             }
-            return innerAppConfigContractMap.get(contractId);
+            log.error("No contract map found for key {} in AppConfig contract config map: ", key);
+            return null;
         } catch (Exception e) {
             log.error("Failed to fetch contract map from AppConfig: {}", e.getMessage());
             throw new IllegalArgumentException(e);
