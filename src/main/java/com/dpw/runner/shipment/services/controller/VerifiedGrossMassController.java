@@ -110,27 +110,14 @@ public class VerifiedGrossMassController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<?> getAllMasterData(@RequestParam Long vgmId) {
-        String responseMsg = "failure executing :(";
-        try {
-            return (ResponseEntity<?>) verifiedGrossMassService.getAllMasterData(vgmId);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error retrieving master data";
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
+        return verifiedGrossMassService.getAllMasterData(vgmId);
     }
+
     @GetMapping
     @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.RETRIEVE_DEFAULT_SUCCESS)})
     public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
-        try {
-            VerifiedGrossMassResponse response = verifiedGrossMassService.getDefaultVerifiedGrossMassValues(type, entityId);
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving default verified gross mass data";
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        VerifiedGrossMassResponse response = verifiedGrossMassService.getDefaultVerifiedGrossMassValues(type, entityId);
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     @ApiResponses(value = {

@@ -75,12 +75,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -157,7 +158,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void createCarrierBookingSuccess(){
+    void createCarrierBookingSuccess() throws RunnerException {
         doNothing().when(carrierBookingValidationUtil).validateServiceType(any());
         when(carrierBookingValidationUtil.validateRequest(any(), any())).thenReturn(consolidationDetails);
         when(jsonHelper.convertValue(any(), eq(CarrierBooking.class))).thenReturn(carrierBooking);
@@ -170,7 +171,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void createCarrierBookingSuccess1(){
+    void createCarrierBookingSuccess1() throws RunnerException {
         doNothing().when(carrierBookingValidationUtil).validateServiceType(any());
         when(carrierBookingValidationUtil.validateRequest(any(), any())).thenReturn(new ConsolidationDetails());
         CarrierBooking carrierBooking1 = new CarrierBooking();
@@ -186,13 +187,13 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void updateCarrierBookingNotFound(){
+    void updateCarrierBookingNotFound() {
         when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("Not found"));
         assertThrows(ValidationException.class, () -> carrierBookingService.update(carrierBookingRequest));
     }
 
     @Test
-    void updateCarrierBookingSuccess(){
+    void updateCarrierBookingSuccess() throws RunnerException {
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         doNothing().when(carrierBookingValidationUtil).validateServiceType(any());
         when(carrierBookingValidationUtil.validateRequest(any(), any())).thenReturn(consolidationDetails);
@@ -206,7 +207,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void updateCarrierBookingSuccess1(){
+    void updateCarrierBookingSuccess1() throws RunnerException {
         CarrierBooking carrierBooking1 = new CarrierBooking();
         carrierBooking1.setEntityType(Constants.CONSOLIDATION);
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking1));
@@ -249,6 +250,21 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
+    void list_Exception_EmptyIncludeColumns() {
+        // Setup
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(new ArrayList<>());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        // Test & Assert
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                carrierBookingService.list(commonRequestModel, false)
+        );
+        assertEquals(CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE, exception.getMessage());
+    }
+
+    @Test
     void listCarrierBooking() {
         // Arrange: Build ListCommonRequest
         ListCommonRequest listCommonRequest = new ListCommonRequest();
@@ -281,13 +297,13 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByIdTest(){
+    void retrieveByIdTest() {
         when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("Invalid id"));
         assertThrows(ValidationException.class, () -> carrierBookingService.retrieveById(any()));
     }
 
     @Test
-    void retrieveByIdTest1(){
+    void retrieveByIdTest1() {
         carrierBooking.setEntityType(Constants.CONSOLIDATION);
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(carrierBookingResponse);
@@ -461,7 +477,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_cancel_Exception(){
+    void test_cancel_Exception() {
         when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("EX"));
 
         assertThrows(ValidationException.class, () -> carrierBookingService.cancel(1L));
@@ -469,7 +485,7 @@ class CarrierBookingServiceTest extends CommonMocks {
 
 
     @Test
-    void test_cancel(){
+    void test_cancel() {
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         when(iv1Service.getEmailTemplates(any())).thenReturn(new V1DataResponse());
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
@@ -481,7 +497,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_cancel1(){
+    void test_cancel1() {
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.setEntities(new CarrierBooking());
@@ -495,7 +511,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_setContainerEmptyAndDropOffLocationDetails(){
+    void test_setContainerEmptyAndDropOffLocationDetails() {
         InttraCarrierBookingEventDto inttraCarrierBookingEventDto = new InttraCarrierBookingEventDto();
         Equipment equipment = new Equipment();
         Haulage haulage = new Haulage();
@@ -515,7 +531,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_setContainerEmptyAndDropOffLocationDetails_EMPTY_PICK_UP(){
+    void test_setContainerEmptyAndDropOffLocationDetails_EMPTY_PICK_UP() {
         InttraCarrierBookingEventDto inttraCarrierBookingEventDto = new InttraCarrierBookingEventDto();
         Equipment equipment = new Equipment();
         Haulage haulage = new Haulage();
@@ -632,8 +648,8 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void test_getRoutingCarriage_DefaultCase() {
         // Test default case
-        Assertions.assertNull(carrierBookingService.getRoutingCarriage("UnknownStage"));
-        Assertions.assertNull(carrierBookingService.getRoutingCarriage(""));
+        assertNull(carrierBookingService.getRoutingCarriage("UnknownStage"));
+        assertNull(carrierBookingService.getRoutingCarriage(""));
     }
 
     @Test
@@ -650,12 +666,12 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void test_getTransportMode_DefaultCase() {
         // Test default case
-        Assertions.assertNull(carrierBookingService.getTransportMode("UnknownTransport"));
-        Assertions.assertNull(carrierBookingService.getTransportMode(""));
+        assertNull(carrierBookingService.getTransportMode("UnknownTransport"));
+        assertNull(carrierBookingService.getTransportMode(""));
     }
 
     @Test
-    void test_setCarrierRoutings(){
+    void test_setCarrierRoutings() {
         InttraCarrierBookingEventDto inttraCarrierBookingEventDto = new InttraCarrierBookingEventDto();
         TransportLeg transportLeg = new TransportLeg();
         transportLeg.setStage(MAIN_CARRIAGE);
