@@ -63,4 +63,8 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     public CarrierBookingInfoProjection findCarrierBookingInfoById(Long entityId) {
         return carrierBookingRepository.findCarrierBookingInfoById(entityId);
     }
+
+    public boolean existsById(Long id) {
+        return carrierBookingRepository.existsById(id);
+    }
 }

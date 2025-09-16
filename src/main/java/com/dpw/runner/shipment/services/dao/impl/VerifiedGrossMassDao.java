@@ -48,4 +48,9 @@ public class VerifiedGrossMassDao implements IVerifiedGrossMassDao {
     public VerifiedGrossMass save(VerifiedGrossMass verifiedGrossMass) {
         return verifiedGrossMassRepository.save(verifiedGrossMass);
     }
+
+    @Override
+    public boolean existsById(Long id) {
+        return verifiedGrossMassRepository.existsById(id);
+    }
 }

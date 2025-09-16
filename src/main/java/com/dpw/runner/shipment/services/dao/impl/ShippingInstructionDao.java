@@ -57,4 +57,9 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
         return shippingInstructionRepository.findCarrierBookingInfoById(bookingId);
     }
 
+    @Override
+    public boolean existsById(Long id) {
+        return shippingInstructionRepository.existsById(id);
+    }
+
 }
