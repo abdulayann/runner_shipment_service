@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+
+import java.util.EnumSet;
+import java.util.Set;
+
 public class NetworkTransferConstants {
     private NetworkTransferConstants() {}
 
@@ -19,4 +24,6 @@ public class NetworkTransferConstants {
     public static final String SHIPMENT_ENTITY_STATUS = "/shipment-entity-status";
     public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL = "/create/external";
+
+    public static final Set<NetworkTransferStatus> TRANSFER_RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.TRANSFERRED);
 }
