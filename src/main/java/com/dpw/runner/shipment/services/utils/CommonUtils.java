@@ -26,15 +26,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IQuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
@@ -49,6 +41,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -92,6 +85,7 @@ import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
@@ -4322,5 +4316,31 @@ public class CommonUtils {
         } catch (Exception e) {
             throw new ValidationException("Invalid Type");
         }
+    }
+
+    public static List<ShipmentOrderAttachDetachRequest.OrderDetails> mapToOrderDetailsList(List<ShipmentOrderV3Request> shipmentOrderV3List) {
+        if (ObjectUtils.isEmpty(shipmentOrderV3List)) {
+            return Collections.emptyList();
+        }
+
+        return shipmentOrderV3List.stream()
+                .filter(Objects::nonNull)
+                .map(CommonUtils::mapToOrderDetails)
+                .toList();
+    }
+
+    public static ShipmentOrderAttachDetachRequest.OrderDetails mapToOrderDetails(ShipmentOrderV3Request request) {
+        if (request == null) {
+            return null;
+        }
+
+        List<PackingV3Request> orderPackings = (request.getOrderPackings() == null) ? Collections.emptyList() : request.getOrderPackings();
+        return ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                .orderNumber(request.getOrderNumber())
+                .orderGuid(request.getOrderGuid())
+                .shipmentId(request.getShipmentId())
+                .orderDate(request.getOrderDate())
+                .orderPackings(orderPackings)
+                .build();
     }
 }

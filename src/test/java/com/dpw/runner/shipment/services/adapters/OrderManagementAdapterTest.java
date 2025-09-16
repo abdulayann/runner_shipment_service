@@ -35,6 +35,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -43,8 +44,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -628,5 +628,131 @@ class OrderManagementAdapterTest {
         ShipmentDetails shipmentDetails = orderManagementAdapter.getOrderByGuid("1234-5678-9123-4567");
         assertNotNull(shipmentDetails);
         assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
+    }
+
+    @Test
+    void testGetOrderManagementDTOByGuid() throws Exception {
+        OrderManagementResponse orderManagementResponse = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+
+        orderManagementResponse.setOrder(orderManagementDTO);
+        HttpHeaders headers = new HttpHeaders();
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        doReturn(new ResponseEntity<>(orderManagementResponse, HttpStatus.OK)).when(restTemplate).exchange("nullnull1234-5678-9123-4567", HttpMethod.GET, httpEntity, OrderManagementResponse.class);
+
+        OrderManagementDTO orderManagementDTORes = orderManagementAdapter.getOrderManagementDTOByGuid("1234-5678-9123-4567");
+        assertNotNull(orderManagementDTORes);
+    }
+
+    @Test
+    void testGetOrderManagementDTOByGuid_throwError() throws Exception {
+        OrderManagementResponse orderManagementResponse = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+
+        orderManagementResponse.setOrder(orderManagementDTO);
+        HttpHeaders headers = new HttpHeaders();
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        doThrow(new RestClientException("Failed to call Order Management"))
+                .when(restTemplate)
+                .exchange(
+                        "nullnull1234-5678-9123-4567",
+                        HttpMethod.GET,
+                        httpEntity,
+                        OrderManagementResponse.class
+                );
+
+        assertThrows(RunnerException.class, () -> {
+            orderManagementAdapter.getOrderManagementDTOByGuid("1234-5678-9123-4567");
+        });
     }
 }
