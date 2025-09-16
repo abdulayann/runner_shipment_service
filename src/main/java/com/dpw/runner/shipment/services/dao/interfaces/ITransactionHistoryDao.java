@@ -21,5 +21,5 @@ public interface ITransactionHistoryDao {
 
     TransactionHistory save(TransactionHistory transactionHistory);
 
-    List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType);
+    List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType, Integer tenantId);
 }

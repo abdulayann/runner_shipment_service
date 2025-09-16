@@ -10,7 +10,7 @@ import java.util.List;
 public interface ITransactionHistoryRepository extends MultiTenancyRepository<TransactionHistory> {
 
     // This method will return a list of transaction histories for a given verifiedGrossMassId
-    @Query(value = "SELECT * FROM transaction_history th WHERE th.entity_id = :entityId AND th.entity_type = :entityType", nativeQuery = true)
-    List<TransactionHistory> findAllByEntityIdAndEntityType(@Param("entityId") Long entityId, @Param("entityType") String entityType);
+    @Query(value = "SELECT * FROM transaction_history th WHERE th.entity_id = :entityId AND th.entity_type = :entityType AND th.tenant_id = :tenantId AND th.is_deleted = false", nativeQuery = true)
+    List<TransactionHistory> findAllByEntityIdAndEntityType(@Param("entityId") Long entityId, @Param("entityType") String entityType, @Param("tenantId") Integer tenantId);
 
 }
