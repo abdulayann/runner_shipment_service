@@ -145,7 +145,7 @@ public class ShippingInstruction extends MultiTenancy {
     private SailingInformation sailingInformation;
 
     @Type(type = "jsonb")
-    @Column(name = "payload_json", columnDefinition = "jsonb")
+    @Column(name = "si_payload", columnDefinition = "jsonb")
     private ContainerPackageSiPayload payloadJson;
 
 }
