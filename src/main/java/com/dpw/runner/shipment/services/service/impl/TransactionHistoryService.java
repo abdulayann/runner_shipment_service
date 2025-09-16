@@ -74,7 +74,7 @@ public class TransactionHistoryService implements ITransactionHistoryService {
         }
 
         if (!Boolean.TRUE.equals(isEntryExists)) {
-            throw new DataRetrievalFailureException("No record found for " + entityType + " with ID: " + entityId);
+            throw new DataRetrievalFailureException("Invalid Entity ID: " + entityId);
         }
     }
 }
