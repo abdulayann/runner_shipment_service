@@ -892,7 +892,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(quoteResetRequest.getShipmentId());
         if(optionalShipmentDetails.isEmpty()) {
             log.error("No Shipment found with ShipmentId {} for request {}", quoteResetRequest.getShipmentId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException("No Booking found with Shipment Id {}" + quoteResetRequest.getShipmentId());
+            throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + quoteResetRequest.getShipmentId());
         }
         ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
         validateQuoteRequestForShipment(quoteResetRequest, shipmentDetails);

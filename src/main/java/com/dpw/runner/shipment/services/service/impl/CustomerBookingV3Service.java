@@ -534,7 +534,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response resetResetBookingQuoteInfo(QuoteResetRequest quoteResetRequest) {
         if(Objects.isNull(quoteResetRequest.getBookingId())) {
             log.error("BookingId is null for booking reset quote data with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Booking Id Is Mandatory");
+            throw new ValidationException("Booking Id is required");
         }
         Optional<CustomerBooking> optionalCustomerBooking = customerBookingDao.findById(quoteResetRequest.getBookingId());
         if(optionalCustomerBooking.isEmpty()) {
