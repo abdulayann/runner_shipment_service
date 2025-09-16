@@ -287,6 +287,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setConsolidationFields(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getCarrierBookingRef()!=null){
+            consolidationDetails.setBookingNumber(consolidationDetails.getCarrierBookingRef());
+        }
         if(consolidationDetails.getSendingAgent() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
             consolidationDetails.getSendingAgent().setCountryCode(country);
