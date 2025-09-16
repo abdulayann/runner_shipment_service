@@ -18,6 +18,8 @@ public interface IVerifiedGrossMassDao {
     void delete(Long id);
 
     VerifiedGrossMass save(VerifiedGrossMass verifiedGrossMass);
+
+    boolean existsById(Long id);
 }
 
 

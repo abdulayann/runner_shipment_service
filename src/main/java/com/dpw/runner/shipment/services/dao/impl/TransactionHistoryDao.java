@@ -33,8 +33,8 @@ public class TransactionHistoryDao implements ITransactionHistoryDao {
     }
 
     @Override
-    public List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType) {
-        return transactionHistoryRepository.findAllByEntityIdAndEntityType(entityId, entityType);
+    public List<TransactionHistory> findAllByEntityIdAndEntityType(Long entityId, String entityType, Integer tenantId) {
+        return transactionHistoryRepository.findAllByEntityIdAndEntityType(entityId, entityType, tenantId);
     }
 
     @Override
