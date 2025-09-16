@@ -385,10 +385,12 @@ public class ConsolidationController {
             if (exportExcelResponse.isEmailSent()) {
                 return ResponseEntity.status(HttpStatus.ACCEPTED).build();
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error listing shipment for shipment";
             log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseEntity.ok().build();
     }

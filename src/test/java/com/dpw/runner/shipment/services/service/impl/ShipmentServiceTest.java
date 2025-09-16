@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
@@ -115,6 +116,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -146,6 +149,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_EXPIRE_TIME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
@@ -345,6 +349,13 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private IDocumentManagerService documentManagerService;
+
+    @Mock
+    private RedisTemplate redisTemplate;
+    @Mock
+    private CustomKeyGenerator customKeyGenerator;
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -2877,6 +2888,10 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
+        when(applicationConfigService.getValue(EXPORT_EXCEL_EXPIRE_TIME)).thenReturn("5");
+        when(customKeyGenerator.cacheBaseKey()).thenReturn(new StringBuilder());
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(redisTemplate.opsForValue().get(any())).thenReturn(null);
         ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
         exportExcelResponse.setEmailSent(false);
         shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
@@ -4601,6 +4616,10 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
+        when(applicationConfigService.getValue(EXPORT_EXCEL_EXPIRE_TIME)).thenReturn("5");
+        when(customKeyGenerator.cacheBaseKey()).thenReturn(new StringBuilder());
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(redisTemplate.opsForValue().get(any())).thenReturn(null);
         ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
         exportExcelResponse.setEmailSent(false);
         shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
