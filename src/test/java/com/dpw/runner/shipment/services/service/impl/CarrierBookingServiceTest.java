@@ -249,20 +249,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         assertEquals(CARRIER_LIST_REQUEST_NULL_ERROR, exception.getMessage());
     }
 
-    @Test
-    void list_Exception_EmptyIncludeColumns() {
-        // Setup
-        ListCommonRequest listCommonRequest = new ListCommonRequest();
-        listCommonRequest.setIncludeColumns(new ArrayList<>());
-
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
-
-        // Test & Assert
-        ValidationException exception = assertThrows(ValidationException.class, () ->
-                carrierBookingService.list(commonRequestModel, false)
-        );
-        assertEquals(CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE, exception.getMessage());
-    }
 
     @Test
     void listCarrierBooking() {

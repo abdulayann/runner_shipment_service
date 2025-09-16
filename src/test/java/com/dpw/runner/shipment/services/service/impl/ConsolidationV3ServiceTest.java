@@ -177,6 +177,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private IShipmentDao shipmentDao;
 
   @Mock
+  private ICommonContainersDao commonContainersDao;
+
+  @Mock
   private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
   @Mock
@@ -427,6 +430,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+    when(commonContainersDao.getAll(any())).thenReturn(new ArrayList<>());
     mockShipmentSettings();
     var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
 
