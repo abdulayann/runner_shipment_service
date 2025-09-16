@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
+
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -118,8 +119,10 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(verifiedGrossMassEntity, VerifiedGrossMassResponse.class);
         if (EntityType.CARRIER_BOOKING.equals(verifiedGrossMassEntity.getEntityType())) {
             CarrierBookingInfoProjection carrierBookingInfo = carrierBookingDao.findCarrierBookingInfoById(verifiedGrossMassEntity.getEntityId());
-            verifiedGrossMassResponse.setBookingStatus(carrierBookingInfo.getBookingStatus() != null ? CarrierBookingStatus.valueOf(carrierBookingInfo.getBookingStatus()) : null);
-            verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
+            if (Objects.nonNull(carrierBookingInfo)) {
+                verifiedGrossMassResponse.setBookingStatus(carrierBookingInfo.getBookingStatus() != null ? CarrierBookingStatus.valueOf(carrierBookingInfo.getBookingStatus()) : null);
+                verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
+            }
         }
         return verifiedGrossMassResponse;
     }
