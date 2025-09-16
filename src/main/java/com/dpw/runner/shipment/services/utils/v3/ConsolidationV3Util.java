@@ -222,44 +222,45 @@ public class ConsolidationV3Util {
     }
 
     public void updateCommonContainerFromContainer(CommonContainers common, Containers container) {
-        common.setContainerCode(container.getContainerCode() != null ? container.getContainerCode() : common.getContainerCode());
-        common.setCount(container.getContainerCount() != null ? container.getContainerCount() : common.getCount());
-        common.setGoodsDescription(container.getDescriptionOfGoods() != null ? container.getDescriptionOfGoods() : common.getGoodsDescription());
-        common.setHsCode(container.getHsCode() != null ? container.getHsCode() : common.getHsCode());
-        common.setCommodityCode(container.getCommodityCode() != null ? container.getCommodityCode() : common.getCommodityCode());
-        common.setCommodityGroup(container.getCommodityGroup() != null ? container.getCommodityGroup() : common.getCommodityGroup());
-        common.setMarksNums(container.getMarksNums() != null ? container.getMarksNums() : common.getMarksNums());
-        common.setGrossWeight(container.getGrossWeight() != null ? container.getGrossWeight() : common.getGrossWeight());
-        common.setVolume(container.getGrossVolume() != null ? container.getGrossVolume() : common.getVolume());
-        common.setNetWeight(container.getNetWeight() != null ? container.getNetWeight() : common.getNetWeight());
-        common.setNetWeightUnit(container.getNetWeightUnit() != null ? container.getNetWeightUnit() : common.getNetWeightUnit());
-        common.setGrossWeightUnit(container.getGrossWeightUnit() != null ? container.getGrossWeightUnit() : common.getGrossWeightUnit());
-        common.setVolumeUnit(container.getGrossVolumeUnit() != null ? container.getGrossVolumeUnit() : common.getVolumeUnit());
-        common.setContainerNo(container.getContainerNumber() != null ? container.getContainerNumber() : common.getContainerNo());
-        common.setPacks(container.getPacks() != null ? Integer.valueOf(container.getPacks()) : common.getPacks());
-        common.setPacksUnit(container.getPacksType() != null ? container.getPacksType() : common.getPacksUnit());
-        common.setTareWeight(container.getTareWeight() != null ? container.getTareWeight() : common.getTareWeight());
-        common.setTareWeightUnit(container.getTareWeightUnit() != null ? container.getTareWeightUnit() : common.getTareWeightUnit());
-        common.setSealNumber(container.getSealNumber() != null ? container.getSealNumber() : common.getSealNumber());
-        common.setShipperSealNumber(container.getShipperSealNumber() != null ? container.getShipperSealNumber() : common.getShipperSealNumber());
-        common.setVeterinarySealNumber(container.getVeterinarySealNumber() != null ? container.getVeterinarySealNumber() : common.getVeterinarySealNumber());
-        common.setCustomsSealNumber(container.getCustomsSealNumber() != null ? container.getCustomsSealNumber() : common.getCustomsSealNumber());
+        common.setContainerCode(container.getContainerCode());
+        common.setCount(container.getContainerCount());
+        common.setGoodsDescription(container.getDescriptionOfGoods());
+        common.setHsCode(container.getHsCode());
+        common.setCommodityCode(container.getCommodityCode());
+        common.setCommodityGroup(container.getCommodityGroup());
+        common.setMarksNums(container.getMarksNums());
+        common.setGrossWeight(container.getGrossWeight());
+        common.setVolume(container.getGrossVolume());
+        common.setNetWeight(container.getNetWeight());
+        common.setNetWeightUnit(container.getNetWeightUnit());
+        common.setGrossWeightUnit(container.getGrossWeightUnit());
+        common.setVolumeUnit(container.getGrossVolumeUnit());
+        common.setContainerNo(container.getContainerNumber());
+        common.setPacks(container.getPacks() != null ? Integer.valueOf(container.getPacks()) : null);
+        common.setPacksUnit(container.getPacksType());
+        common.setTareWeight(container.getTareWeight());
+        common.setTareWeightUnit(container.getTareWeightUnit());
+        common.setSealNumber(container.getSealNumber());
+        common.setShipperSealNumber(container.getShipperSealNumber());
+        common.setVeterinarySealNumber(container.getVeterinarySealNumber());
+        common.setCustomsSealNumber(container.getCustomsSealNumber());
     }
 
     public void updateCommonPackingFromPacking(CommonPackages common, Packing packing) {
-        common.setContainerNo(packing.getContainerId() != null ? String.valueOf(packing.getContainerId()) : common.getContainerNo());
-        common.setPacks(packing.getPacks() != null ? tryParseInt(packing.getPacks(), common.getPacks()) : common.getPacks());
-        common.setPacksUnit(packing.getPacksType() != null ? packing.getPacksType() : common.getPacksUnit());
-        common.setHsCode(packing.getHSCode() != null ? packing.getHSCode() : common.getHsCode());
-        common.setCommodityCode(packing.getCommodity() != null ? packing.getCommodity() : common.getCommodityCode());
-        common.setCommodityGroup(packing.getCommodityGroup() != null ? packing.getCommodityGroup() : common.getCommodityGroup());
-        common.setMarksnNums(packing.getMarksnNums() != null ? packing.getMarksnNums() : common.getMarksnNums());
-        common.setGoodsDescription(packing.getGoodsDescription() != null ? packing.getGoodsDescription() : common.getGoodsDescription());
-        common.setGrossWeight(packing.getWeight() != null ? packing.getWeight() : common.getGrossWeight());
-        common.setGrossWeightUnit(packing.getWeightUnit() != null ? packing.getWeightUnit() : common.getGrossWeightUnit());
-        common.setVolume(packing.getVolume() != null ? packing.getVolume() : common.getVolume());
-        common.setVolumeUnit(packing.getVolumeUnit() != null ? packing.getVolumeUnit() : common.getVolumeUnit());
+        common.setContainerNo(packing.getContainerId() != null ? String.valueOf(packing.getContainerId()) : null);
+        common.setPacks(tryParseInt(packing.getPacks(), null));
+        common.setPacksUnit(packing.getPacksType());
+        common.setHsCode(packing.getHSCode());
+        common.setCommodityCode(packing.getCommodity());
+        common.setCommodityGroup(packing.getCommodityGroup());
+        common.setMarksnNums(packing.getMarksnNums());
+        common.setGoodsDescription(packing.getGoodsDescription());
+        common.setGrossWeight(packing.getWeight());
+        common.setGrossWeightUnit(packing.getWeightUnit());
+        common.setVolume(packing.getVolume());
+        common.setVolumeUnit(packing.getVolumeUnit());
     }
+
 
     private Integer tryParseInt(String value, Integer fallback) {
         try {

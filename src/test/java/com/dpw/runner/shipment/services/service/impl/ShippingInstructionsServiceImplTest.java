@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -11,13 +12,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -29,9 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -50,7 +56,7 @@ import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -81,11 +87,15 @@ class ShippingInstructionsServiceImplTest {
     @Mock
     private CommonUtils commonUtils;
     @Mock
+    private IV1Service v1Service;
+    @Mock
     private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
     @InjectMocks
     private ShippingInstructionsController controller;
     private static ShippingInstruction testSI;
     private static ObjectMapper objectMapper;
+    @Mock
+    private ModelMapper modelMapper;
     @Mock
     private IPackingV3Service packingV3Service;
 
@@ -433,4 +443,415 @@ class ShippingInstructionsServiceImplTest {
 
         verifyNoInteractions(repository); // save should never happen
     }
+
+    @Test
+    void submitShippingInstruction_success_whenCarrierBookingConfirmed() {
+        Long id = 1L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(100L);
+        si.setStatus(ShippingInstructionStatus.Draft);
+
+        CarrierBooking booking = new CarrierBooking();
+        booking.setId(100L);
+        booking.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Stub both response and json conversion
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+        when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
+                .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
+
+        ShippingInstructionResponse resp = service.submitShippingInstruction(id);
+
+        Assertions.assertNotNull(resp);
+
+        // status should be updated before save
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
+
+        // downstream push should be called with expected args
+        verify(kafkaHelper).sendDataToKafka(
+                anyString(),
+                eq(GenericKafkaMsgType.SI),
+                eq(IntraKafkaOperationType.ORIGINAL)
+        );
+    }
+
+    @Test
+    void submitShippingInstruction_shouldThrow_whenCarrierBookingNotConfirmed() {
+        Long id = 2L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(101L);
+        si.setStatus(ShippingInstructionStatus.Draft);
+
+        CarrierBooking booking = new CarrierBooking();
+        booking.setId(101L);
+        booking.setStatus(CarrierBookingStatus.Draft); // not allowed for submit
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+        when(carrierBookingDao.findById(101L)).thenReturn(Optional.of(booking));
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> service.submitShippingInstruction(id));
+        assertThat(ex.getMessage()).contains("Submit not allowed");
+    }
+
+    @Test
+    void submitShippingInstruction_success_whenConsolidationAndDraft() {
+        Long id = 3L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CONSOLIDATION);
+        si.setEntityId(200L);
+        si.setStatus(ShippingInstructionStatus.Draft); // must be Draft to submit
+        when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
+                .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        ShippingInstructionResponse resp = service.submitShippingInstruction(id);
+
+        assertNotNull(resp);
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
+        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
+    }
+
+    @Test
+    void submitShippingInstruction_shouldThrow_whenConsolidationNotDraft() {
+        Long id = 4L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CONSOLIDATION);
+        si.setEntityId(200L);
+        si.setStatus(ShippingInstructionStatus.SIAccepted); // not Draft
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> service.submitShippingInstruction(id));
+        assertThat(ex.getMessage()).contains("Submit not allowed. Shipping Instruction is not Submitted.");
+    }
+
+    @Test
+    void amendShippingInstruction_success_changesStatusAndSendsDownstream() {
+        Long id = 5L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setStatus(ShippingInstructionStatus.SISubmitted); // allowed for amend
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+        when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
+                .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
+
+        ShippingInstructionResponse resp = service.amendShippingInstruction(id);
+
+        assertNotNull(resp);
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SIAmendRequested));
+        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
+
+    }
+
+    @Test
+    void amendShippingInstruction_shouldThrow_whenNotSubmittedOrAccepted() {
+        Long id = 6L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setStatus(ShippingInstructionStatus.Draft); // cannot amend
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> service.amendShippingInstruction(id));
+        assertThat(ex.getMessage()).contains("Amendment not allowed. Shipping Instruction is not Submitted.");
+    }
+
+    @Test
+    void getDefaultShippingInstructionValues_populatesBookingStatus_andReturnsDraft() {
+        Long bookingId = 100L;
+        Long consolidationId = 200L;
+
+        CarrierBooking cb = new CarrierBooking();
+        cb.setId(bookingId);
+        cb.setEntityId(consolidationId);
+        cb.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
+
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setId(consolidationId);
+        consol.setConsolidationNumber("CON-123");
+
+        when(carrierBookingDao.findById(bookingId)).thenReturn(Optional.of(cb));
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consol));
+
+        // Make jsonHelper.convertValue return a response carrying the SI status if set on the passed SI
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenAnswer(inv -> {
+                    ShippingInstruction arg = inv.getArgument(0);
+                    ShippingInstructionResponse r = new ShippingInstructionResponse();
+                    if (arg != null && arg.getStatus() != null) {
+                        r.setStatus(arg.getStatus().name());
+                    }
+                    return r;
+                });
+
+        ShippingInstructionResponse resp = service.getDefaultShippingInstructionValues(EntityType.CARRIER_BOOKING, bookingId);
+
+        assertNotNull(resp);
+        assertThat(resp.getStatus()).isEqualTo(ShippingInstructionStatus.Draft.name());
+        assertThat(resp.getBookingStatus()).isEqualTo(cb.getStatus().name());
+    }
+
+    @Test
+    void createShippingInstruction_populatesCommonPackagesAndContainers_beforeSave() {
+        // Arrange request -> shippingInstruction conversion
+        ShippingInstructionRequest request = buildSimpleRequest();
+
+        ShippingInstruction siFromReq = new ShippingInstruction();
+        siFromReq.setEntityType(EntityType.CARRIER_BOOKING);
+        siFromReq.setEntityId(100L);
+        siFromReq.setSailingInformation(new SailingInformation());
+
+        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(siFromReq);
+
+        // CarrierBooking -> consolidation id
+        CarrierBooking cb = new CarrierBooking();
+        cb.setId(100L);
+        cb.setEntityId(200L);
+        cb.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
+//        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
+
+        when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.of(cb));
+
+        // Consolidation -> one container
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setId(200L);
+        Containers container = new Containers();
+        container.setId(10L);
+        container.setContainerNumber("C-10");
+        // ensure containersList getter is used by service
+        consol.setContainersList(List.of(container));
+        when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
+
+        // Packing list -> one packing referencing container id 10L
+        Packing packing = new Packing();
+        packing.setContainerId(10L);
+        packing.setPacks("5");
+        packing.setPacksType("BOX");
+        packing.setHSCode("HS123");
+        packing.setGoodsDescription("Goods");
+        when(packingV3Service.getPackingsByConsolidationId(200L)).thenReturn(List.of(packing));
+
+        // Capture save argument
+        ArgumentCaptor<ShippingInstruction> captor = ArgumentCaptor.forClass(ShippingInstruction.class);
+        when(repository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        // Act
+        ShippingInstructionResponse out = service.createShippingInstruction(request);
+
+        // Assert
+        ShippingInstruction savedArg = captor.getValue();
+        assertNotNull(savedArg);
+        // commonPackages should be created from packing list and populated with container number from containersMap
+        assertNotNull(savedArg.getCommonPackagesList());
+        assertEquals(1, savedArg.getCommonPackagesList().size());
+        assertEquals("C-10", savedArg.getCommonPackagesList().get(0).getContainerNo());
+
+        // commonContainers should be created from consolidation containers list
+        assertNotNull(savedArg.getCommonContainersList());
+        assertEquals(1, savedArg.getCommonContainersList().size());
+        assertEquals("C-10", savedArg.getCommonContainersList().get(0).getContainerNo());
+    }
+
+    @Test
+    void createShippingInstruction_shouldThrow_whenCarrierBookingMissing() {
+        ShippingInstructionRequest request = buildSimpleRequest();
+        ShippingInstruction entity = buildSimpleEntity();
+        // request -> entity conversion
+        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
+
+        // carrierBookingDao returns empty -> setDefaultValues will throw Invalid entity id
+        when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createShippingInstruction(request))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid entity id");
+
+        verify(repository, never()).save(any(ShippingInstruction.class));
+    }
+
+    @Test
+    void getDefaultShippingInstructionValues_forConsolidation_setsBookingStatusFromConsolidation() {
+        Long entityId = 200L;
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setId(entityId);
+        consol.setBookingStatus("BOOKING-OK");
+
+        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.of(consol));
+
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenAnswer(inv -> {
+                    ShippingInstruction arg = inv.getArgument(0);
+                    ShippingInstructionResponse r = new ShippingInstructionResponse();
+                    if (arg != null && arg.getStatus() != null) r.setStatus(arg.getStatus().name());
+                    return r;
+                });
+
+        ShippingInstructionResponse response = service.getDefaultShippingInstructionValues(EntityType.CONSOLIDATION, entityId);
+
+        assertNotNull(response);
+        assertThat(response.getBookingStatus()).isEqualTo("BOOKING-OK");
+        assertThat(response.getStatus()).isEqualTo(ShippingInstructionStatus.Draft.name());
+    }
+
+    @Test
+    void getShippingInstructionsById_whenEntityTypeCarrierBooking_andProjectionPresent_setsBookingStatus() {
+        Long id = 1L;
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(100L);
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+
+        // create a simple projection mock/stub with booking status
+        CarrierBookingInfoProjection proj = mock(CarrierBookingInfoProjection.class);
+        when(proj.getBookingStatus()).thenReturn("PROJ-STATUS");
+        when(repository.findBookingInfoById(100L)).thenReturn(proj);
+
+        // json conversion just returns an empty response
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        ShippingInstructionResponse out = service.getShippingInstructionsById(id);
+
+        assertNotNull(out);
+        assertThat(out.getBookingStatus()).isEqualTo("PROJ-STATUS");
+    }
+
+    @Test
+    void submitShippingInstruction_shouldThrow_whenCarrierBookingStatusNotAllowed() {
+        Long id = 10L;
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(id);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(100L);
+        si.setStatus(ShippingInstructionStatus.Draft);
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+
+        CarrierBooking booking = new CarrierBooking();
+        booking.setId(100L);
+        booking.setStatus(CarrierBookingStatus.Draft); // not allowed
+
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.submitShippingInstruction(id))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+
+        // ensure save is not called
+        verify(repository, never()).save(any());
+        verify(kafkaHelper, never()).sendDataToKafka(anyString(), any(), any());
+    }
+
+    @Test
+    void amendShippingInstruction_shouldThrow_whenShippingInstructionMissing() {
+        Long id = 999L;
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.amendShippingInstruction(id))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid shipping instruction id");
+    }
+
+    @Test
+    void populateFreightDetails_doesNothing_whenConsolNullOrPaymentNull() {
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(1L);
+        si.setFreightDetailList(null);
+
+        // case 1: consol null
+        service.populateFreightDetails(si, null);
+        assertNull(si.getFreightDetailList());
+
+        // case 2: consol present but payment null
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setPayment(null);
+        service.populateFreightDetails(si, consol);
+        assertNull(si.getFreightDetailList());
+    }
+
+    @Test
+    void populateFreightDetails_collect_setsPayerLocationFromCarrierDetails() {
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(2L);
+        si.setFreightDetailList(null);
+
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setPayment("CCX");
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setDestinationPortCountry("COUNTRY_X");
+        consol.setCarrierDetails(carrierDetails);
+
+        TenantModel tenantModel = new TenantModel();
+        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
+        mockTenantResponse.setEntity(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
+        // --- Act ---
+        service.populateFreightDetails(si, consol);
+
+        // --- Assert ---
+        assertNotNull(si.getFreightDetailList());
+        assertThat(si.getFreightDetailList()).hasSize(1);
+
+        FreightDetail fd = si.getFreightDetailList().get(0);
+        assertThat(fd.getPaymentTerms()).isEqualTo("Collect");
+        assertThat(fd.getPayerType()).isEqualTo(PayerType.CONSIGNEE);
+        // In Collect branch → payerLocation should come from carrierDetails
+        assertThat(fd.getPayerLocation()).isEqualTo("COUNTRY_X");
+    }
+
+
+    @Test
+    void populateReadOnlyFields_shouldThrow_whenCarrierBookingNotFound() {
+        ShippingInstructionRequest req = buildSimpleRequest();
+        ShippingInstruction si = buildSimpleEntity();
+
+        ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(123L);
+        mapper.setShippingInstruction(si);
+
+        when(carrierBookingDao.findById(123L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> {
+            // call private method via public wrapper: use the public update path which calls populateReadOnlyFields
+            ShippingInstructionRequest updateReq = new ShippingInstructionRequest();
+            updateReq.setId(1L);
+            // need repository to return existing SI for update flow
+            when(repository.findById(1L)).thenReturn(Optional.of(si));
+            when(jsonHelper.convertValue(eq(updateReq), eq(ShippingInstruction.class))).thenReturn(si);
+            // now call updateShippingInstructions which invokes populateReadOnlyFields internally
+            service.updateShippingInstructions(updateReq);
+        }).isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid entity id");
+    }
+
 }

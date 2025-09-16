@@ -5007,10 +5007,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     public void syncCommonContainersAndPacking(ConsolidationDetails consolidationDetails) {
-        // Sync containers → common_container
+        // --- Sync Containers → common_container ---
         List<Containers> containers = consolidationDetails.getContainersList();
         if (containers != null && !containers.isEmpty()) {
-            // collect guids
             List<UUID> guids = containers.stream()
                     .map(Containers::getGuid)
                     .filter(Objects::nonNull)
@@ -5024,19 +5023,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Map<UUID, CommonContainers> commonMap = commons.stream()
                         .collect(Collectors.toMap(CommonContainers::getContainerRefGuid, c -> c));
 
-                // update all
+                List<CommonContainers> toSave = new ArrayList<>();
+
                 for (Containers container : containers) {
                     CommonContainers common = commonMap.get(container.getGuid());
                     if (common != null) {
+                        // update existing
                         consolidationV3Util.updateCommonContainerFromContainer(common, container);
+                        toSave.add(common);
+                    } else {
+                        // create new entry if guid not present
+                        CommonContainers newCommon = new CommonContainers();
+                        newCommon.setContainerRefGuid(container.getGuid()); // ref guid
+                        consolidationV3Util.updateCommonContainerFromContainer(newCommon, container);
+                        toSave.add(newCommon);
                     }
                 }
 
-                // bulk save
-                commonContainersDao.saveAll(commons);
+                // bulk save (updates + new inserts)
+                commonContainersDao.saveAll(toSave);
             }
         }
 
+        // --- Sync Packings → common_package ---
         List<Packing> packings = consolidationDetails.getPackingList();
         if (packings != null && !packings.isEmpty()) {
             List<UUID> guids = packings.stream()
@@ -5052,17 +5061,27 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Map<UUID, CommonPackages> commonMap = commons.stream()
                         .collect(Collectors.toMap(CommonPackages::getPackingRefGuid, p -> p));
 
-                // update all
+                List<CommonPackages> toSave = new ArrayList<>();
+
                 for (Packing packing : packings) {
                     CommonPackages common = commonMap.get(packing.getGuid());
                     if (common != null) {
+                        // update existing
                         consolidationV3Util.updateCommonPackingFromPacking(common, packing);
+                        toSave.add(common);
+                    } else {
+                        // create new entry if guid not present
+                        CommonPackages newCommon = new CommonPackages();
+                        newCommon.setPackingRefGuid(packing.getGuid()); // ref guid
+                        consolidationV3Util.updateCommonPackingFromPacking(newCommon, packing);
+                        toSave.add(newCommon);
                     }
                 }
 
-                // bulk save
-                commonPackagesDao.saveAll(commons);
+                // bulk save (updates + new inserts)
+                commonPackagesDao.saveAll(toSave);
             }
         }
     }
+
 }
