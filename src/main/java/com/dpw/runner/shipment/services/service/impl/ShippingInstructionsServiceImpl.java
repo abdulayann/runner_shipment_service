@@ -63,6 +63,8 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static org.junit.Assert.assertThrows;
+import static reactor.core.publisher.Mono.when;
 
 @Service
 @Slf4j
@@ -149,6 +151,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityId(entityId);
         setEntityNumber(shippingInstruction);
         fillDetailsFromConsol(shippingInstruction, consolidationDetails);
+        shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
         if (isCreate) {
             setPackingAndContainerDetails(consolidationDetails, shippingInstruction);
         }
@@ -665,4 +668,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         sendForDownstreamProcess(shippingInstruction);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
+
+
+
 }
