@@ -263,9 +263,6 @@ public class MasterDataUtils{
         else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
         }
-        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation()!= null && StringUtility.isNotEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
-            carriers.addAll(createInBulkCarriersRequest(carrierBookingListResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId(), cacheMap));
-        }
     }
 
     private void setCarriersMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {

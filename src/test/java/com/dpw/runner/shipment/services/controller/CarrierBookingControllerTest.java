@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -159,7 +158,7 @@ class CarrierBookingControllerTest {
     }
 
     @Test
-    void getDefault_Success() throws Exception {
+    void getDefault_Success() {
         // Mock
         Long entityId = 123L;
         EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
@@ -177,7 +176,7 @@ class CarrierBookingControllerTest {
     }
 
     @Test
-    void getDefault_Exception_WithMessage() throws Exception {
+    void getDefault_Exception_WithMessage() {
         // Mock
         Long entityId = 123L;
         EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
@@ -187,14 +186,14 @@ class CarrierBookingControllerTest {
                 .thenThrow(new RuntimeException(errorMessage));
 
         // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.getDefault(entityId, type);
+        carrierBookingController.getDefault(entityId, type);
 
         // Assert
         verify(carrierBookingService).getDefaultCarrierBookingValues(type, entityId);
     }
 
     @Test
-    void getDefault_Exception_WithoutMessage() throws Exception {
+    void getDefault_Exception_WithoutMessage() {
         // Mock
         Long entityId = 123L;
         EntityType type = EntityType.CONSOLIDATION; // Replace with actual enum value
@@ -203,14 +202,14 @@ class CarrierBookingControllerTest {
                 .thenThrow(new RuntimeException((String) null));
 
         // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.getDefault(entityId, type);
+        carrierBookingController.getDefault(entityId, type);
 
         // Assert
         verify(carrierBookingService).getDefaultCarrierBookingValues(type, entityId);
     }
 
     @Test
-    void cancel_Success() throws Exception {
+    void cancel_Success() {
         // Mock
         Long id = 123L;
         doNothing().when(carrierBookingService).cancel(id);
@@ -221,6 +220,34 @@ class CarrierBookingControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         verify(carrierBookingService).cancel(id);
+    }
+
+    @Test
+    void submit_Success() {
+        // Mock
+        Long id = 123L;
+        doNothing().when(carrierBookingService).submit(id);
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.submit(id);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(carrierBookingService).submit(id);
+    }
+
+    @Test
+    void amend_Success() {
+        // Mock
+        Long id = 123L;
+        doNothing().when(carrierBookingService).amend(id);
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.amend(id);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(carrierBookingService).amend(id);
     }
 
 }

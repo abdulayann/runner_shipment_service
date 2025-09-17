@@ -60,5 +60,9 @@ public interface ICarrierBookingService {
     CarrierBookingResponse getDefaultCarrierBookingValues(EntityType type, Long entityId);
 
     Optional<CarrierBooking> findById(Long entityId);
+
+    void submit(Long id);
+
+    void amend(Long id);
 }
 

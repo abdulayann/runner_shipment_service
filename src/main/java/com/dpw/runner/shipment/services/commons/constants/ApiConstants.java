@@ -221,4 +221,8 @@ public class ApiConstants {
     public static final String API_DYNAMIC_LIST = "/dynamic/list";
     public static final String API_DYNAMIC_RETRIEVE = "/dynamic/retrieve";
     public static final String API_BULK_UPDATE = "/containers/bulk-update";
+
+    public static final String API_SUBMIT = "/submit/{id}";
+    public static final String API_AMEND = "/amend/{id}";
+
 }

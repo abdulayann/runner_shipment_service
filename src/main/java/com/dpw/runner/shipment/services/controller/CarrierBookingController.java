@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +32,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+
+import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_AMEND;
+import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_SUBMIT;
 
 @RestController
 @RequestMapping(CarrierBookingConstants.CARRIER_BOOKING_API_HANDLE)
@@ -159,6 +163,22 @@ public class CarrierBookingController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @PostMapping(API_SUBMIT)
+    public ResponseEntity<IRunnerResponse> submit(@PathVariable("id") Long id) {
+        log.info("Received Carrier Booking Submit request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        carrierBookingService.submit(id);
+        log.info("Carrier Booking Submit successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        return ResponseHelper.buildSuccessResponse(CarrierBookingConstants.SUBMIT_SUCCESSFUL);
+    }
+
+    @PostMapping(API_AMEND)
+    public ResponseEntity<IRunnerResponse> amend(@PathVariable("id") Long id) {
+        log.info("Received Carrier Booking Amend request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        carrierBookingService.amend(id);
+        log.info("Carrier Booking Amend successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        return ResponseHelper.buildSuccessResponse(CarrierBookingConstants.AMEND_SUCCESSFUL);
     }
 
 

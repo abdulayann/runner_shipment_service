@@ -10,11 +10,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
@@ -46,18 +48,21 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -76,6 +81,8 @@ import java.util.concurrent.ExecutorService;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -122,8 +129,12 @@ class CarrierBookingServiceTest extends CommonMocks {
     private IConsolidationV3Service consolidationV3Service;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private ITransactionHistoryDao transactionHistoryDao;
+    @Mock
+    private IntraCommonKafkaHelper kafkaHelper;
 
-
+    @Spy
     @InjectMocks
     private CarrierBookingService carrierBookingService;
 
@@ -144,6 +155,13 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         carrierBookingResponse = new CarrierBookingResponse();
 
+    }
+
+    @BeforeEach
+    void setUp() {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setEmail("test@abc.com");
+        UserContext.setUser(usersDto);
     }
 
     @Test
@@ -257,9 +275,8 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(resultPage);
 
         // Mock convertEntityListToDtoList behavior
-        CarrierBookingResponse mockResponse = new CarrierBookingResponse();
-        mockResponse.setCarrierBlNo("CX");
-        lenient().when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class)))
+        CarrierBookingListResponse mockResponse = new CarrierBookingListResponse();
+        lenient().when(jsonHelper.convertValue(any(), eq(CarrierBookingListResponse.class)))
                 .thenReturn(mockResponse);
 
         // Act: Call service
@@ -602,7 +619,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         Assertions.assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Cancelled"));
         Assertions.assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Canceled"));
         Assertions.assertEquals(CarrierBookingStatus.Changed, carrierBookingService.getCarrierBookingStatus("ChangeBookingRequested"));
-        Assertions.assertEquals(CarrierBookingStatus.Requested, carrierBookingService.getCarrierBookingStatus("NewBookingRequested"));
+        Assertions.assertEquals(Requested, carrierBookingService.getCarrierBookingStatus("NewBookingRequested"));
     }
 
     @Test
@@ -723,4 +740,70 @@ class CarrierBookingServiceTest extends CommonMocks {
         verify(commonUtils, never()).convertToLocalDateTimeFromInttra(any(), any());
     }
 
+    @Test
+    void test_submit_success() {
+        carrierBooking.setStatus(Requested);
+        // Arrange
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
+        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
+
+        // Do nothing for these methods
+        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
+
+        // Act
+        carrierBookingService.submit(1L);
+
+        // Assert
+        assertEquals(Requested, carrierBooking.getStatus());
+        assertEquals("test@abc.com", carrierBooking.getSubmitByUserEmail());
+
+        // Verify interactions
+        verify(carrierBookingDao).findById(1L);
+        verify(carrierBookingDao).save(carrierBooking);
+        verify(transactionHistoryDao).save(any());
+    }
+
+    @Test
+    void test_submit_invalidId_throwsException() {
+        // Arrange
+        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> carrierBookingService.submit(99L));
+
+        verify(carrierBookingDao).findById(99L);
+    }
+
+    @Test
+    void test_amend_success() {
+        carrierBooking.setStatus(Changed);
+        // Arrange
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
+        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
+
+        // Do nothing for these methods
+        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
+
+        // Act
+        carrierBookingService.amend(1L);
+
+        assertEquals(Changed, carrierBooking.getStatus());
+        // Verify interactions
+        verify(carrierBookingDao).findById(1L);
+        verify(carrierBookingDao).save(carrierBooking);
+        verify(transactionHistoryDao).save(any());
+    }
+
+    @Test
+    void test_amend_invalidId_throwsException() {
+        // Arrange
+        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> carrierBookingService.amend(99L));
+
+        verify(carrierBookingDao).findById(99L);
+    }
 }

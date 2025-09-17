@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CarrierBookingListResponse implements IRunnerResponse {
-    private Long id;  // from MultiTenancy / BaseEntity
+    private Long id;
     private String status;
     private String bookingNo;
     private Integer tenantId;
@@ -38,8 +40,10 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String internalEmails;
     private String externalEmails;
 
+    private ShippingInstructionStatus siStatus;
+    private VerifiedGrossMassStatus vgmStatus;
+
     private ShippingInstructionResponse shippingInstruction;
-    private SailingInformationResponse sailingInformation;
 
     private List<CommonContainerResponse> containersList;
     private List<CarrierRoutingResponse> carrierRoutingList;
