@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -11,9 +13,10 @@ import java.math.BigDecimal;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentForceDetachResponse {
+public class ShipmentForceDetachResponse extends BaseEntity {
 
     private String shipmentNumber;
+    private Long shipmentId;
     private String containerNumber;
     private Integer packageCount;
     private String packageUnit;

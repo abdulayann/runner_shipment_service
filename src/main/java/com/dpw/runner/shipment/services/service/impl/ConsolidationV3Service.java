@@ -4160,6 +4160,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Containers container = containersMap.get(shipmentDetail.getContainerAssignedToShipmentCargo());
             if (container.getId() != null) {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(shipmentDetail.getPacksUnit()).orElse(""))
@@ -4207,6 +4208,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 response.setPackageUnit(Optional.ofNullable(container.getPacksType()).orElse(""));
             } else {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
@@ -4229,6 +4231,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         for (Containers container : containersList) {
             if (container.getId() != null) {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(shipmentDetail != null ? Optional.ofNullable(shipmentDetail.getShipmentId()).orElse("") : "")
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
