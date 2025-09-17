@@ -21,6 +21,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -104,38 +105,45 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         }
         catch (Exception e) {
             log.error("Error while hitting bridge service request endpoint", e);
-            throw new RunnerException(request.getRequestCode().equalsIgnoreCase("GBLCS") ? extractErrorDescription(e.getMessage()) : e.getMessage());
+            String errorBody = (e instanceof HttpStatusCodeException)
+                    ? ((HttpStatusCodeException) e).getResponseBodyAsString()
+                    : e.getMessage();
+
+            throw new RunnerException(
+                    request.getRequestCode().equalsIgnoreCase("GBLCS")
+                            ? extractErrorDescription(errorBody)
+                            : errorBody
+            );
         }
 
     }
 
     private String extractErrorDescription(String detailMessage) {
         try {
-            // Remove status code and colon prefix
-            int colonIndex = detailMessage.indexOf(':');
-            if (colonIndex == -1 || colonIndex + 1 >= detailMessage.length()) {
-                return "Invalid message format";
+            // Find first JSON starting point
+            int jsonStartIndex = detailMessage.indexOf("{");
+            if (jsonStartIndex == -1) {
+                return "Invalid message format - no JSON found";
             }
 
-            // Extract the JSON substring
-            String json = detailMessage.substring(colonIndex + 1).trim();
+            // Extract only the JSON substring
+            String json = detailMessage.substring(jsonStartIndex).trim();
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(json);
 
-            // It's an array of error objects
-            if (rootNode.isArray() && !rootNode.isEmpty()) {
-                JsonNode errorNode = rootNode.get(0).get("error");
-                if (errorNode != null && errorNode.has("description")) {
-                    String rawDescription = errorNode.get("description").asText();
+            // Navigate to error.description
+            JsonNode errorNode = rootNode.path("error");
+            if (errorNode.has("description")) {
+                String rawDescription = errorNode.get("description").asText();
 
-                    // Remove leading and trailing square brackets if present
-                    if (rawDescription.startsWith("[") && rawDescription.endsWith("]")) {
-                        rawDescription = rawDescription.substring(1, rawDescription.length() - 1).trim();
-                    }
-                    return rawDescription;
+                // Remove leading/trailing square brackets if present
+                if (rawDescription.startsWith("[") && rawDescription.endsWith("]")) {
+                    rawDescription = rawDescription.substring(1, rawDescription.length() - 1).trim();
                 }
+                return rawDescription;
             }
+
             return "Description not found";
         } catch (Exception e) {
             return "Error parsing detailMessage: " + e.getMessage();
