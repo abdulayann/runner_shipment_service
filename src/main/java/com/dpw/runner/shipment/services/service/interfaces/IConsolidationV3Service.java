@@ -90,4 +90,6 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsV3Response getDefaultConsolidation();
     ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException;
+    void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+                                                ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment);
 }

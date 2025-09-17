@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -144,6 +145,9 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private ShipmentValidationV3Util shipmentValidationV3Util;
 
+    @Autowired
+    private ShippingInstructionUtil shippingInstructionUtil;
+
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Data
@@ -229,6 +233,8 @@ public class PackingV3Service implements IPackingV3Service {
             boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()); //NOSONAR
             if (!isSeaFCLOrRoadFTL)
                 updateAttachedContainersData(packings, shipmentDetails);
+
+            shippingInstructionUtil.syncCommonPackings(packings);
         }
     }
 
@@ -1194,6 +1200,16 @@ public class PackingV3Service implements IPackingV3Service {
         } catch (Exception e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public List<Packing> getPackingsByConsolidationId(Long consolidationId) {
+        List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        if (!CollectionUtils.isEmpty(consolidationDetailsEntity)) {
+            List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
+            return packingDao.findByShipmentIdIn(shipmentIds);
+        }
+        return new ArrayList<>();
     }
 
     private PackingAssignmentProjection getAssignedPackages(String module, Long consolidationId, Long shipmentId) {

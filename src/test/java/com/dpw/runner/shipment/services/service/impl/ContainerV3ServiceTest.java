@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -173,6 +174,9 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Mock
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
 
+    @Mock
+    private ShippingInstructionUtil shippingInstructionUtil;
+
 
 
     @InjectMocks
@@ -189,6 +193,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     private AssignContainerParams params;
     private ShipmentDetails shipmentDetails1;
     private ShipmentDetails shipmentDetails2;
+
 
 
     @BeforeAll
