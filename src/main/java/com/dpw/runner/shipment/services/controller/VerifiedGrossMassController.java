@@ -109,7 +109,7 @@ public class VerifiedGrossMassController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long vgmId) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long vgmId) {
         return verifiedGrossMassService.getAllMasterData(vgmId);
     }
 

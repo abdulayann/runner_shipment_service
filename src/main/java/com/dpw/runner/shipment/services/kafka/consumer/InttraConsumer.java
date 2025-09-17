@@ -37,7 +37,7 @@ public class InttraConsumer {
 
     @KafkaListener(
             topics = {"#{'${bridge.inttra.messages.kafka}'}"},
-            groupId = "#{'${bridge.inttra.messages.kafka.consumer}'}",
+            groupId = "#{'${bridge.inttra.messages.kafka.consumer-group}'}",
             autoStartup = "#{'${bridge.inttra.consumer-auto-startup}'}",
             containerFactory = "bridgeServiceContainerFactory")
     public void consume(@Payload String message,

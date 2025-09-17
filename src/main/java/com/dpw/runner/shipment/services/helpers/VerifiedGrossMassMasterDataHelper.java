@@ -55,7 +55,7 @@ public class VerifiedGrossMassMasterDataHelper {
         this.executorServiceMasterData = executorServiceMasterData;
     }
 
-    public void getMasterDataForList(List<VerifiedGrossMass> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
+    public void getMasterDataForList(List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData) {
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
@@ -63,7 +63,7 @@ public class VerifiedGrossMassMasterDataHelper {
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
                 var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
                 CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
-                if (Boolean.TRUE.equals(includeTenantData))
+                if (includeTenantData)
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
 
                 CompletableFuture.allOf(locationDataFuture, vesselDataFuture, tenantDataFuture, carrierDataFuture).join();

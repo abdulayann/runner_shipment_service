@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,8 @@ public class ConsumerConfiguration {
     private String documentKafkaGroupId;
     @Value("${bill.common-event.kafka.group-id}")
     private String billCommonEventKafkaGroupId;
+    @Value("${bridge.inttra.messages.kafka.consumer-group}")
+    private String inttraConsumerGroupId;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
@@ -55,15 +58,7 @@ public class ConsumerConfiguration {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> customServiceContainerEventKafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(customServiceContainerEventConsumerFactory());
-        factory.setConcurrency(1);
-
-        // Set the acknowledgment mode to MANUAL_IMMEDIATE
-        // This means that acknowledgments will be sent immediately after the listener method returns
-        // This mode provides more control over when acknowledgments are sent
-        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
-        return factory;
+        return getConcurrentKafkaListenerContainerFactory(customServiceContainerEventConsumerFactory());
     }
 
     @Bean
@@ -82,16 +77,17 @@ public class ConsumerConfiguration {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> documentKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(documentConsumerFactory());
-        factory.setConcurrency(1);
-        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
-        return factory;
+        return getConcurrentKafkaListenerContainerFactory(documentConsumerFactory());
     }
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> bridgeServiceContainerFactory() {
+        return getConcurrentKafkaListenerContainerFactory(inttraConsumerFactory());
+    }
+
+    @NotNull
+    private ConcurrentKafkaListenerContainerFactory<String, String> getConcurrentKafkaListenerContainerFactory(ConsumerFactory<String, String> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(documentConsumerFactory());
+        factory.setConsumerFactory(consumerFactory);
         factory.setConcurrency(1);
         factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
         return factory;
@@ -107,19 +103,21 @@ public class ConsumerConfiguration {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Constants.AUTO_OFFSET_RESET_CONFIG_LATEST);
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
+    @Bean
+    public ConsumerFactory<String, String> inttraConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServerConfig);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, inttraConsumerGroupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Constants.AUTO_OFFSET_RESET_CONFIG_LATEST);
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
+    }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> dpsKafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(dpsConsumerFactory());
-        factory.setConcurrency(1);
-
-        // Set the acknowledgment mode to MANUAL_IMMEDIATE
-        // This means that acknowledgments will be sent immediately after the listener method returns
-        // This mode provides more control over when acknowledgments are sent
-        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
-        return factory;
+        return getConcurrentKafkaListenerContainerFactory(dpsConsumerFactory());
     }
 
     @Bean
@@ -138,11 +136,7 @@ public class ConsumerConfiguration {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> billingCommonEventKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(billingCommonEventConsumerFactory());
-        factory.setConcurrency(1);
-        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
-        return factory;
+        return getConcurrentKafkaListenerContainerFactory(billingCommonEventConsumerFactory());
     }
 
     @Bean
