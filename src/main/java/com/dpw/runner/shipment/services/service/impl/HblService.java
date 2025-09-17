@@ -282,8 +282,8 @@ public class HblService implements IHblService {
         this. validateBeforeGeneration(shipmentDetails.get());
 
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-//        if (! hbls.isEmpty())
-//            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
+        if (! hbls.isEmpty())
+            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
         
