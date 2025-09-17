@@ -101,7 +101,7 @@ public class ShippingInstructionsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shippingInstructionId) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shippingInstructionId) {
         String responseMsg = "failure executing";
         try {
             return service.getAllMasterData(shippingInstructionId);

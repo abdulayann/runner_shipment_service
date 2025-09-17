@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity.enums;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115")
 public enum ShippingInstructionStatus {
     Draft(0, "Draft"),
     Requested(1, "Booking Requested"),

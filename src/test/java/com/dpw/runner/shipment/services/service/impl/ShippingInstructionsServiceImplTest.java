@@ -26,7 +26,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,7 +98,7 @@ class ShippingInstructionsServiceImplTest {
     private ModelMapper modelMapper;
     @Mock
     private IPackingV3Service packingV3Service;
-    private final ShipmentInstructionUtil shipmentInstructionUtil = new ShipmentInstructionUtil();
+    private final ShippingInstructionUtil shippingInstructionUtil = new ShippingInstructionUtil();
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -867,7 +867,7 @@ class ShippingInstructionsServiceImplTest {
         CommonContainers newC = buildContainer("C1", 15, "BOX", new BigDecimal("100"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+                shippingInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
 
         assertThat(warnings).hasSize(1);
         ShippingInstructionContainerWarningResponse resp = warnings.get(0);
@@ -882,7 +882,7 @@ class ShippingInstructionsServiceImplTest {
         CommonContainers newC = buildContainer("C1", 10, "BOX", new BigDecimal("120"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+                shippingInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
 
         assertThat(warnings).hasSize(1);
         assertThat(warnings.get(0).getWeightPrevious()).contains("100 KG");
@@ -895,7 +895,7 @@ class ShippingInstructionsServiceImplTest {
         CommonContainers newC = buildContainer("C1", 10, "BOX", new BigDecimal("100"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+                shippingInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
 
         assertThat(warnings).isEmpty();
     }
@@ -906,7 +906,7 @@ class ShippingInstructionsServiceImplTest {
         CommonPackages newP = buildPackage("P1", 7, "CRATE", new BigDecimal("50"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+                shippingInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
 
         assertThat(warnings).hasSize(1);
         ShippingInstructionContainerWarningResponse resp = warnings.get(0);
@@ -921,7 +921,7 @@ class ShippingInstructionsServiceImplTest {
         CommonPackages newP = buildPackage("P1", 5, "CRATE", new BigDecimal("55"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+                shippingInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
 
         assertThat(warnings).hasSize(1);
         assertThat(warnings.get(0).getWeightPrevious()).contains("50 KG");
@@ -934,7 +934,7 @@ class ShippingInstructionsServiceImplTest {
         CommonPackages newP = buildPackage("P1", 5, "CRATE", new BigDecimal("50"), "KG");
 
         List<ShippingInstructionContainerWarningResponse> warnings =
-                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+                shippingInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
 
         assertThat(warnings).isEmpty();
     }

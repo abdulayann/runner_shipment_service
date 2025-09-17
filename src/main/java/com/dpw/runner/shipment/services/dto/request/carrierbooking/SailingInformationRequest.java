@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

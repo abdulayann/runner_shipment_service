@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.List;
 
 public interface IShippingInstructionRepository extends MultiTenancyRepository<ShippingInstruction> {
     @Query(value = "select status as bookingStatus, booking_no as bookingNumber, entity_id as entityId " +

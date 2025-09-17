@@ -124,10 +124,10 @@ public class CarrierBookingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shipmentId) {
         String responseMsg = "failure executing :(";
         try {
-            return (ResponseEntity<?>) carrierBookingService.getAllMasterData(shipmentId);
+            return carrierBookingService.getAllMasterData(shipmentId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";

@@ -30,7 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -100,7 +100,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     IntraCommonKafkaHelper kafkaHelper;
 
     @Autowired
-    ShipmentInstructionUtil shipmentInstructionUtil;
+    ShippingInstructionUtil shippingInstructionUtil;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -329,9 +329,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         if (Objects.nonNull(instruction.getPayloadJson())) {
             ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
-                    = shipmentInstructionUtil.compareContainerDetails(instruction.getCommonContainersList(), siPayload.getContainerDetail());
+                    = shippingInstructionUtil.compareContainerDetails(instruction.getCommonContainersList(), siPayload.getContainerDetail());
             List<ShippingInstructionContainerWarningResponse> packageWarningResponses
-                    = shipmentInstructionUtil.comparePackageDetails(instruction.getCommonPackagesList(), siPayload.getPackageDetail());
+                    = shippingInstructionUtil.comparePackageDetails(instruction.getCommonPackagesList(), siPayload.getPackageDetail());
             response.setContainerDiff(containerWarningResponses);
             response.setPackageDiff(packageWarningResponses);
         }
@@ -405,7 +405,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData, new HashSet<>(listCommonRequest.getIncludeColumns()));
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData);
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
@@ -494,8 +494,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return fieldClassDto;
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList, boolean getMasterData,
-                                                             Set<String> includeColumns) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList, boolean getMasterData) {
         List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
@@ -504,11 +503,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
-        getMasterDataForList(shippingInstructionList, responseList, getMasterData, true, includeColumns);
+        getMasterDataForList(responseList, getMasterData);
         return responseList;
     }
 
-    public void getMasterDataForList(List<ShippingInstruction> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
+    public void getMasterDataForList(List<IRunnerResponse> responseList, boolean getMasterData) {
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();

@@ -51,16 +51,15 @@ public class ShippingInstructionMasterDataHelper {
     public ShippingInstructionMasterDataHelper(MasterDataUtils masterDataUtils,
                                                @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData,
                                                CommonUtils commonUtils,
-                                               MasterDataKeyUtils masterDataKeyUtils,
-                                               MasterDataHelper masterDataHelper) {
+                                               MasterDataKeyUtils masterDataKeyUtils) {
         this.masterDataUtils = masterDataUtils;
         this.executorServiceMasterData = executorServiceMasterData;
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
     }
 
-    public void getMasterDataForList(List<ShippingInstruction> list, List<IRunnerResponse> responseList,
-                                     boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
+    public void getMasterDataForList(List<IRunnerResponse> responseList,
+                                     boolean getMasterData, boolean includeTenantData) {
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
@@ -74,7 +73,7 @@ public class ShippingInstructionMasterDataHelper {
                         masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
 
                 CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
-                if (Boolean.TRUE.equals(includeTenantData)) {
+                if (includeTenantData) {
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() ->
                             masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
                 }
