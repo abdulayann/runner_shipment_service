@@ -206,7 +206,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
                     List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
                             .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                            .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
+                            .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails))
                             .toList();
 
                     // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
@@ -1263,9 +1263,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         });
     }
 
-    private Routings cloneRoutingForShipment(Routings source, Long shipmentId) {
+    private Routings cloneRoutingForShipment(Routings source, ShipmentDetails shipmentDetails) {
         Routings cloned = new Routings();
-        cloned.setShipmentId(shipmentId);
+        cloned.setShipmentId(shipmentDetails.getId());
         cloned.setBookingId(null);
         cloned.setCarriage(source.getCarriage());
         cloned.setLeg(source.getLeg());
@@ -1295,6 +1295,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         cloned.setCarrierCountry(source.getCarrierCountry());
         cloned.setOriginPortLocCode(source.getOriginPortLocCode());
         cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
+        cloned.setTenantId(shipmentDetails.getTenantId());
         cloned.setInheritedFromConsolidation(true); // Mark as inherited
         return cloned;
     }
