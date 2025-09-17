@@ -12,5 +12,4 @@ import lombok.NoArgsConstructor;
 public class ShippingInstructionResponseMapper {
     private ShippingInstruction shippingInstruction;
     private String bookingStatus;
-    //private String bookingNo;
 }

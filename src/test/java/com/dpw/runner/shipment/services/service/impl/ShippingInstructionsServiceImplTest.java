@@ -40,7 +40,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -248,7 +247,7 @@ class ShippingInstructionsServiceImplTest {
         entity.setEntityType(EntityType.CONSOLIDATION);
         entity.setEntityId(999L);
         entity.setSailingInformation(new SailingInformation());
-        entity.setStatus(ShippingInstructionStatus.SIAccepted);
+        entity.setStatus(ShippingInstructionStatus.SiAccepted);
 
         // Mock ConsolidationDetails deeply to avoid building complex graphs
         ConsolidationDetails consol = mock(ConsolidationDetails.class, RETURNS_DEEP_STUBS);
@@ -261,13 +260,13 @@ class ShippingInstructionsServiceImplTest {
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
 
-        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
+        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(consolidationDetailsDao.findById(999L)).thenReturn(Optional.of(consol));
 
         ShippingInstruction saved = entity;
         ShippingInstructionResponse resp = ShippingInstructionResponse.builder().carrierBookingNo(null).build();
         when(repository.save(any(ShippingInstruction.class))).thenReturn(saved);
-        when(jsonHelper.convertValue(eq(saved), eq(ShippingInstructionResponse.class))).thenReturn(resp);
+        when(jsonHelper.convertValue(saved, ShippingInstructionResponse.class)).thenReturn(resp);
 
         // Act
         ShippingInstructionResponse out = service.updateShippingInstructions(request);
@@ -280,9 +279,7 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void deleteShippingInstructions_ShouldInvokeDao() {
-        // Act
         service.deleteShippingInstructions(55L);
-        // Assert
         verify(repository).delete(55L);
     }
 
@@ -298,7 +295,7 @@ class ShippingInstructionsServiceImplTest {
         // Set just the first invalid field; others valid
         when(bad.getNoOfFreightCopies()).thenReturn(101);
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
-        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(bad);
 
         // Act + Assert
         assertThatThrownBy(() -> service.createShippingInstruction(req))
@@ -498,7 +495,7 @@ class ShippingInstructionsServiceImplTest {
         Assertions.assertNotNull(resp);
 
         // status should be updated before save
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
 
         // downstream push should be called with expected args
         verify(kafkaHelper).sendDataToKafka(
@@ -549,7 +546,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.submitShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
         verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
     }
 
@@ -561,7 +558,7 @@ class ShippingInstructionsServiceImplTest {
         si.setId(id);
         si.setEntityType(EntityType.CONSOLIDATION);
         si.setEntityId(200L);
-        si.setStatus(ShippingInstructionStatus.SIAccepted); // not Draft
+        si.setStatus(ShippingInstructionStatus.SiAccepted); // not Draft
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
 
@@ -575,7 +572,7 @@ class ShippingInstructionsServiceImplTest {
 
         ShippingInstruction si = new ShippingInstruction();
         si.setId(id);
-        si.setStatus(ShippingInstructionStatus.SISubmitted); // allowed for amend
+        si.setStatus(ShippingInstructionStatus.SiSubmitted); // allowed for amend
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -587,7 +584,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.amendShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SIAmendRequested));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
         verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
 
     }

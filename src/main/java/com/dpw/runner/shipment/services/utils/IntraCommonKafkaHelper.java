@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
 import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.kafka.dto.GenericKafkaPayload;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class IntraCommonKafkaHelper {
             producer.produceToKafka(genericKafkaMsg, topic, genericKafkaMsg.getId());
 
         } catch (Exception e) {
-            throw new RuntimeException("Error serializing payload for Kafka", e);
+            throw new GenericException("Error serializing payload for Kafka", e);
         }
     }
 }

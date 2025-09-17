@@ -32,8 +32,6 @@ public class ShippingInstructionsController {
 
     private final IShippingInstructionsService service;
 
-    private final JsonHelper jsonHelper;
-
     // Response wrapper classes
     private static class MyResponseClass extends RunnerResponse<SailingInformationResponse> {
     }
@@ -41,7 +39,6 @@ public class ShippingInstructionsController {
     @Autowired
     public ShippingInstructionsController(IShippingInstructionsService service, JsonHelper jsonHelper) {
         this.service = service;
-        this.jsonHelper = jsonHelper;
     }
 
     @PostMapping
@@ -105,9 +102,9 @@ public class ShippingInstructionsController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<?> getAllMasterData(@RequestParam Long shippingInstructionId) {
-        String responseMsg = "failure executing :(";
+        String responseMsg = "failure executing";
         try {
-            return (ResponseEntity<?>) service.getAllMasterData(shippingInstructionId);
+            return service.getAllMasterData(shippingInstructionId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";
@@ -141,7 +138,7 @@ public class ShippingInstructionsController {
     })
     public ResponseEntity<IRunnerResponse> submitSI(@PathVariable("id") Long id) {
         try {
-            ShippingInstructionResponse response = service.submitShippingInstruction(id);
+            service.submitShippingInstruction(id);
             return ResponseHelper.buildSuccessResponse(ShippingInstructionsConstants.SUBMIT_SUCCESSFUL);
         } catch (Exception ex) {
             String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error submitting Shipping Instruction";
@@ -157,7 +154,7 @@ public class ShippingInstructionsController {
     })
     public ResponseEntity<IRunnerResponse> amendSI(@PathVariable("id") Long id) {
         try {
-            ShippingInstructionResponse response = service.amendShippingInstruction(id);
+            service.amendShippingInstruction(id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception ex) {
             String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error amending Shipping Instruction";

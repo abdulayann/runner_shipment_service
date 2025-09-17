@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageDiffDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
@@ -20,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNum
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -55,8 +55,7 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -142,7 +141,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             response.setBookingStatus(consolidationDetails.getBookingStatus());
             shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
         } else {
-            throw new ValidationException("Invalid value of Shipping Instruction Type");
+            throw new ValidationException(INVALID_ENTITY_TYPE);
         }
         shippingInstruction.setEntityId(entityId);
         setEntityNumber(shippingInstruction);
@@ -444,6 +443,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         }
 
+        assert consolidationDetails != null;
         shippingInstruction.getSailingInformation().setShipInstructionCutoff(consolidationDetails.getShipInstructionCutoff());
         shippingInstruction.getSailingInformation().setVerifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff());
 
@@ -456,8 +456,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void setEntityNumber(ShippingInstruction shippingInstruction) {
-//        shippingInstruction.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
-//        shippingInstruction.setCarrierBlNo(consolidationDetails.getBl);
         shippingInstruction.setEntityNumber(String.valueOf(shippingInstruction.getEntityId()));
     }
 
@@ -594,7 +592,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     public ShippingInstructionResponse submitShippingInstruction(Long id) { //Take only Id
         Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
-        ShippingInstruction si = shippingInstruction.get();
+        ShippingInstruction si;
+        if (shippingInstruction.isPresent()) {
+            si = shippingInstruction.get();
+        } else {
+            throw new GenericException("Shipping Instruction not found");
+        }
+
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
             CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
@@ -608,16 +612,15 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
             }
         } else {
-            throw new ValidationException("Invalid value of Shipping Instruction Type");
+            throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
         // Step 3: Mark SI as submitted
-        si.setStatus(ShippingInstructionStatus.SISubmitted);
+        si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         sendForDownstreamProcess(si);
-        ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
-        return response;
+        return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
     private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {
@@ -633,11 +636,10 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             shippingInstruction.setEntityNumber(carrierBooking.get().getBookingNo());
         } else if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
             consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
-        //    shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
             shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
             setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         } else {
-            throw new ValidationException("Invalid value of Shipping Instruction Type");
+            throw new ValidationException(INVALID_ENTITY_TYPE);
         }
     }
 
@@ -664,14 +666,14 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
 
 
-        if (!(ShippingInstructionStatus.SISubmitted == shippingInstructionEntity.get().getStatus() || ShippingInstructionStatus.SIAccepted == shippingInstructionEntity.get().getStatus())) {
+        if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.get().getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.get().getStatus())) {
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
         validateSIRequest(shippingInstruction);
 
         // Step 3: Mark SI as submitted
-        shippingInstruction.setStatus(ShippingInstructionStatus.SIAmendRequested);
+        shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);

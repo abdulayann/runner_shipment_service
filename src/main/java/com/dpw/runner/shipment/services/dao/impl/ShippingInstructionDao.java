@@ -3,15 +3,12 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
-import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShippingInstructionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -37,8 +34,6 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
 
     @Override
     public ShippingInstruction update(Long id, ShippingInstruction request) {
-        // Ideally check if exists before saving
-        // request.setId(id);
         return shippingInstructionRepository.save(request);
     }
 
