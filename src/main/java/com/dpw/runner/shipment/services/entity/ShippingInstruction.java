@@ -9,14 +9,13 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -40,6 +39,7 @@ import java.util.List;
 @AllArgsConstructor
 @SQLDelete(sql = "UPDATE shipping_instruction SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "status", length = 20)
@@ -144,8 +144,6 @@ public class ShippingInstruction extends MultiTenancy {
     @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")
     private SailingInformation sailingInformation;
 
-    @Type(type = "jsonb")
-    @Column(name = "si_payload", columnDefinition = "jsonb")
-    private ContainerPackageSiPayload payloadJson;
-
+    @Column(name = "si_payload")
+    private String payloadJson;
 }

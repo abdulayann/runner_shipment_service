@@ -23,16 +23,15 @@ public class ShipmentInstructionUtil {
             if (oldContainers == null) oldContainers = Collections.emptyList();
             if (newContainers == null) newContainers = Collections.emptyList();
 
-            Map<String, CommonContainers> oldMap = oldContainers.stream()
-                    .filter(c -> c.getContainerNo() != null)
-                    .collect(Collectors.toMap(CommonContainers::getContainerNo, Function.identity(), (a, b) -> a));
+            Map<Long, CommonContainers> oldMap = oldContainers.stream()
+                    .collect(Collectors.toMap(CommonContainers::getId, Function.identity(), (a, b) -> a));
 
             List<ShippingInstructionContainerWarningResponse> warnings = new ArrayList<>();
 
             for (CommonContainers newContainer : newContainers) {
                 if (newContainer == null || newContainer.getContainerNo() == null) continue;
 
-                CommonContainers oldContainer = oldMap.get(newContainer.getContainerNo());
+                CommonContainers oldContainer = oldMap.get(newContainer.getId());
                 if (oldContainer == null) continue;
 
                 boolean packChanged = !Objects.equals(oldContainer.getPacks(), newContainer.getPacks())
@@ -79,16 +78,15 @@ public class ShipmentInstructionUtil {
         if (newPackages == null) newPackages = Collections.emptyList();
 
         // Keep mapping by containerNo (as your current logic uses containerNo for packages)
-        Map<String, CommonPackages> oldMap = oldPackages.stream()
-                .filter(p -> p.getContainerNo() != null)
-                .collect(Collectors.toMap(CommonPackages::getContainerNo, Function.identity(), (a, b) -> a));
+        Map<Long, CommonPackages> oldMap = oldPackages.stream()
+                .collect(Collectors.toMap(CommonPackages::getId, Function.identity(), (a, b) -> a));
 
         List<ShippingInstructionContainerWarningResponse> warnings = new ArrayList<>();
 
         for (CommonPackages newPackage : newPackages) {
             if (newPackage == null || newPackage.getContainerNo() == null) continue;
 
-            CommonPackages oldPackage = oldMap.get(newPackage.getContainerNo());
+            CommonPackages oldPackage = oldMap.get(newPackage.getId());
             if (oldPackage == null) continue;
 
             boolean packChanged = !Objects.equals(oldPackage.getPacks(), newPackage.getPacks())
@@ -118,13 +116,13 @@ public class ShipmentInstructionUtil {
     }
 
     private static String formatPacks(Integer packs, String unit) {
-        if (packs == null) return null;
+        if (packs == null) packs = 0;
         if (unit == null || unit.isBlank()) return String.valueOf(packs);
         return packs + " " + unit;
     }
 
     private static String formatWeight(BigDecimal weight, String unit) {
-        if (weight == null) return null;
+        if (weight == null) weight = BigDecimal.valueOf(0);
         String w = weight.stripTrailingZeros().toPlainString();
         if (unit == null || unit.isBlank()) return w;
         return w + " " + unit;

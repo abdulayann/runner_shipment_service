@@ -252,6 +252,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 commonContainers.setCustomsSealNumber(containers.getCustomsSealNumber());
                 commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
                 commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
+                commonContainers.setContainerRefGuid(containers.getGuid());
                 commonContainersList.add(commonContainers);
             }
         }
@@ -275,6 +276,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 commonPackages.setCommodityCode(packing.getCommodity());
                 commonPackages.setCommodityGroup(packing.getCommodityGroup());
                 commonPackages.setMarksnNums(packing.getMarksnNums());
+                commonPackages.setPackingRefGuid(packing.getGuid());
                 Containers containers = containersMap.get(packing.getContainerId());
                 if (Objects.nonNull(containers)) {
                     commonPackages.setContainerNo(containers.getContainerNumber());
@@ -327,7 +329,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
         if (Objects.nonNull(instruction.getPayloadJson())) {
-            ContainerPackageSiPayload siPayload = instruction.getPayloadJson();
+            ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
                     = shipmentInstructionUtil.compareContainerDetails(instruction.getCommonContainersList(), siPayload.getContainerDetail());
             List<ShippingInstructionContainerWarningResponse> packageWarningResponses
@@ -678,11 +680,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
 
-    private ContainerPackageSiPayload createPackageAndContainerPayload(ShippingInstruction shippingInstruction) {
+    private String createPackageAndContainerPayload(ShippingInstruction shippingInstruction) {
         ContainerPackageSiPayload packageSiPayload = new ContainerPackageSiPayload();
         packageSiPayload.setPackageDetail(shippingInstruction.getCommonPackagesList());
         packageSiPayload.setContainerDetail(shippingInstruction.getCommonContainersList());
-        return packageSiPayload;
+        return jsonHelper.convertToJson(packageSiPayload);
     }
 
 }
