@@ -530,6 +530,23 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    @Override
+    public QuoteResetRulesResponse resetBookingQuoteRules(Long bookingId) {
+        QuoteResetRulesResponse quoteResetRulesResponse = new QuoteResetRulesResponse();
+        quoteResetRulesResponse.setQuotePartyResetFlag(true);
+        quoteResetRulesResponse.setTransportModeResetFlag(true);
+        quoteResetRulesResponse.setCargoTypeResetFlag(true);
+        quoteResetRulesResponse.setServiceTypeResetFlag(true);
+        quoteResetRulesResponse.setOriginResetFlag(true);
+        quoteResetRulesResponse.setPolResetFlag(true);
+        quoteResetRulesResponse.setPodResetFlag(true);
+        quoteResetRulesResponse.setDestinationResetFlag(true);
+        quoteResetRulesResponse.setSalesBranchResetFlag(false);
+        quoteResetRulesResponse.setPrimaryEmailResetFlag(false);
+        quoteResetRulesResponse.setSecondaryEmailResetFlag(false);
+        return quoteResetRulesResponse;
+    }
+
     private void setCargoDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {
         if (request.getFlags().isCargoSummary()) {
             commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), customerBookingResponse::setDescription);

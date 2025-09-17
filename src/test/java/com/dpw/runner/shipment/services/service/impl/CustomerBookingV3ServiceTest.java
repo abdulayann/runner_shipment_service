@@ -4426,4 +4426,26 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         booking.setAdditionalParties(new ArrayList<>());
         return booking;
     }
+
+    @Test
+    void testResetBookingQuoteRules() {
+        Long bookingId = 123L;
+
+        QuoteResetRulesResponse response = customerBookingService.resetBookingQuoteRules(bookingId);
+
+        // Assert TRUE flags
+        assertTrue(response.getQuotePartyResetFlag());
+        assertTrue(response.getTransportModeResetFlag());
+        assertTrue(response.getCargoTypeResetFlag());
+        assertTrue(response.getServiceTypeResetFlag());
+        assertTrue(response.getOriginResetFlag());
+        assertTrue(response.getPolResetFlag());
+        assertTrue(response.getPodResetFlag());
+        assertTrue(response.getDestinationResetFlag());
+
+        // Assert FALSE flags
+        assertFalse(response.getSalesBranchResetFlag());
+        assertFalse(response.getPrimaryEmailResetFlag());
+        assertFalse(response.getSecondaryEmailResetFlag());
+    }
 }

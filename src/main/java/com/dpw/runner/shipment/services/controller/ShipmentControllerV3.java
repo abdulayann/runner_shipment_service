@@ -313,4 +313,10 @@ public class ShipmentControllerV3 {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
+    @PostMapping(ApiConstants.API_RESET_QUOTE_RULES)
+    public ResponseEntity<IRunnerResponse> resetShipmentQuoteRules(@RequestParam Long shipmentId) {
+        return ResponseHelper.buildSuccessResponse(shipmentService.resetShipmentQuoteRules(shipmentId));
+    }
 }

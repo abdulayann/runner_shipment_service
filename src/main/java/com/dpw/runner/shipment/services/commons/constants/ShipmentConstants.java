@@ -370,5 +370,6 @@ public class ShipmentConstants {
     public static final String DESTINATION_AGENT_IS_MANDATORY = "Destination Agent is mandatory";
     public static final String ORIGIN_AGENT_IS_MANDATORY = "Origin Agent is mandatory";
     public static final String ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY = "Origin and Destination Agent are mandatory";
+    public static final String FETCH_RESET_QUOTE_SUCCESSFUL = "Shipment Quote reset rules retrieve successful";
 
 }
