@@ -75,7 +75,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class VerifiedGrossMassServiceTest {
+class VerifiedGrossMassServiceTest {
 
     @Mock
     private IVerifiedGrossMassDao verifiedGrossMassDao;
@@ -128,7 +128,7 @@ public class VerifiedGrossMassServiceTest {
     }
 
     @Test
-     void bulkUpdateContainers_ShouldThrowValidationException_WhenLessThanTwoIds() {
+    void bulkUpdateContainers_ShouldThrowValidationException_WhenLessThanTwoIds() {
         VerifiedGrossMassBulkUpdateRequest request = new VerifiedGrossMassBulkUpdateRequest();
         request.setContainerIds(List.of(1L)); // only 1 id
         assertThrows(ValidationException.class, () ->
@@ -531,11 +531,11 @@ public class VerifiedGrossMassServiceTest {
 
         when(verifiedGrossMassDao.findById(vgmId)).thenReturn(Optional.of(testEntity));
 
-        when(commonUtils.setIncludedFieldsToResponse(eq(testEntity), anySet(), any(VerifiedGrossMassResponse.class)))
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any()))
                 .thenReturn(verifiedGrossMassResponse);
 
         VerifiedGrossMassService spyService = Mockito.spy(verifiedGrossMassService);
-        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(verifiedGrossMassResponse));
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(verifiedGrossMassResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.getAllMasterData(vgmId);
 

@@ -61,10 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -143,7 +141,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         log.info(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(verifiedGrossMassPage.getContent(), getMasterData, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()));
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(verifiedGrossMassPage.getContent());
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
@@ -151,8 +149,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 verifiedGrossMassPage.getTotalElements());
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList, boolean getMasterData,
-                                                             Set<String> includeColumns) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList) {
         List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
@@ -459,11 +456,9 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
         // Save all updated containers
         List<CommonContainers> updatedContainers = commonContainersRepository.saveAll(containers);
-        List<CommonContainerResponse> responseDtos = updatedContainers.stream()
-        .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
+        return updatedContainers.stream()
+                .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
                 .toList();
-        // Convert to response DTOs
-        return responseDtos;
     }
 }
 

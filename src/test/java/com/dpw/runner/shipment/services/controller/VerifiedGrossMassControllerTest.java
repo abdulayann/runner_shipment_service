@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
@@ -132,7 +131,6 @@ class VerifiedGrossMassControllerTest {
     void vgmList() {
         VerifiedGrossMassResponse response = new VerifiedGrossMassResponse();
         ListCommonRequest listCommonRequest = new ListCommonRequest();
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         when(verifiedGrossMassService.list(any(), anyBoolean())).thenReturn((ResponseEntity.ok(response)));
         ResponseEntity<?> responseResponseEntity = controller.list(listCommonRequest, false);
         assertEquals(responseResponseEntity.getStatusCodeValue(), HttpStatus.OK.value());
