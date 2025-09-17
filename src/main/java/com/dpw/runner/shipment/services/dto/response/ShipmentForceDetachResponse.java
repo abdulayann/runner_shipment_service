@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentForceDetachResponse extends BaseEntity {
+public class ShipmentForceDetachResponse{
 
     private String shipmentNumber;
     private Long shipmentId;
