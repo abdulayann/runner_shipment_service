@@ -123,7 +123,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             // Find first JSON starting point
             int jsonStartIndex = detailMessage.indexOf("{");
             if (jsonStartIndex == -1) {
-                return "Invalid message format - no JSON found";
+                return "Invalid message format";
             }
 
             // Extract only the JSON substring
