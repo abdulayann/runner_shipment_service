@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
@@ -32,9 +33,15 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
+import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -61,6 +68,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
@@ -96,10 +104,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING_ADDITIONAL_PARTIES;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INVALID_CARRIER_BOOKING_ID;
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Cancelled;
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
+import static com.dpw.runner.shipment.services.entity.enums.FlowType.Outbound;
+import static com.dpw.runner.shipment.services.entity.enums.SourceSystem.INTTRA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
@@ -120,10 +133,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IConsolidationV3Service consolidationV3Service;
     private final IShipmentDao shipmentDao;
     private final IPartiesDao partiesDao;
+    private final IntraCommonKafkaHelper kafkaHelper;
+    private final ITransactionHistoryDao transactionHistoryDao;
 
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
@@ -138,6 +153,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.consolidationV3Service = consolidationV3Service;
         this.shipmentDao = shipmentDao;
         this.partiesDao = partiesDao;
+        this.kafkaHelper = kafkaHelper;
+        this.transactionHistoryDao = transactionHistoryDao;
     }
 
     @Override
@@ -228,6 +245,10 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
             CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
+            carrierBookingListResponse.setConsolidationNo(carrierBooking.getEntityNumber());
+            carrierBookingListResponse.setMblNo(carrierBooking.getCarrierBlNo());
+            if(carrierBooking.getShippingInstruction() != null) carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
+            if(carrierBooking.getVerifiedGrossMass() != null) carrierBookingListResponse.setVgmStatus(carrierBooking.getVerifiedGrossMass().getStatus());
             carrierBookingListResponses.add(carrierBookingListResponse);
         }
 
@@ -295,11 +316,14 @@ public class CarrierBookingService implements ICarrierBookingService {
     @Override
     public void cancel(Long id) {
         CarrierBooking carrierBooking = carrierBookingDao.findById(id)
-                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
+                .orElseThrow(() -> new ValidationException(INVALID_CARRIER_BOOKING_ID + id));
 
         carrierBooking.setStatus(CarrierBookingStatus.Cancelled);
-        sendNotification(carrierBooking);
         carrierBookingDao.save(carrierBooking);
+        String description = "Cancelled by : " + UserContext.getUser().getUsername();
+        createTransactionHistory(Cancelled.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
+        sendNotification(carrierBooking);
+        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.CANCEL);
     }
 
     @Override
@@ -399,6 +423,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         setCarrierRoutings(inttraCarrierBookingEventDto, carrierBooking);
         setContainerEmptyAndDropOffLocationDetails(inttraCarrierBookingEventDto, carrierBooking);
         carrierBookingDao.save(carrierBooking);
+        String description = carrierBooking.getStatus().getDescription() + " by: " + UserContext.getUser().getUsername();
+        createTransactionHistory(carrierBooking.getStatus().getDescription(), Outbound, description, INTTRA, carrierBooking.getId());
     }
 
     @Override
@@ -497,6 +523,59 @@ public class CarrierBookingService implements ICarrierBookingService {
     @Override
     public Optional<CarrierBooking> findById(Long entityId) {
         return carrierBookingDao.findById(entityId);
+    }
+
+    @Override
+    @Transactional
+    public void submit(Long id) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
+                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
+
+        carrierBooking.setSubmitByUserEmail(UserContext.getUser().getEmail());
+        carrierBooking.setStatus(Requested);
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
+        String description = "Booking Requested by : " + UserContext.getUser().getUsername();
+        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
+        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.ORIGINAL);
+        sendNotification(carrierBooking);
+
+        jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
+    }
+
+    private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+                .actionStatusDescription(actionStatus)
+                .flowType(flowType)
+                .description(description)
+                .sourceSystem(sourceSystem)
+                .actualDateTime(LocalDateTime.now())
+                .entityType(EntityTypeTransactionHistory.CARRIER_BOOKING)
+                .entityId(id)
+                .build();
+
+        transactionHistoryDao.save(transactionHistory);
+    }
+
+    @Override
+    public void amend(Long id) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
+                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
+
+        // Modification ??
+        carrierBooking.setStatus(Changed);
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
+
+        String description = "Amend Requested by : " + UserContext.getUser().getUsername();
+        createTransactionHistory(Changed.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
+        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.AMEND);
+        sendNotification(carrierBooking);
+
+        jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
+    }
+
+    private void sendForDownstreamProcess(CarrierBooking carrierBooking,  IntraKafkaOperationType operationType) {
+        String payload = jsonHelper.convertToJson(carrierBooking);
+        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.CB, operationType);
     }
 
     @NotNull
@@ -679,8 +758,8 @@ public class CarrierBookingService implements ICarrierBookingService {
             case "Declined" -> CarrierBookingStatus.DeclinedByCarrier;
             case "Replaced" -> CarrierBookingStatus.ReplacedByCarrier;
             case "Cancelled", "Canceled" -> CarrierBookingStatus.CancelledByCarrier;
-            case "ChangeBookingRequested" -> CarrierBookingStatus.Changed;
-            case "NewBookingRequested" -> CarrierBookingStatus.Requested;
+            case "ChangeBookingRequested" -> Changed;
+            case "NewBookingRequested" -> Requested;
             default -> CarrierBookingStatus.PendingFromCarrier;
         };
     }
@@ -720,7 +799,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     //call when status Change
-    private void sendNotification(CarrierBooking carrierBooking) {
+    protected void sendNotification(CarrierBooking carrierBooking) {
         try {
             List<String> requests = new ArrayList<>(
                     List.of(Constants.CARRIER_BOOKING_EMAIL_TEMPLATE));

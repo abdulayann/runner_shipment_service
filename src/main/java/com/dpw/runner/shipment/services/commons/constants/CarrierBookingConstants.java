@@ -25,6 +25,8 @@ public class CarrierBookingConstants {
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Carrier Booking Retrieval";
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
+    public static final String SUBMIT_SUCCESSFUL = "Carrier Booking submitted successfully.";
+    public static final String AMEND_SUCCESSFUL = "Carrier Booking amend successfully.";
 
 
     private CarrierBookingConstants() {
@@ -50,6 +52,7 @@ public class CarrierBookingConstants {
     public static final String CARRIER_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Carrier list with Request Id {}";
     public static final String CARRIER_LIST_REQUEST_NULL_ERROR = "Carrier List Request is Null";
     public static final String CARRIER_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
+    public static final String INVALID_CARRIER_BOOKING_ID = "Invalid Carrier booking Id: ";
 
     public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
