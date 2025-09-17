@@ -47,7 +47,6 @@ public class ShippingInstructionMasterDataHelper {
     private final ExecutorService executorServiceMasterData;
     private final CommonUtils commonUtils;
     private final MasterDataKeyUtils masterDataKeyUtils;
-    private final MasterDataHelper masterDataHelper;
 
     public ShippingInstructionMasterDataHelper(MasterDataUtils masterDataUtils,
                                                @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData,
@@ -58,7 +57,6 @@ public class ShippingInstructionMasterDataHelper {
         this.executorServiceMasterData = executorServiceMasterData;
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
-        this.masterDataHelper = masterDataHelper;
     }
 
     public void getMasterDataForList(List<ShippingInstruction> list, List<IRunnerResponse> responseList,

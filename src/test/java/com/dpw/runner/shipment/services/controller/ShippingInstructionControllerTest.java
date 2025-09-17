@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
-public class ShippingInstructionControllerTest {
+class ShippingInstructionControllerTest {
 
     @Mock
     private IShippingInstructionsService service;

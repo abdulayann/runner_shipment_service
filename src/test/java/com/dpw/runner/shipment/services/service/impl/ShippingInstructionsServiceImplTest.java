@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +94,6 @@ class ShippingInstructionsServiceImplTest {
     @InjectMocks
     private ShippingInstructionsController controller;
     private static ShippingInstruction testSI;
-    private static ObjectMapper objectMapper;
     @Mock
     private ModelMapper modelMapper;
     @Mock
@@ -107,7 +105,6 @@ class ShippingInstructionsServiceImplTest {
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
-        objectMapper = JsonTestUtility.getMapper();
     }
 
     // --- Helpers to create simple domain objects we need ---
@@ -199,11 +196,12 @@ class ShippingInstructionsServiceImplTest {
         CarrierBooking cb = buildCarrierBooking();
         ConsolidationDetails consol = buildConsolidationDetails();
 
-        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
+        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
         when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
         when(repository.save(any(ShippingInstruction.class))).thenReturn(saved);
-        when(jsonHelper.convertValue(eq(saved), eq(ShippingInstructionResponse.class))).thenReturn(response);
+        when(jsonHelper.convertValue(saved, ShippingInstructionResponse.class)).thenReturn(response);
+
 
         // Act
         ShippingInstructionResponse out = service.createShippingInstruction(request);
@@ -307,8 +305,6 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void create_ShouldThrow_WhenNonNegoFreightCopies_Negative() {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
-        CarrierBooking cb = buildCarrierBooking();
-
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
         when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
@@ -345,7 +341,6 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionRequest req = ShippingInstructionRequest.builder().build();
         ShippingInstruction bad = mock(ShippingInstruction.class, RETURNS_DEEP_STUBS);
         when(bad.getEntityType()).thenReturn(EntityType.CARRIER_BOOKING);
-//        when(bad.getEntityId()).thenReturn(1L);
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNonNegoFreightCopies()).thenReturn(1);
         when(bad.getNoOfUnFreightCopies()).thenReturn(1);
@@ -372,11 +367,7 @@ class ShippingInstructionsServiceImplTest {
     void getAllMasterDataForShippingInstruction() {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
-        boolean isShipment = true;
-
         ShippingInstruction mockSI = testSI;
-        ShippingInstructionResponse mockAwbResponse = objectMapper.convertValue(mockSI, ShippingInstructionResponse.class);
-
         when(repository.findById(id)).thenReturn(Optional.ofNullable(mockSI));
 
         Runnable mockRunnable = mock(Runnable.class);
@@ -640,9 +631,8 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void createShippingInstruction_populatesCommonPackagesAndContainers_beforeSave() {
-        // Arrange request -> shippingInstruction conversion
+        // Arrange
         ShippingInstructionRequest request = buildSimpleRequest();
-
         ShippingInstruction siFromReq = new ShippingInstruction();
         siFromReq.setEntityType(EntityType.CARRIER_BOOKING);
         siFromReq.setEntityId(100L);
@@ -650,12 +640,10 @@ class ShippingInstructionsServiceImplTest {
 
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(siFromReq);
 
-        // CarrierBooking -> consolidation id
         CarrierBooking cb = new CarrierBooking();
         cb.setId(100L);
         cb.setEntityId(200L);
         cb.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
-
         when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.of(cb));
 
         ConsolidationDetails consol = new ConsolidationDetails();
@@ -666,7 +654,6 @@ class ShippingInstructionsServiceImplTest {
         consol.setContainersList(List.of(container));
         when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
 
-        // Packing list -> one packing referencing container id 10L
         Packing packing = new Packing();
         packing.setContainerId(10L);
         packing.setPacks("5");
@@ -675,28 +662,29 @@ class ShippingInstructionsServiceImplTest {
         packing.setGoodsDescription("Goods");
         when(packingV3Service.getPackingsByConsolidationId(200L)).thenReturn(List.of(packing));
 
-        // Capture save argument
-        ArgumentCaptor<ShippingInstruction> captor = ArgumentCaptor.forClass(ShippingInstruction.class);
-        when(repository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
 
         // Act
-        ShippingInstructionResponse out = service.createShippingInstruction(request);
+        service.createShippingInstruction(request); // <-- this is what triggers repository.save()
 
-        // Assert
+        // Assert (now capture after invocation)
+        ArgumentCaptor<ShippingInstruction> captor = ArgumentCaptor.forClass(ShippingInstruction.class);
+        verify(repository).save(captor.capture());
+
         ShippingInstruction savedArg = captor.getValue();
         assertNotNull(savedArg);
-        // commonPackages should be created from packing list and populated with container number from containersMap
+
         assertNotNull(savedArg.getCommonPackagesList());
         assertEquals(1, savedArg.getCommonPackagesList().size());
         assertEquals("C-10", savedArg.getCommonPackagesList().get(0).getContainerNo());
 
-        // commonContainers should be created from consolidation containers list
         assertNotNull(savedArg.getCommonContainersList());
         assertEquals(1, savedArg.getCommonContainersList().size());
         assertEquals("C-10", savedArg.getCommonContainersList().get(0).getContainerNo());
     }
+
 
     @Test
     void createShippingInstruction_shouldThrow_whenCarrierBookingMissing() {
@@ -850,7 +838,6 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void populateReadOnlyFields_shouldThrow_whenCarrierBookingNotFound() {
-        ShippingInstructionRequest req = buildSimpleRequest();
         ShippingInstruction si = buildSimpleEntity();
 
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
@@ -860,16 +847,16 @@ class ShippingInstructionsServiceImplTest {
 
         when(carrierBookingDao.findById(123L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> {
-            // call private method via public wrapper: use the public update path which calls populateReadOnlyFields
-            ShippingInstructionRequest updateReq = new ShippingInstructionRequest();
-            updateReq.setId(1L);
-            // need repository to return existing SI for update flow
-            when(repository.findById(1L)).thenReturn(Optional.of(si));
-            when(jsonHelper.convertValue(eq(updateReq), eq(ShippingInstruction.class))).thenReturn(si);
-            // now call updateShippingInstructions which invokes populateReadOnlyFields internally
-            service.updateShippingInstructions(updateReq);
-        }).isInstanceOf(ValidationException.class)
+        ShippingInstructionRequest updateReq = new ShippingInstructionRequest();
+        updateReq.setId(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(si));
+        when(jsonHelper.convertValue(updateReq, ShippingInstruction.class)).thenReturn(si);
+
+
+
+        assertThatThrownBy(() -> service.updateShippingInstructions(updateReq))
+                .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Invalid entity id");
     }
 
