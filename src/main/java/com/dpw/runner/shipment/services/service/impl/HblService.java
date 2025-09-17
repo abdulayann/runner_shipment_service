@@ -282,8 +282,8 @@ public class HblService implements IHblService {
         this. validateBeforeGeneration(shipmentDetails.get());
 
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-        if (! hbls.isEmpty())
-            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
+//        if (! hbls.isEmpty())
+//            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
         
@@ -1234,13 +1234,13 @@ public class HblService implements IHblService {
         String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
         if (US.equalsIgnoreCase(countryCode)) {
             String cityName = v1Data.get(key).getCityName();
-            String stateName = v1Data.get(key).getStateName();
+            String stateCode = v1Data.get(key).getState();
             if (Objects.isNull(cityName)) cityName = "";
-            if (Objects.isNull(stateName)) stateName = "";
-            if (cityName.isEmpty() && stateName.isEmpty()) {
+            if (Objects.isNull(stateCode)) stateCode = "";
+            if (cityName.isEmpty() && stateCode.isEmpty()) {
                 return "";
             }
-            return (cityName + "," +stateName).toUpperCase();
+            return (cityName + "," + stateCode).toUpperCase();
         }
         return v1Data.get(key).getNameWoDiacritics().toUpperCase();
     }
