@@ -896,6 +896,41 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return commonUtils.getCloneFieldResponse(type);
     }
 
+    @Override
+    public QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId) {
+        if(Objects.isNull(shipmentId)) {
+            log.error("ShipmentId is null with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+        if(optionalShipmentDetails.isEmpty()) {
+            log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
+        }
+        boolean hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
+                .map(Routings::getCarriage)
+                .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
+        QuoteResetRulesResponse quoteResetRulesResponse = new QuoteResetRulesResponse();
+        quoteResetRulesResponse.setQuotePartyResetFlag(Boolean.TRUE);
+        quoteResetRulesResponse.setTransportModeResetFlag(Boolean.FALSE);
+        quoteResetRulesResponse.setCargoTypeResetFlag(Boolean.FALSE);
+        quoteResetRulesResponse.setServiceTypeResetFlag(Boolean.TRUE);
+        quoteResetRulesResponse.setOriginResetFlag(Boolean.TRUE);
+        quoteResetRulesResponse.setDestinationResetFlag(Boolean.TRUE);
+        quoteResetRulesResponse.setSalesBranchResetFlag(Boolean.FALSE);
+        quoteResetRulesResponse.setPrimaryEmailResetFlag(Boolean.FALSE);
+        quoteResetRulesResponse.setSecondaryEmailResetFlag(Boolean.FALSE);
+
+        if(!hasMainCarriage) {
+            quoteResetRulesResponse.setPolResetFlag(Boolean.TRUE);
+            quoteResetRulesResponse.setPodResetFlag(Boolean.TRUE);
+        } else {
+            quoteResetRulesResponse.setPolResetFlag(Boolean.FALSE);
+            quoteResetRulesResponse.setPodResetFlag(Boolean.FALSE);
+        }
+        return quoteResetRulesResponse;
+    }
+
     public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if (request.getFlags().isGeneral()) {
             commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);

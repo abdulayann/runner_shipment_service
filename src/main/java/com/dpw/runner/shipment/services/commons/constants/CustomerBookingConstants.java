@@ -66,4 +66,5 @@ public class CustomerBookingConstants {
     public static final String RESPONSE = "RESPONSE";
     public static final String REQUEST = "REQUEST";
     public static final String SHIPMENT_NOT_CREATED = "Shipment Not created";
+    public static final String FETCH_RESET_QUOTE_SUCCESSFUL = "Booking Quote reset rules retrieve successful";
 }

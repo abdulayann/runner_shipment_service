@@ -181,17 +181,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -8847,6 +8837,61 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setMarksNum("Test Marks");
         details.setAdditionalTerms("Test Additional Terms");
         return details;
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_NullShipmentId() {
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> shipmentServiceImplV3.resetShipmentQuoteRules(null)
+        );
+        assertEquals("Shipment Id Is Mandatory", ex.getMessage());
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_ShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        DataRetrievalFailureException ex = assertThrows(
+                DataRetrievalFailureException.class,
+                () -> shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId)
+        );
+        assertTrue(Objects.requireNonNull(ex.getMessage()).contains("No Shipment found with Shipment Id"));
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_NoMainCarriage() {
+        Long shipmentId = 2L;
+
+        Routings routings = new Routings();
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setRoutingsList(List.of(routings));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
+
+        assertTrue(response.getPolResetFlag());
+        assertTrue(response.getPodResetFlag());
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_WithMainCarriage() {
+        Long shipmentId = 3L;
+
+        Routings routings = new Routings();
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setRoutingsList(List.of(routings));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
+
+        assertFalse(response.getPolResetFlag());
+        assertFalse(response.getPodResetFlag());
     }
 
 }
