@@ -5,28 +5,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ConsolidationCo
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_RETRIEVE_EMPTY_REQUEST;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_FACTOR_FOR_VOL_WT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANT_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
@@ -4014,12 +3993,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Remove duplicates
         containerIds = containerIds.stream().distinct().collect(Collectors.toList());
-
-        if (containerIds.isEmpty()) {
-            throw new RunnerException("No containers found for detachment from shipment: " + shipmentDetails);
-        }
-
         containerV3Service.bulkUnAssign(shipmentDetails, containerIds, shipmentPackings, isFCLDelete, isForcedDetach, Boolean.FALSE);
+
 
     }
 
@@ -4154,6 +4129,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Containers container = containersMap.get(shipmentDetail.getContainerAssignedToShipmentCargo());
             if (container.getId() != null) {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(shipmentDetail.getPacksUnit()).orElse(""))
@@ -4201,6 +4177,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 response.setPackageUnit(Optional.ofNullable(container.getPacksType()).orElse(""));
             } else {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(Optional.ofNullable(shipmentDetail.getShipmentId()).orElse(""))
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
@@ -4223,6 +4200,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         for (Containers container : containersList) {
             if (container.getId() != null) {
                 shipmentForceDetachResponses.add(ShipmentForceDetachResponse.builder()
+                        .shipmentId(Optional.ofNullable(shipmentDetail.getId()).orElse(0L))
                         .shipmentNumber(shipmentDetail != null ? Optional.ofNullable(shipmentDetail.getShipmentId()).orElse("") : "")
                         .containerNumber(Optional.ofNullable(container.getContainerNumber()).orElse(""))
                         .packageUnit(Optional.ofNullable(container.getPacksType()).orElse(""))
