@@ -322,11 +322,20 @@ public class MasterDataUtils{
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
             vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
         }
-        else if (response instanceof CarrierBookingResponse carrierBookingResponse && carrierBookingResponse.getCarrierRoutingList() != null ) {
-            for(CarrierRoutingResponse carrierRoutingResponse : carrierBookingResponse.getCarrierRoutingList()){
-                vessels.addAll(createInBulkVesselsRequest(carrierRoutingResponse, CarrierRouting.class, fieldNameKeyMap, CarrierRouting.class.getSimpleName() + carrierRoutingResponse.getId(), cacheMap));
-            }
+        else if (response instanceof CarrierBookingResponse carrierBookingResponse) {
+            addCarrierRoutingVessels(carrierBookingResponse.getCarrierRoutingList(), vessels, fieldNameKeyMap, cacheMap);
+        }
+    }
 
+    private void addCarrierRoutingVessels(
+            List<CarrierRoutingResponse> routingList, Set<String> vessels,
+            Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (routingList == null) {
+            return;
+        }
+        for (CarrierRoutingResponse routing : routingList) {
+            vessels.addAll(createInBulkVesselsRequest(routing, CarrierRouting.class, fieldNameKeyMap,
+                    CarrierRouting.class.getSimpleName() + routing.getId(), cacheMap));
         }
     }
 
@@ -457,9 +466,6 @@ public class MasterDataUtils{
         }
         if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null || notificationListResponse.getReassignedFromBranchId() != null)) {
             tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
-        }
-        if (response instanceof CarrierBookingListResponse carrierBookingListResponse && (carrierBookingListResponse.getTenantId() != null)) {
-            tenantIdList.addAll(createInBulkTenantsRequest(carrierBookingListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + carrierBookingListResponse.getId(), cacheMap));
         }
     }
 

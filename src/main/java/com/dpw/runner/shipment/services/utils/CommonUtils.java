@@ -231,6 +231,28 @@ public class CommonUtils {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private static final Map<Class<?>, Type> DTO_TYPE_MAP = new HashMap<>();
+
+    static {
+        DTO_TYPE_MAP.put(Containers.class, new TypeToken<List<ContainerResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(BookingCarriage.class, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ELDetails.class, new TypeToken<List<ELDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Events.class, new TypeToken<List<EventsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Packing.class, new TypeToken<List<PackingResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ReferenceNumbers.class, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Routings.class, new TypeToken<List<RoutingsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ServiceDetails.class, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(TruckDriverDetails.class, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Notes.class, new TypeToken<List<NotesResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Jobs.class, new TypeToken<List<JobResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ConsolidationDetails.class, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Parties.class, new TypeToken<List<PartiesResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CarrierRouting.class, new TypeToken<List<CarrierRoutingResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CommonContainers.class, new TypeToken<List<CommonContainerResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CommonPackages.class, new TypeToken<List<CommonPackageResponse>>() {}.getType());
+    }
+
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
     static {
@@ -2959,61 +2981,11 @@ public class CommonUtils {
         List<?> list = (List<?>) value;
         if (list.isEmpty()) return value;
 
-        Object firstElement = list.get(0);
-
-        if (firstElement instanceof Containers) {
-            return modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof BookingCarriage) {
-            return modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ELDetails) {
-            return modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Events) {
-            return modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Packing) {
-            // Handle List of Packing objects (this should cover packingList)
-            return modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ReferenceNumbers) {
-            return modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Routings) {
-            return modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ServiceDetails) {
-            return modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof TruckDriverDetails) {
-            return modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Notes) {
-            return modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Jobs) {
-            return modelMapper.map(value, new TypeToken<List<JobResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ConsolidationDetails) {
-            return modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Parties) {
-            return modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ShipmentOrder) {
-            return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
-            }.getType());
-        } else if (list.get(0) instanceof CarrierRouting) {
-            return modelMapper.map(value, new TypeToken<List<CarrierRoutingResponse>>() {
-            }.getType());
-        } else if (list.get(0) instanceof CommonContainers) {
-            return modelMapper.map(value, new TypeToken<List<CommonContainerResponse>>() {
-            }.getType());
-        } else if (list.get(0) instanceof CommonPackages) {
-            return modelMapper.map(value, new TypeToken<List<CommonPackageResponse>>() {
-            }.getType());
+        Type targetType = DTO_TYPE_MAP.get(list.get(0).getClass());
+        if (targetType != null) {
+            return modelMapper.map(value, targetType);
         }
+
         return checkForTriangulationPartnerList(value, list);
     }
 
@@ -4438,7 +4410,7 @@ public class CommonUtils {
             log.error("Invalid day: {}", day);
             return false;
         }
-
+        log.debug("year: {}, month: {}, day: {}", year, month, day);
         // Additional validation for days in month could be added here
         // For now, basic range validation is sufficient
 
