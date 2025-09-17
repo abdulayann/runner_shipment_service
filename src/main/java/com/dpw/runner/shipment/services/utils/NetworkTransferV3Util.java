@@ -49,7 +49,7 @@ public class NetworkTransferV3Util {
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || !isNetworkTransferEntityEnabled)
+            if(consolidationDetails.getShipmentType()==null || !(Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) || DIRECTION_CTS.equals(consolidationDetails.getShipmentType())) || !isNetworkTransferEntityEnabled)
                 return;
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
             boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(oldEntity.getInterBranchConsole());
@@ -555,7 +555,7 @@ public class NetworkTransferV3Util {
                 return;
 
             // Check if the shipment is eligible for network transfer
-            if (isEligibleForNetworkTransfer(shipmentDetails)) {
+            if (isEligibleForNetworkTransferForNTSchedule(shipmentDetails)) {
 
                 // Process the receiving branch for network transfer
                 processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
@@ -841,6 +841,13 @@ public class NetworkTransferV3Util {
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
         return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
                 && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) && Constants.DIRECTION_EXP.equals(details.getDirection());
+    }
+
+    private boolean isEligibleForNetworkTransferForNTSchedule(ShipmentDetails details) {
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
+                && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) &&
+                (Constants.DIRECTION_EXP.equals(details.getDirection()) || Constants.DIRECTION_CTS.equals(details.getDirection())
+                        || DIRECTION_IMP.equals(details.getDirection()));
     }
 
     private void processInterBranchEntityCase(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

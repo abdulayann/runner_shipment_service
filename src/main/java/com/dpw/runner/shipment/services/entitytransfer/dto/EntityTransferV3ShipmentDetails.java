@@ -76,9 +76,6 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
-    private Long triangulationPartner;
-    private Long receivingBranch;
     private Long originBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;

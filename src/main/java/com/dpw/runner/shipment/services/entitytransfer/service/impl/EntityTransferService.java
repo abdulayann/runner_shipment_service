@@ -1698,9 +1698,6 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void processNTEValidations(ConsolidationDetails consolidationDetails) {
-        if(consolidationDetails.getSourceGuid() != null && !Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid()) && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) {
-            throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
-        }
         SendConsoleValidationResponse response;
         if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
@@ -2107,9 +2104,6 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void validateNteSendShipmentValidations(ShipmentDetails shipmentDetails) {
-        if(shipmentDetails.getSourceGuid() != null && !Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS)) {
-            throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
-        }
         var sendShipmentValidationResponse = this.networkTransferValidationsForShipment(shipmentDetails, false);
         if(Boolean.TRUE.equals(sendShipmentValidationResponse.getIsError())) {
             throw new ValidationException(sendShipmentValidationResponse.getShipmentErrorMessage());
