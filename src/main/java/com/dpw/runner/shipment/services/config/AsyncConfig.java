@@ -150,11 +150,6 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     @Bean
-    public ExecutorService executorServiceLogging() {
-        return commonExecutorService(3, 4, 1500);
-    }
-
-    @Bean
     public ExecutorService executorServiceRouting() {
         return commonExecutorService(5, 10, 100);
     }
