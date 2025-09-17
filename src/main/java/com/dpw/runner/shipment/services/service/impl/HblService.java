@@ -1233,14 +1233,16 @@ public class HblService implements IHblService {
         // Extract country code from UNLOC using initial 2 characters
         String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
         if (US.equalsIgnoreCase(countryCode)) {
-            String cityName = v1Data.get(key).getCityName();
-            String stateCode = v1Data.get(key).getState();
-            if (Objects.isNull(cityName)) cityName = "";
-            if (Objects.isNull(stateCode)) stateCode = "";
+            String cityName = Optional.ofNullable(v1Data.get(key).getCityName()).orElse("").trim();
+            String stateCode = Optional.ofNullable(v1Data.get(key).getState()).orElse("").trim();
+
             if (cityName.isEmpty() && stateCode.isEmpty()) {
                 return "";
+            } else if (!cityName.isEmpty() && !stateCode.isEmpty()) {
+                return (cityName + "," + stateCode).toUpperCase();
+            } else {
+                return (!cityName.isEmpty() ? cityName : stateCode).toUpperCase();
             }
-            return (cityName + "," + stateCode).toUpperCase();
         }
         return v1Data.get(key).getNameWoDiacritics().toUpperCase();
     }

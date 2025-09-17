@@ -1086,6 +1086,17 @@ class HblServiceTest extends CommonMocks {
         usLoc1.setStateName("XY");
         usLoc1.setCityName("ABC");
 
+        EntityTransferUnLocations usLoc2 = new EntityTransferUnLocations();
+        usLoc2.setLocCode("USNYC");
+        usLoc2.setName("New York");
+        usLoc2.setState("XY");
+        usLoc2.setCityName("ABC");
+
+        EntityTransferUnLocations usLoc3 = new EntityTransferUnLocations();
+        usLoc3.setLocCode("USNYC");
+        usLoc3.setName("New York");
+        usLoc3.setState("XY");
+
         EntityTransferUnLocations inLoc = new EntityTransferUnLocations();
         inLoc.setLocCode("INBLR");
         inLoc.setNameWoDiacritics("Bengaluru");
@@ -1094,6 +1105,8 @@ class HblServiceTest extends CommonMocks {
         v1Data.put("USKEY", usLoc);
         v1Data.put("INKEY", inLoc);
         v1Data.put("USKEY1", usLoc1);
+        v1Data.put("USKEY2", usLoc2);
+        v1Data.put("USKEY3", usLoc3);
 
         try {
             Method method = hblService.getClass().getDeclaredMethod("getUnLocationsName", Map.class, String.class);
@@ -1112,7 +1125,13 @@ class HblServiceTest extends CommonMocks {
             assertEquals("BENGALURU", result3);
 
             String result5 = (String) method.invoke(hblService, v1Data, "USKEY1");
-            assertEquals("ABC,XY", result5);
+            assertEquals("ABC", result5);
+
+            String result6 = (String) method.invoke(hblService, v1Data, "USKEY2");
+            assertEquals("ABC,XY", result6);
+
+            String result7 = (String) method.invoke(hblService, v1Data, "USKEY3");
+            assertEquals("XY", result7);
 
             // Case 4: RunnerV3 Flag disabled
             shipmentSettingsDetails.setIsRunnerV3Enabled(false);
