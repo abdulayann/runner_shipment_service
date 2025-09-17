@@ -137,12 +137,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummar
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
@@ -2952,7 +2947,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .orderNumber(customerBookingRequest.getOrderManagementNumber())
                 .orderGuid(UUID.fromString(customerBookingRequest.getOrderManagementId()))
                 .shipmentId(shipmentRequest.getId())
-                .orderPackings(order.getOrderPackings())
+                .orderPackings(order.getOrderLines())
                 .build();
         List<ShipmentOrderV3Request> shipmentOrdersList = Arrays.asList(shipmentOrder);
         shipmentRequest.setShipmentOrders(shipmentOrdersList);
@@ -3018,6 +3013,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             List<ShipmentOrderV3Request> shipmentOrderRequestList = request.getShipmentOrders();
             if(ObjectUtils.isNotEmpty(shipmentOrderRequestList)) {
+                setShipmentIdInShipmentOrderRequestList(shipmentId, shipmentOrderRequestList);
                 attachOrderWhenCreatingFromBookingResponse(shipmentOrderRequestList, shipmentId);
                 shipmentDetails.setShipmentOrders(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class));
             }
@@ -3047,6 +3043,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentDetailsV3Response shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return shipmentDetailsResponse;
+    }
+
+    private void setShipmentIdInShipmentOrderRequestList(Long shipmentId, List<ShipmentOrderV3Request> shipmentOrderRequestList) {
+        if (shipmentOrderRequestList != null) {
+            shipmentOrderRequestList.stream()
+                    .filter(Objects::nonNull) // avoid NPE if list has null elements
+                    .forEach(shipmentOrder -> shipmentOrder.setShipmentId(shipmentId));
+        }
     }
 
     private void createNotes(List<NotesRequest> notesRequests, Long shipmentId) {
