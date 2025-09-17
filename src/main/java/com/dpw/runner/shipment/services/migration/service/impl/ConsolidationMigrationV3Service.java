@@ -309,9 +309,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
-                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(Constants.COUNTRY)
-                        && consolidationAddress.getOrgData().get(Constants.COUNTRY)!=null) {
-                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) consolidationAddress.getOrgData().get(Constants.COUNTRY));
+                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(COUNTRY)
+                        && consolidationAddress.getOrgData().get(COUNTRY)!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) consolidationAddress.getOrgData().get(COUNTRY));
                     consolidationAddress.setCountryCode(country);
                 }
             }
