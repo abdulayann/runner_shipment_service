@@ -1432,15 +1432,18 @@ public abstract class IReport {
                 && (unlocationsResponse.getLocCode().length() >= 2)) {
             // Extract country code from UNLOC using initial 2 characters
             String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
+
             if (US.equalsIgnoreCase(countryCode)) {
-                String cityName = unlocationsResponse.getName();
-                String stateName = unlocationsResponse.getCountry();
-                if (Objects.isNull(cityName)) cityName = "";
-                if (Objects.isNull(stateName)) stateName = "";
+                String cityName = Optional.ofNullable(unlocationsResponse.getName()).orElse("").trim();
+                String stateName = Optional.ofNullable(unlocationsResponse.getCountry()).orElse("").trim();
+
                 if (cityName.isEmpty() && stateName.isEmpty()) {
                     return "";
+                } else if (!cityName.isEmpty() && !stateName.isEmpty()) {
+                    return (cityName + "," + stateName).toUpperCase();
+                } else {
+                    return (!cityName.isEmpty() ? cityName : stateName).toUpperCase();
                 }
-                return (cityName + "," + stateName).toUpperCase();
             }
 
             return unlocationsResponse.getName().toUpperCase();

@@ -748,6 +748,8 @@ class HblReportTest extends CommonMocks {
     @CsvSource({
             "'US MOCK PLACE', true, 'US001', '', ''",
             "'US MOCK PLACE', true, 'US001', 'XYZ', 'AB'",
+            "'US MOCK PLACE', true, 'US001', '', 'AB'",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', ''",
             "'US MOCK PLACE', true, 'US001', 'XYZ', null",
             "'US MOCK PLACE', true, 'US001', null, 'AB'",
             "'Mumbai', true, 'GB001', '', ''",
