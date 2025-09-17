@@ -23,6 +23,7 @@ public class JsonLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        long startRequest = System.currentTimeMillis();
         ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
@@ -44,9 +45,10 @@ public class JsonLoggingFilter extends OncePerRequestFilter {
         if (isJsonContent(request)) {
             requestBody = new String(requestWrapper.getContentAsByteArray(), requestWrapper.getCharacterEncoding());
         }
-        log.info("{} | REQUEST RECEIVED [HTTP Method={}] [URL={}] [QUERY={}] [HEADERS={}] [BODY={}]", LoggerHelper.getRequestIdFromMDC(),
+        log.info("{} | REQUEST RECEIVED [HTTP Method={}] [URL={}] [LOGGING_DURATION = {} ms] [QUERY={}] [HEADERS={}] [BODY={}]", LoggerHelper.getRequestIdFromMDC(),
                 method,
                 url,
+                System.currentTimeMillis() - startRequest,
                 query != null ? query : "",
                 headers,
                 requestBody);
@@ -54,13 +56,15 @@ public class JsonLoggingFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(requestWrapper, responseWrapper);
         } finally {
+            long endRequest = System.currentTimeMillis();
             long duration = System.currentTimeMillis() - start;
 
             String responseBody = "";
             if (isJsonResponse(responseWrapper)) {
                 responseBody = new String(responseWrapper.getContentAsByteArray(), responseWrapper.getCharacterEncoding());
             }
-            log.info("{} | RESPONSE RETURNED [URL={}], [DURATION = {} ms] [RESPONSE={}]", LoggerHelper.getRequestIdFromMDC(), url, duration, responseBody);
+            log.info("{} | RESPONSE RETURNED [URL={}] [LOGGING_DURATION = {} ms] [DURATION = {} ms] [RESPONSE={}]",
+                    LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - endRequest, duration, responseBody);
 
             responseWrapper.copyBodyToResponse();
         }
