@@ -40,4 +40,5 @@ public class TransportInstructionLegsContainersResponse implements IRunnerRespon
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
+    private String dgClassDescription;
 }
