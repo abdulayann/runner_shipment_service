@@ -23,11 +23,7 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMi
 import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -79,6 +75,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentRepository shipmentRepository;
     @Autowired
     IContainerRepository containerRepository;
+    @Autowired
+    IPartiesRepository partiesRepository;
     @Autowired
     IReferenceNumbersRepository referenceNumbersRepository;
     @Autowired
@@ -147,6 +145,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if (!CommonUtils.listIsNullOrEmpty(shipment.getReferenceNumbersList())) {
             referenceNumbersRepository.saveAll(shipment.getReferenceNumbersList());
             log.info("Saved updated references list for Shipment [id={}]", shipment.getId());
+        }
+        if(shipment.getShipmentAddresses()!=null && !shipment.getShipmentAddresses().isEmpty()) {
+            partiesRepository.saveAll(shipment.getShipmentAddresses());
+            log.info("Updating shipment Addresses for Shipment [id={}]", shipment.getId());
         }
 
         // save shipment

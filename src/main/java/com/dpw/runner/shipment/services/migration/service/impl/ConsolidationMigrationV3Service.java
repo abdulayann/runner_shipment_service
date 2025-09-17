@@ -22,11 +22,7 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidat
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
-import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -112,6 +108,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
 
+    @Autowired
+    IPartiesRepository partiesRepository;
+
 
     @Transactional
     @Override
@@ -163,6 +162,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             }
             referenceNumbersRepository.saveAll(referenceNumbersList);
             packingRepository.saveAll(packingList);
+            if(consolShipment.getShipmentAddresses()!=null && !consolShipment.getShipmentAddresses().isEmpty())
+                partiesRepository.saveAll(consolShipment.getShipmentAddresses());
             log.info("Saved {} packing(s) for Shipment [id={}]", packingList.size(), consolShipment.getId());
         }
 
@@ -176,6 +177,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
+
+        if(console.getConsolidationAddresses()!=null && !console.getConsolidationAddresses().isEmpty()) {
+            partiesRepository.saveAll(console.getConsolidationAddresses());
+            log.info("Updated consolidation Addresses for Consolidation [id={}]", consolidationId);
+        }
+
 
         // Step 8: Mark consolidation itself as migrated and save
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
