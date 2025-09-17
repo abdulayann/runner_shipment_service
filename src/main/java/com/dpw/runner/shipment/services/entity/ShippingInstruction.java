@@ -141,4 +141,7 @@ public class ShippingInstruction extends MultiTenancy {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")
     private SailingInformation sailingInformation;
+
+    @Column(name = "si_payload")
+    private String payloadJson;
 }

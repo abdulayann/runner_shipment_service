@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICommonPackagesDao;
-import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.CommonPackages;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonPackageRepository;
 import org.springframework.beans.factory.annotation.Autowired;

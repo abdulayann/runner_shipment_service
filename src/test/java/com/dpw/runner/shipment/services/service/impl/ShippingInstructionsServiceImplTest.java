@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.controller.ShippingInstructionsControlle
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,6 +50,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -98,6 +101,7 @@ class ShippingInstructionsServiceImplTest {
     private ModelMapper modelMapper;
     @Mock
     private IPackingV3Service packingV3Service;
+    private final ShipmentInstructionUtil shipmentInstructionUtil = new ShipmentInstructionUtil();
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -138,6 +142,27 @@ class ShippingInstructionsServiceImplTest {
         si.setNonNegoUnFreightCopies(2);
         si.setSailingInformation(new SailingInformation());
         return si;
+    }
+
+
+    private CommonContainers buildContainer(String number, int packs, String packUnit, BigDecimal weight, String weightUnit) {
+        CommonContainers c = new CommonContainers();
+        c.setContainerNo(number);
+        c.setPacks(packs);
+        c.setPacksUnit(packUnit);
+        c.setGrossWeight(weight);
+        c.setGrossWeightUnit(weightUnit);
+        return c;
+    }
+
+    private CommonPackages buildPackage(String number, int packs, String packUnit, BigDecimal weight, String weightUnit) {
+        CommonPackages p = new CommonPackages();
+        p.setContainerNo(number);
+        p.setPacks(packs);
+        p.setPacksUnit(packUnit);
+        p.setGrossWeight(weight);
+        p.setGrossWeightUnit(weightUnit);
+        return p;
     }
 
     private CarrierBooking buildCarrierBooking() {
@@ -852,6 +877,85 @@ class ShippingInstructionsServiceImplTest {
             service.updateShippingInstructions(updateReq);
         }).isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Invalid entity id");
+    }
+
+
+    @Test
+    void compareContainerDetails_detectsPackChange() {
+        CommonContainers oldC = buildContainer("C1", 10, "BOX", new BigDecimal("100"), "KG");
+        CommonContainers newC = buildContainer("C1", 15, "BOX", new BigDecimal("100"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+
+        assertThat(warnings).hasSize(1);
+        ShippingInstructionContainerWarningResponse resp = warnings.get(0);
+        assertThat(resp.getContainerNumber()).isEqualTo("C1");
+        assertThat(resp.getPackagePrev()).contains("10 BOX");
+        assertThat(resp.getPackagePost()).contains("15 BOX");
+    }
+
+    @Test
+    void compareContainerDetails_detectsWeightChange() {
+        CommonContainers oldC = buildContainer("C1", 10, "BOX", new BigDecimal("100"), "KG");
+        CommonContainers newC = buildContainer("C1", 10, "BOX", new BigDecimal("120"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+
+        assertThat(warnings).hasSize(1);
+        assertThat(warnings.get(0).getWeightPrevious()).contains("100 KG");
+        assertThat(warnings.get(0).getWeightPost()).contains("120 KG");
+    }
+
+    @Test
+    void compareContainerDetails_noChange_returnsEmpty() {
+        CommonContainers oldC = buildContainer("C1", 10, "BOX", new BigDecimal("100"), "KG");
+        CommonContainers newC = buildContainer("C1", 10, "BOX", new BigDecimal("100"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.compareContainerDetails(List.of(oldC), List.of(newC));
+
+        assertThat(warnings).isEmpty();
+    }
+
+    @Test
+    void comparePackageDetails_detectsPackChange() {
+        CommonPackages oldP = buildPackage("P1", 5, "CRATE", new BigDecimal("50"), "KG");
+        CommonPackages newP = buildPackage("P1", 7, "CRATE", new BigDecimal("50"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+
+        assertThat(warnings).hasSize(1);
+        ShippingInstructionContainerWarningResponse resp = warnings.get(0);
+        assertThat(resp.getContainerNumber()).isEqualTo("P1");
+        assertThat(resp.getPackagePrev()).contains("5 CRATE");
+        assertThat(resp.getPackagePost()).contains("7 CRATE");
+    }
+
+    @Test
+    void comparePackageDetails_detectsWeightChange() {
+        CommonPackages oldP = buildPackage("P1", 5, "CRATE", new BigDecimal("50"), "KG");
+        CommonPackages newP = buildPackage("P1", 5, "CRATE", new BigDecimal("55"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+
+        assertThat(warnings).hasSize(1);
+        assertThat(warnings.get(0).getWeightPrevious()).contains("50 KG");
+        assertThat(warnings.get(0).getWeightPost()).contains("55 KG");
+    }
+
+    @Test
+    void comparePackageDetails_noChange_returnsEmpty() {
+        CommonPackages oldP = buildPackage("P1", 5, "CRATE", new BigDecimal("50"), "KG");
+        CommonPackages newP = buildPackage("P1", 5, "CRATE", new BigDecimal("50"), "KG");
+
+        List<ShippingInstructionContainerWarningResponse> warnings =
+                shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
+
+        assertThat(warnings).isEmpty();
     }
 
 }

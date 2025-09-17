@@ -46,25 +46,24 @@ public class CarrierBookingMasterDataHelper {
     private final CommonUtils commonUtils;
     private final MasterDataKeyUtils masterDataKeyUtils;
 
-    private final MasterDataHelper masterDataHelper;
 
-    public CarrierBookingMasterDataHelper(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, MasterDataHelper masterDataHelper) {
+    public CarrierBookingMasterDataHelper(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils) {
         this.masterDataUtils = masterDataUtils;
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
-        this.masterDataHelper = masterDataHelper;
         this.executorServiceMasterData = executorServiceMasterData;
     }
 
     public void getMasterDataForList(List<CarrierBooking> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
         if (getMasterData) {
             try {
+                log.debug("Carrier Booking List:" +  lst + " include columns" + includeColumns);
                 double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
                 var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
                 CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
-                if (Boolean.TRUE.equals(includeTenantData))
+                if (includeTenantData)
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
 
                 CompletableFuture.allOf(locationDataFuture, vesselDataFuture, tenantDataFuture, carrierDataFuture).join();
