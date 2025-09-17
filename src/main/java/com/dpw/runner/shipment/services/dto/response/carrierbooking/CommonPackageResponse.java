@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -20,12 +21,12 @@ public class CommonPackageResponse implements IRunnerResponse {
     private Integer packs;
     private String packsUnit;
     private String hsCode;
-    private String commodityDescription;
     private String goodsDescription;
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal volume;
     private String volumeUnit;
     private Long shippingInstructionId;
-
+    private String commodityCode;
+    private String commodityGroup;
 }

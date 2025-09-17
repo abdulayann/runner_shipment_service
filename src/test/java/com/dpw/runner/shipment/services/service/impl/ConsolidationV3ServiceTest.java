@@ -177,9 +177,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private IShipmentDao shipmentDao;
 
   @Mock
-  private ICommonContainersDao commonContainersDao;
-
-  @Mock
   private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
   @Mock

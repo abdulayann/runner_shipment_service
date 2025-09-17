@@ -10,9 +10,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
@@ -102,12 +104,22 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     ShippingInstructionUtil shippingInstructionUtil;
 
+    @Autowired
+    private IPartiesDao partiesDao;
+
+
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         shippingInstruction = validateFetchAndSetSI(shippingInstruction, true);
         shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
         ShippingInstruction savedInfo = repository.save(shippingInstruction);
+        List<Parties> additionalPartiesList = shippingInstruction.getAdditionalParties();
+        if (additionalPartiesList != null) {
+            List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(additionalPartiesList,
+                    Parties.class, false), shippingInstruction.getId(), ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
+            savedInfo.setAdditionalParties(updatedParties);
+        }
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
     }
 
@@ -324,6 +336,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             ConsolidationDetails consolidationDetails = getConsolidationDetail(instruction.getEntityId());
             shippingInstruction.get().setEntityNumber(consolidationDetails.getConsolidationNumber());
             populateFreightDetails(instruction, consolidationDetails);
+            instruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
         }
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
         if (Objects.nonNull(instruction.getPayloadJson())) {
@@ -373,11 +386,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             if (shippingInstructionOpt.isEmpty()) {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            ShippingInstruction carrierBooking = shippingInstructionOpt.get();
+            ShippingInstruction shippingInstruction = shippingInstructionOpt.get();
             long start = System.currentTimeMillis();
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShippingInstruction.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
             includeColumns.addAll(ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS);
-            ShippingInstructionResponse shippingInstructionResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new ShippingInstructionResponse());
+            ShippingInstructionResponse shippingInstructionResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(shippingInstruction, new HashSet<>(includeColumns), new ShippingInstructionResponse());
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(shippingInstructionResponse);
             return ResponseHelper.buildSuccessResponse(response);

@@ -136,7 +136,7 @@ public class ShippingInstructionUtil {
     }
 
 
-    private void syncCommonContainers(List<Containers> containers) {
+    public void syncCommonContainers(List<Containers> containers) {
         if (containers == null || containers.isEmpty()) {
             return;
         }
@@ -173,7 +173,7 @@ public class ShippingInstructionUtil {
         commonContainersDao.saveAll(toSave);
     }
 
-    private void syncCommonPackings(List<Packing> packings) {
+    public void syncCommonPackings(List<Packing> packings) {
         if (packings == null || packings.isEmpty()) {
             return;
         }

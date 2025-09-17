@@ -17,7 +17,7 @@ public class ShippingInstructionsConstants {
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Instruction Update";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
     public static final String DATA_NOT_FOUND = "Shipping Instructions Not Found {}";
-    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("freightDetailList", "commonPackagesList", "commonContainersList", "referenceNumbers", "sailingInformation");
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("freightDetailList", "commonPackagesList", "commonContainersList", "referenceNumbers");
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
     public static final String PAYMENT_TERM_PREPAID = "PPD";
     public static final String PAYMENT_TERM_COLLECT = "CCX";
@@ -25,5 +25,6 @@ public class ShippingInstructionsConstants {
     public static final String SUBMIT_SUCCESSFUL = "Shipping Instruction submitted successfully.";
     public static final String AMEND_SUCCESSFUL = "Shipping Instruction amend successfully.";
     public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Type";
+    public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
 
 }

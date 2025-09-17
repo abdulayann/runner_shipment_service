@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonPackageResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
@@ -3008,6 +3009,9 @@ public class CommonUtils {
             }.getType());
         } else if (list.get(0) instanceof CommonContainers) {
             return modelMapper.map(value, new TypeToken<List<CommonContainerResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof CommonPackages) {
+            return modelMapper.map(value, new TypeToken<List<CommonPackageResponse>>() {
             }.getType());
         }
         return checkForTriangulationPartnerList(value, list);
