@@ -316,7 +316,7 @@ class ShippingInstructionsServiceImplTest {
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
         when(bad.getShippingInstructionType()).thenReturn(ShippingInstructionType.EXPRESS);
 
-        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(bad);
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))
                 .isInstanceOf(ValidationException.class)
@@ -332,7 +332,7 @@ class ShippingInstructionsServiceImplTest {
         when(bad.getNoOfFreightCopies()).thenReturn(1);
         when(bad.getNoOfUnFreightCopies()).thenReturn(1000); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
-        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(bad);
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))
                 .isInstanceOf(ValidationException.class)
@@ -352,7 +352,7 @@ class ShippingInstructionsServiceImplTest {
         when(bad.getNonNegoUnFreightCopies()).thenReturn(-5); // invalid
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
         when(bad.getShippingInstructionType()).thenReturn(ShippingInstructionType.EXPRESS);
-        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(bad);
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(bad);
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))
                 .isInstanceOf(ValidationException.class)
@@ -456,7 +456,7 @@ class ShippingInstructionsServiceImplTest {
         badFreight.setPayerLocation(null); // MISSING mandatory field
         si.setFreightDetailList(List.of(badFreight));
 
-        when(jsonHelper.convertValue(eq(req), eq(ShippingInstruction.class))).thenReturn(si);
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(si);
 
         // Act + Assert
         assertThatThrownBy(() -> service.createShippingInstruction(req))
@@ -648,24 +648,21 @@ class ShippingInstructionsServiceImplTest {
         siFromReq.setEntityId(100L);
         siFromReq.setSailingInformation(new SailingInformation());
 
-        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(siFromReq);
+        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(siFromReq);
 
         // CarrierBooking -> consolidation id
         CarrierBooking cb = new CarrierBooking();
         cb.setId(100L);
         cb.setEntityId(200L);
         cb.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
-//        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
 
         when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.of(cb));
 
-        // Consolidation -> one container
         ConsolidationDetails consol = new ConsolidationDetails();
         consol.setId(200L);
         Containers container = new Containers();
         container.setId(10L);
         container.setContainerNumber("C-10");
-        // ensure containersList getter is used by service
         consol.setContainersList(List.of(container));
         when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
 
@@ -706,7 +703,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionRequest request = buildSimpleRequest();
         ShippingInstruction entity = buildSimpleEntity();
         // request -> entity conversion
-        when(jsonHelper.convertValue(eq(request), eq(ShippingInstruction.class))).thenReturn(entity);
+        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
 
         // carrierBookingDao returns empty -> setDefaultValues will throw Invalid entity id
         when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.empty());

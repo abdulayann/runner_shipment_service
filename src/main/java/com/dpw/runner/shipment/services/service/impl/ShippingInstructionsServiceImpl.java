@@ -655,10 +655,10 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private void sendForDownstreamProcess(ShippingInstruction shippingInstruction) {
         String payload = jsonHelper.convertToJson(shippingInstruction);
-        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI,IntraKafkaOperationType.ORIGINAL);
+        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI, IntraKafkaOperationType.ORIGINAL);
     }
 
-    public ShippingInstructionResponse amendShippingInstruction(Long id ) {
+    public ShippingInstructionResponse amendShippingInstruction(Long id) {
         Optional<ShippingInstruction> shippingInstructionEntity = repository.findById(id);
         if (shippingInstructionEntity.isEmpty()) {
             throw new ValidationException("Invalid shipping instruction id");
@@ -683,9 +683,24 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private String createPackageAndContainerPayload(ShippingInstruction shippingInstruction) {
         ContainerPackageSiPayload packageSiPayload = new ContainerPackageSiPayload();
-        packageSiPayload.setPackageDetail(shippingInstruction.getCommonPackagesList());
-        packageSiPayload.setContainerDetail(shippingInstruction.getCommonContainersList());
+
+        if (shippingInstruction.getCommonPackagesList() != null &&
+                !shippingInstruction.getCommonPackagesList().isEmpty()) {
+            packageSiPayload.setPackageDetail(shippingInstruction.getCommonPackagesList());
+        }
+
+        if (shippingInstruction.getCommonContainersList() != null &&
+                !shippingInstruction.getCommonContainersList().isEmpty()) {
+            packageSiPayload.setContainerDetail(shippingInstruction.getCommonContainersList());
+        }
+
+        if ((packageSiPayload.getPackageDetail() == null || packageSiPayload.getPackageDetail().isEmpty()) &&
+                (packageSiPayload.getContainerDetail() == null || packageSiPayload.getContainerDetail().isEmpty())) {
+            return null;
+        }
+
         return jsonHelper.convertToJson(packageSiPayload);
     }
+
 
 }
