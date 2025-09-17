@@ -50,10 +50,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import org.junit.Assert;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -75,7 +73,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
@@ -147,14 +144,6 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         carrierBookingResponse = new CarrierBookingResponse();
 
-    }
-
-    @BeforeEach
-    void setUp() {
-    }
-
-    @AfterEach
-    void tearDown() {
     }
 
     @Test
@@ -285,7 +274,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void retrieveByIdTest() {
         when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("Invalid id"));
-        assertThrows(ValidationException.class, () -> carrierBookingService.retrieveById(any()));
+        assertThrows(ValidationException.class, () -> carrierBookingService.retrieveById(1L));
     }
 
     @Test
@@ -439,7 +428,7 @@ class CarrierBookingServiceTest extends CommonMocks {
 
     @Test
     void getAllMasterData_ValidCarrierBooking_ReturnsSuccessResponse() {
-        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking = new CarrierBooking();
         SailingInformation sailingInformation = new SailingInformation();
         carrierBooking.setSailingInformation(sailingInformation);
 
@@ -542,7 +531,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         Long entityId = 1L;
         EntityType type = EntityType.CONSOLIDATION;
 
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(entityId);
         consolidationDetails.setConsolidationNumber("CONSOL123");
         consolidationDetails.setServiceLevel("FCL");

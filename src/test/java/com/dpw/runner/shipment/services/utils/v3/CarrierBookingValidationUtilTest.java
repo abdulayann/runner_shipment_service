@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CarrierBookingValidationUtilTest {
+class CarrierBookingValidationUtilTest {
 
     @Mock
     private IConsolidationV3Service consolidationV3Service;
