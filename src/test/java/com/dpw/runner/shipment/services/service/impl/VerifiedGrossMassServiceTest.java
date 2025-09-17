@@ -128,7 +128,7 @@ public class VerifiedGrossMassServiceTest {
     }
 
     @Test
-    public void bulkUpdateContainers_ShouldThrowValidationException_WhenLessThanTwoIds() {
+     void bulkUpdateContainers_ShouldThrowValidationException_WhenLessThanTwoIds() {
         VerifiedGrossMassBulkUpdateRequest request = new VerifiedGrossMassBulkUpdateRequest();
         request.setContainerIds(List.of(1L)); // only 1 id
         assertThrows(ValidationException.class, () ->

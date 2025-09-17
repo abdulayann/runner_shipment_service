@@ -171,10 +171,4 @@ class TransactionHistoryServiceTest {
         assertThrows(DataRetrievalFailureException.class,
                 () -> transactionHistoryService.retrieveById(3L, EntityTypeTransactionHistory.SI));
     }
-
-    @Test
-    void testRetrieveById_UnsupportedEntityType() {
-        assertThrows(IllegalArgumentException.class, () ->
-                transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.valueOf("UNKNOWN")));
-    }
 }
