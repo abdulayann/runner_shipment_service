@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 import lombok.AllArgsConstructor;
@@ -49,5 +50,7 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private List<CommonContainerResponse> commonContainersList;
     private List<ReferenceNumberResponse> referenceNumbers;
     private SailingInformationResponse sailingInformation;
+    private List<ShippingInstructionContainerWarningResponse> containerDiff;
+    private List<ShippingInstructionContainerWarningResponse> packageDiff;
 
 }
