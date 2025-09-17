@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class BillingServiceUrlConfig {
 
     private String baseUrl;
+
     private String xApiKey;
     private String getInvoiceData;
     private String externalCreateOrUpdate;
