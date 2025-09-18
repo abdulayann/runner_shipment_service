@@ -10052,17 +10052,7 @@ public String mdmDGApprovalResponse(OceanDGRequestV3 request) throws RunnerExcep
 
         return warning;
     }
-
-    private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
-        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-            if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
-                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
-            }
-        }
-    }
-
+    
     public void fetchDgUserTask(OceanDGRequestV3 request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), SHIPMENTS_WITH_SQ_BRACKETS);
         log.info("V1 task list request: {}", jsonHelper.convertToJson(commonV1ListRequest));

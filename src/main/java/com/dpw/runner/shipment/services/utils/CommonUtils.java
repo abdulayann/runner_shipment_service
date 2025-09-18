@@ -1700,17 +1700,12 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
-    public String getTaskIdHyperLink(String shipmentId, String taskGuid) {
-        String link = baseUrl + "/v2/shipments/tasks/" + taskGuid;
-        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
-    }
-
     public String getTaskIdHyperLinkV3(String shipmentId, String taskUuid) {
         String link = baseUrl + "/v2/cr3/shipments/task/" + taskUuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
-    public String getTaskIdHyperLinkV2MDM(String shipmentId, String taskGuid) {
+    public String getTaskIdHyperLinkV2(String shipmentId, String taskGuid) {
         String link = baseUrl + "/v2/shipments/tasks/" + taskGuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
@@ -2091,9 +2086,9 @@ public class CommonUtils {
         populateDictionaryForDGEmailFromShipment(dictionary, shipmentDetails, vesselsResponse, taskCreateResponse);
         populateDictionaryApprovalRequestForDGEmail(dictionary, remarks);
         if(taskServiceV2Enabled){
-            dictionary.put(VIEWS, getTaskIdHyperLinkV2MDM(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
         }else {
-            dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
         }
     }
 

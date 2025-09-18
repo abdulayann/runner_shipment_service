@@ -4728,8 +4728,8 @@ class CommonUtilsTest {
     }
     
     @Test
-    void getTaskIdHyperLinkV2MDM_Success(){
-        String result = commonUtils.getTaskIdHyperLinkV2MDM("SH", "TA");
+    void getTaskIdHyperLinkV2_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2("SH", "TA");
         assertNotNull(result);
     }
 
