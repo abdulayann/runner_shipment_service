@@ -53,4 +53,10 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private List<ShippingInstructionContainerWarningResponse> containerDiff;
     private List<ShippingInstructionContainerWarningResponse> packageDiff;
 
+    private String internalEmails;
+    private String externalEmails;
+    private String createByUserEmail;
+    private String submitByUserEmail;
+
+
 }

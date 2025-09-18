@@ -86,6 +86,18 @@ public class ShippingInstruction extends MultiTenancy {
     @Column(name = "date_of_issue")
     private LocalDateTime dateOfIssue;
 
+    @Column(name = "internal_emails", columnDefinition = "TEXT")
+    private String internalEmails;
+
+    @Column(name = "external_emails", columnDefinition = "TEXT")
+    private String externalEmails;
+
+    @Column(name = "created_by_user_email", columnDefinition = "TEXT")
+    private String createByUserEmail;
+
+    @Column(name = "submit_by_user_email", columnDefinition = "TEXT")
+    private String submitByUserEmail;
+
     @Column(name = "no_of_freight_copies")
     private Integer noOfFreightCopies;
 

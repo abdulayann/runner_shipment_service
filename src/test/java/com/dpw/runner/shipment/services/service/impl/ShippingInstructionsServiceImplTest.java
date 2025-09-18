@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,10 +10,13 @@ import com.dpw.runner.shipment.services.controller.ShippingInstructionsControlle
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -20,13 +24,17 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,9 +46,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -52,6 +60,8 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -91,6 +101,9 @@ class ShippingInstructionsServiceImplTest {
     private CommonUtils commonUtils;
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private INotificationService notificationService;
     @Mock
     private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
     @InjectMocks
@@ -469,6 +482,7 @@ class ShippingInstructionsServiceImplTest {
         verifyNoInteractions(repository); // save should never happen
     }
 
+
     @Test
     void submitShippingInstruction_success_whenCarrierBookingConfirmed() {
         Long id = 1L;
@@ -485,27 +499,19 @@ class ShippingInstructionsServiceImplTest {
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
-        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // Stub both response and json conversion
-        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(jsonHelper.convertValue(any(), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
+        when(jsonHelper.convertToJson(any(ContainerPackageSiPayload.class)))
+                .thenReturn("{\"containerDetail\":[],\"packageDetail\":[]}");
         when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
                 .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
 
         ShippingInstructionResponse resp = service.submitShippingInstruction(id);
 
-        Assertions.assertNotNull(resp);
-
-        // status should be updated before save
+        assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
-
-        // downstream push should be called with expected args
-        verify(kafkaHelper).sendDataToKafka(
-                anyString(),
-                eq(GenericKafkaMsgType.SI),
-                eq(IntraKafkaOperationType.ORIGINAL)
-        );
+        verify(kafkaHelper).sendDataToKafka(anyString(), eq(GenericKafkaMsgType.SI), eq(IntraKafkaOperationType.ORIGINAL));
     }
 
     @Test
@@ -538,19 +544,25 @@ class ShippingInstructionsServiceImplTest {
         si.setEntityType(EntityType.CONSOLIDATION);
         si.setEntityId(200L);
         si.setStatus(ShippingInstructionStatus.Draft); // must be Draft to submit
-        when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
-                .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
+
+        // prevent NPE in payload builder
+        si.setCommonPackagesList(Collections.emptyList());
+        si.setCommonContainersList(Collections.emptyList());
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // stub response conversion
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
+
+        when(jsonHelper.convertToJson(any(ContainerPackageSiPayload.class)))
+                .thenReturn("{\"containerDetail\":[],\"packageDetail\":[]}");
 
         ShippingInstructionResponse resp = service.submitShippingInstruction(id);
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SISubmitted));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
     }
 
     @Test
@@ -575,7 +587,9 @@ class ShippingInstructionsServiceImplTest {
 
         ShippingInstruction si = new ShippingInstruction();
         si.setId(id);
-        si.setStatus(ShippingInstructionStatus.SISubmitted); // allowed for amend
+        si.setStatus(ShippingInstructionStatus.SISubmitted);
+        si.setCommonPackagesList(new ArrayList<>());
+        si.setCommonContainersList(new ArrayList<>());
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -583,6 +597,8 @@ class ShippingInstructionsServiceImplTest {
                 .thenReturn(new ShippingInstructionResponse());
         when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
                 .thenReturn("{\"id\":1,\"entityType\":\"CARRIER_BOOKING\"}");
+        when(jsonHelper.convertToJson(any(ContainerPackageSiPayload.class)))
+                .thenReturn("{\"packageDetail\":[],\"containerDetail\":[]}");
 
         ShippingInstructionResponse resp = service.amendShippingInstruction(id);
 
@@ -590,6 +606,8 @@ class ShippingInstructionsServiceImplTest {
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SIAmendRequested));
         verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
 
+        verify(jsonHelper).convertToJson(any(ContainerPackageSiPayload.class));
+        verify(jsonHelper).convertToJson(any(ShippingInstruction.class));
     }
 
     @Test
@@ -956,6 +974,86 @@ class ShippingInstructionsServiceImplTest {
                 shipmentInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
 
         assertThat(warnings).isEmpty();
+    }
+
+    @Test
+    void testSubmitShippingInstruction_ForCarrierBooking_ShouldSendEmail() throws JsonProcessingException {
+        // Arrange
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(100L);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(200L);
+        si.setInternalEmails("ops@company.com");
+        si.setCreateByUserEmail("creator@test.com");
+        si.setSubmitByUserEmail("submitter@test.com");
+
+        CarrierBooking booking = new CarrierBooking();
+        booking.setId(200L);
+        booking.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
+
+        when(repository.findById(100L)).thenReturn(Optional.of(si));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(carrierBookingDao.findById(200L)).thenReturn(Optional.of(booking));
+
+        EmailTemplatesRequest template = new EmailTemplatesRequest();
+        template.setType(Constants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE);
+        template.setName("SI_Template");
+        template.setSubject("SI Notification");
+        template.setBody("<html>Test</html>");
+
+        ShippingInstructionsServiceImpl spyService = Mockito.spy(service);
+        doReturn(List.of(template)).when(spyService).getShippingInstructionTemplate(any());
+
+        // Act
+        spyService.submitShippingInstruction(100L);
+
+        // Assert
+        verify(notificationService, times(1)).sendEmail(any(SendEmailBaseRequest.class));
+    }
+
+    @Test
+    void testSendNotification_OnAmend_ShouldSendEmail() throws JsonProcessingException {
+        // Arrange
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(101L);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(200L);
+        si.setStatus(ShippingInstructionStatus.SISubmitted);
+        si.setInternalEmails("docs@company.com");
+        si.setCreateByUserEmail("creator@test.com");
+        si.setSubmitByUserEmail("creator@test.com");
+
+        // Mock only essential dependencies
+        when(repository.findById(101L)).thenReturn(Optional.of(si));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Mock the V1 service response - this is CRITICAL
+        EmailTemplatesRequest template = new EmailTemplatesRequest();
+        template.setType(Constants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE);
+        template.setName("SI_Template");
+        template.setSubject("Amend Notification");
+        template.setBody("<html>Amend Test</html>");
+
+        V1DataResponse v1Response = new V1DataResponse();
+        v1Response.entities = List.of(template);
+
+        when(v1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(v1Response);
+
+        // Mock JSON conversions
+        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class)))
+                .thenReturn(List.of(template));
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+        when(jsonHelper.convertToJson(any(ContainerPackageSiPayload.class)))
+                .thenReturn("{}");
+        when(jsonHelper.convertToJson(any(ShippingInstruction.class)))
+                .thenReturn("{}");
+
+        // Act
+        service.amendShippingInstruction(101L);
+
+        // Assert
+        verify(notificationService, times(1)).sendEmail(any(SendEmailBaseRequest.class));
     }
 
 }

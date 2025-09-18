@@ -11,13 +11,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageDiffDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -25,12 +26,16 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentInstructionUtil;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -80,6 +85,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    INotificationService notificationService;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
@@ -136,6 +144,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             setReferenceNumber(shippingInstruction, carrierBooking.get());
             response.setBookingStatus(carrierBooking.get().getStatus().name());
             setPartiesNumber(shippingInstruction, carrierBooking.get());
+            autoPopulateEmailsFromBooking(shippingInstruction, carrierBooking.get());
 
         } else if (EntityType.CONSOLIDATION == type) {
             consolidationDetails = getConsolidationDetail(entityId);
@@ -592,7 +601,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         si.getFreightDetailList().add(freightDetail);
     }
-
     public ShippingInstructionResponse submitShippingInstruction(Long id) { //Take only Id
         Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
         ShippingInstruction si = shippingInstruction.get();
@@ -616,6 +624,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setStatus(ShippingInstructionStatus.SISubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
+        sendNotification(si);
         sendForDownstreamProcess(si);
         ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
         return response;
@@ -675,6 +684,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setStatus(ShippingInstructionStatus.SIAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
+         sendNotification(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -687,4 +697,61 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
+    private void autoPopulateEmailsFromBooking(ShippingInstruction si, CarrierBooking booking) {
+        // Always overwrite during submit/amend
+        si.setInternalEmails(booking.getInternalEmails());
+        si.setExternalEmails(booking.getExternalEmails());
+        si.setCreateByUserEmail(booking.getCreateByUserEmail());
+        si.setSubmitByUserEmail(booking.getSubmitByUserEmail());
+    }
+
+    //call when status Change
+    private void sendNotification(ShippingInstruction shippingInstruction) {
+        try {
+            List<String> requests = new ArrayList<>(
+                    List.of(Constants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE));
+            List<EmailTemplatesRequest> emailTemplates = getShippingInstructionTemplate(requests);
+            EmailTemplatesRequest shippingInstructionTemplate = emailTemplates.stream()
+                    .filter(Objects::nonNull)
+                    .filter(template -> Constants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
+                    .findFirst()
+                    .orElse(null);
+            if (shippingInstructionTemplate != null) {
+                SendEmailBaseRequest request =  getSendEmailBaseRequest(shippingInstruction, shippingInstructionTemplate);
+                notificationService.sendEmail(request);
+                log.info("Email sent with Excel attachment");
+            }
+        } catch (Exception e) {
+            log.error("Error in  sending carrier booking email: {}", e.getMessage());
+        }
+    }
+
+    @NotNull
+    private static SendEmailBaseRequest getSendEmailBaseRequest(ShippingInstruction shippingInstruction, EmailTemplatesRequest shippingInstructionTemplate) {
+        String toEmails = shippingInstruction.getInternalEmails() == null ? "" : shippingInstruction.getInternalEmails() + ",";
+        toEmails += shippingInstruction.getCreateByUserEmail();
+        if(!shippingInstruction.getCreateByUserEmail().equalsIgnoreCase(shippingInstruction.getSubmitByUserEmail())){
+            toEmails += "," + shippingInstruction.getSubmitByUserEmail();
+        }
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(shippingInstructionTemplate.getSubject());
+        request.setTemplateName(shippingInstructionTemplate.getName());
+        request.setHtmlBody(shippingInstructionTemplate.getBody());
+        return request;
+    }
+
+    public List<EmailTemplatesRequest> getShippingInstructionTemplate(List<String> templateCodes) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = v1Service.getEmailTemplates(request);
+        if (v1DataResponse != null && v1DataResponse.entities != null) {
+            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+        }
+        return new ArrayList<>();
+    }
 }
