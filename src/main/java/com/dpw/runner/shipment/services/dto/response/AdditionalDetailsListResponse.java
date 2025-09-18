@@ -97,5 +97,7 @@ public class AdditionalDetailsListResponse implements IRunnerResponse {
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
     private PartiesResponse notifyParty;
+    private PartiesResponse importBroker;
+    private PartiesResponse exportBroker;
     private Map<String, String> unlocationData;
 }

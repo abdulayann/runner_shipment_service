@@ -15369,5 +15369,207 @@
       "reassignedToBranchId": "EGYSHP100"
     },
     "tenantId": 728
+  },
+  "SI" : {
+    "additionalParties": [
+      {
+        "addressCode": "ADDR123",
+        "addressData": {
+          "street": "123 Market Street",
+          "city": "San Francisco",
+          "state": "CA",
+          "zip": "94105"
+        },
+        "addressId": "ADDR001",
+        "countryCode": "US",
+        "entityId": 101,
+        "entityType": "CUSTOMER",
+        "guid": "123e4567-e89b-12d3-a456-426614174000",
+        "isAddressFreeText": false,
+        "orgCode": "ORG123",
+        "orgData": {
+          "name": "Extra Logistics Partner"
+        },
+        "orgId": "ORG001",
+        "tenantId": 1,
+        "type": "NotifyParty"
+      }
+    ],
+    "blComments": "Handle with care. Temperature controlled shipment.",
+    "carrierBlNo": "CBL789456",
+    "carrierBookingNo": "CBN123456",
+    "commonContainers": [
+      {
+        "carrierBookingId": 101,
+        "commodityCode": "FRT-001",
+        "containerCode": "C20",
+        "containerNo": "CONT1234567",
+        "count": 1,
+        "goodsDescription": "Electronics",
+        "grossWeight": 10000,
+        "grossWeightUnit": "KG",
+        "hsCode": "847130",
+        "netWeight": 9500,
+        "netWeightUnit": "KG",
+        "packs": 100,
+        "packsUnit": "CTN",
+        "sealNumber": "SEAL12345",
+        "shippingInstructionId": 501,
+        "tareWeight": 500,
+        "tareWeightUnit": "KG",
+        "volume": 25,
+        "volumeUnit": "CBM"
+      }
+    ],
+    "commonPackages": [
+      {
+        "commodityDescription": "Consumer Electronics",
+        "containerNo": "CONT1234567",
+        "goodsDescription": "Laptops and Tablets",
+        "grossWeight": 2000,
+        "grossWeightUnit": "KG",
+        "hsCode": "847130",
+        "packs": 20,
+        "packsUnit": "CTN",
+        "shippingInstructionId": 501,
+        "volume": 5,
+        "volumeUnit": "CBM"
+      }
+    ],
+    "consignee": {
+      "addressCode": "ADDR456",
+      "addressData": {
+        "street": "456 Ocean Drive",
+        "city": "Miami",
+        "state": "FL",
+        "zip": "33101"
+      },
+      "addressId": "ADDR002",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "CONSIGNEE",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG456",
+      "orgData": {
+        "name": "ABC Imports LLC"
+      },
+      "orgId": "ORG002",
+      "tenantId": 1,
+      "type": "Consignee"
+    },
+    "contract": {
+      "addressCode": "ADDR789",
+      "addressData": {
+        "street": "789 Shipping Lane",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90001"
+      },
+      "addressId": "ADDR003",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "CONTRACT",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG789",
+      "orgData": {
+        "name": "XYZ Logistics"
+      },
+      "orgId": "ORG003",
+      "tenantId": 1,
+      "type": "Contract"
+    },
+    "entityId": 501,
+    "entityNumber": "ENT123456",
+    "entityType": "CONSOLIDATION",
+    "forwardingAgent": {
+      "addressCode": "ADDR321",
+      "addressData": {
+        "street": "321 Export Blvd",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77001"
+      },
+      "addressId": "ADDR004",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "FORWARDER",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG321",
+      "orgData": {
+        "name": "Global Forwarders Inc."
+      },
+      "orgId": "ORG004",
+      "tenantId": 1,
+      "type": "Forwarder"
+    },
+    "freightDetails": [
+      {
+        "chargeType": "Freight",
+        "payerLocation": "Houston, TX",
+        "payerType": "SHIPPER",
+        "paymentTerms": "PREPAID",
+        "shippingInstructionId": 501
+      }
+    ],
+    "noOfFreightCopies": 2,
+    "noOfUnFreightCopies": 1,
+    "nonNegoFreightCopies": 1,
+    "nonNegoUnFreightCopies": 0,
+    "referenceNumberRequests": [
+      {
+        "carrierBookingId": 101,
+        "referenceNumber": "REF12345",
+        "shippingInstructionId": 501,
+        "type": "BookingRef"
+      }
+    ],
+    "sailingInformationRequest": {
+      "carrier": "Maersk",
+      "carrierDeliveryPlace": "Rotterdam Port",
+      "carrierReceiptPlace": "Los Angeles Port",
+      "earliestDepartureDate": "2025-09-10T08:00:00Z",
+      "emptyContainerPickupCutoff": "2025-09-08T12:00:00Z",
+      "eta": "2025-09-20T15:00:00Z",
+      "etd": "2025-09-10T08:00:00Z",
+      "hazardousBookingCutoff": "2025-09-07T18:00:00Z",
+      "lastUpdatedSailingInfo": "2025-09-04T10:55:17.139Z",
+      "latestDeliveryDate": "2025-09-09T17:00:00Z",
+      "loadedContainerGateInCutoff": "2025-09-08T20:00:00Z",
+      "pod": "NLRTM",
+      "pol": "USLAX",
+      "reeferCutoff": "2025-09-07T23:00:00Z",
+      "shipInstructionCutoff": "2025-09-06T20:00:00Z",
+      "terminalCutoff": "2025-09-09T22:00:00Z",
+      "verifiedGrossMassCutoff": "2025-09-07T12:00:00Z",
+      "vesselName": "MSC Harmony",
+      "voyageNo": "VOY123"
+    },
+    "shipper": {
+      "addressCode": "ADDR999",
+      "addressData": {
+        "street": "999 Export Road",
+        "city": "Dallas",
+        "state": "TX",
+        "zip": "75201"
+      },
+      "addressId": "ADDR005",
+      "countryCode": "US",
+      "entityId": 749681,
+      "entityType": "SHIPPER",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG999",
+      "orgData": {
+        "name": "Tech Exporters Ltd."
+      },
+      "orgId": "ORG005",
+      "tenantId": 1,
+      "type": "Shipper"
+    },
+    "status": "Draft"
   }
+
 }

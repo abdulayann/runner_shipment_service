@@ -19,4 +19,5 @@ public class NetworkTransferConstants {
     public static final String SHIPMENT_ENTITY_STATUS = "/shipment-entity-status";
     public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL = "/create/external";
+    public static final String NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE = "/create/external/bridge";
 }

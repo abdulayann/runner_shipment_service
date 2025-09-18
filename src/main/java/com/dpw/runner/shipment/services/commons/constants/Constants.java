@@ -643,6 +643,8 @@ public class Constants {
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
     public static final String NOTIFY_PARTY_ORG_CODE = "notifyPartyOrgCode";
+    public static final String ORIGIN_AGENT_ORG_CODE = "originAgentOrgCode";
+    public static final String DESTINATION_AGENT_ORG_CODE = "destinationAgentOrgCode";
     public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
     public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
@@ -736,6 +738,8 @@ public class Constants {
     public static final String ATTACH = "ATTACH";
     public static final String DETACH = "DETACH";
 
+
+    public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
 
     private Constants() {
     }

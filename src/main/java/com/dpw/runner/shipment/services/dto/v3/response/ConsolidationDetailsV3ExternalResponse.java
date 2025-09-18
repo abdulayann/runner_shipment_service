@@ -141,4 +141,6 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private List<Events> eventsList;
     private List<Containers> containersList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }
