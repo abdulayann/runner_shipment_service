@@ -376,10 +376,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
 
-            populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
-            beforeSave(consolidationDetails, null, true);
-
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+                /* Future to populate unloc code in consoliation child entities*/
+                var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(consolidationDetails, null);
+                populateUnlocCodeFuture.join();
                 if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getDestinationPortLocCode()!=null && !commonUtils.checkIfPartyExists(consolidationDetails.getReceivingAgent())) {
                     consolidationDetails.setReceivingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
                 }
@@ -387,6 +387,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     consolidationDetails.setSendingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
                 }
             }
+
+            populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
+            beforeSave(consolidationDetails, null, true);
 
             getConsolidation(consolidationDetails);
             Long id = consolidationDetails.getId();
