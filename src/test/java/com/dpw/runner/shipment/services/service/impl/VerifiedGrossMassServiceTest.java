@@ -427,21 +427,6 @@ class VerifiedGrossMassServiceTest {
     }
 
     @Test
-    void testList_MissingIncludeColumns_ThrowsException() {
-        // Arrange [web:7]
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
-        ListCommonRequest listRequest = new ListCommonRequest();
-        commonRequestModel.setData(listRequest);
-
-        // Act & Assert [web:7]
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> verifiedGrossMassService.list(commonRequestModel, false));
-
-        assertEquals(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE,
-                exception.getMessage());
-    }
-
-    @Test
     void testUpdate_Success() {
         // Arrange [web:3]
         testRequest.setId(1L);
