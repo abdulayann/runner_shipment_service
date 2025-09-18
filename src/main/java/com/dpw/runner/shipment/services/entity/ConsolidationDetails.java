@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -527,6 +528,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "controlled_reference_number")
     @Size(max = 50, message = "max size is 50 for controlled reference number")
     private String controlledReferenceNumber;
+
+    @Column(name = "si_status")
+    @Enumerated(EnumType.STRING)
+    private ShippingInstructionStatus siStatus;
 
     @Override
     public boolean equals(Object o) {

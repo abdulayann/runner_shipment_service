@@ -384,6 +384,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
+    private static final String CLONE_SHIPMENT_NOT_ALLOWED = "Clone Shipment is not allowed. Please check the Transport Config.";
+
     @Autowired
     public ShipmentServiceImplV3(
             IConsoleShipmentMappingDao consoleShipmentMappingDao,
@@ -1084,17 +1086,20 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         commonUtils.checkPermissionsForCloning(shipmentDetails.get());
         V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        String shipmentMode = StringUtility.convertToString(shipmentDetails.get().getTransportMode());
         if (Objects.nonNull(tenantData)) {
+            if (Boolean.TRUE.equals(tenantData.getTransportModeConfig()) && commonUtils.isSelectedModeOffInShipment(shipmentMode, tenantData)) {
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
+            }
             if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
-                String shipmentMode = shipmentDetails.get().getTransportMode();
-                if (Objects.nonNull(shipmentMode) && commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
+                if (commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
                     return shipmentDetails;
                 } else {
-                    throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                    throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
                 }
             }
             if (Objects.nonNull(tenantData.getTransportModeConfig()) && Boolean.FALSE.equals(tenantData.getTransportModeConfig())) {
-                throw new IllegalStateException("Clone Shipment is not allowed. Please check the Transport Config.");
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
             }
         }
         return shipmentDetails;
@@ -5370,6 +5375,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 default -> throw new ValidationException("Event must be either ATTACH or DETACH");
             }
 
+            triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
+
             return ResponseHelper.buildSuccessResponse();
 
         } catch (Exception ex) {
@@ -5382,7 +5389,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new ValidationException("Shipment GUID cannot be null");
         }
         if (request.getEvent() == null) {
-            throw new ValidationException("Event cannot be null");
+            throw new ValidationException("Event must be either ATTACH / DETACH");
         }
     }
 

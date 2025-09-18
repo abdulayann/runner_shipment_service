@@ -216,4 +216,6 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
     private Map<String, Object> masterDataMap;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

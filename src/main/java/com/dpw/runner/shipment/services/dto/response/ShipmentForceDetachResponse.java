@@ -11,9 +11,10 @@ import java.math.BigDecimal;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentForceDetachResponse {
+public class ShipmentForceDetachResponse{
 
     private String shipmentNumber;
+    private Long shipmentId;
     private String containerNumber;
     private Integer packageCount;
     private String packageUnit;

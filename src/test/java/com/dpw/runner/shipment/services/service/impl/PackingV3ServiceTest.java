@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -121,6 +122,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private ShipmentValidationV3Util shipmentValidationV3Util;
     @Mock
     private ConsolidationV3Service consolidationV3Service;
+    @Mock
+    private ShippingInstructionUtil shippingInstructionUtil;
 
     private Packing packing;
     private PackingV3Request request;
