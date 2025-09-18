@@ -39,7 +39,9 @@ public class ControllerLoggingAspect {
     @Around("controllerMethods()")
     public Object logSingleLineRequest(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request =
-                ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes()))
+                        .getRequest();
+
 
         this.logRequest(joinPoint, request);
 
