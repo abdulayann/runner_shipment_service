@@ -93,6 +93,23 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     }
 
     @Override
+    public OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException {
+        try {
+            String url = baseUrl + getOrderbyGuidUrl + orderGuid;
+            log.info("Request to Order Service with url: {}", url);
+            HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
+            var response = restTemplate.exchange(url,
+                    HttpMethod.GET, httpEntity,
+                    OrderManagementResponse.class);
+            log.info("OrderManagementResponse from Order Service: {}", response.getBody());
+            return Objects.requireNonNull(response.getBody()).getOrder();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
     public List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException {
             String url = baseUrl + getOrderbyCriteria;
             // Create the request body
@@ -212,6 +229,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
                 .serviceMode(order.getServiceMode())
                 .incoTerms(order.getIncoTerm())
                 .referenceNumbersList(fetchReferenceNumberResponseListForOrderV3(order))
+                .direction(order.getDirection())
                 .build();
         for (Map.Entry<String, OrderPartiesResponse> entry : partyCodeMap.entrySet()) {
             String partyCode = entry.getKey();
