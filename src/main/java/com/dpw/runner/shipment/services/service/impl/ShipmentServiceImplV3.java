@@ -3048,7 +3048,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private void setShipmentIdInShipmentOrderRequestList(Long shipmentId, List<ShipmentOrderV3Request> shipmentOrderRequestList) {
         if (shipmentOrderRequestList != null) {
             shipmentOrderRequestList.stream()
-                    .filter(Objects::nonNull) // avoid NPE if list has null elements
+                    .filter(Objects::nonNull)
                     .forEach(shipmentOrder -> shipmentOrder.setShipmentId(shipmentId));
         }
     }
