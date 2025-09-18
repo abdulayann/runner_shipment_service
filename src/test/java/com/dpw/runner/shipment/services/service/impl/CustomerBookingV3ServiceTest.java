@@ -1738,7 +1738,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        request.setIsDg(Boolean.TRUE);
+        request.setIsDg(Boolean.FALSE);
 
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
