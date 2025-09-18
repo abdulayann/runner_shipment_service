@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -19,16 +21,20 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
@@ -51,6 +57,8 @@ class ConsolidationControllerTest {
     private IShipmentService shipmentService;
     @InjectMocks
     private ConsolidationController consolidationController;
+    @Mock
+    private HttpServletResponse response;
 
     @Test
     void fetchByQuery() {
@@ -491,7 +499,7 @@ class ConsolidationControllerTest {
     @Test
     void exportConsolidationList() throws IOException, IllegalAccessException, RunnerException {
         // Mock
-        doNothing().when(consolidationService).exportExcel(any(), any());
+        doNothing().when(consolidationService).exportExcel(any(), any(), any());
         // Test
         consolidationController.exportConsolidationList(new MockHttpServletResponse(), ListCommonRequest.builder().build());
         // Assert
@@ -501,7 +509,7 @@ class ConsolidationControllerTest {
     @Test
     void exportConsolidationList2() throws IOException, IllegalAccessException, RunnerException {
         // Mock
-        doThrow(new RuntimeException()).when(consolidationService).exportExcel(any(), any());
+        doThrow(new RuntimeException()).when(consolidationService).exportExcel(any(), any(), any());
         // Test
         consolidationController.exportConsolidationList(new MockHttpServletResponse(), ListCommonRequest.builder().build());
         // Assert
@@ -511,11 +519,39 @@ class ConsolidationControllerTest {
     @Test
     void exportConsolidationList3() throws IOException, IllegalAccessException, RunnerException {
         // Mock
-        doThrow(new RuntimeException("RuntimeException")).when(consolidationService).exportExcel(any(), any());
+        doThrow(new RuntimeException("RuntimeException")).when(consolidationService).exportExcel(any(), any(), any());
         // Test
         consolidationController.exportConsolidationList(new MockHttpServletResponse(), ListCommonRequest.builder().build());
         // Assert
         assertTrue(true);
+    }
+    @Test
+    void exportConsolidationList_Success_EmailSent_ReturnsAccepted() throws RunnerException, IOException, IllegalAccessException {
+        ListCommonRequest  validRequest = new ListCommonRequest();
+        validRequest.setPageNo(1);
+        validRequest.setPageSize(10);
+
+        // Setup common request model
+        CommonRequestModel commonRequestModel =  CommonRequestModel.builder().pageNo(1).count(10).build();
+
+        // Given
+        try (MockedStatic<CommonRequestModel> commonRequestModelMock = mockStatic(CommonRequestModel.class)) {
+            commonRequestModelMock.when(() -> CommonRequestModel.buildRequest(validRequest))
+                    .thenReturn(commonRequestModel);
+
+            doAnswer(invocation -> {
+                ExportExcelResponse exportResponse = invocation.getArgument(2);
+                exportResponse.setEmailSent(true);
+                return null;
+            }).when(consolidationService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+
+            // When
+            ResponseEntity<?> result = consolidationController.exportConsolidationList(response, validRequest);
+
+            // Then
+            assertThat(result.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+            verify(consolidationService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+        }
     }
 
     @Test

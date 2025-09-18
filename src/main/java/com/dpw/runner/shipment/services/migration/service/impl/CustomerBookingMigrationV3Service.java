@@ -3,8 +3,6 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -14,7 +12,6 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -25,7 +22,9 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -45,8 +44,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
 @Slf4j
@@ -90,6 +87,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     private ICustomerBookingBackupRepository customerBookingBackupRepository;
+
+    @Autowired
+    private IPackingRepository packingRepository;
+
+    @Autowired
+    private IContainerRepository containerRepository;
 
     @Autowired
     private CustomerBookingV3Util customerBookingV3Util;
@@ -154,13 +157,13 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
 
     @Override
-    public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId) {
-        Map<String, Integer> map = new HashMap<>();
+    public Map<String, Object> migrateBookingV2ToV3ForTenant(Integer tenantId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+        Map<String, Object> map = new HashMap<>();
         List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
         map.put("Total Bookings", bookingIds.size());
         List<Future<Long>> bookingQueue = new ArrayList<>();
         log.info("fetched {} bookingIds for Migrations", bookingIds.size());
-        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+        Map<Long, String>  failureMap = new HashMap<>();
         bookingIds.forEach(booking -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
@@ -173,7 +176,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         try {
 
                             log.info("Migrating Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
-                            CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap);
+                            CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
@@ -181,9 +184,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking setup [id={}], exception: {}", booking, e.getLocalizedMessage());
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-
+                    log.error("Async failure during Customer Booking setup [id={}]", booking, e);
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V2_TO_V3_DATA_SYNC, Status.FAILED, e.getMessage());
+                    customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
+                    failureMap.put(booking, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -193,13 +197,16 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         });
 
         List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
-        map.put("Total Bookings Migrated", bookingsProcessed.size());
+        map.put("Total Bookings Migrated ", bookingsProcessed.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Bookings Migration: ", failureMap);
+        }
         log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), bookingIds.size(), tenantId);
         return map;
     }
 
     @Override
-    public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId, Integer weightDecimal, Integer volumeDecimal) {
         Map<String, Integer> map = new HashMap<>();
         List<Long> bookingIds = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V2.name(), MigrationStatus.CREATED_IN_V3.name()), tenantId);
         map.put("Total Bookings", bookingIds.size());
@@ -217,7 +224,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating v3 to v2 Customer Booking [id={}] and start time: {}", booking, System.currentTimeMillis());
-                            CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap);
+                            CustomerBooking response = migrateBookingV3ToV2(booking, weightDecimal, volumeDecimal);
                             log.info("Successfully migrated Customer Booking [oldId={}, newId={}] and end time: {}", booking, response.getId(), System.currentTimeMillis());
                             return response.getId();
                         } catch (Exception e) {
@@ -225,9 +232,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during Customer Booking reverse migration [id={}], exception: {}", booking, e.getLocalizedMessage());
-                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
-                    customerBookingBackupRepository.deleteBackupByTenantIdAndBookingId(booking, tenantId);
+                    log.error("Async failure during Customer Booking reverse migration [id={}]", booking, e);
+                    migrationUtil.saveErrorResponse(booking, CUSTOMER_BOOKING, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -243,60 +249,58 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
     }
 
     @Override
-    public CustomerBooking migrateBookingV2ToV3(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+    public CustomerBooking migrateBookingV2ToV3(Long bookingId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
             throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
-        mapBookingV2ToV3(booking, codeTeuMap);
+        mapBookingV2ToV3(booking, codeTeuMap, weightDecimal, volumeDecimal);
         customerBookingRepository.save(booking);
         return booking;
     }
 
-    @Override
-    public CustomerBooking mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+    public void mapBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         //update serviceType based on the transport type
         String transportMode = customerBooking.getTransportType();
         String serviceTypeV2 = customerBooking.getServiceMode();
         String v3Key = transportMode + "_" + serviceTypeV2;
         customerBooking.setServiceMode(v2ToV3ServiceTypeMap.getOrDefault(v3Key, serviceTypeV2));
+
         updateContainerDataFromV2ToV3(customerBooking, codeTeuMap);
-        updatePackingDataFromV2ToV3(customerBooking);
+        updatePackingDataFromV2ToV3(customerBooking, weightDecimal, volumeDecimal);
 
         //Update CargoSummary
         customerBookingV3Util.updateCargoInformation(customerBooking, codeTeuMap, null, true);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
-
-        return null;
     }
 
     @Override
-    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Map<String, BigDecimal> codeTeuMap) {
+    public CustomerBooking migrateBookingV3ToV2(Long bookingId, Integer weightDecimal, Integer volumeDecimal) {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(bookingId);
         if(customerBooking1.isEmpty()) {
             throw new DataRetrievalFailureException("No Booking found with given id: " + bookingId);
         }
         CustomerBooking booking = jsonHelper.convertValue(customerBooking1.get(), CustomerBooking.class);
-        mapBookingV3ToV2(booking, codeTeuMap);
+        mapBookingV3ToV2(booking, weightDecimal, volumeDecimal);
         customerBookingRepository.save(booking);
         return booking;
     }
 
-    @Override
-    public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        updateContainerDataFromV3ToV2(customerBooking);
-        updatePackingDataFromV3ToV2(customerBooking);
+    public void mapBookingV3ToV2(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) {
+        updateContainerDataFromV3ToV2(customerBooking, weightDecimal);
+        updatePackingDataFromV3ToV2(customerBooking, weightDecimal, volumeDecimal);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
-        return null;
     }
 
     private void updateContainerDataFromV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
         List<Containers> containersList = containerDao.findByBookingIdIn(List.of(customerBooking.getId()));
-        for(Containers containers: containersList) {
+        List<Containers> updatedContainersList = createCopyForContainers(containersList);
+        for(Containers containers: updatedContainersList) {
             if(!Objects.isNull(containers.getGrossWeight())) {
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
-                containers.setGrossWeight(new BigDecimal(containers.getContainerCount()).multiply(containers.getCargoWeightPerContainer()));
+                if(containers.getContainerCount()!=null)
+                    containers.setGrossWeight(new BigDecimal(containers.getContainerCount()).multiply(containers.getCargoWeightPerContainer()));
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
                 containers.setContainerWeightUnit(containers.getGrossWeightUnit());
@@ -305,24 +309,43 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             containers.setContainerPackageType(null);
             containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
         }
-        containerDao.saveAll(containersList);
+
+        detachOldContainersFromBooking(containersList);
+        containerRepository.saveAll(updatedContainersList);
     }
 
-    private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking) {
+    private void detachOldContainersFromBooking(List<Containers> oldContainers) {
+        for(Containers container: oldContainers) {
+            container.setBookingId(null);
+        }
+        containerRepository.saveAll(oldContainers);
+    }
+
+    private List<Containers> createCopyForContainers(List<Containers> containersList) {
+        List<Containers> newContainerList = jsonHelper.convertValueToList(containersList, Containers.class);
+        for(Containers container: newContainerList) {
+            container.setId(null); // Ensure new identity
+            container.setGuid(UUID.randomUUID());
+            container.setConsolidationId(null);
+        }
+        return newContainerList;
+    }
+
+    private void updateContainerDataFromV3ToV2(CustomerBooking customerBooking, Integer weightDecimal) {
         List<Containers> containersList = customerBooking.getContainersList();
         for(Containers containers: containersList) {
-            if(!Objects.isNull(containers.getGrossWeight())) {
-                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), RoundingMode.HALF_UP));
+            if(!Objects.isNull(containers.getGrossWeight()) && !Objects.isNull(containers.getContainerCount())) {
+                containers.setGrossWeight(containers.getGrossWeight().divide(new BigDecimal(containers.getContainerCount()), weightDecimal, RoundingMode.HALF_UP));
                 containers.setCargoWeightPerContainer(containers.getGrossWeight());
             }
             if(!Objects.isNull(containers.getGrossWeightUnit())) {
                 containers.setContainerWeightUnit(containers.getGrossWeightUnit());
             }
         }
-        containerDao.saveAll(containersList);
+        containerRepository.saveAll(containersList);
     }
 
-    private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking) throws RunnerException {
+    private void updatePackingDataFromV2ToV3(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         List<Packing> packingList = packingDao.findByBookingIdIn(List.of(customerBooking.getId()));
 
         if (!packingList.isEmpty()) {
@@ -331,32 +354,43 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 updateVolume(packing);
                 updateUnits(packing);
             }
-        } else {
-            Packing packing = createPackingFromBooking(customerBooking);
-            if (packing != null) {
-                packingList.add(packing);
-            }
+        } else if (Boolean.TRUE.equals(customerBooking.getIsPackageManual())) {
+            Packing packing = createPackingFromBooking(customerBooking, weightDecimal, volumeDecimal);
+            packingList.add(packing);
+            customerBooking.setIsPackageManual(Boolean.FALSE);
         }
 
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private void updateWeight(Packing packing) {
+        if (!Objects.isNull(packing.getShipmentId())) {
+            return;
+        }
+
         if (packing.getWeight() != null) {
             packing.setCargoWeightPerPack(packing.getWeight());
-            BigDecimal totalWeight = BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getCargoWeightPerPack());
-            packing.setWeight(totalWeight);
+            if(packing.getPacks()!=null) {
+                BigDecimal totalWeight = BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getCargoWeightPerPack());
+                packing.setWeight(totalWeight);
+            }
         }
     }
 
     private void updateVolume(Packing packing) {
+        if (!Objects.isNull(packing.getShipmentId())) {
+            return;
+        }
+
         if (isDimensionsPresent(packing)) {
             BigDecimal volumePerPack = packing.getLength().multiply(packing.getWidth()).multiply(packing.getHeight());
             packing.setVolumePerPack(volumePerPack);
-            packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(volumePerPack));
+            if(packing.getPacks()!=null)
+                packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(volumePerPack));
         } else if (packing.getVolume() != null) {
             packing.setVolumePerPack(packing.getVolume());
-            packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getVolumePerPack()));
+            if(packing.getPacks()!=null)
+                packing.setVolume(BigDecimal.valueOf(Long.parseLong(packing.getPacks())).multiply(packing.getVolumePerPack()));
         }
     }
 
@@ -369,38 +403,37 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         }
     }
 
-    private Packing createPackingFromBooking(CustomerBooking booking) throws RunnerException {
-        if (booking.getQuantity() == null || booking.getQuantity() == 0) return null;
-
+    private Packing createPackingFromBooking(CustomerBooking booking, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         Packing packing = new Packing();
-        packing.setPacks(String.valueOf(booking.getQuantity()));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setPacks(String.valueOf(booking.getQuantity()));
+        }
         packing.setPacksType(booking.getQuantityUnit());
-
-        BigDecimal quantity = BigDecimal.valueOf(booking.getQuantity());
 
         BigDecimal weight = Optional.ofNullable(booking.getGrossWeight()).orElse(BigDecimal.ZERO);
         String weightUnit = Optional.ofNullable(booking.getGrossWeightUnit()).orElse(WEIGHT_UNIT_KG);
-        packing.setWeight(weight);
+        packing.setWeight(booking.getGrossWeight());
         packing.setWeightUnit(weightUnit);
-        packing.setCargoWeightPerPack(weight.divide(quantity, RoundingMode.HALF_UP));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setCargoWeightPerPack(weight.divide(BigDecimal.valueOf(booking.getQuantity()), weightDecimal, RoundingMode.HALF_UP));
+        }
         packing.setPackWeightUnit(weightUnit);
 
         BigDecimal volume = Optional.ofNullable(booking.getVolume()).orElse(BigDecimal.ZERO);
         String volumeUnit = Optional.ofNullable(booking.getVolumeUnit()).orElse(VOLUME_UNIT_M3);
-        packing.setVolume(volume);
+        packing.setVolume(booking.getVolume());
         packing.setVolumeUnit(volumeUnit);
-        packing.setVolumePerPack(volume.divide(quantity, RoundingMode.HALF_UP));
+        if(!Objects.isNull(booking.getQuantity())) {
+            packing.setVolumePerPack(volume.divide(BigDecimal.valueOf(booking.getQuantity()), volumeDecimal, RoundingMode.HALF_UP));
+        }
         packing.setVolumePerPackUnit(volumeUnit);
-
-        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(
-                booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
+        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(booking.getTransportType(), weightUnit, volumeUnit, weight, volume);
 
         packing.setChargeable(vwOb.getChargeable());
         packing.setChargeableUnit(vwOb.getChargeableUnit());
         packing.setTenantId(booking.getTenantId());
         packing.setCommodityGroup("FAK");
         packing.setBookingId(booking.getId());
-
         return packing;
     }
 
@@ -408,15 +441,15 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         return packing.getLength()!= null && packing.getWidth()!= null && packing.getHeight()!= null;
     }
 
-    private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking) {
+    private void updatePackingDataFromV3ToV2(CustomerBooking customerBooking, Integer weightDecimal, Integer volumeDecimal) {
         List<Packing> packingList = customerBooking.getPackingList();
         for(Packing packing: packingList) {
-            if(!Objects.isNull(packing.getWeight())) {
-                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+            if(!Objects.isNull(packing.getWeight()) && !Objects.isNull(packing.getPacks())) {
+                packing.setWeight(packing.getWeight().divide(new BigDecimal(packing.getPacks()), weightDecimal, RoundingMode.HALF_UP));
                 packing.setCargoWeightPerPack(packing.getWeight());
             }
-            if(!Objects.isNull(packing.getVolume())) {
-                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()),RoundingMode.HALF_UP));
+            if(!Objects.isNull(packing.getVolume()) && !Objects.isNull(packing.getPacks())) {
+                packing.setVolume(packing.getVolume().divide(new BigDecimal(packing.getPacks()), volumeDecimal, RoundingMode.HALF_UP));
                 packing.setVolumePerPack(packing.getVolume());
             }
             if(!Objects.isNull(packing.getWeightUnit())) {
@@ -426,7 +459,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
                 packing.setVolumePerPackUnit(packing.getVolumeUnit());
             }
         }
-        packingDao.saveAll(packingList);
+        packingRepository.saveAll(packingList);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {

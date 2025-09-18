@@ -45,7 +45,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -3043,7 +3042,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 jobType("STD").
                 incoterms(customerBookingRequest.getIncoTerms()).
                 serviceType(customerBookingRequest.getServiceMode()).
-                status(4).
+                status(0).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
                 clientCountry(customerBookingRequest.getClientCountry()).
                 consignorCountry(customerBookingRequest.getConsignorCountry()).
@@ -3698,7 +3697,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 operationType = DBOperationType.DG_REJECT;
             }
         } else if (dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            if (request.getStatus() == TaskStatus.REJECTED) {
+            if (request.getStatus() == TaskStatus.APPROVED) {
                 operationType = COMMERCIAL_APPROVE;
             } else {
                 operationType = DBOperationType.COMMERCIAL_REJECT;
@@ -3767,10 +3766,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private DBOperationType determineOperationType(OceanDGStatus dgStatus, boolean isOceanDgUser) {
-        if (dgStatus == OCEAN_DG_REQUESTED && isOceanDgUser) return DG_APPROVE;
-        return dgStatus == OCEAN_DG_REQUESTED
-                ? DBOperationType.DG_REQUEST
-                : COMMERCIAL_REQUEST;
+        if ((dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus ==  OCEAN_DG_REJECTED) && isOceanDgUser)  return DG_APPROVE;
+        return (dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_REQUESTED) ? DBOperationType.DG_REQUEST : COMMERCIAL_REQUEST;
     }
 
     private void sendEmailForDGApproval(ShipmentDetails shipmentDetails, String remarks)
@@ -3850,9 +3847,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                       ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
 
         if (templateStatus == OCEAN_DG_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, Boolean.TRUE); // Himanshu to confirm if this is true for v3 always
         } else if (templateStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, Boolean.TRUE);
         }
         dictionary.put(VIEWS, commonUtils.getTaskIdHyperLinkV3(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
     }
@@ -4306,7 +4303,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (buildFailedResponse != null) return buildFailedResponse;
             updatePullRequests(consoleShip, pullRequests, pushRequests);
         }
-        awbDao.validateAirMessaging(consoleId);
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         if (consolidationV3Service.checkForAirDGFlag(consolidationDetails)) {
@@ -5045,7 +5041,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             response.setShipmentType(tenantSettings.getDefaultContainerType());
 
             response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
-            response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+            response.setVolumeUnit(VOLUME_UNIT_M3);
+            response.setPacksUnit(tenantSettings.getDefaultPackUnit());
+            response.setDgPacksUnit(tenantSettings.getDefaultPackUnit());
             response.setStatus(0);
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());

@@ -393,6 +393,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -600,6 +601,8 @@ public abstract class IReport {
     private ShipmentServiceImplV3 shipmentServiceImplV3;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private MasterDataUtils masterDataUtil;
 
     public static final String TEN_LAKH = "1000000";
 
@@ -1700,6 +1703,7 @@ public abstract class IReport {
             dict.put(CHARGEABLE, chargeableString);
             dict.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, shipmentModel.getChargeableUnit()));
             dict.put(CHARGEABLE_AND_UNIT, dict.get(CHARGABLE_AND_UNIT));
+            dict.put(ReportConstants.PACKS_UNIT, masterDataUtils.getPackTypeDesc(shipmentModel.getPacksUnit()));
             shipAwbDataList.add(dict);
         }
         if(dictionary == null)
@@ -5364,21 +5368,11 @@ public abstract class IReport {
             dict = new HashMap<>();
         }
 
-        List<Parties> partiesList = Stream.of(
-                        consolidationDetails.getBorrowedFrom(),
-                        consolidationDetails.getCreditor(),
-                        consolidationDetails.getCoLoadWith())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        Optional.ofNullable(consolidationDetails.getConsolidationAddresses())
-                .ifPresent(partiesList::addAll);
-
         // Add various grouped information into the map
         addBasicConsolidationFields(dict, consolidationDetails);
         addReferenceNumbers(dict, consolidationDetails.getReferenceNumbersList());
         addRoutingDetails(dict, consolidationDetails.getRoutingsList());
-        addPartyDetails(dict, partiesList);
+        addPartyDetails(dict, consolidationDetails);
         addAgentDetails(dict, C_ORIGIN_AGENT, consolidationDetails.getSendingAgent());
         addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
@@ -5398,15 +5392,20 @@ public abstract class IReport {
         }
 
         // Add achieved quantities section if available
+        this.addConsoleCargoSummary(dict, details);
+        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
+    }
+
+    private void addConsoleCargoSummary(Map<String, Object> dict, ConsolidationDetails details) {
         AchievedQuantities aq = details.getAchievedQuantities();
         if (aq != null) {
             dict.put(ReportConstants.C_C_DGPACKAGESTYPE, aq.getDgPacksType());
             dict.put(ReportConstants.C_C_DGCONTAINER, aq.getDgContainerCount());
             dict.put(ReportConstants.C_C_DGPACKAGES, aq.getDgPacks());
             dict.put(ReportConstants.C_C_SLACCOUNT, aq.getSlacCount());
+            dict.put(ReportConstants.C_PACK, formatIfPositive(BigDecimal.valueOf(aq.getPacks() != null ? aq.getPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
+            dict.put(ReportConstants.C_PACK_TYPE, masterDataUtils.getPackTypeDesc(aq.getPacksType()));
         }
-
-        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
     }
 
     // Adds reference numbers into the map using their type as a key suffix
@@ -5458,7 +5457,8 @@ public abstract class IReport {
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+    private void addPartyDetails(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+        List<Parties> parties = consolidationDetails.getConsolidationAddresses();
         if (parties == null) {
             return;
         }
@@ -5469,6 +5469,10 @@ public abstract class IReport {
                 dict.put("C_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
             }
         }
+
+        dict.put("C_BorrowedFrom", buildPartyMap(consolidationDetails.getBorrowedFrom()));
+        dict.put("C_Creditor", buildPartyMap(consolidationDetails.getCreditor()));
+        dict.put("C_CoLoadWith", buildPartyMap(consolidationDetails.getCoLoadWith()));
     }
 
     // Adds single agent party (either origin or destination) using a provided key
@@ -5584,25 +5588,11 @@ public abstract class IReport {
             dict = new HashMap<>();
         }
 
-        List<Parties> partiesList = Stream.of(
-                        shipmentDetails.getClient(),
-                        shipmentDetails.getConsignee(),
-                        shipmentDetails.getConsigner(),
-                        shipmentDetails.getAdditionalDetails() != null
-                                ? shipmentDetails.getAdditionalDetails().getNotifyParty()
-                                : null
-                )
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        Optional.ofNullable(shipmentDetails.getShipmentAddresses())
-                .ifPresent(partiesList::addAll);
-
         // Add various grouped information into the map
         addBasicShipmentFields(dict, shipmentDetails);
         addShipmentReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
         addShipmentRoutingDetails(dict, shipmentDetails.getRoutingsList());
-        addShipmentPartyDetails(dict, partiesList);
+        addShipmentPartyDetails(dict, shipmentDetails);
         addShipmentAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getSendingAgent());
         addShipmentAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getReceivingAgent());
         addShipmentBranchAndTriangulationDetails(dict, shipmentDetails);
@@ -5618,6 +5608,12 @@ public abstract class IReport {
         addPartnerFields(dictionary, details, orderDpwMap, orgMap);
         addCutoffFields(dictionary, details);
         addAdditionalFields(dictionary, details);
+        addShipmentCargoSummary(dictionary, details);
+    }
+
+    private void addShipmentCargoSummary(Map<String, Object> dictionary, ShipmentDetails details) {
+        dictionary.put(ReportConstants.S_PACK, formatIfPositive(BigDecimal.valueOf(details.getNoOfPacks() != null ? details.getNoOfPacks() : 0), 0, commonUtils.getCurrentTenantSettings()));
+        dictionary.put(ReportConstants.S_PACK_TYPE, masterDataUtils.getPackTypeDesc(details.getPacksUnit()));
     }
 
     private Map<String, String> extractOrderDpwMap(Map<String, Object> masterDataMap) {
@@ -5774,20 +5770,21 @@ public abstract class IReport {
 
             // Add last pre routing info
             if (lastPre != null) {
-                dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(lastPre.getVesselName()));
+                dict.put(S_R_P_LAST_VESSEL, StringUtility.toUpperCase(masterDataUtil.getVesselName(lastPre.getVesselName())));
                 dict.put(S_R_P_LAST_VOYAGE, StringUtility.toUpperCase(lastPre.getVoyage()));
             }
 
             // Add first pre routing info
             if (firstPre != null) {
-                dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(firstPre.getVesselName()));
+                dict.put(S_R_P_FIRST_VESSEL, StringUtility.toUpperCase(masterDataUtil.getVesselName(firstPre.getVesselName())));
                 dict.put(S_R_P_FIRST_VOYAGE, StringUtility.toUpperCase(firstPre.getVoyage()));
             }
         }
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addShipmentPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+    private void addShipmentPartyDetails(Map<String, Object> dict, ShipmentDetails shipmentDetails) {
+        List<Parties> parties = shipmentDetails.getShipmentAddresses();
         if (parties == null) {
             return;
         }
@@ -5798,6 +5795,15 @@ public abstract class IReport {
                 dict.put("S_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
             }
         }
+        dict.put("S_Client", buildPartyMap(shipmentDetails.getClient()));
+        dict.put("S_Client" + CONTACT, buildPartyContact(shipmentDetails.getClient()));
+        dict.put("S_Consignee", buildPartyMap(shipmentDetails.getConsignee()));
+        dict.put("S_Consignee" + CONTACT, buildPartyContact(shipmentDetails.getConsignee()));
+        dict.put("S_Shipper", buildPartyMap(shipmentDetails.getConsigner()));
+        dict.put("S_Shipper" + CONTACT, buildPartyContact(shipmentDetails.getConsigner()));
+        dict.put("S_NotifyParty", buildPartyMap(shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        dict.put("S_NotifyParty" + CONTACT, buildPartyContact(shipmentDetails.getAdditionalDetails().getNotifyParty()));
+
     }
 
     // Adds single agent party (either origin or destination) using a provided key
@@ -5857,4 +5863,6 @@ public abstract class IReport {
             }
         }
     }
+
+
 }

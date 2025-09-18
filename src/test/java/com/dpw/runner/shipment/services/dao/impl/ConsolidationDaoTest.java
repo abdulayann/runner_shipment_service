@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,11 +89,14 @@ class ConsolidationDaoTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
 
+    private static ObjectMapper objectMapperTest;
+
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
+            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -447,6 +451,7 @@ class ConsolidationDaoTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType("EXP");
+        consolidationDetails.setMawb(consolidationDetails.getBol());
         MawbStocks mawbStocks = jsonTestUtility.getMawbStock();
 
         var spyService = Mockito.spy(consolidationsDao);
@@ -485,8 +490,13 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationDetails.setMawb("MAST77777770");
         consolidationDetails.setShipmentType("IMP");
 
+        ConsolidationDetails oldConsolidationDetails = objectMapperTest.convertValue(testConsol, ConsolidationDetails.class);
+        oldConsolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        oldConsolidationDetails.setMawb(consolidationDetails.getBol());
+        oldConsolidationDetails.setShipmentType("IMP");
+
         var spyService = Mockito.spy(consolidationsDao);
-        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(Optional.of(oldConsolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
 
         mockShipmentSettings();

@@ -367,6 +367,10 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
 
     public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
+    public static final String ERROR_INVALID_REQUEST_DG_APPROVE = "Invalid request for sendEmailForDGApprove";
+    public static final String WARNING_DG_APPROVAL_NOT_REQUIRED = "DG approval not required for Import Shipment";
+    public static final String ERROR_SHIPMENT_NOT_FOUND = "Shipment details not found for ID: ";
+    public static final String ERROR_AUDIT_FAILED = "Audit failed for shipmentId: {} and operation: {}. Error: {}";
     public static final String DESTINATION_AGENT_IS_MANDATORY = "Destination Agent is mandatory";
     public static final String ORIGIN_AGENT_IS_MANDATORY = "Origin Agent is mandatory";
     public static final String ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY = "Origin and Destination Agent are mandatory";

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -8,9 +9,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
@@ -36,11 +40,13 @@ import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -68,6 +74,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -103,6 +110,8 @@ class ShipmentControllerTest {
     private IDpsEventService dpsEventService;
     @InjectMocks
     private ShipmentController shipmentController;
+    @Mock
+    private HttpServletResponse response;
 
     private MockMvc mockMvc;
 
@@ -841,7 +850,7 @@ class ShipmentControllerTest {
     void exportShipmentListTest() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
-        doNothing().when(shipmentService).exportExcel(any(), any());
+        doNothing().when(shipmentService).exportExcel(any(), any(), any());
         // Test
         shipmentController.exportShipmentList(new MockHttpServletResponse(), new AttachListShipmentRequest());
         // Assert
@@ -852,18 +861,90 @@ class ShipmentControllerTest {
     void exportShipmentListTest2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
-        doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any());
+        doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any(), any());
         // Test
         shipmentController.exportShipmentList(new MockHttpServletResponse(), new AttachListShipmentRequest());
         // Assert
         assertTrue(isExecuted);
     }
+    @Test
+    void exportShipmentList_Success_EmailNotSent_ReturnsOk() throws IOException, ExecutionException, InterruptedException, IllegalAccessException {
+        ListCommonRequest  validRequest = new ListCommonRequest();
+        validRequest.setPageNo(1);
+        validRequest.setPageSize(10);
+
+        // Setup common request model
+        CommonRequestModel commonRequestModel =  CommonRequestModel.builder().pageNo(1).count(10).build();
+
+        // Mock MDC for requestId
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class)) {
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+        }
+        // Given
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class);
+             MockedStatic<CommonRequestModel> commonRequestModelMock = mockStatic(CommonRequestModel.class)) {
+
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+            commonRequestModelMock.when(() -> CommonRequestModel.buildRequest(validRequest))
+                    .thenReturn(commonRequestModel);
+
+            doAnswer(invocation -> {
+                ExportExcelResponse exportResponse = invocation.getArgument(2);
+                exportResponse.setEmailSent(false);
+                return null;
+            }).when(shipmentService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+
+            // When
+            ResponseEntity<?> result = shipmentController.exportShipmentList(response, validRequest);
+
+            // Then
+            assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+            verify(shipmentService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+        }
+    }
+
+    @Test
+    void exportShipmentList_Success_EmailSent_ReturnsAccepted() throws IOException, ExecutionException, InterruptedException, IllegalAccessException {
+        ListCommonRequest  validRequest = new ListCommonRequest();
+        validRequest.setPageNo(1);
+        validRequest.setPageSize(10);
+
+        // Setup common request model
+        CommonRequestModel commonRequestModel =  CommonRequestModel.builder().pageNo(1).count(10).build();
+
+        // Mock MDC for requestId
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class)) {
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+        }
+        // Given
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class);
+             MockedStatic<CommonRequestModel> commonRequestModelMock = mockStatic(CommonRequestModel.class)) {
+
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+            commonRequestModelMock.when(() -> CommonRequestModel.buildRequest(validRequest))
+                    .thenReturn(commonRequestModel);
+
+            doAnswer(invocation -> {
+                ExportExcelResponse exportResponse = invocation.getArgument(2);
+                exportResponse.setEmailSent(true);
+                return null;
+            }).when(shipmentService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+
+            // When
+            ResponseEntity<?> result = shipmentController.exportShipmentList(response, validRequest);
+
+            // Then
+            assertThat(result.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+            verify(shipmentService).exportExcel(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+        }
+    }
+
 
     @Test
     void exportShipmentListTest3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
-        doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel(any(), any());
+        doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel(any(), any(), any());
         // Test
         shipmentController.exportShipmentList(new MockHttpServletResponse(), new AttachListShipmentRequest());
         // Assert
@@ -1595,4 +1676,14 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testOceanDGApprovalResponse() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest.builder().build();
+        // Mock
+        when(shipmentService.dgApprovalResponse(request)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.oceanDGApprovalResponse(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

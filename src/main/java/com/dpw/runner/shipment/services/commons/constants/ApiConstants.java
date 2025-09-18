@@ -48,6 +48,7 @@ public class ApiConstants {
     public static final String API_RETRIEVE_BY_ID_EXT = "/retrieve/external/id";
     public  static final String API_RETRIEVE_BY_ID_EXT_PARTIAL = "/retrieve/external/partial/id";
     public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
+    public static final String API_RETRIEVE_BY_UUID = "/retrieve/mdm/uuid";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
@@ -155,6 +156,7 @@ public class ApiConstants {
     public static final String CALCULATE_VOLUMETRIC_WEIGHT = "/calculate-volumetric-weight";
     public static final String POPULATE_CHARGE_TYPE_DETAILS = "/get/chargeType";
     public static final String VALIDATE_IATA_AGENT = "/validate-iata-agent";
+    public static final String VALIDATE_AWB_FOR_ATTACHMENT = "/validate-awb-for-attachment";
     public static final String GET_GUID_BY_ID= "/get/guid";
     public static final String GET_CONTAINER_EDIT_ALLOW= "/get/dg-container/edit-allow";
     public static final String FNM_STATUS_MESSAGE = "/get/fnmStatus";
@@ -178,6 +180,7 @@ public class ApiConstants {
 
     public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
+    public static final String MDM_OCEAN_DG_APPROVAL_RESPONSE = "/MdmDGApprovalResponse";
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 

@@ -87,6 +87,18 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -1855,9 +1867,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Boolean.TRUE.equals(fromConsolidation))
             setContextIfNeededForHub(shipmentRequestedType, consolidationDetails);
 
-        // Validate messaging logic for air consoles
-        awbDao.validateAirMessaging(consolidationId);
-        log.info("Air messaging validated for consolidationId: {}", consolidationId);
 
         ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
 
@@ -2754,9 +2763,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .forEach(consolRoute -> {
                     // Deep copy of the routing object
                     var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
+                    if(Constants.TRANSPORT_MODE_AIR.equals(syncedRoute.getMode()))
+                        syncedRoute.setVoyage(syncedRoute.getFlightNumber());
                     syncedRoute.setConsolidationId(null);
                     syncedRoute.setShipmentId(shipmentDetails.getId());
                     syncedRoute.setBookingId(null);
+                    syncedRoute.setTenantId(shipmentDetails.getTenantId());
                     syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
@@ -4250,8 +4262,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) throws RunnerException {
         consolidationValidationV3Util.validateAirDGPermissionsInDetach(shipmentDetails, consolidationDetails);
-        // Validate messaging logic for air consolidations
-        awbDao.validateAirMessaging(consolidationDetails.getId());
         log.info("{} | validateShipmentDetachment | Air messaging validated for consolidationId: {}", LoggerHelper.getRequestIdFromMDC(), consolidationDetails.getId());
         return validateOutstandingDuesForShipments(shipmentDetails);
     }
@@ -5058,10 +5068,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException, JsonMappingException {
+    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException {
         AchievedQuantities achievedQuantities = consolidationDetails.getAchievedQuantities();
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
-        jsonHelper.updateValue(achievedQuantities, shipmentWtVolResponse);
+        achievedQuantities.setWeightVolume(shipmentWtVolResponse.getWeightVolume());
+        achievedQuantities.setWeightVolumeUnit(shipmentWtVolResponse.getWeightVolumeUnit());
+        achievedQuantities.setPacks(shipmentWtVolResponse.getPacks());
+        achievedQuantities.setPacksType(shipmentWtVolResponse.getPacksType());
+        achievedQuantities.setDgPacks(shipmentWtVolResponse.getDgPacks());
+        achievedQuantities.setDgPacksType(shipmentWtVolResponse.getDgPacksType());
+        achievedQuantities.setSlacCount(shipmentWtVolResponse.getSlacCount());
         achievedQuantities.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
         achievedQuantities.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
         achievedQuantities.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
@@ -5380,6 +5396,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
             response.setMasterDataMap(masterDataResponse);
             setTenantAndDefaultAgent(response);
+            if(Objects.isNull(response.getAllocations())) {
+                response.setAllocations(new AllocationsResponse());
+            }
+            if(Objects.isNull(response.getAchievedQuantities())) {
+                response.setAchievedQuantities(new AchievedQuantitiesResponse());
+            }
+            response.getAllocations().setWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAllocations().setVolumeUnit(VOLUME_UNIT_M3);
+            response.getAllocations().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAllocations().setDgPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setConsolidatedWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAchievedQuantities().setConsolidatedVolumeUnit(VOLUME_UNIT_M3);
+            response.getAchievedQuantities().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setDgPacksType(tenantSettings.getDefaultPackUnit());
             return response;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

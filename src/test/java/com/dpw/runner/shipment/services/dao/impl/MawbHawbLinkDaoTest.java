@@ -17,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +42,13 @@ class MawbHawbLinkDaoTest {
         MawbHawbLink mawbHawbLink = MawbHawbLink.builder().build();
         when(mawbHawbLinkRepository.save(any())).thenReturn(mawbHawbLink);
         assertEquals(mawbHawbLink, mawbHawbLinkDao.save(mawbHawbLink));
+    }
+
+    @Test
+    void saveAll() {
+        List<MawbHawbLink> mawbHawbLink = List.of(MawbHawbLink.builder().build());
+        when(mawbHawbLinkRepository.saveAll(any())).thenReturn(mawbHawbLink);
+        assertEquals(mawbHawbLink, mawbHawbLinkDao.saveAll(mawbHawbLink));
     }
 
     @Test
@@ -70,6 +78,12 @@ class MawbHawbLinkDaoTest {
         MawbHawbLink mawbHawbLink = MawbHawbLink.builder().build();
         mawbHawbLinkDao.delete(mawbHawbLink);
         verify(mawbHawbLinkRepository, times(1)).delete(mawbHawbLink);
+    }
+
+    @Test
+    void deleteByHawbIdsAndMawbIds() {
+        mawbHawbLinkDao.deleteByHawbIdsAndMawbIds(new HashSet<>(), 2L);
+        verify(mawbHawbLinkRepository, times(1)).deleteByHawbIdsAndMawbIds(new HashSet<>(), 2L);
     }
 
     @Test
