@@ -5380,6 +5380,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 default -> throw new ValidationException("Event must be either ATTACH or DETACH");
             }
 
+            triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
+
             return ResponseHelper.buildSuccessResponse();
 
         } catch (Exception ex) {
@@ -5392,7 +5394,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new ValidationException("Shipment GUID cannot be null");
         }
         if (request.getEvent() == null) {
-            throw new ValidationException("Event cannot be null");
+            throw new ValidationException("Event must be either ATTACH / DETACH");
         }
     }
 
