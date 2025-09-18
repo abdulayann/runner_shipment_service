@@ -132,9 +132,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             log.error(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_REQUEST_NULL_ERROR);
         }
-        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
-            throw new ValidationException(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
-        }
 
         Pair<Specification<VerifiedGrossMass>, Pageable> tuple = fetchData(listCommonRequest, VerifiedGrossMass.class, VerifiedGrossMassConstants.tableNames);
         Page<VerifiedGrossMass> verifiedGrossMassPage = verifiedGrossMassDao.findAll(tuple.getLeft(), tuple.getRight());

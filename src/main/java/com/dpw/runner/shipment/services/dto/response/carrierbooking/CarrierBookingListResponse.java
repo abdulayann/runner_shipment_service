@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
@@ -27,7 +28,6 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String bookingOffice;
     private String bookingComment;
     private String carrierComment;
-
     // Relations
     private PartiesResponse requester;
     private PartiesResponse shipper;
@@ -36,15 +36,11 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private List<PartiesResponse> additionalParties;
     private PartiesResponse pickupFrom;
     private PartiesResponse deliveryTo;
-
     private String internalEmails;
     private String externalEmails;
-
     private ShippingInstructionStatus siStatus;
     private VerifiedGrossMassStatus vgmStatus;
-
-    private ShippingInstructionResponse shippingInstruction;
-
+    private SailingInformation sailingInformation;
     private List<CommonContainerResponse> containersList;
     private List<CarrierRoutingResponse> carrierRoutingList;
     private List<ReferenceNumberResponse> referenceNumbersList;
