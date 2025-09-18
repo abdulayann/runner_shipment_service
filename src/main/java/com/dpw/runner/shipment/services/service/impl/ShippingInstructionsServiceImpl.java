@@ -410,9 +410,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             log.error(CARRIER_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
         }
-        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
-            throw new ValidationException(CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE);
-        }
 
         Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
         Page<ShippingInstruction> carrierBookingPage = repository.findAll(tuple.getLeft(), tuple.getRight());
