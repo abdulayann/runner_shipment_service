@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.annotations.RequireApiKey;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -10,10 +13,12 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -102,6 +107,29 @@ public class NetworkTransferController {
     public ResponseEntity<IRunnerResponse> createExternal(@RequestBody @Valid NetworkTransferRequest networkTransferRequest) {
         String responseMessage;
         try {
+            return networkTransferService.createExternal(CommonRequestModel.buildRequest(networkTransferRequest));
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @RequireApiKey
+    @ExcludeTimeZone
+    @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE)
+    public ResponseEntity<IRunnerResponse> createExternalViaBridge(@RequestBody @Valid NetworkTransferRequest networkTransferRequest) {
+        String responseMessage;
+        try {
+            TenantContext.setCurrentTenant(networkTransferRequest.getTenantId());
+            UsersDto usersDto = new UsersDto();
+            usersDto.setTenantId(networkTransferRequest.getTenantId());
+            UserContext.setUser(usersDto);
             return networkTransferService.createExternal(CommonRequestModel.buildRequest(networkTransferRequest));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()
