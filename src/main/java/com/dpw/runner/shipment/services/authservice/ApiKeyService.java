@@ -15,6 +15,10 @@ public class ApiKeyService {
 
     private Set<String> validApiKeys;
 
+    public ApiKeyService(Set<String> validKeys) {
+        this.validApiKeys = validKeys;
+    }
+
     @PostConstruct
     public void init() {
         validApiKeys = Set.of(xApiKey);
