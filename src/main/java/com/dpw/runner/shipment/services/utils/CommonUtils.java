@@ -42,6 +42,10 @@ import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonPackageResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -226,6 +230,28 @@ public class CommonUtils {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private static final Map<Class<?>, Type> DTO_TYPE_MAP = new HashMap<>();
+
+    static {
+        DTO_TYPE_MAP.put(Containers.class, new TypeToken<List<ContainerResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(BookingCarriage.class, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ELDetails.class, new TypeToken<List<ELDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Events.class, new TypeToken<List<EventsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Packing.class, new TypeToken<List<PackingResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ReferenceNumbers.class, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Routings.class, new TypeToken<List<RoutingsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ServiceDetails.class, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(TruckDriverDetails.class, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Notes.class, new TypeToken<List<NotesResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Jobs.class, new TypeToken<List<JobResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ConsolidationDetails.class, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(Parties.class, new TypeToken<List<PartiesResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CarrierRouting.class, new TypeToken<List<CarrierRoutingResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CommonContainers.class, new TypeToken<List<CommonContainerResponse>>() {}.getType());
+        DTO_TYPE_MAP.put(CommonPackages.class, new TypeToken<List<CommonPackageResponse>>() {}.getType());
+    }
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -2859,6 +2885,8 @@ public class CommonUtils {
         } else if (value instanceof Packing) {
             // Handle single Packing object
             return modelMapper.map(value, PackingResponse.class);
+        } else if (value instanceof SailingInformation) {
+            return modelMapper.map(value, SailingInformationResponse.class);
         } else if (value instanceof List<?>) {
             return mapListToDTO(value);
         } else if (value instanceof Set) {
@@ -2953,52 +2981,11 @@ public class CommonUtils {
         List<?> list = (List<?>) value;
         if (list.isEmpty()) return value;
 
-        Object firstElement = list.get(0);
-
-        if (firstElement instanceof Containers) {
-            return modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof BookingCarriage) {
-            return modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ELDetails) {
-            return modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Events) {
-            return modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Packing) {
-            // Handle List of Packing objects (this should cover packingList)
-            return modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ReferenceNumbers) {
-            return modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Routings) {
-            return modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ServiceDetails) {
-            return modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof TruckDriverDetails) {
-            return modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Notes) {
-            return modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Jobs) {
-            return modelMapper.map(value, new TypeToken<List<JobResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ConsolidationDetails) {
-            return modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof Parties) {
-            return modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
-            }.getType());
-        } else if (firstElement instanceof ShipmentOrder) {
-            return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
-            }.getType());
+        Type targetType = DTO_TYPE_MAP.get(list.get(0).getClass());
+        if (targetType != null) {
+            return modelMapper.map(value, targetType);
         }
+
         return checkForTriangulationPartnerList(value, list);
     }
 
@@ -4333,4 +4320,113 @@ public class CommonUtils {
             throw new ValidationException("Invalid Type");
         }
     }
+    public LocalDateTime convertToLocalDateTimeFromInttra(String dateValue, String dateFormat) {
+        if (dateValue == null || dateValue.trim().isEmpty()) {
+            return null;
+        }
+
+        if (dateFormat == null || dateFormat.trim().isEmpty()) {
+            log.error("Date format cannot be null or empty");
+            return null;
+        }
+
+        dateValue = dateValue.trim();
+        dateFormat = dateFormat.trim().toUpperCase();
+
+        try {
+            if ("CCYYMMDDHHMM".equals(dateFormat)) {
+                return parseCCYYMMDDHHMM(dateValue);
+            } else if ("CCYYMMDD".equals(dateFormat)) {
+                return parseCCYYMMDD(dateValue);
+            } else {
+                log.error("Unsupported date format: {}", dateFormat);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Error parsing date value: {} with format: {} - {}", dateValue, dateFormat, e.getMessage());
+            return null;
+        }
+    }
+
+    private LocalDateTime parseCCYYMMDDHHMM(String dateValue) {
+        if (dateValue.length() != 12) {
+            log.error("Date value length must be 12 for CCYYMMDDHHMM format, but was {}, value: {}",
+                    dateValue.length(), dateValue);
+            return null;
+        }
+
+        // Parse CCYYMMDDHHMM format: 202008281530
+        String year = dateValue.substring(0, 4);    // 2020
+        String month = dateValue.substring(4, 6);   // 08
+        String day = dateValue.substring(6, 8);     // 28
+        String hour = dateValue.substring(8, 10);   // 15
+        String minute = dateValue.substring(10, 12); // 30
+
+        // Validate and convert
+        int yearInt = Integer.parseInt(year);
+        int monthInt = Integer.parseInt(month);
+        int dayInt = Integer.parseInt(day);
+        int hourInt = Integer.parseInt(hour);
+        int minuteInt = Integer.parseInt(minute);
+
+        if (!isValidDate(yearInt, monthInt, dayInt) || !isValidTime(hourInt, minuteInt)) {
+            return null;
+        }
+
+        return LocalDateTime.of(yearInt, monthInt, dayInt, hourInt, minuteInt);
+    }
+
+    private LocalDateTime parseCCYYMMDD(String dateValue) {
+        if (dateValue.length() != 8) {
+            log.error("Date value length must be 8 for CCYYMMDD format, but was {}, value: {}",
+                    dateValue.length(), dateValue);
+            return null;
+        }
+
+        // Parse CCYYMMDD format: 20200828
+        String year = dateValue.substring(0, 4);    // 2020
+        String month = dateValue.substring(4, 6);   // 08
+        String day = dateValue.substring(6, 8);     // 28
+
+        // Validate and convert
+        int yearInt = Integer.parseInt(year);
+        int monthInt = Integer.parseInt(month);
+        int dayInt = Integer.parseInt(day);
+
+        if (!isValidDate(yearInt, monthInt, dayInt)) {
+            return null;
+        }
+
+        // Default time to start of day (00:00)
+        return LocalDateTime.of(yearInt, monthInt, dayInt, 0, 0);
+    }
+
+    private boolean isValidDate(int year, int month, int day) {
+        if (month < 1 || month > 12) {
+            log.error("Invalid month: {}", month);
+            return false;
+        }
+        if (day < 1 || day > 31) {
+            log.error("Invalid day: {}", day);
+            return false;
+        }
+        log.debug("year: {}, month: {}, day: {}", year, month, day);
+        // Additional validation for days in month could be added here
+        // For now, basic range validation is sufficient
+
+        return true;
+    }
+
+    private boolean isValidTime(int hour, int minute) {
+        if (hour < 0 || hour > 23) {
+            log.error("Invalid hour: {}", hour);
+            return false;
+        }
+        if (minute < 0 || minute > 59) {
+            log.error("Invalid minute: {}", minute);
+            return false;
+        }
+        return true;
+    }
+
 }
