@@ -726,6 +726,9 @@ public class Constants {
     public static final String TENANTS = "Tenants";
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
+    public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
+    public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
+
     public static final String PROD_ENV = "prod";
     public static final String DEMO_ENV = "demo";
     public static final String CONTRACT_TYPE = "CONTRACT";

@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
@@ -112,6 +113,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -131,6 +133,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -138,6 +141,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -392,6 +396,11 @@ public class ShipmentService implements IShipmentService {
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
+    @Autowired
+    @Qualifier("redisTemplateExport")
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private CustomKeyGenerator customKeyGenerator;
 
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
@@ -4047,6 +4056,20 @@ public class ShipmentService implements IShipmentService {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
         }
+        String username = UserContext.getUser().getUsername();
+        String expireTime = applicationConfigService.getValue(Constants.EXPORT_EXCEL_EXPIRE_TIME);
+        int defaultTime = 10;
+        if (StringUtility.isNotEmpty(expireTime)) {
+            defaultTime = Integer.valueOf(expireTime);
+        }
+        StringBuilder key = customKeyGenerator.cacheBaseKey();
+        key = key.append(EXPORT_EXCEL_CACHE_KEY).append(username).append(UserContext.getUser().getTenantId());
+        Object value = redisTemplate.opsForValue().get(key.toString());
+        if (Objects.nonNull(value)) {
+            Long minutes = redisTemplate.getExpire(key.toString(), TimeUnit.MINUTES);
+            throw new ValidationException("The export will be available in approximately "+ minutes + " minutes. Please try again after that time.");
+        }
+        redisTemplate.opsForValue().set(key.toString(), username, Duration.ofMinutes(defaultTime));
 
         String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
         Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
