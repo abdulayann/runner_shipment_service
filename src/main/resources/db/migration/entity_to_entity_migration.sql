@@ -19,32 +19,6 @@ FROM __SCHEMA__.air_messaging_logs AS saml
 WHERE aml.id = saml.id AND saml.tenant_id = __TENANT_ID__;
 
 
-UPDATE public.audit_log SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
-UPDATE public.audit_log AS al
-SET
-    guid = sal.guid,
-    operation = sal.operation,
-    entity = sal.entity,
-    entity_id = sal.entity_id,
-    changes = sal.changes,
-    entity_type = sal.entity_type,
-    parent_type = sal.parent_type,
-    parent_id = sal.parent_id,
-    tenant_id = sal.tenant_id,
-    created_at = sal.created_at,
-    created_by = sal.created_by,
-    updated_at = sal.updated_at,
-    updated_by = sal.updated_by,
-    is_deleted = sal.is_deleted,
-    data_type = sal.data_type,
-    flow = sal.flow,
-    is_integration_log = sal.is_integration_log
-FROM __SCHEMA__.audit_log AS sal
-WHERE al.id = sal.id AND sal.tenant_id = __TENANT_ID__;
-
-
-
-
 UPDATE public.awb SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
 UPDATE public.awb AS pawb
 SET
