@@ -61,7 +61,7 @@ public class OrderManagementDTO implements IRunnerResponse {
     public String shipmentATD;
     private String terminalCutOffDate;
     private List<PackingV3Request> orderLines;
-    private String shipmentType;
+    private String direction;
     private List<OrderContainerResponse> containers;
     private List<OrderEventsResponse> events;
     private List<OrderDocumentResponse> documents;

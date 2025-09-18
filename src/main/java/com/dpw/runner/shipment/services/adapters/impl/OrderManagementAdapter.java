@@ -229,7 +229,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
                 .serviceMode(order.getServiceMode())
                 .incoTerms(order.getIncoTerm())
                 .referenceNumbersList(fetchReferenceNumberResponseListForOrderV3(order))
-                .direction(order.getShipmentType())
+                .direction(order.getDirection())
                 .build();
         for (Map.Entry<String, OrderPartiesResponse> entry : partyCodeMap.entrySet()) {
             String partyCode = entry.getKey();
