@@ -238,7 +238,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 carrierBookingPage.getTotalElements());
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
+    public List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
                                                              Set<String> includeColumns) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<CarrierBookingListResponse> carrierBookingListResponses = new ArrayList<>();
