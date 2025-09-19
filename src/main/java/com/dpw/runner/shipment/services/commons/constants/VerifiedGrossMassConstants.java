@@ -19,6 +19,9 @@ public class VerifiedGrossMassConstants {
     public static final String CLOSING_DATE = "ClosingDate";
     public static final String EMPTY_PICKUP_DATE = "EmptyPickupDate";
     public static final String HAULAGE_PARTY = "haulageParty";
+    public static final String INTTRA = "INTTRA";
+    public static final String AMEND = "Amend";
+    public static final String ORIGINAL = "Original";
     public static final String MAIN_CARRIAGE = "MainCarriage";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
@@ -36,6 +39,7 @@ public class VerifiedGrossMassConstants {
     public static final String CARRIER_BOOKING_LIST_SUCCESSFUL = "Successful Verified Gross Mass Data List Retrieval";
     public static final String VERIFIED_GROSS_MASS_DELETE_SUCCESSFUL = "Successful Verified Gross Mass Delete";
     public static final String VERIFIED_GROSS_MASS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Verified Gross Mass Data Retrieval By Id";
+    public static final String VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL = "Successful Verified Gross Margin Operation: ";
 
     public static final String CARRIER_BOOKING_ID = "Verified Gross Mass Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
