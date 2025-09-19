@@ -8874,11 +8874,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
 
         QuoteResetField polField = response.getQuotesResetFields().stream()
-                .filter(f -> f.getFieldName().equals("POL"))
+                .filter(f -> f.getLabel().equals("POL"))
                 .findFirst()
                 .orElseThrow();
         QuoteResetField podField = response.getQuotesResetFields().stream()
-                .filter(f -> f.getFieldName().equals("POD"))
+                .filter(f -> f.getLabel().equals("POD"))
                 .findFirst()
                 .orElseThrow();
 
@@ -8902,11 +8902,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
 
         QuoteResetField polField = response.getQuotesResetFields().stream()
-                .filter(f -> f.getFieldName().equals("POL"))
+                .filter(f -> f.getLabel().equals("POL"))
                 .findFirst()
                 .orElseThrow();
         QuoteResetField podField = response.getQuotesResetFields().stream()
-                .filter(f -> f.getFieldName().equals("POD"))
+                .filter(f -> f.getLabel().equals("POD"))
                 .findFirst()
                 .orElseThrow();
 
