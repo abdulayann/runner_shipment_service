@@ -14,10 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -57,7 +54,12 @@ import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -68,6 +70,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     public static final String PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG = "Payload sent for event: {} with request payload: {}";
     public static final String NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG = "NPM Fetch contract failed due to: {}";
+    public static final String NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG = "NPM Fetch contract failed for party due to: {}";
     public static final String ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG = "Error from NPM while fetching contracts: ";
     public static final String LOCATIONS_REFERENCE_GUID = "LocationsReferenceGUID";
     @Value("${NPM.BaseUrl}")
@@ -140,6 +143,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     private IQuoteContractsService quoteContractsService;
 
+    @Autowired
+    @Qualifier("executorService")
+    private ExecutorService executorService;
+
     @Override
     public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
@@ -182,7 +189,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) {
         try {
             ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
             ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
@@ -813,6 +820,80 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.error("NPM Fetch MultiLang Charge Code failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException("Error from NPM while fetching MultiLang Charge Code: " + npmErrorResponse.getErrorMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchContractsCountForParties(CommonRequestModel commonRequestModel) {
+        GetContractsCountForPartiesRequest request = (GetContractsCountForPartiesRequest) commonRequestModel.getData();
+
+        Map<String, ListContractRequest> uniqueParties = request.getContractsCountRequests().stream()
+                .collect(Collectors.toMap(
+                        ListContractRequest::getCustomer_org_id,
+                        Function.identity(),
+                        (existing, duplicate) -> existing
+                ));
+
+        List<CompletableFuture<PartyContractsCountResponse>> futures = uniqueParties.values().stream()
+                .map(partyRequest -> CompletableFuture.supplyAsync(
+                        masterDataUtils.withMdcSupplier(() -> fetchContractsCountForParty(request, partyRequest)),
+                        executorService
+                ))
+                .toList();
+
+        List<PartyContractsCountResponse> results = futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+
+        int totalContractsCount = results.stream()
+                .mapToInt(PartyContractsCountResponse::getContractCount)
+                .sum();
+
+        GetContractsCountForPartiesResponse response = GetContractsCountForPartiesResponse.builder()
+                .partyContractsCount(results)
+                .totalContractCount(totalContractsCount)
+                .build();
+
+        return ResponseHelper.buildDependentServiceResponse(response, 0, 0);
+    }
+
+    /**
+     * Fetch contracts count for a single party.
+     */
+    private PartyContractsCountResponse fetchContractsCountForParty(GetContractsCountForPartiesRequest getContractsCountForPartiesRequest, ListContractRequest partyRequest) {
+        try {
+            ListContractsWithFilterRequest filterRequest = buildFilterRequest(getContractsCountForPartiesRequest, partyRequest);
+
+            ResponseEntity<IRunnerResponse> response = this.fetchContracts(CommonRequestModel.buildRequest(filterRequest));
+
+            DependentServiceResponse dependentResponse = (DependentServiceResponse) response.getBody();
+
+            List<NPMContractsRunnerResponse> contracts = (dependentResponse != null && dependentResponse.getData() != null)
+                    ? jsonHelper.convertValueToList(dependentResponse.getData(), NPMContractsRunnerResponse.class)
+                    : Collections.emptyList();
+
+            return PartyContractsCountResponse.builder()
+                    .customerOrgId(partyRequest.getCustomer_org_id())
+                    .contractCount(contracts.size())
+                    .build();
+
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error(NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    /**
+     * Build filter request from base request and party request.
+     */
+    private ListContractsWithFilterRequest buildFilterRequest(GetContractsCountForPartiesRequest getContractsCountForPartiesRequest, ListContractRequest partyRequest) {
+        ListContractsWithFilterRequest filterRequest = new ListContractsWithFilterRequest();
+        filterRequest.setCargoType(getContractsCountForPartiesRequest.getCargoType());
+        filterRequest.setDestination(getContractsCountForPartiesRequest.getDestination());
+        filterRequest.setOrigin(getContractsCountForPartiesRequest.getOrigin());
+        filterRequest.setIsDgEnabled(getContractsCountForPartiesRequest.getIsDgEnabled());
+        filterRequest.setListContractRequest(partyRequest);
+        return filterRequest;
     }
 
     private void mapContractToShipment(ShipmentDetailsResponse shipmentResponse, ListContractResponse contractResponse) {

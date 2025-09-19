@@ -45,6 +45,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -1897,6 +1898,29 @@ public class MasterDataUtils{
                 UserContext.removeUser();
             }
 
+        };
+    }
+
+    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext1 = UserContext.getUser();
+
+        return () -> {
+            try {
+                if (mdc != null) {
+                    MDC.setContextMap(mdc);
+                } else {
+                    MDC.clear();
+                }
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext1);
+                return supplier.get();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
         };
     }
 
