@@ -910,25 +910,28 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         boolean hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
                 .map(Routings::getCarriage)
                 .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
-        QuoteResetRulesResponse quoteResetRulesResponse = new QuoteResetRulesResponse();
-        quoteResetRulesResponse.setQuotePartyResetFlag(Boolean.TRUE);
-        quoteResetRulesResponse.setTransportModeResetFlag(Boolean.FALSE);
-        quoteResetRulesResponse.setCargoTypeResetFlag(Boolean.FALSE);
-        quoteResetRulesResponse.setServiceTypeResetFlag(Boolean.TRUE);
-        quoteResetRulesResponse.setOriginResetFlag(Boolean.TRUE);
-        quoteResetRulesResponse.setDestinationResetFlag(Boolean.TRUE);
-        quoteResetRulesResponse.setSalesBranchResetFlag(Boolean.FALSE);
-        quoteResetRulesResponse.setPrimaryEmailResetFlag(Boolean.FALSE);
-        quoteResetRulesResponse.setSecondaryEmailResetFlag(Boolean.FALSE);
 
-        if(!hasMainCarriage) {
-            quoteResetRulesResponse.setPolResetFlag(Boolean.TRUE);
-            quoteResetRulesResponse.setPodResetFlag(Boolean.TRUE);
+        List<QuoteResetField> quoteResetFields = new ArrayList<>();
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Quote Party").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Transport Mode").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Cargo Type").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Service Type").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Origin").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Destination").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Sales Branch").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Primary Email").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Secondary Email").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Incoterms").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().fieldName("Payment term").editable(true).selected(true).build());
+
+        if (!hasMainCarriage) {
+            quoteResetFields.add(QuoteResetField.builder().fieldName("POL").editable(true).selected(true).build());
+            quoteResetFields.add(QuoteResetField.builder().fieldName("POD").editable(true).selected(true).build());
         } else {
-            quoteResetRulesResponse.setPolResetFlag(Boolean.FALSE);
-            quoteResetRulesResponse.setPodResetFlag(Boolean.FALSE);
+            quoteResetFields.add(QuoteResetField.builder().fieldName("POL").editable(false).selected(false).build());
+            quoteResetFields.add(QuoteResetField.builder().fieldName("POD").editable(false).selected(false).build());
         }
-        return quoteResetRulesResponse;
+        return new QuoteResetRulesResponse(quoteResetFields);
     }
 
     public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {

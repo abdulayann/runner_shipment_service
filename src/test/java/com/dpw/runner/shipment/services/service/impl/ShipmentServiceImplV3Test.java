@@ -8865,7 +8865,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         Long shipmentId = 2L;
 
         Routings routings = new Routings();
-        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE); // No MAIN_CARRIAGE
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setRoutingsList(List.of(routings));
 
@@ -8873,8 +8873,19 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
 
-        assertTrue(response.getPolResetFlag());
-        assertTrue(response.getPodResetFlag());
+        QuoteResetField polField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getFieldName().equals("POL"))
+                .findFirst()
+                .orElseThrow();
+        QuoteResetField podField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getFieldName().equals("POD"))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(polField.isEditable());
+        assertTrue(polField.isSelected());
+        assertTrue(podField.isEditable());
+        assertTrue(podField.isSelected());
     }
 
     @Test
@@ -8890,8 +8901,19 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
 
-        assertFalse(response.getPolResetFlag());
-        assertFalse(response.getPodResetFlag());
+        QuoteResetField polField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getFieldName().equals("POL"))
+                .findFirst()
+                .orElseThrow();
+        QuoteResetField podField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getFieldName().equals("POD"))
+                .findFirst()
+                .orElseThrow();
+
+        assertFalse(polField.isEditable());
+        assertFalse(polField.isSelected());
+        assertFalse(podField.isEditable());
+        assertFalse(podField.isSelected());
     }
 
 }

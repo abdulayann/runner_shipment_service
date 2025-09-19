@@ -78,6 +78,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -4472,20 +4473,35 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         Long bookingId = 123L;
 
         QuoteResetRulesResponse response = customerBookingService.resetBookingQuoteRules(bookingId);
+        List<QuoteResetField> fields = response.getQuotesResetFields();
 
-        // Assert TRUE flags
-        assertTrue(response.getQuotePartyResetFlag());
-        assertTrue(response.getTransportModeResetFlag());
-        assertTrue(response.getCargoTypeResetFlag());
-        assertTrue(response.getServiceTypeResetFlag());
-        assertTrue(response.getOriginResetFlag());
-        assertTrue(response.getPolResetFlag());
-        assertTrue(response.getPodResetFlag());
-        assertTrue(response.getDestinationResetFlag());
+        Map<String, QuoteResetField> fieldMap = fields.stream()
+                .collect(Collectors.toMap(QuoteResetField::getFieldName, f -> f));
 
-        // Assert FALSE flags
-        assertFalse(response.getSalesBranchResetFlag());
-        assertFalse(response.getPrimaryEmailResetFlag());
-        assertFalse(response.getSecondaryEmailResetFlag());
+        assertTrue(fieldMap.get("Quote Party").isSelected());
+        assertTrue(fieldMap.get("Transport Mode").isSelected());
+        assertTrue(fieldMap.get("Cargo Type").isSelected());
+        assertTrue(fieldMap.get("Service Type").isSelected());
+        assertTrue(fieldMap.get("Origin").isSelected());
+        assertTrue(fieldMap.get("POL").isSelected());
+        assertTrue(fieldMap.get("POD").isSelected());
+        assertTrue(fieldMap.get("Destination").isSelected());
+        assertTrue(fieldMap.get("Incoterms").isSelected());
+        assertTrue(fieldMap.get("Payment Term").isSelected());
+
+        assertTrue(fieldMap.get("Sales Branch").isSelected());
+        assertTrue(fieldMap.get("Primary Email").isSelected());
+        assertTrue(fieldMap.get("Secondary Email").isSelected());
+
+        assertFalse(fieldMap.get("Sales Branch").isEditable());
+        assertFalse(fieldMap.get("Primary Email").isEditable());
+        assertFalse(fieldMap.get("Secondary Email").isEditable());
+
+        assertTrue(fieldMap.get("Quote Party").isEditable());
+        assertTrue(fieldMap.get("Service Type").isEditable());
+        assertTrue(fieldMap.get("Origin").isEditable());
+        assertTrue(fieldMap.get("Destination").isEditable());
+        assertTrue(fieldMap.get("Incoterms").isEditable());
+        assertTrue(fieldMap.get("Payment Term").isEditable());
     }
 }
