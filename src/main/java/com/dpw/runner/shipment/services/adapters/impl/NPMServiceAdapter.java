@@ -57,7 +57,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -823,20 +822,35 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> fetchContractsCountForParties(CommonRequestModel commonRequestModel) {
         GetContractsCountForPartiesRequest request = (GetContractsCountForPartiesRequest) commonRequestModel.getData();
+        List<String> uniqueOrgIds = Optional.ofNullable(request.getCustomerOrgIds())
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
-        Map<String, ListContractRequest> uniqueParties = request.getContractsCountRequests().stream()
-                .collect(Collectors.toMap(
-                        ListContractRequest::getCustomer_org_id,
-                        Function.identity(),
-                        (existing, duplicate) -> existing
-                ));
+        List<ListContractRequest> partyRequests = uniqueOrgIds.stream()
+                .map(orgId -> ListContractRequest.builder()
+                        .customer_org_id(orgId)
+                        .filter_attributes(request.getContractsCountRequests().getFilter_attributes())
+                        .filter_contract_id(request.getContractsCountRequests().getFilter_contract_id())
+                        .filter_contract_states(request.getContractsCountRequests().getFilter_contract_states())
+                        .filter_per_page_records(request.getContractsCountRequests().getFilter_per_page_records())
+                        .filter_start_date(request.getContractsCountRequests().getFilter_start_date())
+                        .org_role(request.getContractsCountRequests().getOrg_role())
+                        .build()
+                )
+                .toList();
 
-        List<CompletableFuture<PartyContractsCountResponse>> futures = uniqueParties.values().stream()
+        List<CompletableFuture<PartyContractsCountResponse>> futures = partyRequests.stream()
                 .map(partyRequest -> CompletableFuture.supplyAsync(
                         masterDataUtils.withMdcSupplier(() -> fetchContractsCountForParty(request, partyRequest)),
                         executorService
                 ))
                 .toList();
+
+        CompletableFuture<Void> completableFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        completableFutures.join();
 
         List<PartyContractsCountResponse> results = futures.stream()
                 .map(CompletableFuture::join)
