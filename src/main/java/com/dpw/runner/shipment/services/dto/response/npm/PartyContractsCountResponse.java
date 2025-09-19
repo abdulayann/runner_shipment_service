@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PartyContractsCountResponse {
+public class PartyContractsCountResponse implements IRunnerResponse {
     private String customerOrgId;
     private int contractCount;
 }
