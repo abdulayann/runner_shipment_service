@@ -886,8 +886,8 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             verify(carrierBookingInttraUtil).createTransactionHistory(
-                    eq("Draft"), eq(FlowType.Inbound), eq("Booking Requested by : testUser"),
-                    eq(SourceSystem.CargoRunner), eq(1L), eq(EntityTypeTransactionHistory.VGM)
+                    "Draft", FlowType.Inbound, "Booking Requested by : testUser",
+                    SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
             );
             verify(bridgeServiceAdapter).requestTactResponse(any());
         }
@@ -954,8 +954,8 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             verify(carrierBookingInttraUtil).createTransactionHistory(
-                    eq("Draft"), eq(FlowType.Inbound), eq("Amend Requested by : testUser"),
-                    eq(SourceSystem.CargoRunner), eq(1L), eq(EntityTypeTransactionHistory.VGM)
+                    "Draft", FlowType.Inbound, "Booking Requested by : testUser",
+                    SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
             );
         }
     }

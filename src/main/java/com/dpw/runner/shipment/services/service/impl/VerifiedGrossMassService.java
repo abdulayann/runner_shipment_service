@@ -523,8 +523,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             verifiedGrossMassInttraResponse.setCarrierBookingNo(verifiedGrossMass.getCarrierBookingNo());
             verifiedGrossMassInttraResponse.setSubmitterReference(verifiedGrossMass.getCarrierBookingNo());
 
-            verifiedGrossMassMasterDataHelper.populateCarrierDetails(
-                    verifiedGrossMassMasterDataHelper.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
+            verifiedGrossMassUtil.populateCarrierDetails(
+                    verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
                     verifiedGrossMassInttraResponse);
 
             // Generates number between 10000 and 99999 and set fileName

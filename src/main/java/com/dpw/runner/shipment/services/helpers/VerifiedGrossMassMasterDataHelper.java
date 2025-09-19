@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
@@ -114,51 +113,6 @@ public class VerifiedGrossMassMasterDataHelper {
             masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in Carrier Booking: addAllUnlocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
-        }
-    }
-
-    public Map<String,EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(VerifiedGrossMass verifiedGrossMass) {
-
-        Map<String, EntityTransferCarrier> carrierDatav1Map = new HashMap<>();
-        try {
-            Map<String, Object> cacheMap = new HashMap<>();
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            Set<String> carrierList = new HashSet<>();
-            if (!Objects.isNull(verifiedGrossMass.getSailingInformation())) {
-                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest((IRunnerResponse) verifiedGrossMass.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
-            }
-            if (CollectionUtils.isEmpty(carrierList)) {
-                return new HashMap<>();
-            }
-            carrierDatav1Map = masterDataUtils.fetchInBulkCarriers(carrierList);
-            return carrierDatav1Map;
-
-        } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
-        }
-        return carrierDatav1Map;
-    }
-
-    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {
-
-        if (Objects.isNull(carrierDatav1Map)) return;
-
-        // Process each carrier and fetch the required details
-        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
-            EntityTransferCarrier carrier = entry.getValue();
-
-            String carrierScacCode = carrier.ItemValue;
-            String carrierDescription = carrier.ItemDescription;
-            String carrierNotificationContact = carrier.Email;
-            String carrierContactPerson = carrier.CarrierContactPerson;
-
-            // Set the fetched details in the VerifiedGrossMassInttraResponse
-            verifiedGrossMassInttraResponse.setCarrierScacCode(carrierScacCode);
-            verifiedGrossMassInttraResponse.setCarrierDescription(carrierDescription);
-            if (Objects.nonNull(verifiedGrossMassInttraResponse.getCarrierNotificationContact())) {
-                verifiedGrossMassInttraResponse.getCarrierNotificationContact().setUsername(carrierContactPerson);
-                verifiedGrossMassInttraResponse.getCarrierNotificationContact().setEmails(carrierNotificationContact);
-            }
         }
     }
 
