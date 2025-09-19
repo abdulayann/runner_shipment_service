@@ -1467,10 +1467,10 @@ class NPMServiceAdapterTest {
                 .when(spyService).fetchContracts(any(CommonRequestModel.class));
 
         ListContractRequest listContractRequest = new ListContractRequest();
-        listContractRequest.setCustomer_org_id("FRC0000123");
 
         GetContractsCountForPartiesRequest request = new GetContractsCountForPartiesRequest();
-        request.setContractsCountRequests(List.of(listContractRequest));
+        request.setContractsCountRequest(listContractRequest);
+        request.setCustomerOrgIds(List.of("FRC0000678"));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder()
                 .data(request)
@@ -1478,7 +1478,6 @@ class NPMServiceAdapterTest {
 
         var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
 
-        // Should handle null response body gracefully
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
         GetContractsCountForPartiesResponse actualData =
@@ -1503,7 +1502,6 @@ class NPMServiceAdapterTest {
                     return supplier;
                 });
 
-        // Create response data
         List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
                 NPMContractsRunnerResponse.builder().build(),
                 NPMContractsRunnerResponse.builder().build()
@@ -1519,34 +1517,23 @@ class NPMServiceAdapterTest {
         when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
                 .thenReturn(mockContracts);
 
-        // Create requests with duplicate customer_org_ids
-        ListContractRequest request1 = new ListContractRequest();
-        request1.setCustomer_org_id("FRC0000123");
-
-        ListContractRequest request2 = new ListContractRequest();
-        request2.setCustomer_org_id("FRC0000123"); // Duplicate!
-
-        ListContractRequest request3 = new ListContractRequest();
-        request3.setCustomer_org_id("FRC0000456");
-
-        GetContractsCountForPartiesRequest mainRequest = new GetContractsCountForPartiesRequest();
-        mainRequest.setContractsCountRequests(List.of(request1, request2, request3));
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest = new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000123", "FRC0000456"));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .data(mainRequest)
+                .data(getContractsCountForPartiesRequest)
                 .build();
 
         var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
 
-        // Verify that duplicates are handled (should only process unique parties)
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
         GetContractsCountForPartiesResponse actualData =
                 (GetContractsCountForPartiesResponse) actualResponse.getData();
 
-        // Should only have 2 unique parties (FRC0000123 and FRC0000456)
         assertEquals(2, actualData.getPartyContractsCount().size());
-        assertEquals(4, actualData.getTotalContractCount()); // 2 contracts per party
+        assertEquals(4, actualData.getTotalContractCount());
     }
 
     @Test
@@ -1576,20 +1563,10 @@ class NPMServiceAdapterTest {
         doReturn(ResponseEntity.ok(dependentResponse))
                 .when(spyService).fetchContracts(any(CommonRequestModel.class));
 
-        // Mock JSON helper to return NPMContractsRunnerResponse list
         when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
                 .thenReturn(mockContracts);
 
         when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
-
-        ListContractRequest listContractRequest1 = new ListContractRequest();
-        listContractRequest1.setCustomer_org_id("FRC0000123");
-
-        ListContractRequest listContractRequest2 = new ListContractRequest();
-        listContractRequest2.setCustomer_org_id("FRC0000456");
-
-        ListContractRequest listContractRequest3 = new ListContractRequest();
-        listContractRequest3.setCustomer_org_id("FRC0000678");
 
         GetContractsCountForPartiesRequest getContractsCountForPartiesRequest =
                 new GetContractsCountForPartiesRequest();
@@ -1597,9 +1574,8 @@ class NPMServiceAdapterTest {
         getContractsCountForPartiesRequest.setOrigin("origin");
         getContractsCountForPartiesRequest.setCargoType("FCL");
         getContractsCountForPartiesRequest.setIsDgEnabled(Boolean.TRUE);
-        getContractsCountForPartiesRequest.setContractsCountRequests(
-                List.of(listContractRequest1, listContractRequest2, listContractRequest3)
-        );
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000678", "FRC0000456"));
 
         CommonRequestModel commonRequestModel =
                 CommonRequestModel.builder().data(getContractsCountForPartiesRequest).build();
