@@ -38,13 +38,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -181,10 +181,8 @@ public class MasterDataUtils{
     }
 
     private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-       if(!CollectionUtils.isEmpty(response.getCarrierRoutingList())) {
-           for(CarrierRoutingResponse carrierRouting: response.getCarrierRoutingList()) {
-               locCodes.addAll(createInBulkUnLocationsRequest(carrierRouting, CarrierRouting.class, fieldNameKeyMap, CarrierRouting.class.getSimpleName() + carrierRouting.getId(), cacheMap));
-           }
+       if(Objects.nonNull(response.getSailingInformation())) {
+           locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
        }
 
         locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));
@@ -1897,6 +1895,29 @@ public class MasterDataUtils{
                 UserContext.removeUser();
             }
 
+        };
+    }
+
+    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext1 = UserContext.getUser();
+
+        return () -> {
+            try {
+                if (mdc != null) {
+                    MDC.setContextMap(mdc);
+                } else {
+                    MDC.clear();
+                }
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext1);
+                return supplier.get();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
         };
     }
 
