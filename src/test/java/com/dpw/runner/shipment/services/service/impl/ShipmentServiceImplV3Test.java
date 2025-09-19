@@ -8817,11 +8817,23 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
 
-        List<OrderLineV3Response> orderLines = List.of(OrderLineV3Response.builder().build());
+        OrderLineV3Response orderLine = OrderLineV3Response.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+
+        List<OrderLineV3Response> orderLines = List.of(orderLine);
         OrderManagementDTO dto = OrderManagementDTO.builder()
                 .orderLines(orderLines)
                 .build();
         when(orderManagementAdapter.getOrderManagementDTOByGuid(any())).thenReturn(dto);
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
 
         ShipmentOrder savedShipmentOrder = ShipmentOrder.builder().build();
         when(shipmentOrderDao.save(any())).thenReturn(savedShipmentOrder);

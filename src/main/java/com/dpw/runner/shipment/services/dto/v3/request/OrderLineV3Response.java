@@ -35,7 +35,7 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
     private String goodsDescription;
 
     @JsonProperty("hsCode")
-    private String commodity;
+    private String HSCode;
 
     private BigDecimal length;
     @JsonProperty("lengthUOM")
