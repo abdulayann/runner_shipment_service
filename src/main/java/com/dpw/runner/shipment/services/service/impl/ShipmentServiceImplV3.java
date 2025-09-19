@@ -912,24 +912,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
 
         List<QuoteResetField> quoteResetFields = new ArrayList<>();
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Quote Party").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Transport Mode").editable(false).selected(false).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Cargo Type").editable(false).selected(false).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Service Type").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Origin").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Destination").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Sales Branch").editable(false).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Primary Email").editable(false).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Secondary Email").editable(false).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Incoterms").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().fieldName("Payment term").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Transport Mode").fieldName("transportMode").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Cargo Type").fieldName("shipmentType").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Service Type").fieldName("serviceType").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName("orgin").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName("destination").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Incoterms").fieldName("incoterms").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("PaymentTerm").fieldName("paymentTerms").editable(true).selected(true).build());
 
         if (!hasMainCarriage) {
-            quoteResetFields.add(QuoteResetField.builder().fieldName("POL").editable(true).selected(true).build());
-            quoteResetFields.add(QuoteResetField.builder().fieldName("POD").editable(true).selected(true).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(true).selected(true).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(true).selected(true).build());
         } else {
-            quoteResetFields.add(QuoteResetField.builder().fieldName("POL").editable(false).selected(false).build());
-            quoteResetFields.add(QuoteResetField.builder().fieldName("POD").editable(false).selected(false).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(false).selected(false).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(false).selected(false).build());
         }
         return new QuoteResetRulesResponse(quoteResetFields);
     }

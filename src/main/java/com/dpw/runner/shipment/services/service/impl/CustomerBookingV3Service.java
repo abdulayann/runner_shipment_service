@@ -465,19 +465,19 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         QuoteResetRulesResponse response = new QuoteResetRulesResponse();
 
         List<QuoteResetField> quoteResetFields = List.of(
-                QuoteResetField.builder().fieldName("Quote Party").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Transport Mode").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Cargo Type").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Service Type").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Origin").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("POL").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("POD").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Destination").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Sales Branch").editable(false).selected(true).build(),
-                QuoteResetField.builder().fieldName("Primary Email").editable(false).selected(true).build(),
-                QuoteResetField.builder().fieldName("Secondary Email").editable(false).selected(true).build(),
-                QuoteResetField.builder().fieldName("Incoterms").editable(true).selected(true).build(),
-                QuoteResetField.builder().fieldName("Payment Term").editable(true).selected(true).build()
+                QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Transport Mode").fieldName("transportType").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Cargo Type").fieldName("cargoType").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Service Type").fieldName("serviceMode").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Origin").fieldName("origin").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("POL").fieldName("originPort").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Destination").fieldName("destination").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Incoterms").fieldName("incoTerms").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("PaymentTerm").fieldName("paymentTerms").editable(true).selected(true).build()
         );
 
         response.setQuotesResetFields(quoteResetFields);
