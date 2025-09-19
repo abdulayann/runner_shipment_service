@@ -326,7 +326,7 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
     @PostMapping(ApiConstants.API_RESET_QUOTE_RULES)
-    public ResponseEntity<IRunnerResponse> resetBookingQuoteRules(@RequestParam Long bookingId) {
+    public ResponseEntity<IRunnerResponse> resetBookingQuoteRules(@RequestParam(value = "bookingId", required = false) Long bookingId) {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.resetBookingQuoteRules(bookingId));
     }
 }

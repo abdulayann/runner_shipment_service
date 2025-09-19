@@ -532,19 +532,26 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Override
     public QuoteResetRulesResponse resetBookingQuoteRules(Long bookingId) {
-        QuoteResetRulesResponse quoteResetRulesResponse = new QuoteResetRulesResponse();
-        quoteResetRulesResponse.setQuotePartyResetFlag(true);
-        quoteResetRulesResponse.setTransportModeResetFlag(true);
-        quoteResetRulesResponse.setCargoTypeResetFlag(true);
-        quoteResetRulesResponse.setServiceTypeResetFlag(true);
-        quoteResetRulesResponse.setOriginResetFlag(true);
-        quoteResetRulesResponse.setPolResetFlag(true);
-        quoteResetRulesResponse.setPodResetFlag(true);
-        quoteResetRulesResponse.setDestinationResetFlag(true);
-        quoteResetRulesResponse.setSalesBranchResetFlag(false);
-        quoteResetRulesResponse.setPrimaryEmailResetFlag(false);
-        quoteResetRulesResponse.setSecondaryEmailResetFlag(false);
-        return quoteResetRulesResponse;
+        QuoteResetRulesResponse response = new QuoteResetRulesResponse();
+
+        List<QuoteResetField> quoteResetFields = List.of(
+                QuoteResetField.builder().fieldName("Quote Party").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Transport Mode").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Cargo Type").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Service Type").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Origin").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("POL").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("POD").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Destination").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Sales Branch").editable(false).selected(true).build(),
+                QuoteResetField.builder().fieldName("Primary Email").editable(false).selected(true).build(),
+                QuoteResetField.builder().fieldName("Secondary Email").editable(false).selected(true).build(),
+                QuoteResetField.builder().fieldName("Incoterms").editable(true).selected(true).build(),
+                QuoteResetField.builder().fieldName("Payment Term").editable(true).selected(true).build()
+        );
+
+        response.setQuotesResetFields(quoteResetFields);
+        return response;
     }
 
     private void setCargoDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {

@@ -5,20 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuoteResetRulesResponse {
-    private Boolean quotePartyResetFlag;
-    private Boolean transportModeResetFlag;
-    private Boolean cargoTypeResetFlag;
-    private Boolean serviceTypeResetFlag;
-    private Boolean originResetFlag;
-    private Boolean polResetFlag;
-    private Boolean podResetFlag;
-    private Boolean destinationResetFlag;
-    private Boolean salesBranchResetFlag;
-    private Boolean primaryEmailResetFlag;
-    private Boolean secondaryEmailResetFlag;
+    private List<QuoteResetField> quotesResetFields;
 }
