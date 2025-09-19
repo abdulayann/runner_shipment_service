@@ -2293,6 +2293,27 @@ public class MasterDataUtils{
         return masterData.get(0);
     }
 
+    public Map<String, com.dpw.runner.shipment.services.masterdata.dto.MasterData> getMultipleMasterListData(MasterDataType type, Set<String> itemValue)
+    {
+        if (CommonUtils.setIsNullOrEmpty(itemValue)) return null;
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        itemValue.forEach(item -> {
+            MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(item).build();
+            masterListRequests.getMasterListRequests().add(masterListRequest);
+        });
+        Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
+        List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
+        Map<String, com.dpw.runner.shipment.services.masterdata.dto.MasterData> itemValueMap = new HashMap<>();
+        if (masterDataList != null) {
+            masterData = jsonHelper.convertValueToList(masterDataList, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
+            itemValueMap = masterData.stream().collect(Collectors.toMap(com.dpw.runner.shipment.services.masterdata.dto.MasterData::getItemValue, Function.identity()));
+        }
+        if (masterData.isEmpty())
+            return null;
+
+        return itemValueMap;
+    }
+
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;

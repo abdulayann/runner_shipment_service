@@ -153,6 +153,8 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String SHIPMENT_TYPE_ROR = "ROR";
+    public static final String SHIPMENT_TYPE_BBK = "BBK";
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
     public static final String SHIPMENT_TYPE_HSE = "HSE";
@@ -739,6 +741,10 @@ public class Constants {
     public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
     public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
 
+    public static final String PROD_ENV = "prod";
+    public static final String DEMO_ENV = "demo";
+    public static final String CONTRACT_TYPE = "CONTRACT";
+    public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     private Constants() {
     }
 

@@ -2754,6 +2754,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
                     bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                     carrierBookingRef(customerBookingRequest.getCarrierBookingNumber()).
+                    sendingAgentCountry(customerBookingRequest.getCarrierDetails().getOriginCountry()).
+                    receivingAgentCountry(customerBookingRequest.getCarrierDetails().getDestinationCountry()).
                     build();
             // Set Department in case single department is available
             consolidationDetailsV3Request.setDepartment(commonUtils.getAutoPopulateDepartment(
@@ -2831,10 +2833,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
                 if (!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getImportBroker())) {
-                    shipmentDetails.getAdditionalDetails().setImportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getDestinationLocCode()));
+                    shipmentDetails.getAdditionalDetails().setImportBrokerCountry(commonUtils.getTwoDigitCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getDestinationLocCode()));
                 }
                 if (!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getExportBroker())) {
-                    shipmentDetails.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getOriginLocCode()));
+                    shipmentDetails.getAdditionalDetails().setExportBrokerCountry(commonUtils.getTwoDigitCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getOriginLocCode()));
                 }
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);

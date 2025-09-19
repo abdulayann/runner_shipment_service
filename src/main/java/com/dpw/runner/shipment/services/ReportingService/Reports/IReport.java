@@ -1,5 +1,175 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.TruckDriverDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
+import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
+import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.ExchangeRateType;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxType;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
+import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
+import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
+import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_COST_AT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_SECURITY_INFORMATION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
@@ -18,6 +188,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_IS_NOT_RATED_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PLACE_OF_DELIVERY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PLACE_OF_RECEIPT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PORT_OF_DISCHARGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_PORT_OF_LOADING;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOOKING_ORDER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_NAME;
@@ -334,6 +508,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TWO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.UNID_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_DISPLAY_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_INITIALS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_PHONE_NUMBER;
@@ -361,177 +536,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.TruckDriverDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
-import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
-import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
-import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
-import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.ExchangeRateType;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxType;
-import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
-import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
-import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
-import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
-import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
-import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
-import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
-import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Strings;
-import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 @Slf4j
 @SuppressWarnings({"unchecked", "java:S2259"})
@@ -1411,7 +1415,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ORIGINAL_WORDS, numberToWords(additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal()));
         dictionary.put(ReportConstants.COPY_BILLS, additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
 
-        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);
+        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? populateNameFromUnlocationsResponse(placeOfIssue) : null);
         dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
     }
 
@@ -1423,11 +1427,38 @@ public abstract class IReport {
     }
 
     private void addPaidPlaceTags(Map<String, Object> dictionary, UnlocationsResponse paidPlace) {
-        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
+        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? populateNameFromUnlocationsResponse(paidPlace) : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
 
         dictionary.put(ReportConstants.PAID_PLACE_NAME_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getName()) : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getCountry()) : null);
+    }
+
+    private String populateNameFromUnlocationsResponse(UnlocationsResponse unlocationsResponse) {
+
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) &&
+                Objects.nonNull(unlocationsResponse.getName()) && Objects.nonNull(unlocationsResponse.getLocCode())
+                && (unlocationsResponse.getLocCode().length() >= 2)) {
+            // Extract country code from UNLOC using initial 2 characters
+            String countryCode = unlocationsResponse.getLocCode().substring(0, 2);
+
+            if (US.equalsIgnoreCase(countryCode)) {
+                String cityName = Optional.ofNullable(unlocationsResponse.getName()).orElse("").trim();
+                String stateName = Optional.ofNullable(unlocationsResponse.getCountry()).orElse("").trim();
+
+                if (cityName.isEmpty() && stateName.isEmpty()) {
+                    return "";
+                } else if (!cityName.isEmpty() && !stateName.isEmpty()) {
+                    return (cityName + "," + stateName).toUpperCase();
+                } else {
+                    return (!cityName.isEmpty() ? cityName : stateName).toUpperCase();
+                }
+            }
+
+            return unlocationsResponse.getName().toUpperCase();
+
+        }
+        return unlocationsResponse.getName();
     }
 
     private MasterData getMasterDataForPackUnitAndAddTags(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, MasterData masterData) {
@@ -2093,7 +2124,7 @@ public abstract class IReport {
         }
     }
 
-    public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse) {
+    public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse, boolean onlyRevenue) {
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
 
             if(StringUtility.isEmpty(billingResponse.getBillId())) {
@@ -2105,7 +2136,7 @@ public abstract class IReport {
             request.setBillId(billIds);
 
             List<BillChargesBaseResponse> billChargesFromBilling = billingServiceAdapter.fetchBillCharges(request);
-            return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling);
+            return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling, onlyRevenue);
         } else {
             List<Object> criteria = new ArrayList<>();
             criteria.add(Arrays.asList(List.of("BillId"), "=", billingResponse.getGuid()));
@@ -2117,104 +2148,103 @@ public abstract class IReport {
         }
     }
 
-    private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses) {
+    private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses, boolean onlyRevenue) {
         List<BillChargesResponse> v1BillCharges = new ArrayList<>();
 
-        for (BillChargesBaseResponse billingBillCharge : billChargesBaseResponses) {
-            if (billingBillCharge == null) {
-                continue; // Skip null objects
-            }
+        billChargesBaseResponses.stream()
+                .filter(Objects::nonNull)
+                .filter(billingBillCharge -> !(onlyRevenue && billingBillCharge.getBillChargeRevenueDetails() == null))
+                .forEach(billingBillCharge -> {
+                        BillChargesResponse v1BillCharge = new BillChargesResponse();
+                        // Use Optionals for null checks
+                        Optional<BillChargeRevenueDetailsResponse> revenueDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeRevenueDetails());
+                        Optional<BillChargeCostDetailsResponse> costDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeCostDetails());
+                        Optional<ChargeTypeBaseResponse> chargeTypeDetailsOpt = Optional.ofNullable(billingBillCharge.getChargeTypeDetails());
 
-            BillChargesResponse v1BillCharge = new BillChargesResponse();
-            // Use Optionals for null checks
-            Optional<BillChargeRevenueDetailsResponse> revenueDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeRevenueDetails());
-            Optional<BillChargeCostDetailsResponse> costDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeCostDetails());
-            Optional<ChargeTypeBaseResponse> chargeTypeDetailsOpt = Optional.ofNullable(billingBillCharge.getChargeTypeDetails());
+                        v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
+                        v1BillCharge.setBillingChargeTypeGuid(
+                                chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getGuId)
+                                        .map(UUID::toString)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setOverseasSellAmount(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellAmount).orElse(null)
+                        );
+                        v1BillCharge.setOverseasSellCurrency(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellCurrency).orElse(null)
+                        );
+                        v1BillCharge.setLocalSellAmount(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellAmount).orElse(null)
+                        );
+                        v1BillCharge.setLocalSellCurrency(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellCurrency).orElse(null)
+                        );
+                        v1BillCharge.setOverseasTax(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasTax).orElse(null)
+                        );
+                        v1BillCharge.setSellExchange(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getCurrencyExchangeRateDetails)
+                                        .orElse(Collections.emptyList())
+                                        .stream()
+                                        .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType()))
+                                        .findFirst()
+                                        .map(CurrencyExchangeRateDetailsResponse::getExchangeRate)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setTaxType1(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                                        .orElse(Collections.emptyList())
+                                        .stream()
+                                        .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType()))
+                                        .findFirst()
+                                        .map(TaxDetailsResponse::getAmount)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setTaxType2(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                                        .orElse(Collections.emptyList())
+                                        .stream()
+                                        .filter(tax -> TaxType.SGST.equals(tax.getTaxType()))
+                                        .findFirst()
+                                        .map(TaxDetailsResponse::getAmount)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setTaxType3(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                                        .orElse(Collections.emptyList())
+                                        .stream()
+                                        .filter(tax -> TaxType.CGST.equals(tax.getTaxType()))
+                                        .findFirst()
+                                        .map(TaxDetailsResponse::getAmount)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setTaxType4(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                                        .orElse(Collections.emptyList())
+                                        .stream()
+                                        .filter(tax -> TaxType.UGST.equals(tax.getTaxType()))
+                                        .findFirst()
+                                        .map(TaxDetailsResponse::getAmount)
+                                        .orElse(null)
+                        );
+                        v1BillCharge.setLocalTax(
+                                revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
+                        );
+                        v1BillCharge.setMeasurementBasis(null); // LATER: Check for cost/revenue MeasurementBasis
 
-            v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
-            v1BillCharge.setBillingChargeTypeGuid(
-                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getGuId)
-                            .map(UUID::toString)
-                            .orElse(null)
-            );
-            v1BillCharge.setOverseasSellAmount(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellAmount).orElse(null)
-            );
-            v1BillCharge.setOverseasSellCurrency(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellCurrency).orElse(null)
-            );
-            v1BillCharge.setLocalSellAmount(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellAmount).orElse(null)
-            );
-            v1BillCharge.setLocalSellCurrency(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellCurrency).orElse(null)
-            );
-            v1BillCharge.setOverseasTax(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasTax).orElse(null)
-            );
-            v1BillCharge.setSellExchange(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getCurrencyExchangeRateDetails)
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType()))
-                            .findFirst()
-                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate)
-                            .orElse(null)
-            );
-            v1BillCharge.setTaxType1(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType()))
-                            .findFirst()
-                            .map(TaxDetailsResponse::getAmount)
-                            .orElse(null)
-            );
-            v1BillCharge.setTaxType2(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType()))
-                            .findFirst()
-                            .map(TaxDetailsResponse::getAmount)
-                            .orElse(null)
-            );
-            v1BillCharge.setTaxType3(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType()))
-                            .findFirst()
-                            .map(TaxDetailsResponse::getAmount)
-                            .orElse(null)
-            );
-            v1BillCharge.setTaxType4(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType()))
-                            .findFirst()
-                            .map(TaxDetailsResponse::getAmount)
-                            .orElse(null)
-            );
-            v1BillCharge.setLocalTax(
-                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
-            );
-            v1BillCharge.setMeasurementBasis(null); // LATER: Check for cost/revenue MeasurementBasis
+                        v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
+                        v1BillCharge.setChargeTypeCode(
+                                chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCode).orElse(null)
+                        );
+                        v1BillCharge.setChargeTypeDescription(
+                                chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCodeDescription).orElse(null)
+                        );
+                        v1BillCharge.setLocalCostCurrency(
+                                costDetailsOpt.map(BillChargeCostDetailsResponse::getLocalCostCurrency).orElse(null)
+                        );
 
-            v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
-            v1BillCharge.setChargeTypeCode(
-                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCode).orElse(null)
-            );
-            v1BillCharge.setChargeTypeDescription(
-                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCodeDescription).orElse(null)
-            );
-            v1BillCharge.setLocalCostCurrency(
-                    costDetailsOpt.map(BillChargeCostDetailsResponse::getLocalCostCurrency).orElse(null)
-            );
-
-            v1BillCharges.add(v1BillCharge);
-        }
+                        v1BillCharges.add(v1BillCharge);
+        });
 
         return v1BillCharges;
     }
@@ -2707,6 +2737,25 @@ public abstract class IReport {
         dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getCargoTermsDescription()));
         dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getBlRemarksDescription()));
         dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_WITH_COMMA, convertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume(), v1TenantSettingsResponse));
+        populateBlTransportSectionDetails(hblDataDto, dictionary);
+    }
+
+    public void populateBlTransportSectionDetails(HblDataDto hblDataDto, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(hblDataDto)) return;
+
+        if (Objects.nonNull(hblDataDto.getPlaceOfDelivery())) {
+            dictionary.put(BL_PLACE_OF_DELIVERY, StringUtility.toUpperCase(hblDataDto.getPlaceOfDelivery()));
+        }
+        if (Objects.nonNull(hblDataDto.getPortOfLoad())) {
+            dictionary.put(BL_PORT_OF_LOADING, StringUtility.toUpperCase(hblDataDto.getPortOfLoad()));
+        }
+        if (Objects.nonNull(hblDataDto.getPortOfDischarge())) {
+            dictionary.put(BL_PORT_OF_DISCHARGE, StringUtility.toUpperCase(hblDataDto.getPortOfDischarge()));
+        }
+        if (Objects.nonNull(hblDataDto.getPlaceOfReceipt())) {
+            dictionary.put(BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblDataDto.getPlaceOfReceipt()));
+        }
     }
 
     private List<String> getNotifyParty(Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
@@ -4162,7 +4211,7 @@ public abstract class IReport {
     }
 
     // Helper to safely convert to BigDecimal or zero if null or invalid
-    private BigDecimal convertToKg(Object weightValue, String unit) {
+    BigDecimal convertToKg(Object weightValue, String unit) {
         BigDecimal weight = safeBigDecimal(weightValue);
         if (weight.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
 
@@ -4183,7 +4232,7 @@ public abstract class IReport {
         };
     }
 
-    private BigDecimal safeBigDecimal(Object value) {
+    BigDecimal safeBigDecimal(Object value) {
         if (value == null) return BigDecimal.ZERO;
         if (value instanceof BigDecimal) return (BigDecimal) value;
         try {
@@ -4193,7 +4242,7 @@ public abstract class IReport {
         }
     }
 
-    private BigDecimal convertToM3(Object volumeValue, String unit) {
+    BigDecimal convertToM3(Object volumeValue, String unit) {
         BigDecimal volume = safeBigDecimal(volumeValue);
         if (volume.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
 
@@ -4400,7 +4449,7 @@ public abstract class IReport {
         } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
     }
 
-    public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary) {
+    public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary, boolean onlyRevenue) {
         List<BillingResponse> billingsList = null;
         try {
             billingsList = getBillingData(shipment.getGuid());
@@ -4408,7 +4457,7 @@ public abstract class IReport {
         catch (Exception e) {
             log.error(e.getMessage());
         }
-        List<BillChargesResponse> charges = getBillChargesResponses(dictionary, billingsList);
+        List<BillChargesResponse> charges = getBillChargesResponses(dictionary, billingsList, onlyRevenue);
 
         List<BillChargesResponse> originalChargesRows = new ArrayList<>();
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
@@ -4439,13 +4488,13 @@ public abstract class IReport {
         dictionary.put(COPY_CHARGES, copyChargesRows);
     }
 
-    private List<BillChargesResponse> getBillChargesResponses(Map<String, Object> dictionary, List<BillingResponse> billingsList) {
+    private List<BillChargesResponse> getBillChargesResponses(Map<String, Object> dictionary, List<BillingResponse> billingsList, boolean onlyRevenue) {
         List<BillChargesResponse> charges = new ArrayList<>();
         BillingResponse billRow = null;
         if(billingsList != null && !billingsList.isEmpty()) {
             billRow = billingsList.get(0);
             for(BillingResponse billingResponse : billingsList) {
-                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse);
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse, onlyRevenue);
                 if(billChargesResponses != null) {
                     charges.addAll(billChargesResponses);
                 }
@@ -5703,6 +5752,8 @@ public abstract class IReport {
                 additional.getOwnership() != null ? additional.getOwnership().getDescription() : null);
         dictionary.put(S_PASSED_BY,
                 additional.getPassedBy() != null ? additional.getPassedBy().getDescription() : null);
+
+        dictionary.put(ReportConstants.S_MASTER_BILL, details.getMasterBill());
     }
 
     private void addNullAdditionalFields(Map<String, Object> dictionary) {

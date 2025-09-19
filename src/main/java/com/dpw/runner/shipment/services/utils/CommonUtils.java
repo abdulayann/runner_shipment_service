@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -1078,7 +1079,7 @@ public class CommonUtils {
     }
 
     public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
-                                                 OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
 
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -1088,7 +1089,7 @@ public class CommonUtils {
 
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-                template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -2494,6 +2495,12 @@ public class CommonUtils {
         return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
     }
 
+    public String getTwoDigitCountryFromUnLocCode(String unLocCode) {
+        if (isStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return unLocCode.substring(0, 2);
+    }
+
     public void checkForMandatoryHsCodeForUAE(Awb awb) {
         String destinationPortLocCode = null;
         if (awb.getShipmentId() != null) {
@@ -3675,6 +3682,74 @@ public class CommonUtils {
         }
         return null;
     }
+
+    public static String constructAddress(Map<String, Object> addressData) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+
+        if (addressData != null) {
+            // Address1
+            if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
+                ));
+            }
+
+            // Address2
+            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+                sb.append(newLine).append(
+                        StringUtility.toUpperCase(
+                                StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
+                        )
+                );
+            }
+
+            // City + State + Zip + Country in one line
+            StringBuilder line3 = new StringBuilder(constructAddressL3(addressData));
+
+            if (!line3.isEmpty()) {
+                sb.append(newLine).append(line3);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static String constructAddressL3(Map<String, Object> addressData) {
+        StringBuilder line3 = new StringBuilder();
+        if (addressData.containsKey(PartiesConstants.CITY)) {
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.STATE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
+            ));
+        }
+        return line3.toString();
+    }
+
+    private static String getCountryName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        String countryName = CountryListHelper.ISO3166.getCountryNameByCode(code);
+        return StringUtility.isNotEmpty(countryName) ? countryName : code;
+    }
+
     public List<Map<String, Object>> buildFlatList(
             List<Object[]> results,
             List<String> columnOrder

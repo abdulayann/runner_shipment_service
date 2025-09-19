@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
+import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
@@ -29,10 +31,12 @@ import com.dpw.runner.shipment.services.service.impl.ConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
@@ -96,6 +100,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     private CustomerBookingV3Util customerBookingV3Util;
+
+    @Autowired
+    private ContractIdMapUtil contractIdMapUtil;
+
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     Map<String, String> v2ToV3ServiceTypeMap = Map.ofEntries(
             // AIR
@@ -269,10 +279,31 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
         updateContainerDataFromV2ToV3(customerBooking, codeTeuMap);
         updatePackingDataFromV2ToV3(customerBooking, weightDecimal, volumeDecimal);
+        updateParentContractIdInBooking(customerBooking);
+        setCountryFilterInParties(customerBooking);
 
         //Update CargoSummary
         customerBookingV3Util.updateCargoInformation(customerBooking, codeTeuMap, null, true);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+    }
+
+    private void setCountryFilterInParties(CustomerBooking customerBooking) {
+        if (customerBooking.getClientCountry() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(customerBooking.getClientCountry());
+            customerBooking.setClientCountry(country);
+        }
+        if (customerBooking.getConsignorCountry() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(customerBooking.getConsignorCountry());
+            customerBooking.setConsignorCountry(country);
+        }
+        if (customerBooking.getConsigneeCountry() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(customerBooking.getConsigneeCountry());
+            customerBooking.setConsigneeCountry(country);
+        }
+        if (customerBooking.getNotifyPartyCountry() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(customerBooking.getNotifyPartyCountry());
+            customerBooking.setNotifyPartyCountry(country);
+        }
     }
 
     @Override
@@ -291,6 +322,16 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         updateContainerDataFromV3ToV2(customerBooking, weightDecimal);
         updatePackingDataFromV3ToV2(customerBooking, weightDecimal, volumeDecimal);
         customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+    }
+
+    private void updateParentContractIdInBooking(CustomerBooking customerBooking) {
+        if(!Objects.isNull(customerBooking.getContractId())) {
+            String parentContactId = contractIdMapUtil.getParentContractId(customerBooking.getContractId(), CONTRACT_TYPE, currentEnvironment);
+            if(!Objects.isNull(parentContactId)) {
+                log.info("Updating parentContractId in Booking id {} with parentContractId {}", customerBooking.getId(), parentContactId);
+                customerBooking.setParentContractId(parentContactId);
+            }
+        }
     }
 
     private void updateContainerDataFromV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {

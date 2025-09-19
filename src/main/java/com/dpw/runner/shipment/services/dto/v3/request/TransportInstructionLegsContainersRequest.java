@@ -60,4 +60,6 @@ public class TransportInstructionLegsContainersRequest implements IRunnerRequest
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
     private String transportMode;
+    @Size(max = 255, message = "max size is 255 for dg class description")
+    private String dgClassDescription;
 }

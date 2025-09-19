@@ -48,7 +48,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL_RELEASE_TYPE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA_WAYBILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
@@ -994,9 +993,7 @@ public class ReportService implements IReportService {
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else if (report instanceof SeawayBillReport vSeawayBillReport) {
-            validateReleaseTypeForReport(reportRequest);
-            dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createEvent(reportRequest, EventConstants.FHBL);
+            dataRetrived = getSeaWayBillReportData(reportRequest, vSeawayBillReport);
         } else if (report instanceof HawbReport vHawbReport) {
             vHawbReport.printType = reportRequest.getPrintType();
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
@@ -1004,6 +1001,18 @@ public class ReportService implements IReportService {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
         return dataRetrived;
+    }
+
+    private Map<String, Object> getSeaWayBillReportData(ReportRequest reportRequest, SeawayBillReport vSeawayBillReport) {
+        Map<String, Object> dataRetrieved;
+        validateReleaseTypeForReport(reportRequest);
+        dataRetrieved = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
+        if(ObjectUtils.isNotEmpty(reportRequest.getPrintType()) && reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
+            createEvent(reportRequest, EventConstants.DHBL);
+        } else {
+            createEvent(reportRequest, EventConstants.FHBL);
+        }
+        return dataRetrieved;
     }
 
     private Map<String, Object> getDataRetrivedForHblReport(IReport report, ReportRequest reportRequest, HblReport vHblReport) throws RunnerException {
@@ -2174,9 +2183,7 @@ public class ReportService implements IReportService {
 
     private byte[] getBytesForMainDoc(DocPages pages, String reportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int copyCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
         if (copyCount > 0) {
-            json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
-            json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
-            json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+            setCopyDetailsInJson(json, reportRequest);
             if (reportRequest.isPrintForParties()) {
                 mainDoc = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null ? "" : json.get(ReportConstants.HAWB_NO).toString(), json, pages);
             } else {
@@ -2189,6 +2196,15 @@ public class ReportService implements IReportService {
 
         }
         return mainDoc;
+    }
+
+    private void setCopyDetailsInJson(Map<String, Object> json, ReportRequest reportRequest) {
+        json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
+        json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
+        json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+
+        if (Objects.equals(reportRequest.getReportInfo(), HOUSE_BILL) || Objects.equals(reportRequest.getReportInfo(), SEAWAY_BILL))
+            json.put(ReportConstants.BL_RELEASE_TYPE, "NON-NEGOTIABLE COPY");
     }
 
     private String getLogopath(DocPages pages, String reportInfo, Map<String, Object> json, String hbltype) {

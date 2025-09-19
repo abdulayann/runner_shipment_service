@@ -106,4 +106,8 @@ public class TiContainers extends MultiTenancy {
 
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
+
+    @Column(name = "dg_class_description")
+    @Size(max=255, message = "max size is 255 for dg class description")
+    private String dgClassDescription;
 }

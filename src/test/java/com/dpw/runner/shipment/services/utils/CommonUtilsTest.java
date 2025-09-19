@@ -3158,6 +3158,19 @@ class CommonUtilsTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetTwoDigitCountryFromUnLocCode(String req) {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetTwoDigitCountryFromUnLocCode() {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode("CAN");
+        assertEquals("CA", response);
+    }
+
+    @ParameterizedTest
     @MethodSource("providePartiesObjects")
     void testCheckIfPartyExists(Parties req) {
         boolean response = commonUtils.checkIfPartyExists(req);
