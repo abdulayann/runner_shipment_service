@@ -1,0 +1,101 @@
+-- Shipment ID : (100866)
+-- Update Parties
+update
+    parties
+set
+    org_code = 'FRC00047241',
+    address_code = 'FRO00049688',
+    org_id = '164211',
+    address_id = '282090',
+    updated_at = NOW(),
+    org_data = '{
+                    "Id": 164211,
+                    "City": "Aarburg",
+                    "Guid": "7981f093-c380-4400-ae83-346b5c848ceb",
+                    "Email": "simon@herrmanngroup.ch",
+                    "IsGSA": false,
+                    "Phone": "796548117",
+                    "label": "Herrmann Group AG",
+                    "value": "FRC00047241",
+                    "Broker": false,
+                    "Source": "CRP",
+                    "Carrier": false,
+                    "Country": "CHE",
+                    "Address1": "Feldstrasse 25",
+                    "Address2": "",
+                    "FullName": "Herrmann Group AG",
+                    "IsActive": 1,
+                    "Payables": false,
+                    "Services": false,
+                    "TenantId": 442,
+                    "CompanyId": 372,
+                    "Consignee": true,
+                    "Consigner": true,
+                    "IsParnter": false,
+                    "PANNumber": "CHE-405.530.738",
+                    "TaxVendor": false,
+                    "WareHouse": false,
+                    "AirCarrier": false,
+                    "ExtraParam": "",
+                    "InsertDate": "2025-09-11T12:13:40.000",
+                    "SeaCarrier": false,
+                    "UpdateDate": "2025-09-14T16:51:40.000",
+                    "IsSuspended": false,
+                    "RailCarrier": false,
+                    "Receivables": true,
+                    "RoadCarrier": false,
+                    "ZipPostCode": "4663",
+                    "ActiveClient": true,
+                    "CurrencyCode": "CHF",
+                    "EmailInvoice": false,
+                    "InsertUserId": 1712,
+                    "UpdateUserId": 1712,
+                    "VatRegNumber": "CHE405530738MWST",
+                    "ForworderAgent": false,
+                    "IsCreditEnabled": false,
+                    "IsV2PaymentTerm": false,
+                    "TransportClient": false,
+                    "IsWalkInCustomer": false,
+                    "OrganizationCode": "FRC00047241",
+                    "EnableBulkInvoice": false,
+                    "CustomerIdentifier": "2049442_001",
+                    "ReceivableTermsDate": 2,
+                    "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "IsClientEInvoiceEnabled": false,
+                    "ImportExportClearanceLock": false,
+                    "FusionCreditlimitOverrideApproved": false
+                }',
+    address_data = '{
+                        "Id": 282090,
+                        "City": "Aarburg",
+                        "Email": "simon@herrmanngroup.ch",
+                        "label": "FRO00049688",
+                        "value": "FRO00049688",
+                        "Country": "CHE",
+                        "OrgGuid": "7981f093-c380-4400-ae83-346b5c848ceb",
+                        "Address1": "Feldstrasse 25",
+                        "Address2": "",
+                        "OrgSource": "CRP",
+                        "AddressType": 1,
+                        "CompanyName": "Herrmann Group AG",
+                        "OrgFullName": "Herrmann Group AG",
+                        "OrgPayables": false,
+                        "ZipPostCode": "4663",
+                        "TaxRegNumber": "CHE405530738MWST",
+                        "OrgReceivables": true,
+                        "SiteIdentifier": "2049442_001_CHTWL_001_B",
+                        "OrgActiveClient": true,
+                        "AddressShortCode": "FRO00049688",
+                        "OrgOrganizationCode": "FRC00047241"
+                    }'
+where
+    id = 1612596 and tenant_id = 685;
+-- Update Shipments
+UPDATE shipment_details
+SET
+    client_dps_address_id = 112187,
+    updated_at = NOW()
+WHERE
+    id = 101027
+    AND tenant_id = 685;
