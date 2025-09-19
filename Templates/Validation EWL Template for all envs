@@ -1,0 +1,171 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "entityPayload": {
+      "type": "object",
+      "properties": {
+        "transportMode": {
+          "type": "string",
+          "enum": ["SEA"],
+          "errorMessage": {
+            "type": "transportMode: must be a string",
+            "enum": "transportMode: must be SEA for EWL transfer"
+          }
+        },
+        "shipmentsList": {
+          "type": "array",
+          "minItems": 1,
+          "errorMessage": {
+            "type": "shipmentsList: must be an array",
+            "minItems": "shipmentsList: at least one shipment is required for EWL transfer"
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "houseBill": {
+                "type": "string",
+                "errorMessage": {
+                  "type": "houseBill: must be a string"
+                }
+              },
+              "packsUnit": {
+                "type": "string",
+                "errorMessage": {
+                  "type": "packsUnit: must be a string"
+                }
+              },
+              "consignee": {
+                "type": "object",
+                "properties": {
+                  "orgCode": {
+                    "type": "string",
+                    "errorMessage": {
+                      "type": "orgCode: must be a string"
+                    }
+                  },
+                  "orgData": {
+                    "type": "object",
+                    "properties": {
+                      "FullName": {
+                        "type": "string",
+                        "errorMessage": {
+                          "type": "FullName: must be a string"
+                        }
+                      }
+                    },
+                    "required": ["FullName"],
+                    "errorMessage": {
+                      "type": "orgData: must be an object",
+                      "required": {
+                        "FullName": "FullName: consignee full name is required for EWL transfer"
+                      }
+                    }
+                  }
+                },
+                "required": ["orgCode", "orgData"],
+                "errorMessage": {
+                  "type": "consignee: must be an object",
+                  "required": {
+                    "orgCode": "orgCode: consignee organization code is required for EWL transfer",
+                    "orgData": "orgData: consignee organization data is required for EWL transfer"
+                  }
+                }
+              },
+              "additionalDetails": {
+                "type": "object",
+                "properties": {
+                  "releaseType": {
+                    "type": "string",
+                    "errorMessage": {
+                      "type": "releaseType: must be a string"
+                    }
+                  }
+                },
+                "required": ["releaseType"],
+                "errorMessage": {
+                  "type": "additionalDetails: must be an object",
+                  "required": {
+                    "releaseType": "releaseType: is required for EWL transfer shipment"
+                  }
+                }
+              },
+              "containersList": {
+                "type": "array",
+                "minItems": 1,
+                "errorMessage": {
+                  "type": "containersList: must be an array",
+                  "minItems": "containersList: at least one container is required for each shipment"
+                },
+                "items": {
+                  "type": "object",
+                  "errorMessage": {
+                    "type": "container: must be an object"
+                  }
+                }
+              }
+            },
+            "required": ["houseBill", "packsUnit", "consignee", "additionalDetails", "containersList"],
+            "errorMessage": {
+              "type": "shipment: must be an object",
+              "required": {
+                "houseBill": "houseBill: is required for EWL transfer shipment",
+                "packsUnit": "packsUnit: is required for EWL transfer shipment",
+                "consignee": "consignee: information is required for EWL transfer shipment",
+                "additionalDetails": "additionalDetails: are required for EWL transfer shipment",
+                "containersList": "containersList: container information is required for EWL transfer shipment"
+              }
+            }
+          }
+        },
+        "carrierDetails": {
+          "type": "object",
+          "properties": {
+            "eta": {
+              "type": "string",
+              "errorMessage": {
+                "type": "eta: must be a string"
+              }
+            },
+            "etd": {
+              "type": "string",
+              "errorMessage": {
+                "type": "etd: must be a string"
+              }
+            },
+            "vessel": {
+              "type": "string",
+              "errorMessage": {
+                "type": "vessel: must be a string"
+              }
+            }
+          },
+          "required": ["eta", "etd", "vessel"],
+          "errorMessage": {
+            "type": "carrierDetails: must be an object",
+            "required": {
+              "eta": "eta: estimated time of arrival is required for EWL transfer",
+              "etd": "etd: estimated time of departure is required for EWL transfer",
+              "vessel": "vessel is a mandatory field for EWL transfer shipment"
+            }
+          }
+        }
+      },
+      "required": ["transportMode", "shipmentsList", "carrierDetails"],
+      "errorMessage": {
+        "type": "entityPayload: must be an object",
+        "required": {
+          "transportMode": "transportMode: is required for EWL transfer shipment",
+          "shipmentsList": "shipmentsList: shipment information is required for EWL transfer",
+          "carrierDetails": "carrierDetails: are required for EWL transfer shipment"
+        }
+      }
+    }
+  },
+  "required": ["entityPayload"],
+  "errorMessage": {
+    "required": {
+      "entityPayload": "entityPayload: is required for EWL transfer shipment"
+    }
+  }
+}
