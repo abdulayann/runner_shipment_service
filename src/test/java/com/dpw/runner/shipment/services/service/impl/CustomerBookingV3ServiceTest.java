@@ -4477,7 +4477,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         List<QuoteResetField> fields = response.getQuotesResetFields();
 
         Map<String, QuoteResetField> fieldMap = fields.stream()
-                .collect(Collectors.toMap(QuoteResetField::getFieldName, f -> f));
+                .collect(Collectors.toMap(QuoteResetField::getLabel, f -> f));
 
         assertTrue(fieldMap.get("Quote Party").isSelected());
         assertTrue(fieldMap.get("Transport Mode").isSelected());
@@ -4488,7 +4488,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         assertTrue(fieldMap.get("POD").isSelected());
         assertTrue(fieldMap.get("Destination").isSelected());
         assertTrue(fieldMap.get("Incoterms").isSelected());
-        assertTrue(fieldMap.get("Payment Term").isSelected());
+        assertTrue(fieldMap.get("PaymentTerm").isSelected());
 
         assertTrue(fieldMap.get("Sales Branch").isSelected());
         assertTrue(fieldMap.get("Primary Email").isSelected());
@@ -4503,6 +4503,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         assertTrue(fieldMap.get("Origin").isEditable());
         assertTrue(fieldMap.get("Destination").isEditable());
         assertTrue(fieldMap.get("Incoterms").isEditable());
-        assertTrue(fieldMap.get("Payment Term").isEditable());
+        assertTrue(fieldMap.get("PaymentTerm").isEditable());
     }
 }
