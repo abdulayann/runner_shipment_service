@@ -733,6 +733,7 @@ public class Constants {
     public static final String DOT = ".";
 
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
+    public static final String BEARER = "Bearer ";
 
     private Constants() {
     }

@@ -38,7 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
@@ -181,10 +180,8 @@ public class MasterDataUtils{
     }
 
     private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-       if(!CollectionUtils.isEmpty(response.getCarrierRoutingList())) {
-           for(CarrierRoutingResponse carrierRouting: response.getCarrierRoutingList()) {
-               locCodes.addAll(createInBulkUnLocationsRequest(carrierRouting, CarrierRouting.class, fieldNameKeyMap, CarrierRouting.class.getSimpleName() + carrierRouting.getId(), cacheMap));
-           }
+       if(Objects.nonNull(response.getSailingInformation())) {
+           locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
        }
 
         locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));

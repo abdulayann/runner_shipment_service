@@ -26,9 +26,13 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -53,7 +57,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,9 +76,12 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
@@ -83,10 +89,11 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -97,6 +104,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -142,6 +150,10 @@ class CarrierBookingServiceTest extends CommonMocks {
     private static CarrierBooking carrierBooking;
     private static ConsolidationDetails consolidationDetails;
     private static CarrierBookingResponse carrierBookingResponse;
+    private static CarrierBookingListResponse carrierBookingListResponse;
+    private static ShippingInstruction shippingInstruction;
+    private static VerifiedGrossMass verifiedGrossMass;
+    private static ReferenceNumbers referenceNumbers;
 
     @BeforeAll
     static void init() {
@@ -155,6 +167,11 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         carrierBookingResponse = new CarrierBookingResponse();
 
+        carrierBookingListResponse = new CarrierBookingListResponse();
+        shippingInstruction = new ShippingInstruction();
+        verifiedGrossMass = new VerifiedGrossMass();
+        referenceNumbers = new ReferenceNumbers();
+
     }
 
     @BeforeEach
@@ -162,6 +179,228 @@ class CarrierBookingServiceTest extends CommonMocks {
         UsersDto usersDto = new UsersDto();
         usersDto.setEmail("test@abc.com");
         UserContext.setUser(usersDto);
+    }
+    @Test
+    void testConvertEntityListToDtoList_WithValidData_ShouldReturnResponseList() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+        Set<String> includeColumns = new HashSet<>(Arrays.asList("column1", "column2"));
+
+        shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
+        referenceNumbers.setType(CarrierBookingConstants.CON);
+        referenceNumbers.setReferenceNumber("REF123");
+
+        carrierBooking.setShippingInstruction(shippingInstruction);
+        carrierBooking.setVerifiedGrossMass(verifiedGrossMass);
+        carrierBooking.setReferenceNumbersList(Arrays.asList(referenceNumbers));
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, true, includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.get(0) instanceof CarrierBookingListResponse);
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertEquals(ShippingInstructionStatus.Draft, response.getSiStatus());
+        assertEquals(VerifiedGrossMassStatus.Draft, response.getVgmStatus());
+        assertEquals("REF123", response.getContractNo());
+
+        verify(jsonHelper).convertValue(carrierBooking, CarrierBookingListResponse.class);
+        verify(carrierBookingMasterDataHelper).getMasterDataForList(
+                carrierBookingList, result, true, true, includeColumns);
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithEmptyList_ShouldReturnEmptyList() {
+        // Arrange
+        List<CarrierBooking> emptyList = new ArrayList<>();
+        Set<String> includeColumns = new HashSet<>();
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                emptyList, false, includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(carrierBookingMasterDataHelper).getMasterDataForList(
+                emptyList, result, false, true, includeColumns);
+        verifyNoInteractions(jsonHelper);
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithNullVerifiedGrossMass_ShouldNotSetVgmStatus() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+        carrierBooking.setVerifiedGrossMass(null);
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, true, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertNull(response.getVgmStatus());
+
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithEmptyReferenceNumbersList_ShouldNotSetContractNo() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+        carrierBooking.setReferenceNumbersList(new ArrayList<>());
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, false, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertNull(response.getContractNo());
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithNullReferenceNumbersList_ShouldNotSetContractNo() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+        carrierBooking.setReferenceNumbersList(null);
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, false, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertNull(response.getContractNo());
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithNonCONReferenceType_ShouldNotSetContractNo() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+
+        ReferenceNumbers nonCONReference = new ReferenceNumbers();
+        nonCONReference.setType("OTHER");
+        nonCONReference.setReferenceNumber("OTHER123");
+
+        carrierBooking.setReferenceNumbersList(Arrays.asList(nonCONReference));
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, true, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertNull(response.getContractNo());
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithMultipleReferenceNumbers_ShouldSetFirstCONReference() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+
+        ReferenceNumbers otherRef = new ReferenceNumbers();
+        otherRef.setType("OTHER");
+        otherRef.setReferenceNumber("OTHER123");
+
+        ReferenceNumbers conRef1 = new ReferenceNumbers();
+        conRef1.setType(CarrierBookingConstants.CON);
+        conRef1.setReferenceNumber("CON123");
+
+        ReferenceNumbers conRef2 = new ReferenceNumbers();
+        conRef2.setType(CarrierBookingConstants.CON);
+        conRef2.setReferenceNumber("CON456");
+
+        carrierBooking.setReferenceNumbersList(Arrays.asList(otherRef, conRef1, conRef2));
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, true, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        CarrierBookingListResponse response = (CarrierBookingListResponse) result.get(0);
+        assertEquals("CON123", response.getContractNo()); // Should be first CON reference
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithMultipleCarrierBookings_ShouldProcessAll() {
+        // Arrange
+        CarrierBooking carrierBooking1 = new CarrierBooking();
+        CarrierBooking carrierBooking2 = new CarrierBooking();
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking1, carrierBooking2);
+
+        CarrierBookingListResponse response1 = new CarrierBookingListResponse();
+        CarrierBookingListResponse response2 = new CarrierBookingListResponse();
+
+        when(jsonHelper.convertValue(carrierBooking1, CarrierBookingListResponse.class))
+                .thenReturn(response1);
+        when(jsonHelper.convertValue(carrierBooking2, CarrierBookingListResponse.class))
+                .thenReturn(response2);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, false, null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.contains(response1));
+    }
+
+    @Test
+    void testConvertEntityListToDtoList_WithGetMasterDataFalse_ShouldCallMasterDataHelper() {
+        // Arrange
+        List<CarrierBooking> carrierBookingList = Arrays.asList(carrierBooking);
+        Set<String> includeColumns = new HashSet<>();
+
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class))
+                .thenReturn(carrierBookingListResponse);
+
+        // Act
+        List<IRunnerResponse> result = carrierBookingService.convertEntityListToDtoList(
+                carrierBookingList, false, includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        verify(carrierBookingMasterDataHelper).getMasterDataForList(
+                carrierBookingList, result, false, true, includeColumns);
     }
 
     @Test
@@ -284,7 +523,7 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         // Assert: Verify response
         Assert.assertNotNull(response);
-        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         Assert.assertNotNull(response.getBody());
     }
 
@@ -604,37 +843,37 @@ class CarrierBookingServiceTest extends CommonMocks {
             carrierBookingService.getDefaultCarrierBookingValues(type, entityId);
         });
 
-        Assertions.assertEquals("Invalid value of Entity Type", exception.getMessage());
+        assertEquals("Invalid value of Entity Type", exception.getMessage());
     }
 
     @Test
     void test_getCarrierBookingStatus_AllValidCases() {
         // Test all valid cases
-        Assertions.assertEquals(CarrierBookingStatus.ConditionallyAccepted, carrierBookingService.getCarrierBookingStatus("ConditionallyAccepted"));
-        Assertions.assertEquals(CarrierBookingStatus.RejectedByINTTRA, carrierBookingService.getCarrierBookingStatus("Rejected"));
-        Assertions.assertEquals(CarrierBookingStatus.AcceptedByINTTRA, carrierBookingService.getCarrierBookingStatus("Accepted"));
-        Assertions.assertEquals(CarrierBookingStatus.ConfirmedByCarrier, carrierBookingService.getCarrierBookingStatus("Confirmed"));
-        Assertions.assertEquals(CarrierBookingStatus.DeclinedByCarrier, carrierBookingService.getCarrierBookingStatus("Declined"));
-        Assertions.assertEquals(CarrierBookingStatus.ReplacedByCarrier, carrierBookingService.getCarrierBookingStatus("Replaced"));
-        Assertions.assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Cancelled"));
-        Assertions.assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Canceled"));
-        Assertions.assertEquals(CarrierBookingStatus.Changed, carrierBookingService.getCarrierBookingStatus("ChangeBookingRequested"));
-        Assertions.assertEquals(Requested, carrierBookingService.getCarrierBookingStatus("NewBookingRequested"));
+        assertEquals(CarrierBookingStatus.ConditionallyAccepted, carrierBookingService.getCarrierBookingStatus("ConditionallyAccepted"));
+        assertEquals(CarrierBookingStatus.RejectedByINTTRA, carrierBookingService.getCarrierBookingStatus("Rejected"));
+        assertEquals(CarrierBookingStatus.AcceptedByINTTRA, carrierBookingService.getCarrierBookingStatus("Accepted"));
+        assertEquals(CarrierBookingStatus.ConfirmedByCarrier, carrierBookingService.getCarrierBookingStatus("Confirmed"));
+        assertEquals(CarrierBookingStatus.DeclinedByCarrier, carrierBookingService.getCarrierBookingStatus("Declined"));
+        assertEquals(CarrierBookingStatus.ReplacedByCarrier, carrierBookingService.getCarrierBookingStatus("Replaced"));
+        assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Cancelled"));
+        assertEquals(CarrierBookingStatus.CancelledByCarrier, carrierBookingService.getCarrierBookingStatus("Canceled"));
+        assertEquals(CarrierBookingStatus.Changed, carrierBookingService.getCarrierBookingStatus("ChangeBookingRequested"));
+        assertEquals(Requested, carrierBookingService.getCarrierBookingStatus("NewBookingRequested"));
     }
 
     @Test
     void test_getCarrierBookingStatus_DefaultCase() {
         // Test default case
-        Assertions.assertEquals(CarrierBookingStatus.PendingFromCarrier, carrierBookingService.getCarrierBookingStatus("UnknownStatus"));
-        Assertions.assertEquals(CarrierBookingStatus.PendingFromCarrier, carrierBookingService.getCarrierBookingStatus(""));
+        assertEquals(CarrierBookingStatus.PendingFromCarrier, carrierBookingService.getCarrierBookingStatus("UnknownStatus"));
+        assertEquals(CarrierBookingStatus.PendingFromCarrier, carrierBookingService.getCarrierBookingStatus(""));
     }
 
     @Test
     void test_getRoutingCarriage_AllValidCases() {
         // Test all valid cases
-        Assertions.assertEquals(RoutingCarriage.MAIN_CARRIAGE, carrierBookingService.getRoutingCarriage("MainCarriage"));
-        Assertions.assertEquals(RoutingCarriage.PRE_CARRIAGE, carrierBookingService.getRoutingCarriage("PreCarriage"));
-        Assertions.assertEquals(RoutingCarriage.ON_CARRIAGE, carrierBookingService.getRoutingCarriage("OnCarriage"));
+        assertEquals(RoutingCarriage.MAIN_CARRIAGE, carrierBookingService.getRoutingCarriage("MainCarriage"));
+        assertEquals(RoutingCarriage.PRE_CARRIAGE, carrierBookingService.getRoutingCarriage("PreCarriage"));
+        assertEquals(RoutingCarriage.ON_CARRIAGE, carrierBookingService.getRoutingCarriage("OnCarriage"));
     }
 
     @Test
@@ -647,12 +886,12 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void test_getTransportMode_AllValidCases() {
         // Test all valid cases
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_SEA, carrierBookingService.getTransportMode("MaritimeTransport"));
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_RAIL, carrierBookingService.getTransportMode("RailTransport"));
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_ROAD, carrierBookingService.getTransportMode("RoadTransport"));
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_INLAND_WATER, carrierBookingService.getTransportMode("InlandWaterTransport"));
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_RAIL_WATER, carrierBookingService.getTransportMode("Rail_WaterTransport"));
-        Assertions.assertEquals(CarrierBookingConstants.TRANSPORT_MODE_ROAD_WATER, carrierBookingService.getTransportMode("Road_WaterTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_SEA, carrierBookingService.getTransportMode("MaritimeTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_RAIL, carrierBookingService.getTransportMode("RailTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_ROAD, carrierBookingService.getTransportMode("RoadTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_INLAND_WATER, carrierBookingService.getTransportMode("InlandWaterTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_RAIL_WATER, carrierBookingService.getTransportMode("Rail_WaterTransport"));
+        assertEquals(CarrierBookingConstants.TRANSPORT_MODE_ROAD_WATER, carrierBookingService.getTransportMode("Road_WaterTransport"));
     }
 
     @Test

@@ -238,17 +238,26 @@ public class CarrierBookingService implements ICarrierBookingService {
                 carrierBookingPage.getTotalElements());
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
+    public List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
                                                              Set<String> includeColumns) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<CarrierBookingListResponse> carrierBookingListResponses = new ArrayList<>();
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
             CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
-            carrierBookingListResponse.setConsolidationNo(carrierBooking.getEntityNumber());
-            carrierBookingListResponse.setMblNo(carrierBooking.getCarrierBlNo());
-            if(carrierBooking.getShippingInstruction() != null) carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
-            if(carrierBooking.getVerifiedGrossMass() != null) carrierBookingListResponse.setVgmStatus(carrierBooking.getVerifiedGrossMass().getStatus());
+            if(carrierBooking.getShippingInstruction() != null) {
+                carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
+            }
+            if(carrierBooking.getVerifiedGrossMass() != null) {
+                carrierBookingListResponse.setVgmStatus(carrierBooking.getVerifiedGrossMass().getStatus());
+            }
+            if(!CollectionUtils.isEmpty(carrierBooking.getReferenceNumbersList())) {
+                Optional<ReferenceNumbers> contractReferenceNumber = carrierBooking.getReferenceNumbersList()
+                        .stream()
+                        .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
+                        .findFirst();
+                contractReferenceNumber.ifPresent(referenceNumbers -> carrierBookingListResponse.setContractNo(referenceNumbers.getReferenceNumber()));
+            }
             carrierBookingListResponses.add(carrierBookingListResponse);
         }
 

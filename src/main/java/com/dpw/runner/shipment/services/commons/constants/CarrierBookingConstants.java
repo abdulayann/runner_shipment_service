@@ -27,6 +27,7 @@ public class CarrierBookingConstants {
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
     public static final String SUBMIT_SUCCESSFUL = "Carrier Booking submitted successfully.";
     public static final String AMEND_SUCCESSFUL = "Carrier Booking amend successfully.";
+    public static final String CON = "CON";
 
 
     private CarrierBookingConstants() {
