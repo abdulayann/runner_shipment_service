@@ -151,11 +151,12 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean
     public ExecutorService executorServiceRouting() {
-        int corePoolSize = 5; // Min threads
-        int maximumPoolSize = 10; // Adjusted max pool size
+        return commonExecutorService(5, 10, 100);
+    }
+
+    public ExecutorService commonExecutorService(int corePoolSize, int maximumPoolSize, int queueCapacity){
         long keepAliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
-        int queueCapacity = 100; // Define queue capacity
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);
         RejectedExecutionHandler handler = (r, executor) -> {
             try {

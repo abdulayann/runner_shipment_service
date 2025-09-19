@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
@@ -151,5 +152,16 @@ public class NPMController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(NPMConstants.LIST_CONTRACTS_MULTI_PARTY)
+    public ResponseEntity<IRunnerResponse> fetchContractsCountForParties(@RequestBody @Valid GetContractsCountForPartiesRequest request) {
+        try {
+            return npmService.fetchContractsCountForParties(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : NPMConstants.CONTRACT_LIST_FAILED;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 }

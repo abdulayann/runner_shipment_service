@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -200,6 +201,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
+
+    @Autowired
+    private ShippingInstructionUtil shippingInstructionUtil;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -1813,6 +1817,8 @@ public class ContainerV3Service implements IContainerV3Service {
                 afterSave(container, false, isCreate);
             }
         }
+
+        shippingInstructionUtil.syncCommonContainers(containers);
     }
 
     public Containers setAssignContainerParams(AssignContainerRequest request, String module, AssignContainerParams assignContainerParams) throws RunnerException {

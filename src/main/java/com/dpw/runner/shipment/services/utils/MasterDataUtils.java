@@ -9,6 +9,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -41,6 +44,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -171,6 +175,18 @@ public class MasterDataUtils{
         else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             addLocCodesFromCarrierDetailsResponse(customerBookingV3Response.getCarrierDetails(), locCodes, fieldNameKeyMap, cacheMap);
         }
+        else if(response instanceof CarrierBookingListResponse carrierBookingListResponse) {
+            addLocCodesFromCarrierBookingResponse(carrierBookingListResponse, locCodes, fieldNameKeyMap, cacheMap);
+        }
+    }
+
+    private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+       if(Objects.nonNull(response.getSailingInformation())) {
+           locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
+       }
+
+        locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));
+
     }
 
     private void addLocCodesFromCarrierDetailsResponse(CarrierDetailResponse carrierDetails, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -241,7 +257,8 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+        }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
         }
     }
@@ -299,6 +316,21 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
             vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
+        }
+        else if (response instanceof CarrierBookingResponse carrierBookingResponse) {
+            addCarrierRoutingVessels(carrierBookingResponse.getCarrierRoutingList(), vessels, fieldNameKeyMap, cacheMap);
+        }
+    }
+
+    private void addCarrierRoutingVessels(
+            List<CarrierRoutingResponse> routingList, Set<String> vessels,
+            Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (routingList == null) {
+            return;
+        }
+        for (CarrierRoutingResponse routing : routingList) {
+            vessels.addAll(createInBulkVesselsRequest(routing, CarrierRouting.class, fieldNameKeyMap,
+                    CarrierRouting.class.getSimpleName() + routing.getId(), cacheMap));
         }
     }
 
@@ -1863,6 +1895,29 @@ public class MasterDataUtils{
                 UserContext.removeUser();
             }
 
+        };
+    }
+
+    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext1 = UserContext.getUser();
+
+        return () -> {
+            try {
+                if (mdc != null) {
+                    MDC.setContextMap(mdc);
+                } else {
+                    MDC.clear();
+                }
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext1);
+                return supplier.get();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
         };
     }
 

@@ -129,4 +129,34 @@ class NetworkTransferControllerTest {
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+
+    @Test
+    void createExternalBridge() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = networkTransferController.createExternalViaBridge(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createExternalBridge2() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = networkTransferController.createExternalViaBridge(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createExternalBridge3() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = networkTransferController.createExternalViaBridge(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }
