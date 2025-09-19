@@ -79,6 +79,7 @@ public class ApiConstants {
     public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
+    public static final String API_SUBMIT_OR_AMEND_BY_ID = "/submitOrAmend/id";
     public static final String CREATE_NON_BILLABLE_CUSTOMER = "/createNonBillableCustomer";
     public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";

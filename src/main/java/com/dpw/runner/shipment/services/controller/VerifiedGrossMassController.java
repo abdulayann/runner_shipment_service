@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
@@ -136,6 +137,26 @@ public class VerifiedGrossMassController {
         } catch (Exception e) {
             log.error("Error processing bulk update: {}", e.getMessage(), e);
             return ResponseHelper.buildFailedResponse("Failed to process bulk update");
+        }
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL, response = VerifiedGrossMassController.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = VerifiedGrossMassController.MyResponseClass.class)
+    })
+    @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND_BY_ID)
+    public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest) {
+        log.info("Received Verified Gross Mass request with RequestId: {} and OperationType: {}",
+                LoggerHelper.getRequestIdFromMDC(), verifiedGrossMassInttraRequest.getOperationType());
+        try {
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(verifiedGrossMassInttraRequest);
+            log.info("Verified Gross Mass successful with RequestId: {}, OperationType: {} and response: {}",
+                    LoggerHelper.getRequestIdFromMDC(), verifiedGrossMassInttraRequest.getOperationType(), jsonHelper.convertToJson(verifiedGrossMassInttraRequest));
+            return ResponseHelper.buildSuccessResponse(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL+verifiedGrossMassInttraRequest.getOperationType());
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error submit/Amend Verified Gross Mass";
+            log.error(responseMsg, ex);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 }

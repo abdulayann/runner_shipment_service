@@ -24,6 +24,7 @@ public class VerifiedGrossMassResponse implements IRunnerResponse {
     private CarrierBookingStatus bookingStatus;
     private VerifiedGrossMassStatus status;
     private ShippingInstructionStatus siStatus;
+    private Boolean isDelegated;
     private Long entityId;
     private EntityType entityType;
     private String entityNumber;
