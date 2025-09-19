@@ -153,6 +153,8 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String SHIPMENT_TYPE_ROR = "ROR";
+    public static final String SHIPMENT_TYPE_BBK = "BBK";
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
     public static final String SHIPMENT_TYPE_HSE = "HSE";
@@ -506,6 +508,7 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
+    public static final String CARRIER_PORTAL = "Carrier Portal";
     public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
@@ -638,7 +641,6 @@ public class Constants {
     public static final String NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE = "You are not allowed to view this consolidation as this tenant is not part of receiving agent or triangulation partner.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
-
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
@@ -736,6 +738,15 @@ public class Constants {
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
     public static final String BEARER = "Bearer ";
 
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
+    public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
+    public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
+
+    public static final String PROD_ENV = "prod";
+    public static final String DEMO_ENV = "demo";
+    public static final String CONTRACT_TYPE = "CONTRACT";
+    public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     private Constants() {
     }
 

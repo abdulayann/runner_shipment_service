@@ -86,6 +86,9 @@ class CSDReportTest {
     IShipmentDao shipmentDao;
 
     @Mock
+    MasterDataUtils masterDataUtil;
+
+    @Mock
     private IContainerDao containerDao;
 
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();

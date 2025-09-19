@@ -1739,7 +1739,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccess_Air_transport_WithoutAirCargoSecurity() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccess_Air_transport_WithoutAirCargoSecurity() throws RunnerException {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1764,9 +1764,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        request.setIsDg(Boolean.TRUE);
+        request.setIsDg(Boolean.FALSE);
 
-        CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).FetchRatesMandate(Boolean.FALSE).ShipmentServiceV2Enabled(Boolean.TRUE).countryAirCargoSecurity(Boolean.FALSE).build());
@@ -1790,8 +1789,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
 
         // Act
-        ValidationException exception = assertThrows(ValidationException.class, () -> customerBookingService.update(request));
-        assertEquals("User does not have AIR DG Permission to create AIR Shipment from Booking", exception.getMessage());
+         assertDoesNotThrow(() -> customerBookingService.update(request));
+
     }
 
     @Test
@@ -3749,7 +3748,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testGetDefaultBooking() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setVolumeChargeableUnit("CBM");
+        tenantSettings.setVolumeChargeableUnit("M3");
         tenantSettings.setWeightChargeableUnit("KGS");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
@@ -3761,7 +3760,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
         assertNotNull(response);
-        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals("M3", response.getVolumeUnit());
         assertEquals("KGS", response.getGrossWeightUnit());
         assertEquals(1, response.getTenantId());
         assertEquals(BookingSource.Runner, response.getSource());

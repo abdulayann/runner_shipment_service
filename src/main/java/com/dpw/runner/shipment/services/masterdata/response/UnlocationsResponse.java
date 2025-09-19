@@ -38,6 +38,10 @@ public class UnlocationsResponse implements Serializable {
     private String lookupDescSea;
     @JsonProperty("CountryName")
     private String countryName;
+    @JsonProperty("lookupDesc")
+    public String lookupDesc;
+    @JsonProperty("lookupDescV3")
+    public String lookupDescV3;
     @JsonProperty("CountryThreeDigitCode")
     private String CountryThreeDigitCode;
     @JsonProperty("HasSeaPort")

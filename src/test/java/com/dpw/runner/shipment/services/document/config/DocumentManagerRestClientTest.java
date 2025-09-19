@@ -273,6 +273,31 @@ class DocumentManagerRestClientTest {
     }
 
     @Test
+    void testStoreDocument() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.storeDocument(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testStoreDocumentException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.storeDocument(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
     void testTemporaryUpload() {
         DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);

@@ -75,6 +75,7 @@ import com.dpw.runner.shipment.services.dto.response.AwbOtherInfoResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbStatusForAttachment;
 import com.dpw.runner.shipment.services.dto.response.FnmStatusMessageResponse;
 import com.dpw.runner.shipment.services.dto.response.IataAgentResponse;
 import com.dpw.runner.shipment.services.dto.response.IataFetchRateResponse;
@@ -157,6 +158,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1486,6 +1488,14 @@ public class AwbService implements IAwbService {
     private void linkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
+        var mawbHawblinkList = mawbHawbLinkDao.findByMawbId(mawb.getId());
+        Set<Long> hawbIds = new HashSet<>();
+        if(!CommonUtils.listIsNullOrEmpty(mawbHawblinkList)) {
+            hawbIds = mawbHawblinkList.stream().map(MawbHawbLink::getHawbId).collect(Collectors.toSet());
+        }
+        List<MawbHawbLink> newLinks = new ArrayList<>();
+
+
         for (var awb : awbList) {
             if (awb.getAwbPackingInfo() != null) {
                 for (AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
@@ -1493,11 +1503,27 @@ public class AwbService implements IAwbService {
                 }
             }
             awbDao.save(awb);
+            updateMawbHawbLink(awb, newLinks, hawbIds, mawb);
 
+        }
+        if(!CommonUtils.listIsNullOrEmpty(newLinks))
+            mawbHawbLinkDao.saveAll(newLinks);
+
+        if(!CommonUtils.setIsNullOrEmpty(hawbIds)) {
+            mawbHawbLinkDao.deleteByHawbIdsAndMawbIds(hawbIds, mawb.getId());
+        }
+
+
+    }
+
+    private void updateMawbHawbLink(Awb awb, List<MawbHawbLink> newLinks, Set<Long> hawbIds, Awb mawb) {
+        if(!hawbIds.contains(awb.getId())) {
             MawbHawbLink mawbHawblink = new MawbHawbLink();
             mawbHawblink.setHawbId(awb.getId());
             mawbHawblink.setMawbId(mawb.getId());
-            mawbHawbLinkDao.save(mawbHawblink);
+            newLinks.add(mawbHawblink);
+        } else {
+            hawbIds.remove(awb.getId());
         }
     }
 
@@ -2760,6 +2786,10 @@ public class AwbService implements IAwbService {
                 }
             }
         }
+        if(!CommonUtils.setIsNullOrEmpty(linkedHawbIds)) {
+            mawbHawbLinkDao.deleteByHawbIdsAndMawbIds(linkedHawbIds, mawbId);
+        }
+
     }
 
     private void updateHawbMawb(Long mawbId, ShipmentDetails consoleShipment, Set<Long> linkedHawbIds) {
@@ -2773,6 +2803,8 @@ public class AwbService implements IAwbService {
                     mawbHawblink.setHawbId(awb.getId());
                     mawbHawblink.setMawbId(mawbId);
                     mawbHawbLinkDao.save(mawbHawblink);
+                } else if (awb != null) {
+                    linkedHawbIds.remove(awb.getId());
                 }
             }
         }
@@ -4076,6 +4108,27 @@ public class AwbService implements IAwbService {
     }
 
     @Override
+    public ResponseEntity<IRunnerResponse> validateAwbBeforeAttachment(Optional<Long> consolidationId) {
+        if(consolidationId.isPresent()) {
+            AwbStatusForAttachment res = AwbStatusForAttachment.builder().isAirMessageSent(false).build();
+            var awb = awbDao.findByConsolidationId(consolidationId.get());
+            if (awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null) {
+                if (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED)) {
+                    res = AwbStatusForAttachment.builder().isAirMessageSent(true)
+                            .message("The MAWB Original has been printed, the FWB/FZB has been transmitted to the carrier, and the RCS status has been acknowledged by the carrier. Would you like to proceed?").build();
+                } else if (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+                        Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) ||
+                        Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS)) {
+                    res = AwbStatusForAttachment.builder().isAirMessageSent(true)
+                            .message("The MAWB Original has been printed, the FWB/FZB has been transmitted to the carrier Would you like to proceed?").build();
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(res);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> getFnmStatusMessage(Optional<Long> shipmentId, Optional<Long> consolidaitonId) {
 
         Awb masterAwb = null;
@@ -4381,4 +4434,61 @@ public class AwbService implements IAwbService {
             }
         }
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> airMessageStatusReset(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            var awb = awbDao.findById(commonRequestModel.getId()).orElse(null);
+
+            if (awb == null) {
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            if (!Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED))
+                throw new ValidationException("AWB is not in FSU Locked status, cannot reset the status.");
+
+            var oldEntityJsonString = jsonHelper.convertToJson(awb);
+
+            awb.setAirMessageStatus(AwbStatus.AWB_GENERATED);
+            if (Objects.nonNull(awb.getConsolidationId()))
+                awb.setLinkedHawbAirMessageStatus(AwbStatus.AWB_GENERATED);
+
+            awbDao.save(awb);
+
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(awb)
+                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Awb.class) : null)
+                            .parent(Awb.class.getSimpleName())
+                            .parentId(awb.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
+            updateAirMessageStatusForLinkedShipments(awb);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void updateAirMessageStatusForLinkedShipments(Awb awb) {
+        consolidationDetailsDao.findById(awb.getConsolidationId()).ifPresent(consolidation -> {
+            List<Long> shipmentDetailsIdList = consolidation.getShipmentsList()
+                    .stream()
+                    .map(ShipmentDetails::getId)
+                    .toList();
+
+            if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsIdList)) {
+                List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+                awbList.forEach(shipmentAwb -> shipmentAwb.setAirMessageStatus(AwbStatus.AWB_GENERATED));
+                awbDao.saveAll(awbList);
+            }
+        });
+    }
+
 }

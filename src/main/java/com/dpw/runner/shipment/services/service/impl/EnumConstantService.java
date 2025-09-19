@@ -65,8 +65,9 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.CUSTOMER_CATEGORY_RATES, enumList);
 
+        enumList = new ArrayList<>();
         for (CarrierBookingStatus status : CarrierBookingStatus.values()) {
-            enumList.add(EnumConstantResponse.builder().id(status.getValue()).description(status.getDescription()).name(status.name()).build());
+            enumList.add(EnumConstantResponse.builder().id(status.getValue()).description(status.getDescription()).name(status.name()).meta(status.getAllowedTypes()).build());
         }
         response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 

@@ -443,4 +443,7 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "migration_status")
     @Enumerated(EnumType.STRING)
     private MigrationStatus migrationStatus;
+
+    @Column(name = "integration_source")
+    private String integrationSource;
 }
