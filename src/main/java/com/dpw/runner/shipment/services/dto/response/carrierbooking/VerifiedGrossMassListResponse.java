@@ -19,6 +19,7 @@ public class VerifiedGrossMassListResponse implements IRunnerResponse {
     private Integer tenantId;
     private String carrierBookingNo;
     private String carrierBlNo;
+    private Boolean isDelegated;
     private String entityType;
     private String entityNumber;
     private Long entityId;
