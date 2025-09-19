@@ -21,7 +21,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
-import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -53,7 +52,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1019,7 +1017,7 @@ class ShippingInstructionsServiceImplTest {
         };
 
         when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(
-                eq(EntityType.CONSOLIDATION), eq(List.of(123L))))
+                (EntityType.CONSOLIDATION), eq(List.of(123L))))
                 .thenReturn(List.of(projection));
         when(commonContainersDao.getAll(List.of(guid))).thenReturn(List.of());
 
