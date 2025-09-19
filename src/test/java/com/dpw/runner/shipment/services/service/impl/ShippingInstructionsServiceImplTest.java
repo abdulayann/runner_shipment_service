@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.controller.ShippingInstructionsControlle
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
@@ -98,6 +99,8 @@ class ShippingInstructionsServiceImplTest {
     private ModelMapper modelMapper;
     @Mock
     private IPackingV3Service packingV3Service;
+    @Mock
+    ITransactionHistoryDao transactionHistoryDao;
     private final ShippingInstructionUtil shippingInstructionUtil = new ShippingInstructionUtil();
 
     private static JsonTestUtility jsonTestUtility;

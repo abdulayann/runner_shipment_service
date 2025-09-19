@@ -1727,6 +1727,11 @@ public class ContainerV3Service implements IContainerV3Service {
                 executorService
         ));
 
+        futures.add(CompletableFuture.runAsync(
+                () -> shippingInstructionUtil.syncCommonContainers(List.of(container)),
+                executorService
+        ));
+
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
@@ -1756,6 +1761,11 @@ public class ContainerV3Service implements IContainerV3Service {
               false
           ));
     }
+
+      futures.add(CompletableFuture.runAsync(
+              () -> shippingInstructionUtil.syncCommonContainers(containers),
+              executorService
+      ));
 
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }

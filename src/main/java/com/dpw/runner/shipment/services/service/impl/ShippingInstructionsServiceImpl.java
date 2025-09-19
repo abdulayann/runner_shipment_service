@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsCo
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -47,6 +44,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -58,6 +56,7 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -107,6 +106,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     private IPartiesDao partiesDao;
 
+    @Autowired
+    private ITransactionHistoryDao transactionHistoryDao;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -632,6 +633,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         sendForDownstreamProcess(si);
+        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "Submit Requested", SourceSystem.Carrier, id);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -689,6 +691,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);
+        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "Amende Requested", SourceSystem.Carrier, id);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -714,5 +717,18 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
+    private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+                .actionStatusDescription(actionStatus)
+                .flowType(flowType)
+                .description(description)
+                .sourceSystem(sourceSystem)
+                .actualDateTime(LocalDateTime.now())
+                .entityType(EntityTypeTransactionHistory.CARRIER_BOOKING)
+                .entityId(id)
+                .build();
+
+        transactionHistoryDao.save(transactionHistory);
+    }
 
 }

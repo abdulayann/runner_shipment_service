@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.dao.interfaces.ICommonContainersDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICommonPackagesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,12 @@ public class ShippingInstructionUtil {
 
     @Autowired
     private ICommonPackagesDao commonPackagesDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IShippingInstructionDao shippingInstructionDao;
 
     public List<ShippingInstructionContainerWarningResponse> compareContainerDetails(
             List<CommonContainers> oldContainers,
@@ -141,6 +149,45 @@ public class ShippingInstructionUtil {
             return;
         }
 
+        // --- Step 1: Collect all unique consolidation numbers from containers ---
+        List<Long> allConsolId = containers.stream()
+                .map(Containers::getConsolidationId) // assuming this field exists
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (allConsolId.isEmpty()) {
+            return;
+        }
+
+        // --- Step 2a: Direct lookup (entityType = CONSOLIDATION) ---
+        List<ShippingConsoleIdProjection> direct = shippingInstructionDao
+                .findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, allConsolId);
+
+        Map<Long, List<Long>> consolToInstructionMap = direct.stream()
+                .filter(p -> p.getEntityId() != null)
+                .collect(Collectors.groupingBy(
+                        ShippingConsoleIdProjection::getEntityId,
+                        Collectors.mapping(ShippingConsoleIdProjection::getId, Collectors.toList())
+                ));
+
+        // --- Step 2b: Indirect lookup via CarrierBooking for missing consol numbers ---
+        List<Long> missingConsols = allConsolId.stream()
+                .filter(c -> !consolToInstructionMap.containsKey(c))
+                .toList();
+
+        if (!missingConsols.isEmpty()) {
+            List<ShippingConsoleIdProjection> viaCarrier = shippingInstructionDao
+                    .findByCarrierBookingConsolId(missingConsols);
+
+            viaCarrier.stream()
+                    .filter(p -> p.getEntityId() != null)
+                    .forEach(p -> consolToInstructionMap
+                            .computeIfAbsent(p.getEntityId(), k -> new ArrayList<>())
+                            .add(p.getId()));
+        }
+
+        // --- Step 3: Fetch existing commons ---
         List<UUID> guids = containers.stream()
                 .map(Containers::getGuid)
                 .filter(Objects::nonNull)
@@ -150,34 +197,109 @@ public class ShippingInstructionUtil {
             return;
         }
 
-        List<CommonContainers> commons = commonContainersDao.getAll(guids);
-
-        Map<UUID, CommonContainers> commonMap = commons.stream()
+        Map<UUID, CommonContainers> commonMap = commonContainersDao.getAll(guids)
+                .stream()
                 .collect(Collectors.toMap(CommonContainers::getContainerRefGuid, c -> c));
 
         List<CommonContainers> toSave = new ArrayList<>();
 
+        // --- Step 4: Build/Update CommonContainers with ShippingInstructionId ---
         for (Containers container : containers) {
             CommonContainers common = commonMap.get(container.getGuid());
-            if (common != null) {
-                updateCommonContainerFromContainer(common, container);
-                toSave.add(common);
-            } else {
-                CommonContainers newCommon = new CommonContainers();
-                newCommon.setContainerRefGuid(container.getGuid()); // ref guid
-                updateCommonContainerFromContainer(newCommon, container);
-                toSave.add(newCommon);
+            if (common == null) {
+                common = new CommonContainers();
+                common.setContainerRefGuid(container.getGuid());
             }
+
+            updateCommonContainerFromContainer(common, container);
+
+            // Attach SI id(s) from consolidation number
+            Long consolNumber = container.getConsolidationId();
+            if (consolNumber != null) {
+                List<Long> siIds = consolToInstructionMap.getOrDefault(consolNumber, List.of());
+                if (!siIds.isEmpty()) {
+                    // Option A: attach only one
+                    common.setShippingInstructionId(siIds.get(0));
+
+                }
+            }
+            toSave.add(common);
         }
 
-        commonContainersDao.saveAll(toSave);
+        if (!toSave.isEmpty()) {
+            commonContainersDao.saveAll(toSave);
+        }
     }
+
 
     public void syncCommonPackings(List<Packing> packings) {
         if (packings == null || packings.isEmpty()) {
             return;
         }
 
+        // --- Step 1: Fetch shipment details in bulk ---
+        List<Long> shipmentIds = packings.stream()
+                .map(Packing::getShipmentId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (shipmentIds.isEmpty()) {
+            return;
+        }
+
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByIdIn(shipmentIds);
+
+        // Build shipmentId → consolidationNumbers map
+        Map<Long, List<String>> shipmentToConsolMap = shipmentDetailsList.stream()
+                .collect(Collectors.toMap(
+                        ShipmentDetails::getId,
+                        sd -> sd.getConsolidationList() == null ? List.of() :
+                                sd.getConsolidationList().stream()
+                                        .map(ConsolidationDetails::getConsolidationNumber)
+                                        .filter(Objects::nonNull)
+                                        .toList()
+                ));
+
+        // --- Step 2: Collect all unique consol numbers ---
+        List<String> allConsolNumbers = shipmentToConsolMap.values().stream()
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (allConsolNumbers.isEmpty()) {
+            return;
+        }
+
+        // --- Step 2a: Direct lookup (entityType = CONSOLIDATION) ---
+        List<ShippingConsoleNoProjection> direct = shippingInstructionDao
+                .findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, allConsolNumbers);
+
+        Map<String, List<Long>> consolToInstructionMap = direct.stream()
+                .filter(p -> p.getEntityId() != null)
+                .collect(Collectors.groupingBy(
+                        ShippingConsoleNoProjection::getEntityId,
+                        Collectors.mapping(ShippingConsoleNoProjection::getId, Collectors.toList())
+                ));
+
+// --- Step 2b: Indirect lookup via CarrierBooking for missing consol numbers ---
+        List<String> missingConsols = allConsolNumbers.stream()
+                .filter(c -> !consolToInstructionMap.containsKey(c))
+                .toList();
+
+        if (!missingConsols.isEmpty()) {
+            List<ShippingConsoleNoProjection> viaCarrier = shippingInstructionDao
+                    .findByCarrierBookingConsolNumbers(missingConsols);
+
+            viaCarrier.stream()
+                    .filter(p -> p.getEntityId() != null)
+                    .forEach(p -> consolToInstructionMap
+                            .computeIfAbsent(p.getEntityId(), k -> new ArrayList<>())
+                            .add(p.getId()));
+        }
+
+        // --- Step 3: Fetch existing commons ---
         List<UUID> guids = packings.stream()
                 .map(Packing::getGuid)
                 .filter(Objects::nonNull)
@@ -187,28 +309,39 @@ public class ShippingInstructionUtil {
             return;
         }
 
-        List<CommonPackages> commons = commonPackagesDao.findByPackingRefGuidIn(guids);
-
-        Map<UUID, CommonPackages> commonMap = commons.stream()
+        Map<UUID, CommonPackages> commonMap = commonPackagesDao.findByPackingRefGuidIn(guids)
+                .stream()
                 .collect(Collectors.toMap(CommonPackages::getPackingRefGuid, p -> p));
 
         List<CommonPackages> toSave = new ArrayList<>();
 
+        // --- Step 4: Build/Update CommonPackages with ShippingInstructionId ---
         for (Packing packing : packings) {
             CommonPackages common = commonMap.get(packing.getGuid());
-            if (common != null) {
-                updateCommonPackingFromPacking(common, packing);
-                toSave.add(common);
-            } else {
-                CommonPackages newCommon = new CommonPackages();
-                newCommon.setPackingRefGuid(packing.getGuid()); // ref guid
-                updateCommonPackingFromPacking(newCommon, packing);
-                toSave.add(newCommon);
+            if (common == null) {
+                common = new CommonPackages();
+                common.setPackingRefGuid(packing.getGuid());
             }
+
+            updateCommonPackingFromPacking(common, packing);
+
+            // attach SI id from first matching consolidation number
+            List<String> consolNumbers = shipmentToConsolMap.getOrDefault(packing.getShipmentId(), List.of());
+            consolNumbers.stream()
+                    .map(consolToInstructionMap::get)
+                    .filter(Objects::nonNull)
+                    .flatMap(List::stream)   // flatten list of SI ids
+                    .findFirst()
+                    .ifPresent(common::setShippingInstructionId);
+
+            toSave.add(common);
         }
 
-        commonPackagesDao.saveAll(toSave);
+        if (!toSave.isEmpty()) {
+            commonPackagesDao.saveAll(toSave);
+        }
     }
+
 
     public void updateCommonContainerFromContainer(CommonContainers common, Containers container) {
         common.setContainerCode(container.getContainerCode());
