@@ -221,7 +221,6 @@ public class CommonUtils {
         request.setFilterCriteria(criterias);
         return request;
     }
-
     public static ListCommonRequest constructListRequestFromEntityId(Long entityId, String entityType) {
         FilterCriteria entityIdCriteria = FilterCriteria.builder()
                 .innerFilter(Arrays.asList(FilterCriteria.builder()
@@ -3131,5 +3130,16 @@ public class CommonUtils {
         String countryName = CountryListHelper.ISO3166.getCountryNameByCode(code);
         return StringUtility.isNotEmpty(countryName) ? countryName : code;
     }
-    
+    public String convertSeconds(long totalSeconds) {
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+
+        if (minutes == 0) {
+            return Constants.EXPORT_EXCEL_MESSAGE + seconds + " seconds. Please try again after that time.";
+        } else if (seconds == 0) {
+            return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes. Please try again after that time.";
+        } else {
+            return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
+        }
+    }
 }
