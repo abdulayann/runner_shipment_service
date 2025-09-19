@@ -2948,11 +2948,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (order == null) {
             return;
         }
+        List<PackingV3Request> orderPackings = CommonUtils.mapOrderLineListToPackingV3RequestList(order.getOrderLines());
         ShipmentOrderV3Request shipmentOrder = ShipmentOrderV3Request.builder()
                 .orderNumber(customerBookingRequest.getOrderManagementNumber())
                 .orderGuid(UUID.fromString(customerBookingRequest.getOrderManagementId()))
                 .shipmentId(shipmentRequest.getId())
-                .orderPackings(order.getOrderLines())
+                .orderPackings(orderPackings)
                 .build();
         List<ShipmentOrderV3Request> shipmentOrdersList = Arrays.asList(shipmentOrder);
         shipmentRequest.setShipmentOrders(shipmentOrdersList);

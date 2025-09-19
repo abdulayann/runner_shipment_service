@@ -84,10 +84,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -8820,7 +8817,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
 
-        List<PackingV3Request> orderLines = List.of(PackingV3Request.builder().build());
+        List<OrderLineV3Response> orderLines = List.of(OrderLineV3Response.builder().build());
         OrderManagementDTO dto = OrderManagementDTO.builder()
                 .orderLines(orderLines)
                 .build();
