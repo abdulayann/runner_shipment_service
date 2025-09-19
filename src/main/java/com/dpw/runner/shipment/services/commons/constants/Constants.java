@@ -454,6 +454,7 @@ public class Constants {
     public static final String CONSIGNEE_COUNTRY = "consigneeCountry";
     public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
     public static final String AWB_COUNTRY = "country";
+    public static final String SERVICE_MODE = "serviceMode";
 
     // Include Column fields
     public static final String BILLING_DATA = "billingData";
@@ -735,6 +736,7 @@ public class Constants {
     public static final String DOT = ".";
 
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
+    public static final String BEARER = "Bearer ";
 
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";

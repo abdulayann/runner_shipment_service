@@ -129,6 +129,9 @@ public class CommonContainers extends MultiTenancy {
     @Column(name = "weight_determination_location")
     private String weightDeterminationLocation;
 
+    @Column(name = "weight_determination_datetime")
+    private LocalDateTime weightDeterminationDateTime;
+
     @Column(name = "vgm_status")
     private String vgmStatus;
 

@@ -32,4 +32,5 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
     CustomerBookingV3Response cloneBookingFromShipmentIfExist(@Valid CloneRequest request) throws RunnerException;
+    QuoteResetRulesResponse resetBookingQuoteRules(Long bookingId);
 }

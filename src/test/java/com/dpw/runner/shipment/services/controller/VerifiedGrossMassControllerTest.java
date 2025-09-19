@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.VerifiedGrossMassService;
@@ -27,6 +29,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,6 +107,52 @@ class VerifiedGrossMassControllerTest {
         ResponseEntity<IRunnerResponse> responseResponseEntity = controller.retrieveById(1L);
         assertEquals(responseResponseEntity.getStatusCodeValue(), HttpStatus.OK.value());
     }
+
+    @Test
+    void submitOrAmend_Success() throws Exception {
+        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        request.setOperationType(OperationType.SUBMIT);
+
+        // Mock service to do nothing (success)
+        doNothing().when(verifiedGrossMassService).submitOrAmendVerifiedGrossMass(request);
+
+        // Mock JSON conversion for logging
+        when(jsonHelper.convertToJson(request)).thenReturn("{}");
+
+        ResponseEntity<IRunnerResponse> response = controller.submitOrAmend(request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verify(verifiedGrossMassService).submitOrAmendVerifiedGrossMass(request);
+        verify(jsonHelper).convertToJson(request);
+    }
+
+    @Test
+    void submitOrAmend_Failure_WithMessage() throws Exception {
+        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        request.setOperationType(OperationType.AMEND);
+
+        doThrow(new RuntimeException("Simulated failure"))
+                .when(verifiedGrossMassService).submitOrAmendVerifiedGrossMass(request);
+
+        ResponseEntity<IRunnerResponse> response = controller.submitOrAmend(request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void submitOrAmend_Failure_NullMessage() throws Exception {
+        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        request.setOperationType(OperationType.SUBMIT);
+
+        doThrow(new RuntimeException())
+                .when(verifiedGrossMassService).submitOrAmendVerifiedGrossMass(request);
+
+        ResponseEntity<IRunnerResponse> response = controller.submitOrAmend(request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());}
 
     @Test
     void deleteVgm() {

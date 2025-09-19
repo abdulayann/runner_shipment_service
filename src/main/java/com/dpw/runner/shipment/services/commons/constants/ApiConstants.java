@@ -80,6 +80,7 @@ public class ApiConstants {
     public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
+    public static final String API_SUBMIT_OR_AMEND = "/submitOrAmend";
     public static final String CREATE_NON_BILLABLE_CUSTOMER = "/createNonBillableCustomer";
     public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
@@ -219,6 +220,7 @@ public class ApiConstants {
     public static final String API_CLONE_BOOKING = "/clone/booking";
     public static final String API_CLONE_SHIPMENT = "/clone/shipment";
     public static final String API_CLONE_CONFIG = "/getCloneConfig";
+    public static final String API_RESET_QUOTE_FIELDS = "/quote/reset-fields";
 
     // Dynamic endpoints
     public static final String API_DYNAMIC_LIST = "/dynamic/list";
