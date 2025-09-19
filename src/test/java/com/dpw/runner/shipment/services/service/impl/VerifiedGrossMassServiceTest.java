@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -7,11 +8,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -30,11 +33,15 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +55,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -58,21 +66,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class VerifiedGrossMassServiceTest {
@@ -106,6 +102,12 @@ public class VerifiedGrossMassServiceTest {
 
     @Mock
     private ICommonContainersRepository commonContainersRepository;
+
+    @Mock
+    private INotificationService notificationService;
+
+    @Mock
+    private IV1Service iv1Service;
 
     @InjectMocks
     private VerifiedGrossMassService verifiedGrossMassService;
@@ -800,5 +802,119 @@ public class VerifiedGrossMassServiceTest {
         container.setId(id);
         container.setContainerNo("CONT" + id);
         return container;
+    }
+
+
+        //  Test: autoPopulateEmailsFromBooking
+        @Test
+        void testAutoPopulateEmailsFromBooking() {
+            VerifiedGrossMass vgm = new VerifiedGrossMass();
+            CarrierBooking booking = new CarrierBooking();
+
+            booking.setInternalEmails("internal1@abc.com,internal2@abc.com");
+            booking.setExternalEmails("ext1@abc.com");
+            booking.setCreateByUserEmail("creator@abc.com");
+            booking.setSubmitByUserEmail("submitter@abc.com");
+
+            ReflectionTestUtils.invokeMethod(
+                    verifiedGrossMassService,
+                    "autoPopulateEmailsFromBooking",
+                    vgm,
+                    booking
+            );
+            // Assert
+            assertEquals("internal1@abc.com,internal2@abc.com", vgm.getInternalEmails());
+            assertEquals("ext1@abc.com", vgm.getExternalEmails());
+            assertEquals("creator@abc.com", vgm.getCreateByUserEmail());
+            assertEquals("submitter@abc.com", vgm.getSubmitByUserEmail());
+        }
+
+        //  Test: sendNotification triggers notificationService with correct data
+        @Test
+        void testSendNotification_Success() throws JsonProcessingException {
+            VerifiedGrossMass vgm = new VerifiedGrossMass();
+            vgm.setInternalEmails("internal@abc.com");
+            vgm.setCreateByUserEmail("creator@abc.com");
+            vgm.setSubmitByUserEmail("submitter@abc.com");
+
+            EmailTemplatesRequest template = new EmailTemplatesRequest();
+            template.setType(Constants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE);
+            template.setSubject("VGM Update");
+            template.setName("vgm-template");
+            template.setBody("<html>Body</html>");
+
+            // Spy so we can stub getVerifedGrossMassEmailTemplate
+            VerifiedGrossMassService spyService = Mockito.spy(verifiedGrossMassService);
+            doReturn(List.of(template)).when(spyService).getVerifedGrossMassEmailTemplate(anyList());
+
+            // Act
+            ReflectionTestUtils.invokeMethod(spyService, "sendNotification", vgm);
+
+            // Verify: notificationService called once
+            verify(notificationService, times(1)).sendEmail(argThat(req -> {
+                assertEquals("internal@abc.com,creator@abc.com,submitter@abc.com", req.getTo());
+                assertEquals("VGM Update", req.getSubject());
+                assertEquals("vgm-template", req.getTemplateName());
+                assertEquals("<html>Body</html>", req.getHtmlBody());
+                return true;
+            }));
+        }
+
+        //  Test: sendNotification handles exception
+        @Test
+        void testSendNotification_ExceptionHandled() throws JsonProcessingException {
+            VerifiedGrossMass vgm = new VerifiedGrossMass();
+            vgm.setInternalEmails("internal@abc.com");
+            vgm.setCreateByUserEmail("creator@abc.com");
+            vgm.setSubmitByUserEmail("submitter@abc.com");
+
+            EmailTemplatesRequest template = new EmailTemplatesRequest();
+            template.setType(Constants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE);
+            template.setSubject("VGM Update");
+
+            VerifiedGrossMassService spyService = Mockito.spy(verifiedGrossMassService);
+            doReturn(List.of(template)).when(spyService).getVerifedGrossMassEmailTemplate(anyList());
+
+            // Mock notificationService to throw exception
+            doThrow(new RuntimeException("SMTP error")).when(notificationService).sendEmail(any());
+            ReflectionTestUtils.invokeMethod(spyService, "sendNotification", vgm);
+
+            // Act → should not throw
+            verify(notificationService, times(1)).sendEmail(any());
+        }
+
+    @Test
+    void testGetVerifedGrossMassEmailTemplate_Success() {
+        // Arrange
+        List<String> templateCodes = List.of("VERIFIED_GROSS_MASS_EMAIL_TEMPLATE");
+
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = List.of(new Object()); // dummy entity list
+
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class)))
+                .thenReturn(mockResponse);
+
+        EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+        emailTemplate.setType("VERIFIED_GROSS_MASS_EMAIL_TEMPLATE");
+        emailTemplate.setSubject("Test Subject");
+        emailTemplate.setName("TemplateName");
+        emailTemplate.setBody("<html>Test Body</html>");
+
+        when(jsonHelper.convertValueToList(eq(mockResponse.entities), eq(EmailTemplatesRequest.class)))
+                .thenReturn(List.of(emailTemplate));
+
+        // Act
+        List<EmailTemplatesRequest> result =
+                verifiedGrossMassService.getVerifedGrossMassEmailTemplate(templateCodes);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Test Subject", result.get(0).getSubject());
+        assertEquals("TemplateName", result.get(0).getName());
+        assertEquals("<html>Test Body</html>", result.get(0).getBody());
+
+        // Verify call to iv1Service
+        verify(iv1Service, times(1)).getEmailTemplates(any(CommonV1ListRequest.class));
     }
 }

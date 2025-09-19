@@ -46,6 +46,11 @@ public class ShippingInstructionRequest implements Serializable {
     private Integer nonNegoFreightCopies;
     private Integer nonNegoUnFreightCopies;
 
+    private String internalEmails;
+    private String externalEmails;
+    private String createByUserEmail;
+    private String submitByUserEmail;
+
     private PartiesRequest contract;
     private PartiesRequest shipper;
     private PartiesRequest consignee;

@@ -59,6 +59,12 @@ public class VerifiedGrossMass extends MultiTenancy {
     @Column(name = "external_emails", columnDefinition = "TEXT")
     private String externalEmails;
 
+    @Column(name = "created_by_user_email", columnDefinition = "TEXT")
+    private String createByUserEmail;
+
+    @Column(name = "submit_by_user_email", columnDefinition = "TEXT")
+    private String submitByUserEmail;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")
     private SailingInformation sailingInformation;
