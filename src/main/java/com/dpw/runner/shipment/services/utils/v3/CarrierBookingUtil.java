@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -9,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -128,6 +132,23 @@ public class CarrierBookingUtil {
         T value = getter.get();
         if (value != null) {
             setter.accept(value);
+        }
+    }
+
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
+
+        if (Objects.isNull(carrierDatav1Map)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
+            EntityTransferCarrier carrier = entry.getValue();
+
+            String carrierScacCode = carrier.ItemValue;
+            String carrierDescription = carrier.ItemDescription;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            carrierBookingBridgeRequest.setCarrierScacCode(carrierScacCode);
+            carrierBookingBridgeRequest.setCarrierDescription(carrierDescription);
         }
     }
 }

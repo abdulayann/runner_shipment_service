@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -96,6 +97,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.security.SecureRandom;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -127,6 +129,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CarrierBookingService implements ICarrierBookingService {
 
     private final ICarrierBookingDao carrierBookingDao;
@@ -143,36 +146,11 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IConsolidationV3Service consolidationV3Service;
     private final IShipmentDao shipmentDao;
     private final IPartiesDao partiesDao;
-    private final IntraCommonKafkaHelper kafkaHelper;
     private final ITransactionHistoryDao transactionHistoryDao;
     private final CarrierBookingBridgeMapper carrierBookingBridgeMapper;
     private final BridgeServiceAdapter bridgeServiceAdapter;
     private final BridgeServiceConfig bridgeServiceConfig;
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
-
-    @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao, CarrierBookingBridgeMapper carrierBookingBridgeMapper, BridgeServiceAdapter bridgeServiceAdapter, BridgeServiceConfig bridgeServiceConfig, CarrierBookingInttraUtil carrierBookingInttraUtil) {
-        this.carrierBookingDao = carrierBookingDao;
-        this.jsonHelper = jsonHelper;
-        this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
-        this.carrierBookingValidationUtil = carrierBookingValidationUtil;
-        this.commonUtils = commonUtils;
-        this.notificationService = notificationService;
-        this.iv1Service = iv1Service;
-        this.carrierBookingUtil = carrierBookingUtil;
-        this.masterDataUtils = masterDataUtils;
-        this.executorServiceMasterData = executorServiceMasterData;
-        this.consolidationDetailsDao = consolidationDetailsDao;
-        this.consolidationV3Service = consolidationV3Service;
-        this.shipmentDao = shipmentDao;
-        this.partiesDao = partiesDao;
-        this.kafkaHelper = kafkaHelper;
-        this.transactionHistoryDao = transactionHistoryDao;
-        this.carrierBookingBridgeMapper = carrierBookingBridgeMapper;
-        this.bridgeServiceAdapter = bridgeServiceAdapter;
-        this.bridgeServiceConfig = bridgeServiceConfig;
-        this.carrierBookingInttraUtil = carrierBookingInttraUtil;
-    }
 
     @Override
     public CarrierBookingResponse create(CarrierBookingRequest request) throws RunnerException {
@@ -349,7 +327,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         String description = "Cancelled by : " + UserContext.getUser().getUsername();
         createTransactionHistory(Cancelled.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
         sendNotification(carrierBooking);
-        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.CANCEL);
     }
 
     @Override
@@ -562,7 +539,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         String description = "Booking Requested by : " + UserContext.getUser().getUsername();
         createTransactionHistory(Requested.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
-        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.ORIGINAL);
         sendNotification(carrierBooking);
 
         jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
@@ -621,16 +597,33 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         String description = "Amend Requested by : " + UserContext.getUser().getUsername();
         createTransactionHistory(Changed.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
-        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.AMEND);
         sendNotification(carrierBooking);
 
         jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
     }
 
-    private void sendForDownstreamProcess(CarrierBooking carrierBooking,  IntraKafkaOperationType operationType) {
-        String payload = jsonHelper.convertToJson(carrierBooking);
-        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.CB, operationType);
+    @Override
+    public void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(submitAmendInttraRequest.getId())
+                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + submitAmendInttraRequest.getId()));
+
+        CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
+
+//        SecureRandom random = new SecureRandom();
+//        int rnd = 10000 + random.nextInt(90000);
+//        String fileName = "CarrierBookingRequest_" + submitAmendInttraRequest.getId() + "_" + rnd + ".xml";
+//        carrierBookingBridgeRequest.setFileName(fileName);
+        carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBooking.getSailingInformation()), carrierBookingBridgeRequest);
+
+        if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
+            carrierBookingBridgeRequest.setState(Constants.ORIGINAL);
+        } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
+            carrierBookingBridgeRequest.setState(Constants.AMEND);
+        }
+
+        sendNotification(carrierBooking);
     }
+
 
     @NotNull
     private static CommonContainerResponse getCommonContainerResponse(Containers containers) {

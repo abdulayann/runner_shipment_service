@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassBridgeRequest;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -484,15 +484,15 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 .toList();
     }
 
-    public void submitOrAmendVerifiedGrossMass(VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest) throws RunnerException {
+    public void submitOrAmendVerifiedGrossMass(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException {
 
-        Optional<VerifiedGrossMass> verifiedGrossMassOptional = verifiedGrossMassDao.findById(verifiedGrossMassInttraRequest.getId());
+        Optional<VerifiedGrossMass> verifiedGrossMassOptional = verifiedGrossMassDao.findById(submitAmendInttraRequest.getId());
         if (verifiedGrossMassOptional.isEmpty()) {
-            throw new ValidationException("Invalid VGM Id: " + verifiedGrossMassInttraRequest.getId());
+            throw new ValidationException("Invalid VGM Id: " + submitAmendInttraRequest.getId());
         }
 
         List<CommonContainers> containersList =
-                commonContainersRepository.findAllByIdIn(verifiedGrossMassInttraRequest.getContainerIds());
+                commonContainersRepository.findAllByIdIn(submitAmendInttraRequest.getContainerIds());
         VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
 
         for (CommonContainers container : containersList) {
@@ -524,22 +524,22 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             verifiedGrossMassInttraResponse.setSubmitterReference(verifiedGrossMass.getCarrierBookingNo());
 
             verifiedGrossMassUtil.populateCarrierDetails(
-                    verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
+                    carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation()),
                     verifiedGrossMassInttraResponse);
 
             // Generates number between 10000 and 99999 and set fileName
             SecureRandom random = new SecureRandom();
             int rnd = 10000 + random.nextInt(90000);
-            String fileName = "VGMRequest_" + verifiedGrossMassInttraRequest.getId() + "_" + rnd + ".xml";
+            String fileName = "VGMRequest_" + submitAmendInttraRequest.getId() + "_" + rnd + ".xml";
             verifiedGrossMassInttraResponse.setFileName(fileName);
 
             verifiedGrossMassInttraResponse.setDelegated(verifiedGrossMass.getIsDelegated());
 
 
             // Set Response State
-            if (OperationType.SUBMIT.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+            if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
                 verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.ORIGINAL);
-            } else if (OperationType.AMEND.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+            } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
                 verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.AMEND);
             }
 
@@ -551,7 +551,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
 
         // Create single Transaction history for single operation
-        saveTransactionHistory(verifiedGrossMassInttraRequest, verifiedGrossMass);
+        saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
     }
 
     private void sendPayloadToBridge(VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) throws RunnerException {
@@ -564,15 +564,15 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
     }
 
-    private void saveTransactionHistory(VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest, VerifiedGrossMass verifiedGrossMass) {
+    private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, VerifiedGrossMass verifiedGrossMass) {
         String description = "";
-        if (OperationType.SUBMIT.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+        if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
             description = "Booking Requested by : " + UserContext.getUser().getUsername();
-        } else if (OperationType.AMEND.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+        } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
             description = "Amend Requested by : " + UserContext.getUser().getUsername();
         }
         carrierBookingInttraUtil.createTransactionHistory(verifiedGrossMass.getStatus().getDescription(),
-                FlowType.Inbound, description, SourceSystem.CargoRunner, verifiedGrossMassInttraRequest.getId(), EntityTypeTransactionHistory.VGM);
+                FlowType.Inbound, description, SourceSystem.CargoRunner, submitAmendInttraRequest.getId(), EntityTypeTransactionHistory.VGM);
     }
 }
 

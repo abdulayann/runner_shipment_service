@@ -12,6 +12,9 @@ public class Constants {
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LOCAL_REFERENCE_NUMBER = "LocalReferenceNumber";
 
+    public static final String AMEND = "Amend";
+    public static final String ORIGINAL = "Original";
+
     public static final String GLOBALFF = "GLOBALFF";
     public static final String GLOBAL = "GLOBAL";
     public static final String SUBMITTED = "Submitted";

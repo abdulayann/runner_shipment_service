@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
@@ -64,5 +65,7 @@ public interface ICarrierBookingService {
     void submit(Long id);
 
     void amend(Long id);
+
+    void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest);
 }
 

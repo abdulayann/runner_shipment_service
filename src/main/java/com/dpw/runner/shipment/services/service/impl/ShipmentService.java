@@ -4348,7 +4348,7 @@ public class ShipmentService implements IShipmentService {
         log.info("Tenant in fetchData: {}", TenantContext.getCurrentTenant());
         log.info("User in fetchData: {}", UserContext.getUser());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
             log.warn("No shipment data found for export. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
         }

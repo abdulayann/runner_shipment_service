@@ -5,15 +5,21 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +32,9 @@ class CarrierBookingInttraUtilTest {
 
     @Mock
     private ITransactionHistoryDao transactionHistoryDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @BeforeEach
     void setUp() {
@@ -152,4 +161,78 @@ class CarrierBookingInttraUtilTest {
         assertEquals("IN", response.getCountryCode());
     }
 
+    @Test
+    void testFetchCarrierDetailsForBridgePayload() {
+        // Step 1: Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        List<String> carrierList = new ArrayList<>();
+        carrierList.add("CARRIER1");
+
+        // Mock the methods to return the expected data
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenReturn(carrierList);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());
+
+        // Step 2: Call the method under test
+        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
+
+        // Step 3: Assertions
+        assertNotNull(result);
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_WithNullSailingInformation() {
+
+        // Step 1: Call the method under test
+        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(null);
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_WithEmptyCarrierList() {
+        // Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        // Create an empty carrier list to simulate no carriers
+        List<String> carrierList = new ArrayList<>();
+
+        // Mock the methods to return the expected data
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenReturn(carrierList);  // Empty carrier list
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());  // No data from the service
+
+        // Step 1: Call the method under test
+        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_HandlesExceptionGracefully() {
+        // Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        // Mock an exception in fetchInBulkCarriers
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenThrow(new RuntimeException("Test Exception"));
+
+        // Step 1: Call the method under test (expecting an exception to be handled)
+        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
 }
