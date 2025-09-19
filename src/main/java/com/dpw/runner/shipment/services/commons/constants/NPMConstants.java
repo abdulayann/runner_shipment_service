@@ -20,6 +20,7 @@ public class NPMConstants {
     public static final String UNIT = "unit";
     public static final String SELL_COST_MARGIN = "SELL_COST_MARGIN";
     public static final String CHEAPEST_OFFER_TYPE = "CHEAPEST";
+    public static final String LIST_CONTRACTS_MULTI_PARTY = "/retrieve/contracts/count";
 
     public static final String OFFERS_V2 = "OFFERS-V2";
 

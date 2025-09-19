@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -1420,6 +1418,15 @@ class MasterDataUtilsTest extends CommonMocks {
     void withMdc() {
         boolean isSuccess = true;
         var runnable = masterDataUtils.withMdc(() -> {});
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void withMdcSupplier() {
+        boolean isSuccess = true;
+        var runnable = masterDataUtils.withMdcSupplier(() -> {
+            return null;
+        });
         assertTrue(isSuccess);
     }
 
