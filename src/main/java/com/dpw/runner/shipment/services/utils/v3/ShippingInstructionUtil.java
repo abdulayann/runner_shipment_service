@@ -315,33 +315,21 @@ public class ShippingInstructionUtil {
 
         List<CommonPackages> toSave = new ArrayList<>();
 
-        // --- Step 4: Build/Update CommonPackages with ShippingInstructionId ---
         for (Packing packing : packings) {
             CommonPackages common = commonMap.get(packing.getGuid());
-            if (common == null) {
-                common = new CommonPackages();
-                common.setPackingRefGuid(packing.getGuid());
+            if (common != null) {
+                updateCommonPackingFromPacking(common, packing);
+                toSave.add(common);
+            } else {
+                CommonPackages newCommon = new CommonPackages();
+                newCommon.setPackingRefGuid(packing.getGuid()); // ref guid
+                updateCommonPackingFromPacking(newCommon, packing);
+                toSave.add(newCommon);
             }
-
-            updateCommonPackingFromPacking(common, packing);
-
-            // attach SI id from first matching consolidation number
-            List<String> consolNumbers = shipmentToConsolMap.getOrDefault(packing.getShipmentId(), List.of());
-            consolNumbers.stream()
-                    .map(consolToInstructionMap::get)
-                    .filter(Objects::nonNull)
-                    .flatMap(List::stream)   // flatten list of SI ids
-                    .findFirst()
-                    .ifPresent(common::setShippingInstructionId);
-
-            toSave.add(common);
         }
 
-        if (!toSave.isEmpty()) {
-            commonPackagesDao.saveAll(toSave);
-        }
+        commonPackagesDao.saveAll(toSave);
     }
-
 
     public void updateCommonContainerFromContainer(CommonContainers common, Containers container) {
         common.setContainerCode(container.getContainerCode());
