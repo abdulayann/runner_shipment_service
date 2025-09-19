@@ -25,6 +25,7 @@ public class SailingInformationResponse implements IRunnerResponse {
     private String voyageNo;
     private LocalDateTime eta;
     private LocalDateTime etd;
+    private String SCACCode;
     private LocalDateTime earliestDepartureDate;
     private LocalDateTime latestDeliveryDate;
     private LocalDateTime terminalCutoff;
