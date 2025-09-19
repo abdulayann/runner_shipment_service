@@ -26,6 +26,11 @@ public class BridgeServiceConfig {
     @Value("${bridgeService.inbound.fileTransfer.password}")
     private String outBoundTransferPassword;
 
+    @Value("${bridgeService.cbInttra.amendIntegrationRequestCode}")
+    private String cbInttraCreateIntegrationRequestCode;
+
+    @Value("${bridgeService.cbInttra.amendIntegrationRequestCode}")
+    private String cbInttraAmendIntegrationRequestCode;
 
     @Value("${bridgeService.tactIntegrationRequestCode}")
     private String tactIntegrationRequestCode;

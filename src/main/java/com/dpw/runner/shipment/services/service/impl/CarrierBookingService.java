@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -13,10 +15,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -40,6 +44,7 @@ import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistor
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
 import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
+import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -60,6 +65,7 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
+import com.dpw.runner.shipment.services.mapper.CarrierBookingBridgeMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -71,10 +77,12 @@ import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +96,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -114,6 +123,7 @@ import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus
 import static com.dpw.runner.shipment.services.entity.enums.FlowType.Outbound;
 import static com.dpw.runner.shipment.services.entity.enums.SourceSystem.INTTRA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Service
@@ -135,10 +145,13 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IPartiesDao partiesDao;
     private final IntraCommonKafkaHelper kafkaHelper;
     private final ITransactionHistoryDao transactionHistoryDao;
-
+    private final CarrierBookingBridgeMapper carrierBookingBridgeMapper;
+    private final BridgeServiceAdapter bridgeServiceAdapter;
+    private final BridgeServiceConfig bridgeServiceConfig;
+    private final CarrierBookingInttraUtil carrierBookingInttraUtil;
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao, CarrierBookingBridgeMapper carrierBookingBridgeMapper, BridgeServiceAdapter bridgeServiceAdapter, BridgeServiceConfig bridgeServiceConfig, CarrierBookingInttraUtil carrierBookingInttraUtil) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
@@ -155,6 +168,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.partiesDao = partiesDao;
         this.kafkaHelper = kafkaHelper;
         this.transactionHistoryDao = transactionHistoryDao;
+        this.carrierBookingBridgeMapper = carrierBookingBridgeMapper;
+        this.bridgeServiceAdapter = bridgeServiceAdapter;
+        this.bridgeServiceConfig = bridgeServiceConfig;
+        this.carrierBookingInttraUtil = carrierBookingInttraUtil;
     }
 
     @Override
@@ -549,6 +566,34 @@ public class CarrierBookingService implements ICarrierBookingService {
         sendNotification(carrierBooking);
 
         jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
+    }
+
+
+    private void sendPayloadToBridge(CarrierBookingResponse carrierBookingResponse, boolean isOperationTypeSubmit) throws RunnerException {
+        log.info("Bridge payload {}", jsonHelper.convertToJson(carrierBookingResponse));
+        convertWeightVolumeToRequiredUnit(carrierBookingResponse);
+        CarrierBookingBridgeRequest bridgeRequest = carrierBookingBridgeMapper.mapToBridgeRequest(carrierBookingResponse);
+        String integrationCode;
+        if(isOperationTypeSubmit) {
+            integrationCode = bridgeServiceConfig.getCbInttraCreateIntegrationRequestCode();
+        } else {
+            integrationCode = bridgeServiceConfig.getCbInttraAmendIntegrationRequestCode();
+        }
+        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(bridgeRequest, integrationCode, null, null);
+        if (carrierBookingInttraUtil.isBridgeServiceResponseNotValid(bridgeServiceResponse)) {
+            log.error("Getting error from Bridge while uploading template to: " + jsonHelper.convertToJson(bridgeServiceResponse));
+            throw new RunnerException("Getting error from Bridge");
+        }
+    }
+
+    public void convertWeightVolumeToRequiredUnit(CarrierBookingResponse carrierBooking) throws RunnerException {
+
+        for (CommonContainerResponse container : carrierBooking.getContainersList()) {
+            BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            BigDecimal volume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(), container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
+            container.setVolume(volume);
+            container.setGrossWeight(weight);
+        }
     }
 
     private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {

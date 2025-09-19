@@ -53,6 +53,6 @@ public class CommonContainerResponse implements IRunnerResponse {
     private Long verifiedGrossMassId;
     private String commodityGroup;
     private String marksNums;
-    private String IntegrationCode;
+    private String integrationCode;
     private PartiesResponse weighingParty;
 }
