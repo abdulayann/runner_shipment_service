@@ -1,0 +1,1331 @@
+<#assign modeOfTransportMap = {
+    "SEA" : 1,
+    "AIR" : 2,
+    "ROAD": 3,
+    "RAIL": 4
+  }>
+  
+  <#assign shipmentModeMap = {
+    "LCL" : 1,
+    "FCL" : 5,
+    "FTL" : 6,
+    "LTL" : 7,
+    "Van" : 8,
+    "Groupage" : 9,
+    "PartLoad" : 10
+  }>
+  
+
+  <#assign releaseTypeMap = {
+    "OBL" : "Original",
+    "SWB" : "Waybill"
+  }>
+  
+
+  <#assign locRefGuidMap = {
+    "GBLGP_POR": ["London Gateway",  "GBLGP"],
+    "INMUN_POR":["Mundra", "INMUN"],
+    "CNZHE_POR": ["Zhenjiang", "CNZHE"],
+    "CNJMN_POR": ["Jiangmen", "CNJMN"],
+    "CNFZH_POR": ["Fuzhou", "CNFZH"]
+  }>
+  
+
+<#--
+  <#assign vesselssMap = {
+    "73eb5fda-63d1-4751-afd5-f39cb704b4f8":"CHARLESTON EXPRESS",
+    "9c9fca45-d7fb-46e3-8d12-fee183961036":"MARY MAERSK",
+    "427e2c3f-5d51-49d6-9016-d25313681deb": "MSC METATILDE",
+    "cbd34a73-12bf-4048-b464-a90e0ebbfb9a": "HORIZON THEONI",
+    "da8ba95c-14a5-4f34-ba0e-70331277ca0f": "HORIZON ATHENA",
+    "2f1f10b2-df1d-4412-bee1-297a06a52066": "ICE FIGHTER",
+    "85f1f27a-a099-446a-8814-eead319a2f78": "ICE ENERGY",
+    "fa08564a-90ad-4241-ad06-4d11dac1be95": "ICE VICTORY",
+    "cdc7d63a-dd0a-4413-bf88-c14989b43c0c": "HONESTY",
+    "a081cde9-1df6-4a60-876a-57ffbe359629": "DIGNITY",
+    "a5c80245-601d-4e70-ba46-f806ccc55679": "TAMANACO",
+    "c874adb1-0638-43b2-9631-d13e41572638": "TEREPAIMA",
+    "9bddba63-e49e-4ed7-843f-33e3296fe6be": "CLARITY",
+    "9f263685-9b38-44a3-8541-8b312a3e1065": "PARAMACONI",
+    "6e6ba2dc-5e06-49d1-a65a-f1a60fb96518": "YARE",
+    "b99a3e15-d266-4e35-98c7-51c245921a4a": "PICACHO",
+    "8eee9233-6e3f-4c03-b809-230f6f3932ca": "PICO EL TORO",
+    "a2d2b922-255b-43a8-b1b0-b857d042436b": "BRITISH SHIELD",
+    "c23edb9a-45e1-4706-97dc-9c90b7b421a3": "CAURA",
+    "673245b7-2767-4665-aa01-ba8603a6f5d6": "MANUELA SAENZ",
+    "7d1a5fd0-40d5-4670-acd1-0b6e87489d47": "LUISA CACERES DE ARI",
+    "c186b041-6a72-4c81-ba73-a69c40e2e59f": "NEGRA MATEA",
+    "3a88f406-6fc9-4e0a-b273-76253891b109": "EMPRENDEDORA",
+    "dd884c48-2c67-435b-b4de-2f0611805df2": "NEGRA HIPOLITA"
+  } 
+-->
+  
+  
+  <#assign equipmentTypeMap = {
+    "45HC" : "45HC",
+    "40GP" : "40GP",
+    "20RE" : "20RF",
+    "40RE" : "40RF",
+    "20GP" : "20GP",
+    "LCL"  : "LCL",
+    "40HC" : "40HC"
+  }>
+  
+  <#assign unitOfMeasurementMap = {
+    "BG" : 6,
+    "BBG" : 14,
+    "PS" : 1,
+    "CT" : 2 ,
+    "CR" : 3 ,
+    "PX" : 4 ,
+    "IBC" : 5 ,
+    "RO" : 7 ,
+    "RLL" : 7,
+    "BAL" : 8 ,
+    "CS" : 9 ,
+    "EuroPallet" : 10,
+    "StandardPallet" : 11,
+    "NonstackEuroPallet" : 12,
+    "NonstackStandardPallet" : 13,
+    "BLK" : 14,
+    "DR" : 15,
+    "OnOrders" : 99
+  }>
+
+  <#assign jobTypeMap = {
+    "RoadImport" : 1,
+    "SeaImport" : 2,
+    "AirImport" : 41,
+    "AirExport" : 40,
+    "SeaExport" : 7,
+    "RoadExport" : 8,
+    "XTradeAir" : 15,
+    "XTradeSea" : 16,
+    "XTradeRoad" : 17
+  }>
+
+
+
+ <#function jsonEscape text>
+  <#if text??>
+    <#local s = text>
+    <#local s = s?replace("\\", "\\\\")>
+    <#local s = s?replace('"', '\\"')>
+    <#local s = s?replace('\n', '\\n')>
+    <#local s = s?replace('\r', '\\r')>
+    <#local s = s?replace('\t', '\\t')>
+    <#return s>
+  <#else>
+    <#return "">
+  </#if>
+</#function>
+
+
+  
+<#assign json = JsonUtil.jsonToMap(json)>
+
+<#assign mdmPayloadMap = {
+  "sourceTenantId": json.entityPayload.sourceTenantId,
+  "destinationTenantId": json.entityPayload.sourceTenantId,
+  "sourceType": "RUNNER",
+  "destinationType": "EWL",
+  "data": [
+    <#-- container map -->
+    {
+        "module": "CONTAINER_TYPE",
+        "searchCriteria": [
+            [
+                {
+                    "field": "code",
+                    "operator": "in",
+                    "values": [
+                        "20GP", "40GP", "20RE", "40RE", "45HC", "40HC", "20FR", "20HC", "20NOR", "20TK", "40HCPW", "40HD", "40OT", "40OTHC", "40TK", "53HC", "40REHC", "20HD", "20HR", "20OT", "20PL", "40FR", "40NOR", "40PL"
+                    ]
+                }
+            ]
+        ],
+        "includeColumns": []
+    },
+    <#-- vessels map -->
+    {
+      "module": "VESSEL",
+      "searchCriteria": [
+        [
+          {
+            "field": "uuid",
+            "operator": "in",
+            "values": [
+                json.entityPayload.shipmentsList[0].carrierDetails.vessel?if_exists,
+                json.entityPayload.shipmentsList[0].carrierDetails.vessel?if_exists?upper_case
+            ]
+          }
+        ]
+      ],
+      "includeColumns": []
+    },
+    {
+      "module": "MASTER_LIST",
+      "searchCriteria": [
+    
+        <#-- packs unit -->
+        [
+            {
+                "field": "itemType",
+                "operator": "eq",
+                "value": "PacksUnit"
+            },
+            {
+                "field": "itemValue",
+                "operator": "in",
+                "values": [
+                    json.entityPayload.shipmentsList[0].packsUnit?if_exists
+                ]
+            }
+        ],
+        <#-- release type -->
+        [
+            {
+                "field": "itemType",
+                "operator": "eq",
+                "value": "ReleaseType"
+            },
+            {
+                "field": "itemValue",
+                "operator": "in",
+                "values": [
+                    json.entityPayload.shipmentsList[0].additionalDetails.releaseType?if_exists
+                ]
+            }
+        ],
+        <#-- container category -->
+        [
+          {
+            "field": "itemType",
+            "operator": "eq",
+            "value": "ContainerCategory"
+          },
+          {
+            "field": "itemValue",
+            "operator": "in",
+            "values": [
+              json.entityPayload.shipmentsList[0].shipmentType?if_exists
+            ]
+          }
+        ],
+        <#-- transport type -->
+        [
+          {
+            "field": "itemType",
+            "operator": "eq",
+            "value": "TransportModes"
+          },
+          {
+            "field": "itemValue",
+            "operator": "in",
+            "values": [
+              json.entityPayload.transportMode?if_exists
+            ]
+          }
+        ]
+      ],
+      "includeColumns": []
+    },
+    <#-- unlocation data -->
+    {
+       "module": "UN_LOCATION",
+       "searchCriteria": [
+         [
+            {
+              "field": "locationsReferenceGuid",
+              "operator": "in",
+              "values": [
+                json.entityPayload.shipmentsList[0].carrierDetails.originPort?if_exists,
+                json.entityPayload.shipmentsList[0].carrierDetails.destinationPort?if_exists
+              ]
+            }
+         ]
+        ],
+       "includeColumns": []
+    },
+     <#-- org data -->
+    {
+      "module": "ORGANIZATION",
+      "searchCriteria": [
+        [
+          {
+            "field": "organizationCode",
+            "operator": "in",
+            "values": [
+                (json.entityPayload.shipmentsList[0].consignee.orgCode)!"",
+                (json.entityPayload.shipmentsList[0].consigner.orgCode)!"",
+                (json.entityPayload.shipmentsList[0].client.orgCode)!"",
+                (json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode)!"",
+                (json.entityPayload.sendingAgent.orgCode)!"",
+                (json.entityPayload.receivingAgent.orgCode)!""
+            ]
+          }
+        ]
+      ],
+      "includeColumns": []
+    },
+    <#-- carrier data -->
+    {
+            "module": "CARRIER",
+            "searchCriteria": [
+                [
+                    {
+                        "field": "name",
+                        "operator": "in",
+                        "values": [
+                            json.entityPayload.shipmentsList[0].carrierDetails.shippingLine?if_exists
+                        ]
+                    }
+                ]
+            ],
+            "includeColumns": []
+        }
+  ]
+}>
+
+
+<#assign mdmPayload = JsonUtil.objectToJsonString(mdmPayloadMap)>
+<#assign headers = {
+  "Content-Type": "application/json",
+  "Accept": "application/json",
+  "x-api-key": "20329ff1-394c-4db7-93d6-46b15bc0ab34"
+}>
+<#assign response = MdmApiUtil.connectHttp(
+    "https://app-runner.cargoes.com/mdm/api/v2/middleware-integration/entity/transfer?httpMethod=POST",
+    mdmPayload,
+    headers
+)/>
+<#assign res = JsonUtil.getStringFromStream(response.body)>
+<#assign responseBody = JsonUtil.jsonToMap(res)>
+
+
+<#list responseBody.data[0].entityResponse as entity>
+    <#if entity.CONTAINER_TYPE??>
+        <#assign containerTypeMap = entity.CONTAINER_TYPE>
+    </#if>
+    <#if entity.MASTER_LIST??>
+        <#assign masterListMap = entity.MASTER_LIST>
+    </#if>
+    <#if entity.VESSEL??>
+        <#assign vesselsMap = entity.VESSEL>
+    </#if>
+    <#if entity.UN_LOCATION??>
+        <#assign unLocationMap = entity.UN_LOCATION>
+    </#if>
+    <#if entity.ORGANIZATION??>
+        <#assign orgMap = entity.ORGANIZATION>
+    </#if>
+     <#if entity.CARRIER??>
+        <#assign carrierMap = entity.CARRIER>
+    </#if>
+</#list>
+
+
+
+  
+  <#-- Calling Auth API -->
+  <#-- Prepare headers  -->
+  <#assign headers = {
+    "content-type": "application/json"
+  }>
+  
+  <#assign authPayloadMap = {
+      "Username": "testtenant4@dpworld.com",
+      "Password": "Welcome@123456"
+  }>
+  <#assign authPayload = JsonUtil.objectToJsonString(authPayloadMap)>
+  
+  <#assign response = MdmApiUtil.connectHttp(
+      "https://app-runner.cargoes.com/Api/Account/GenerateToken?httpMethod=POST",
+      authPayload,
+      headers
+  )/>
+  
+  <#assign res = JsonUtil.getStringFromStream(response.body)>
+  <#assign responseBody = JsonUtil.jsonToMap(res)>
+  <#assign authToken = responseBody.token>
+  
+  <#-- Calling Document API -->
+  
+  <#-- Initialize an empty list to collect responses -->
+  <#assign consolDocsResponses = []>
+  <#assign shipmentDocsResponses = []>
+  
+  <#-- Prepare headers -->
+  <#assign httpHeaders = {  
+    "authorization": "Bearer " + authToken,
+    "content-type": "application/json"
+  }>
+  
+  
+  <#-- Calling API in loop for consol docs -->
+  <#if json.entityPayload.additionalDocs?? && (json.entityPayload.additionalDocs?size > 0)>
+  <#list json.entityPayload.additionalDocs as doc>
+  <#-- Clean the GUID -->
+  <#assign cleanGuid = doc?replace('\n', '')?trim>
+  <#-- Call the API with the current guid -->
+  <#assign apiResponse = MdmApiUtil.connectHttp(
+          "https://app-runner.cargoes.com/runner/v2/documentManagement/files-management/byteArray?guid=" + cleanGuid + "&httpMethod=GET",
+          "",
+          httpHeaders
+      ) />
+
+
+        <#assign rawHeaderString = apiResponse.headers?replace("^\\{|\\}$", "", "r")?trim>
+        <#assign docCode = "">
+        <#assign fileName = "">
+
+        <#-- Look for docCode -->
+        <#if rawHeaderString?contains("docCode=")>
+            <#assign docCodeStart = rawHeaderString?index_of("docCode=") + 8>
+            <#assign docCodeEnd = rawHeaderString?index_of(",", docCodeStart)>
+            <#if docCodeEnd == -1>
+                <#assign docCode = rawHeaderString?substring(docCodeStart)?trim>
+            <#else>
+                <#assign docCode = rawHeaderString?substring(docCodeStart, docCodeEnd)?trim>
+            </#if>
+        </#if>
+
+        <#-- Look for fileName -->
+        <#if rawHeaderString?contains("fileName=")>
+            <#assign fileNameStart = rawHeaderString?index_of("fileName=") + 9>
+            <#assign fileNameEnd = rawHeaderString?index_of(",", fileNameStart)>
+            <#if fileNameEnd == -1>
+                <#assign fileName = rawHeaderString?substring(fileNameStart)?trim>
+            <#else>
+                <#assign fileName = rawHeaderString?substring(fileNameStart, fileNameEnd)?trim>
+            </#if>
+        </#if>
+
+        <#assign headerSubset = {
+        "docCode": docCode,
+        "fileName": fileName
+        }>
+
+
+
+
+      <#assign responseHeaders = apiResponse.headers>
+      <#assign base64body = JsonUtil.getBase64StringFromByteArray(apiResponse.body)>
+      <#assign documentResponseObject = {
+        "headers" : headerSubset,
+        "body" : base64body
+      }>
+  
+      <#-- Add the response to the responses list -->
+      <#assign consolDocsResponses = consolDocsResponses + [documentResponseObject]>
+  </#list>
+  </#if>
+
+  
+  
+  <#-- Calling API in loop for shipment docs -->
+  <#if json.entityPayload.shipmentsList[0].additionalDocs?? && (json.entityPayload.shipmentsList[0].additionalDocs?size > 0)>
+  <#list json.entityPayload.shipmentsList[0].additionalDocs as doc>
+  
+      <#-- Clean the GUID -->
+      <#assign cleanGuid = doc?replace('\n', '')?trim>
+      <#-- Call the API with the current guid -->
+      <#assign apiResponse = MdmApiUtil.connectHttp(
+          "https://app-runner.cargoes.com/runner/v2/documentManagement/files-management/byteArray?guid=" + cleanGuid + "&httpMethod=GET",
+          "",
+          httpHeaders
+      ) />
+
+
+        <#assign rawHeaderString = apiResponse.headers?replace("^\\{|\\}$", "", "r")?trim>
+        <#assign docCode = "">
+        <#assign fileName = "">
+
+        <#-- Look for docCode -->
+        <#if rawHeaderString?contains("docCode=")>
+            <#assign docCodeStart = rawHeaderString?index_of("docCode=") + 8>
+            <#assign docCodeEnd = rawHeaderString?index_of(",", docCodeStart)>
+            <#if docCodeEnd == -1>
+                <#assign docCode = rawHeaderString?substring(docCodeStart)?trim>
+            <#else>
+                <#assign docCode = rawHeaderString?substring(docCodeStart, docCodeEnd)?trim>
+            </#if>
+        </#if>
+
+        <#-- Look for fileName -->
+        <#if rawHeaderString?contains("fileName=")>
+            <#assign fileNameStart = rawHeaderString?index_of("fileName=") + 9>
+            <#assign fileNameEnd = rawHeaderString?index_of(",", fileNameStart)>
+            <#if fileNameEnd == -1>
+                <#assign fileName = rawHeaderString?substring(fileNameStart)?trim>
+            <#else>
+                <#assign fileName = rawHeaderString?substring(fileNameStart, fileNameEnd)?trim>
+            </#if>
+        </#if>
+
+        <#assign headerSubset = {
+        "docCode": docCode,
+        "fileName": fileName
+        }>
+
+      <#assign responseHeaders = apiResponse.headers>
+      <#assign base64body = JsonUtil.getBase64StringFromByteArray(apiResponse.body)>
+      <#assign documentResponseObject = {
+        "headers" : headerSubset,
+        "body" : base64body
+      }>
+  
+      <#-- Add the response to the responses list -->
+      <#assign shipmentDocsResponses = shipmentDocsResponses + [documentResponseObject]>
+  </#list>
+  </#if>
+  
+  
+  
+  <#if jobs??>
+    <#assign jobList = jobs>
+  <#else>
+  <#assign jobList = [
+      {
+        "bookingAgentReferences": [],
+        "modeOfTransport": 0,
+        "agentEmail": "ann.yang@sz.aelbkm.com",
+        "cartons": 0,
+        "cbm": 0,
+        "houseBill": "SSEG2502093",
+        "masterBill": "CMDUGGZ2532778",
+        "quantity": 0,
+        "commodity": "ONLY FOOLS & HORSES TALKING VAN APLIT",
+        "weight": 0,
+        "cargoReadyDate": "2025-05-06T00:00:00",
+        "bookingReceivedDateTime": "2025-05-20T11:48:10",
+        "unitOfMeasurement": 2,
+        "shipmentMode": 5,
+        "incoTerm": {
+          "code": "FOB"
+        },
+        "destinationAgent": {
+          "code": "EDGEUK",
+          "name": "EDGE WORLDWIDE LOGISTICS LIMITED",
+          "internalCode" : "EDGEUK"
+        },
+        "customer": {
+          "code": "HEATRASOU",
+          "name": "HEATHSIDE TRADING LTD"
+        },
+        "supplier": {
+          "code": "ZHOQIBYTN",
+          "name": "ZHONGSHAN QIBITE TRADING CO., LTD"
+        },
+        "polPort": {
+          "code": "CNNSA",
+          "name": "CNNSA"
+        },
+        "podPort": {
+          "code": "GBFXT",
+          "name": "GBFXT"
+        },
+        "agent": {
+          "code": "EDGEUK",
+          "name": "EDGEUK",
+          "internalCode": "EDGEUK"
+        },
+        "consignee": {
+          "code": "HEATRASOU",
+          "name": "HEATHSIDE TRADING LTD"
+        },
+        "notify1": {
+          "code": "HEATRASOU",
+          "name": "HEATHSIDE TRADING LTD"
+        },
+        "notify2": {
+          "code": "HEATRASOU",
+          "name": "HEATHSIDE TRADING LTD"
+        },
+        "jobType": 2,
+        "billType": {
+          "code": "TELEX",
+          "name": "TELEX"
+        },
+        "agentReference": "SSEG2502093",
+        "carrierReference": "GGZ2532778",
+        "fileCreatedDateTime": "2025-05-20T04:03:30.2568604Z",
+        "contractNumber": "QLPL112043",
+        "hazClass": "",
+        "unNumber": "",
+        "equipment": [
+          {
+            "containerNumber": "TCNU2246513",
+            "seal": "M1769662",
+            "type": "40HC",
+            "orderItems": [
+              {
+                "orderNumber": "PO4206",
+                "cartons": 2969,
+                "cbm": 63.05,
+                "quantity": 2969,
+                "weight": 6389.22,
+                "description": "ONLY FOOLS & HORSES TALKING VAN APLIT"
+              }
+            ]
+          }
+        ],
+        "legs": [
+          {
+            "etd": "2025-05-09T00:00:00",
+            "eta": "2025-06-29T00:00:00",
+            "carrier": {
+              "code": "CMDU",
+              "name": "CMDU",
+              "internalCode": "CMA001"
+            },
+            "pol": {
+              "code": "CNNSA",
+              "name": "CNNSA"
+            },
+            "pod": {
+              "code": "GBFXT",
+              "name": "GBFXT"
+            },
+            "vessel": {
+              "vesselName": "GUANG XING 398"
+            },
+            "voyage": "HKIP4N"
+          }
+        ]
+      }
+    ]>
+  </#if>
+  
+  <#assign jobs = jobList>
+  <#assign hasError = false>
+  <#assign hasMappingError = false>
+  <#assign fieldToMap = "">
+  <#assign errorString = "">
+  
+  {
+    "fileName": "DPWEWL-${.now?string('yyyy-MM-dd-HHmmss')}.json",
+
+    <#if !(json.entityPayload.sendingAgent?? || json.entityPayload.sendingAgent?has_content)>
+        <#assign hasError = true>
+        <#assign errorString += "The sending agent is a mandatory field." + "\n"/>
+        <#assign loggedError = ErrorUtil.logError("sendingAgent", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MandatoryField", "The sendingAgent is a mandatory field.", null, null, null)>
+    </#if>
+
+    <#if !(orgMap[json.entityPayload.sendingAgent.orgCode]?? && orgMap[json.entityPayload.sendingAgent.orgCode]?size > 0)>
+                    <#assign hasError = true>
+                    <#assign errorString += "The master data for the value in sendingAgent orgCode doesn't exist in Runner." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "customer", "", "MissingRunnerMasterData", "The master data for the value in sendingAgent orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+                </#if>
+                    <#assign orgList = orgMap[json.entityPayload.sendingAgent.orgCode]>
+                <#if (orgList?? && orgList?size > 1)>
+                    <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+                </#if>
+
+          <#-- <#assign orgItem = (orgMap[json.entityPayload.sendingAgent.orgCode]?has_content) ? orgMap[json.entityPayload.sendingAgent.orgCode][0] : {} > -->
+                    <#assign orgItem = orgMap[json.entityPayload.sendingAgent.orgCode][0]>
+                    <#assign metaDataMap = {
+                    "moduleId": orgItem.id!"",
+                    "moduleType": "ORGANIZATION",
+                    "source": "EWL"
+            }>
+          <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+                    <#assign hasError = true>
+                    <#assign hasMappingError = true>
+                    <#assign fieldToMap += "sendingAgent, ">
+                    <#assign errorString += "The mapping for the value in consginee orgCode doesn't exist." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MissingMappingMasterData", "The mapping for the value in sendingAgent orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+            <#if orgMap[json.entityPayload.sendingAgent.orgCode][0].externalSources[0].reference?has_content>
+                    "agent": "${orgMap[json.entityPayload.sendingAgent.orgCode][0].externalSources[0].reference}",
+            </#if>
+          </#if>
+
+    "jobs": [
+      <#list jobs![] as job>
+      {
+        "bookingAgentReferences": [],
+        <#assign transportModeKey = "TransportModes_" + (json.entityPayload.transportMode!"")>
+        <#if !(masterListMap[transportModeKey]?? && masterListMap[transportModeKey]?size > 0)>
+        <#assign hasError = true>
+        <#assign errorString += "The master data for the value in transportMode doesn't exist in Runner." + "\n"/>
+        <#assign loggedError = ErrorUtil.logError("transportMode", (json.entityPayload.transportMode)!"", "modeOfTransport", "", "MissingRunnerMasterData", "The master data for the value in transportMode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+        </#if>
+       
+         <#assign masterListItem = masterListMap[transportModeKey]?first>
+        "modeOfTransport": ${modeOfTransportMap[masterListItem.itemValue!""]},
+        "agentEmail": "${json.entityPayload.TransferInitiatedUser}",
+        "cartons": 0,
+        "cbm": 0,
+        "houseBill": "${(json.entityPayload.shipmentsList[0].houseBill)!""}",
+        "marksAndNumbers": "${jsonEscape((json.entityPayload.shipmentsList[0].marksNum)!"" )}",
+        <#if json.entityPayload.bol?? && json.entityPayload.bol?has_content>
+        "masterBill": "${json.entityPayload.bol}",
+        <#else>
+          <#-- Throw custom error message -->
+          <#assign hasError = true>
+          <#assign errorString += "Master bill is a mandatory field." + "\n"/>
+         <#assign loggedError = ErrorUtil.logError("bol", (json.entityPayload.bol)!"", "masterBill", "", "MandatoryField", "Master bill is a mandatory field", null, null, null)>
+        </#if>
+        "quantity": ${json.entityPayload.shipmentsList[0].noOfPacks!0},
+        "commodity": "${(json.entityPayload.shipmentsList[0].packingList[0].commodityGroup)!""}",
+        "reference": null,
+        "coreSystemReference": null,
+        "specialInstructions": "${(job.specialInstructions)!""}",
+        "weight": ${json.entityPayload.shipmentsList[0].weight!0},
+        "customerReference": <#if json.entityPayload.shipmentsList?has_content 
+                          && json.entityPayload.shipmentsList[0].referenceNumbersList?has_content 
+                          && json.entityPayload.shipmentsList[0].referenceNumbersList[0].type == "CRR">"${json.entityPayload.shipmentsList[0].referenceNumbersList[0].referenceNumber}"<#else>null</#if>,
+        "customerReference2": "${(job.customerReference2)!""}",
+        "chargeableWeight": ${json.entityPayload.shipmentsList[0].chargable!0},
+        "units": 0,
+        "pallets": null,
+        "ducr": null,
+        "dimensions": null,
+        "eta": null,
+        "etd": null,
+        "cargoReadyDate": null,
+        "priceCalculationDate": null,
+        "bookingReceivedDateTime": "${(json.entityPayload.shipmentsList[0].bookingCreatedDate)!""}",
+
+        <#assign packsUnitKey = "PacksUnit_" + (json.entityPayload.shipmentsList[0].packsUnit!"")>
+        <#if !(masterListMap[packsUnitKey]?? && masterListMap[packsUnitKey]?size > 0)>
+        <#assign hasError = true>
+        <#assign errorString += "The master data for the value in packsUnit doesn't exist in Runner." + "\n"/>
+        <#assign loggedError = ErrorUtil.logError("packsUnit", (json.entityPayload.shipmentsList[0].packsUnit)!"", "unitOfMeasurement", "", "MissingRunnerMasterData", "The master data for the value in packsUnit doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+        </#if>
+       <#-- <#assign masterListItem = (masterListMap[packsUnitKey]?has_content) ? masterListMap[packsUnitKey][0] : {} > -->
+        <#assign masterListItem = masterListMap[packsUnitKey]?first>
+        <#if unitOfMeasurementMap[masterListItem.itemValue]?has_content>
+        "unitOfMeasurement": ${unitOfMeasurementMap[masterListItem.itemValue]} <#else>"unitOfMeasurement": 2</#if>,
+        "shipmentMode": ${shipmentModeMap[json.entityPayload.shipmentsList[0].shipmentType]!""},
+        "incoTerm": {
+          "code": "${(json.entityPayload.shipmentsList[0].incoterms)!""}",
+          "name": null,
+          "internalCode": "${(json.entityPayload.shipmentsList[0].incoterms)!""}"
+        },
+        
+        "destinationAgent": {
+          "emailAddress": "${(job.destinationAgent.emailAddress)!""}",
+          "contact": "${(job.destinationAgent.contact)!""}",
+          "code": "${(job.destinationAgent.code)!""}",
+          "name": "${(job.destinationAgent.name)!""}",
+          "internalCode": "${(job.destinationAgent.internalCode)!""}"
+        },
+        "carrier": null,
+        "customer": {
+          <#if json.entityPayload.shipmentsList[0].consignee?has_content>
+            
+          "emailAddress": "${(json.entityPayload.shipmentsList[0].consignee.orgData.Email)!""}",
+          "contact": "${(job.customer.contact)!""}",
+          <#if !(orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?? && orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?size > 0)>
+            <#assign hasError = true>
+            <#assign errorString += "The master data for the value in consignee orgCode doesn't exist in Runner." + "\n"/>
+           <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "customer", "", "MissingRunnerMasterData", "The master data for the value in consignee orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+          </#if>
+          <#assign orgList = orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]>
+          <#if (orgList?? && orgList?size > 1)>
+          <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "customer", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+          </#if>
+        
+          <#-- <#assign orgItem = (orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?has_content) ? orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0] : {} > -->
+          <#assign orgItem = orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0]>
+          
+          <#assign metaDataMap = {
+            "moduleId": orgItem.id!"",
+            "moduleType": "ORGANIZATION",
+            "source": "EWL"
+            }>
+          <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+            <#assign hasError = true>
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "consignee, ">
+            <#assign errorString += "The mapping for the value in consginee orgCode doesn't exist." + "\n"/>
+           <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "customer", "", "MissingMappingMasterData", "The mapping for the value in consginee orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+
+          <#if orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference?has_content>
+          "code": "${orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference}",
+          "name": "${(json.entityPayload.shipmentsList[0].consignee.orgData.FullName)?replace('\n', '')?replace('\r', '')!""}",
+          "internalCode": "${orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference}",
+          "country": "${(json.entityPayload.shipmentsList[0].consignee.addressData.Country)?replace('\n', '')?replace('\r', '')!""}",
+          "address": "${(json.entityPayload.shipmentsList[0].consignee.addressData.Address1)?replace('\n', '')?replace('\r', '')!""}"
+          <#else>
+            <#assign hasError = true>
+            <#assign errorString += "The consignee is a mandatory field." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("consignee", (json.entityPayload.shipmentsList[0].consignee)!"", "customer", "", "MandatoryField", "The consignee is a mandatory field.", null, null, null)>
+          </#if>
+         </#if>
+         </#if>
+        },
+        "supplier": {
+          <#if json.entityPayload.shipmentsList[0].consigner?has_content>
+            
+          "emailAddress": "${(json.entityPayload.shipmentsList[0].consigner.orgData.Email)!""}",
+          "contact": "${(job.supplier.contact)!""}",
+          <#if !(orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode]?? && orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode]?size > 0)>
+          <#assign hasError = true>
+          <#assign errorString += "The master data for the value in consigner orgCode doesn't exist in Runner." + "\n"/>
+          <#assign loggedError =ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consigner.orgCode)!"", "customer", "", "MissingRunnerMasterData", "The master data for the value in consigner orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+          </#if>
+          <#assign orgList = orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode]>
+          <#if (orgList?? && orgList?size > 1)>
+          <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consigner.orgCode)!"", "supplier", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+          </#if>
+          
+          <#-- <#assign orgItem = (orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode]?has_content) ? orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode][0] : {} > -->
+          <#assign orgItem = orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode][0]>
+          <#assign metaDataMap = {
+            "moduleId": orgItem.id!"",
+            "moduleType": "ORGANIZATION",
+            "source": "EWL"
+            }>
+          <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+          <#assign hasError = true>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "consigner, ">
+          <#assign errorString += "The mapping for the value in consigner orgCode doesn't exist." + "\n"/>
+          <#assign loggedError =ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consigner.orgCode)!"", "supplier", "", "MissingMappingMasterData", "The mapping for the value in consigner orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+
+          <#if orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode][0].externalSources[0].reference?has_content>
+          "code": "${orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode][0].externalSources[0].reference}",
+          "name": "${(json.entityPayload.shipmentsList[0].consigner.orgData.FullName)?replace('\n', '')?replace('\r', '')!""}",
+          "internalCode": "${orgMap[json.entityPayload.shipmentsList[0].consigner.orgCode][0].externalSources[0].reference}",
+          "country": "${(json.entityPayload.shipmentsList[0].consigner.addressData.Country)?replace('\n', '')?replace('\r', '')!""}",
+          "address": "${(json.entityPayload.shipmentsList[0].consigner.addressData.Address1)?replace('\n', '')?replace('\r', '')!""}"
+          <#else>
+            <#assign hasError = true>
+            <#assign errorString += "The consigner is a mandatory field." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("consigner", (json.entityPayload.shipmentsList[0].consigner)!"", "supplier", "", "MandatoryField", "The consigner is a mandatory field.", null, null, null)>
+          </#if>
+          </#if>
+          </#if>
+        },
+        "factory": null,
+        "polPort": {
+          <#if !(unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?? && unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?size > 0)>
+          <#assign hasError = true>
+          <#assign errorString += "The master data for the value in originPort doesn't exist." + "\n"/>
+          <#assign loggedError = ErrorUtil.logError("originPort", (json.entityPayload.shipmentsList[0].carrierDetails.originPort)!"", "polPort", "", "MissingRunnerMasterData", "The master data for the value in originPort doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+          </#if>
+      
+          <#-- <#assign unlocItem = (unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?has_content) ? unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0] : {} > -->
+         <#assign unlocItem = unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0]>
+          <#if !(unlocItem.externalSources?? && unlocItem.externalSources?size > 0)>
+          <#assign metaDataMap = {
+            "moduleId": unlocItem.id!"",
+            "moduleType": "UN_LOCATION",
+            "source": "EWL"
+            }>
+          <#assign hasError = true>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "originPort, ">
+          <#assign errorString += "The mapping for the value in originPort doesn't exist." + "\n"/>
+          <#assign loggedError = ErrorUtil.logError("originPort", (json.entityPayload.shipmentsList[0].carrierDetails.originPort)!"", "polPort", "", "MissingMappingMasterData", "The mapping for the value in originPort doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+          "code": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].externalSources[0].reference}",
+          "name": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].portName}",
+          "internalCode": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].externalSources[0].reference}"
+          </#if>
+        },
+        "podPort": {
+          <#if !(unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?? && unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?size > 0)>
+            <#assign hasError = true>
+            <#assign errorString += "The master data for the value in destinationPort doesn't exist." + "\n"/>
+            <#assign loggedError =ErrorUtil.logError("destinationPort", (json.entityPayload.shipmentsList[0].carrierDetails.destinationPort)!"", "podPort", "", "MissingRunnerMasterData", "The master data for the value in destinationPort doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+          </#if>
+          
+          <#-- <#assign unlocItem = (unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?has_content) ? unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0] : {} > -->
+          <#assign unlocItem = unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0]>
+          <#if !(unlocItem.externalSources?? && unlocItem.externalSources?size > 0)>
+          <#assign metaDataMap = {
+            "moduleId": unlocItem.id!"",
+            "moduleType": "UN_LOCATION",
+            "source": "EWL"
+            }>
+          <#assign hasError = true>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "destinationPort, ">
+          <#assign errorString += "The mapping for the value in destinationPort doesn't exist." + "\n"/>
+          <#assign loggedError =ErrorUtil.logError("destinationPort", (json.entityPayload.shipmentsList[0].carrierDetails.destinationPort)!"", "podPort", "", "MissingMappingMasterData", "The mapping for the value in destinationPort doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+          "code": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].externalSources[0].reference}",
+          "name": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].portName}",
+          "internalCode": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].externalSources[0].reference}"
+          </#if>
+        },
+        "consignor": null,
+        "agent": {
+
+            <#if !(orgMap[json.entityPayload.sendingAgent.orgCode]?? && orgMap[json.entityPayload.sendingAgent.orgCode]?size > 0)>
+                    <#assign hasError = true>
+                    <#assign errorString += "The master data for the value in sendingAgent orgCode doesn't exist in Runner." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "customer", "", "MissingRunnerMasterData", "The master data for the value in sendingAgent orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+                </#if>
+                    <#assign orgList = orgMap[json.entityPayload.sendingAgent.orgCode]>
+                <#if (orgList?? && orgList?size > 1)>
+                    <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+                </#if>
+
+          <#-- <#assign orgItem = (orgMap[json.entityPayload.sendingAgent.orgCode]?has_content) ? orgMap[json.entityPayload.sendingAgent.orgCode][0] : {} > -->
+                    <#assign orgItem = orgMap[json.entityPayload.sendingAgent.orgCode][0]>
+                    <#assign metaDataMap = {
+                    "moduleId": orgItem.id!"",
+                    "moduleType": "ORGANIZATION",
+                    "source": "EWL"
+            }>
+          <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+                    <#assign hasError = true>
+                    <#assign hasMappingError = true>
+                  <#--  <#assign fieldToMap += "sendingAgent, "> -->
+                  <#--  <#assign errorString += "The mapping for the value in consginee orgCode doesn't exist." + "\n"/> -->
+                  <#--  <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MissingMappingMasterData", "The mapping for the value in sendingAgent orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", "map", "MdmMappingCode", metaDataMap)> -->
+                    <#else>
+
+          <#if orgMap[json.entityPayload.sendingAgent.orgCode][0].externalSources[0].reference?has_content>
+                    "emailAddress": "${(job.agent.emailAddress)!""}",
+                    "contact": "${(job.agent.contact)!""}",
+                    "code": "${orgMap[json.entityPayload.sendingAgent.orgCode][0].externalSources[0].reference}",
+                    "name": "${(job.agent.name)!""}",
+                    "internalCode": "${orgMap[json.entityPayload.sendingAgent.orgCode][0].externalSources[0].reference}"
+
+                    <#else>
+            <#assign hasError = true>
+                    <#assign errorString += "The sending agent is a mandatory field." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("sendingAgent", (json.entityPayload.sendingAgent.orgCode)!"", "agent", "", "MandatoryField", "The sendingAgent is a mandatory field.", null, null, null)>
+                    </#if>
+          </#if>
+        },
+        "exporter": null,
+        "consignee": {
+          <#if json.entityPayload.shipmentsList[0].consignee?has_content>
+            
+          "emailAddress": "${(json.entityPayload.shipmentsList[0].consignee.orgData.Email)!""}",
+          "contact": "${(job.consignee.contact)!""}",
+          <#if !(orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?? && orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?size > 0)>
+          <#assign hasError = true>
+          <#assign errorString += "The master data for the value in consginee orgCode doesn't exist in Runner." + "\n"/>
+          <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "consignee", "", "MissingRunnerMasterData", "The master data for the value in consginee orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+          </#if>
+          <#assign orgList = orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]>
+          <#if (orgList?? && orgList?size > 1)>
+          <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "consignee", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+          </#if>
+         
+          <#-- <#assign orgItem = (orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode]?has_content) ? orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0] : {} > -->
+          <#assign orgItem = orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0]>
+          <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+          <#assign metaDataMap = {
+            "moduleId": orgItem.id!"",
+            "moduleType": "ORGANIZATION",
+            "source": "EWL"
+            }>
+          <#assign hasError = true>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "consignee, ">
+          <#assign errorString += "The mapping for the value in consignee orgCode doesn't exist." + "\n"/>
+          <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].consignee.orgCode)!"", "consignee", "", "MissingMappingMasterData", "The mapping for the value in consignee orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+          <#else>
+
+          <#if orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference?has_content>
+          "code": "${orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference}",
+          "name": "${(json.entityPayload.shipmentsList[0].consignee.orgData.FullName)?replace('\n', '')?replace('\r', '')!""}",
+          "internalCode": "${orgMap[json.entityPayload.shipmentsList[0].consignee.orgCode][0].externalSources[0].reference}",
+          "country": "${(json.entityPayload.shipmentsList[0].consignee.addressData.Country)?replace('\n', '')?replace('\r', '')!""}",
+          "address": "${(json.entityPayload.shipmentsList[0].consignee.addressData.Address1)?replace('\n', '')?replace('\r', '')!""}"
+
+          <#else>
+            <#assign hasError = true>
+            <#assign errorString += "The consignee is a mandatory field." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("consignee", (json.entityPayload.shipmentsList[0].consignee)!"", "consignee", "", "MandatoryField", "The consignee is a mandatory field.", null, null, null)>
+          </#if>
+          </#if>
+          </#if>
+        },
+        "notify1": {
+
+          <#if !(json.entityPayload.shipmentsList[0].additionalDetails.notifyParty?? || json.entityPayload.shipmentsList[0].additionalDetails.notifyParty?has_content)>
+              <#assign hasError = true>
+              <#assign errorString += "The notify party is a mandatory field." + "\n"/>
+              <#assign loggedError = ErrorUtil.logError("notifyParty", (json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode)!"", "notify1", "", "MandatoryField", "The notifyParty is a mandatory field.", null, null, null)>
+          </#if>
+
+          <#if json.entityPayload.shipmentsList[0].additionalDetails.notifyParty?has_content>
+
+            "emailAddress": "${(json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgData.Email)!""}",
+            "contact": "${(job.notify1.contact)!""}",
+            <#if !(orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode!""]?? && orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode]?size > 0)>
+              <#assign hasError = true>
+              <#assign errorString += "The master data for the value in notifyParty orgCode doesn't exist in Runner." + "\n"/>
+              <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode)!"", "notify1", "", "MissingRunnerMasterData", "The master data for the value in notifyParty orgCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+            </#if>
+            <#assign orgList = orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode]>
+            <#if (orgList?? && orgList?size > 1)>
+              <#assign errorString += "More than one entry found for the given orgCode." + "\n"/>
+              <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode)!"", "notify1", "", "MulitpleMappingsPresent", "More than one entry found for the given orgCode", null, null, null)>
+            </#if>
+          
+            <#-- <#assign orgItem = (orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode]?has_content) ? orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode][0] : {} > -->
+            <#assign orgItem = orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode][0]>
+            <#if !(orgItem.externalSources?? && orgItem.externalSources?size > 0)>
+            <#assign metaDataMap = {
+              "moduleId": orgItem.id!"",
+              "moduleType": "ORGANIZATION",
+              "source": "EWL"
+              }>
+            <#assign hasError = true>
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "notifyParty, ">
+            <#assign errorString += "The mapping for the value in notifyParty orgCode doesn't exist." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("orgCode", (json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode)!"", "notify1", "", "MissingMappingMasterData", "The mapping for the value in notifyParty orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+            <#else>
+              <#if orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode][0].externalSources[0].reference?has_content>
+                "code": "${orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode][0].externalSources[0].reference}",
+                "name": "${(json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgData.FullName)?replace('\n', '')?replace('\r', '')!""}",
+                "internalCode": "${orgMap[json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.orgCode][0].externalSources[0].reference}",
+                "country": "${(json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.addressData.Country)?replace('\n', '')?replace('\r', '')!""}",
+                "address": "${(json.entityPayload.shipmentsList[0].additionalDetails.notifyParty.addressData.Address1)?replace('\n', '')?replace('\r', '')!""}"
+              </#if>
+          </#if>
+          </#if>
+        },
+        "notify2": null,
+        "jobType": ${(job.jobType)!""},
+        "billType": {
+          <#assign releaseTypeKey = "ReleaseType_" + (json.entityPayload.shipmentsList[0].additionalDetails.releaseType!"")>
+            <#if !(masterListMap[releaseTypeKey]?? && masterListMap[releaseTypeKey]?size > 0)>
+            <#assign hasError = true>
+            <#assign errorString += "The master data for the value in releaseType doesn't exist in Runner." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("releaseType", (json.entityPayload.shipmentsList[0].additionalDetails.releaseType)!"", "billType", "", "MissingRunnerMasterData", "The master data for the value in releaseType doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+            </#if>
+          <#--   <#assign masterListItem = (masterListMap[releaseTypeKey]?has_content) ? masterListMap[releaseTypeKey][0] : {} > -->
+          <#assign masterListItem = (masterListMap[releaseTypeKey!""]![])?first!{}>
+            <#if !masterListItem.externalSources?has_content>
+            "code": "Original",
+            "name": "Original",
+            "internalCode": "Original"
+         <#--   <#assign metaDataMap = {
+            "moduleId": masterListItem.id!"",
+            "moduleType": "MASTER_LIST",
+            "source": "EWL"
+            }>
+            <#assign hasError = true>
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "releaseType, ">
+            <#assign errorString += "The mapping for the value in releaseType doesn't exist." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("releaseType", (json.entityPayload.shipmentsList[0].additionalDetails.releaseType)!"", "billType", "", "MissingMappingMasterData", "The mapping for the value in releaseType doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)> -->
+            
+            <#else>
+            <#assign externalSource = masterListItem.externalSources?first>
+            "code": "${externalSource.reference!""}",
+            "name": "${externalSource.reference!""}",
+            "internalCode": "${externalSource.reference!""}"
+            </#if>
+        },
+        "agentReference": "${(json.entityPayload.shipmentsList[0].houseBill)!""}",
+        "carrierReference": null,
+        "remarks": null,
+        "isImportPoValidationEnabled": false,
+        "isForceFileToProcessEnabled": false,
+        "fileCreatedDateTime": "${.now?iso_utc}",
+        "cancelledDateTime": null,
+        "contractNumber": null,
+        "dealNature": null,
+        "hazClass": null,
+        "unNumber": null,
+        "interimReceiptDate": null,
+        <#if consolDocsResponses?? && (consolDocsResponses?size > 0)>
+        "consolDocs": [
+            <#list consolDocsResponses as doc>
+            {
+                "headers": {
+                "docCode": "${doc.headers.docCode}",
+                "fileName": "${doc.headers.fileName}"
+            },
+                "body": "${doc.body?js_string}"
+            }<#if doc_has_next>,</#if>
+            </#list>
+        ],
+        <#else>
+        "consolDocs": null,
+        </#if>
+        <#if shipmentDocsResponses?? && (shipmentDocsResponses?size > 0)>
+        "shipmentDocs": [
+            <#list shipmentDocsResponses as doc>
+            {
+                "headers": {
+                "docCode": "${doc.headers.docCode}",
+                "fileName": "${doc.headers.fileName}"
+            },
+                "body": "${doc.body?js_string}"
+            }<#if doc_has_next>,</#if>
+            </#list>
+        ],
+        <#else>
+        "shipmentDocs": null,
+        </#if>
+        "equipment": [
+          <#list json.entityPayload.shipmentsList[0].containersList as container>
+          {
+            <#if container.containerNumber?? && container.containerNumber?has_content>
+                "containerNumber": "${(container.containerNumber)!""}"
+            <#else>
+                <#-- Throw custom error message -->
+                <#assign hasError = true>
+                <#assign errorString += "Container number should be a mandatory field." + "\n"/>
+                <#assign loggedError = ErrorUtil.logError("containerNumber", (container.containerNumber)!"", "containerNumber", "", "MandatoryField", "Container number should be a mandatory field", null, null, null)>
+            </#if>,
+            "seal": "${(container.carrierSealNumber)!""}",
+            "tareWeight": 0,
+            <#if containerTypeMap[container.containerCode]?has_content == false>
+                <#assign hasError = true>
+                <#assign errorString += "The master data for the value in containerCode doesn't exist in Runner." + "\n"/>
+                <#assign loggedError = ErrorUtil.logError("containerCode", (container.containerCode)!"", "equipment", "", "MissingRunnerMasterData", "The master data for the value in containerCode doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+                "type": "",
+                "orderItems": []
+            <#else>
+                <#-- <#assign containerItem = (containerTypeMap[container.containerCode]?has_content) ? containerTypeMap[container.containerCode][0] : {} > -->
+                <#assign containerItem = containerTypeMap[container.containerCode][0]>
+                <#assign metaDataMap = {
+                    "moduleId": containerItem.id!"",
+                    "moduleType": "CONTAINER_TYPE",
+                    "source": "EWL"
+                    }>
+                <#if !(containerItem.externalSources?? && containerItem.externalSources?size > 0)>
+                    <#assign hasError = true>
+                    <#assign hasMappingError = true>
+                    <#assign fieldToMap += "containerCode, ">
+                    <#assign errorString += "The mapping for the value in containerCode doesn't exist." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("containerCode", (container.containerCode)!"", "equipment", "", "MissingMappingMasterData", "The mapping for the value in containerCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+                    "type": "",
+                    "orderItems": []
+                <#else>
+                    "type": "${(containerItem.externalSources[0].reference)!""}",
+                    "orderItems": []
+                </#if>
+            </#if>
+          }<#if container?has_next>,</#if>
+          </#list>
+        ],
+        "legs": [
+          <#list job.legs as leg>
+          {
+            "ata": null,
+            "atd": "${(json.entityPayload.carrierDetails.atd)!""}",
+            "carrier": {
+              "emailAddress": "${(leg.carrier.emailAddress)!""}",
+              "contact": "${(leg.carrier.contact)!""}",
+              <#if !(carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine]?? && carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine]?size > 0)>
+            <#assign hasError = true>
+            <#assign errorString += "The master data for the value in carrier doesn't exist in Runner." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("shippingLine", (json.entityPayload.shipmentsList[0].carrierDetails.shippingLine)!"", "carrier", "", "MissingRunnerMasterData", "The master data for the value in carrier doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+              </#if>
+            
+              <#-- <#assign carrierItem = (carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine]?has_content) ? carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0] : {} > -->
+              <#assign carrierItem = carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0]>
+              <#assign metaDataMap = {
+                "moduleId": carrierItem.id!"",
+                "moduleType": "CARRIER",
+                "source": "EWL"
+                }>
+              <#if !(carrierItem.externalSources?? && carrierItem.externalSources?size > 0)>
+            <#assign hasError = true>
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "shippingLine, ">
+            <#assign errorString += "The mapping for the value in carrier doesn't exist." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("shippingLine", (json.entityPayload.shipmentsList[0].carrierDetails.shippingLine)!"", "carrier", "", "MissingMappingMasterData", "The mapping for the value in carrier doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+              <#else>
+
+              <#if carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0].externalSources[0].reference?has_content>
+              "code": "${carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0].externalSources[0].reference}",
+              "name": "${carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0].name}",
+              "internalCode": "${carrierMap[json.entityPayload.shipmentsList[0].carrierDetails.shippingLine][0].externalSources[0].reference}"
+              
+              <#else>
+              <#assign hasError = true>
+              <#assign errorString += "The carrier is a mandatory field." + "\n"/>
+              <#assign loggedError = ErrorUtil.logError("shippingLine", (json.entityPayload.shipmentsList[0].carrierDetails.shippingLine)!"", "carrier", "", "MandatoryField", "The shippingLine is a mandatory field.", null, null, null)>
+            </#if>
+            </#if>
+
+
+            },
+            "clsCutOffDateTime": "${(leg.clsCutOffDateTime)!""}",
+            "ensCutOffDateTime": "${(leg.ensCutOffDateTime)!""}",
+            "eta": "${(json.entityPayload.carrierDetails.eta)!""}",
+            "etd": "${(json.entityPayload.carrierDetails.etd)!""}",
+            "loop": "${(leg.loop)!""}",
+            "pod": {
+              <#if !(unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?? && unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?size > 0)>
+            <#assign hasError = true>
+            <#assign errorString += "The master data for the value in destinationPort doesn't exist in Runner." + "\n"/>
+            <#assign loggedError = ErrorUtil.logError("destinationPort", (json.entityPayload.shipmentsList[0].carrierDetails.destinationPort)!"", "pod", "", "MissingRunnerMasterData", "The master data for the value in destinationPort doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+              </#if>
+    
+              <#-- <#assign unlocItem = (unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort]?has_content) ? unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0] : {} > -->
+              <#assign unlocItem = unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0]>
+              <#assign metaDataMap = {
+                "moduleId": unlocItem.id!"",
+                "moduleType": "UN_LOCATION",
+                "source": "EWL"
+                }>
+              <#if !(unlocItem.externalSources?? && unlocItem.externalSources?size > 0)>
+          <#assign hasError = true>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "destinationPort, ">
+          <#assign errorString += "The mapping for the value in destinationPort doesn't exist." + "\n"/>
+          <#assign loggedError = ErrorUtil.logError("destinationPort", (json.entityPayload.shipmentsList[0].carrierDetails.destinationPort)!"", "pod", "", "MissingMappingMasterData", "The mapping for the value in destinationPort doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", "map", "MdmMappingCode", metaDataMap)>
+              <#else>
+              "code": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].externalSources[0].reference}",
+              "name": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].portName}",
+              "internalCode": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.destinationPort][0].externalSources[0].reference}"
+              </#if>
+            },
+            "pol": {
+              <#if !(unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?? && unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?size > 0)>
+                <#assign hasError = true>
+                <#assign errorString += "The master data for the value in originPort doesn't exist in Runner." + "\n"/>
+                <#assign loggedError = ErrorUtil.logError("originPort", (json.entityPayload.shipmentsList[0].carrierDetails.originPort)!"", "pol", "", "MissingRunnerMasterData", "The master data for the value in originPort doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+              </#if>
+              
+              <#-- <#assign unlocItem = (unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort]?has_content) ? unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0] : {} > -->
+              <#assign unlocItem = unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0]>
+              <#assign metaDataMap = {
+                "moduleId": unlocItem.id!"",
+                "moduleType": "UN_LOCATION",
+                "source": "EWL"
+                }>
+              <#if !(unlocItem.externalSources?? && unlocItem.externalSources?size > 0)>
+                <#assign hasError = true>
+                <#assign hasMappingError = true>
+                <#-- <#assign fieldToMap += "originPort, "> -->
+                <#-- <#assign errorString += "The mapping for the value in originPort doesn't exist." + "\n"/> -->
+                <#-- <#assign loggedError = ErrorUtil.logError("originPort", (json.entityPayload.shipmentsList[0].carrierDetails.originPort)!"", "pol", "", "MissingMappingMasterData", "The mapping for the value in originPort doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)> -->
+              <#else>
+              "code": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].externalSources[0].reference}",
+              "name": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].portName}",
+              "internalCode": "${unLocationMap[json.entityPayload.shipmentsList[0].carrierDetails.originPort][0].externalSources[0].reference}"
+              </#if>
+            },
+            "vessel": {
+
+               <#if !(json.entityPayload.shipmentsList[0].carrierDetails.vessel?? || json.entityPayload.shipmentsList[0].carrierDetails.vessel?has_content)>
+                    <#assign hasError = true>
+                    <#assign errorString += "The vessel is a mandatory field." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("vessel", (json.entityPayload.shipmentsList[0].carrierDetails.vessel)!"", "vessel", "", "MandatoryField", "The vessel is a mandatory field.", null, null, null)>
+                </#if>
+
+              <#if json.entityPayload.shipmentsList[0].carrierDetails.vessel?? &&  !(vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel]?? && vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel]?size > 0)>
+                    <#assign hasError = true>
+                    <#assign errorString += "The master data for the value in vessel doesn't exist in Runner." + "\n"/>
+                    <#assign loggedError = ErrorUtil.logError("vessel", (json.entityPayload.shipmentsList[0].carrierDetails.vessel)!"", "vessel", "", "MissingRunnerMasterData", "The master data for the value in vessel doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.", null, null, null)>
+              </#if>
+    
+              <#-- <#assign vesselItem = (vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel]?has_content) ? vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel][0] : {} > -->
+              <#if json.entityPayload.shipmentsList[0].carrierDetails.vessel??>
+                 <#assign vesselItem = vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel][0]>
+                 <#assign metaDataMap = {
+                "moduleId": vesselItem.id!"",
+                "moduleType": "VESSEL",
+                "source": "EWL"
+                }>
+              
+                
+                <#if !(vesselItem.externalSources?? && vesselItem.externalSources?size > 0)>
+                        <#assign hasError = true>
+                        <#assign hasMappingError = true>
+                        <#assign fieldToMap += "vessel, ">
+                        <#assign errorString += "The mapping for the value in vessel doesn't exist." + "\n"/>
+                        <#assign loggedError = ErrorUtil.logError("vessel", (json.entityPayload.shipmentsList[0].carrierDetails.vessel)!"", "vessel", "", "MissingMappingMasterData", "The mapping for the value in vessel doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",  "map", "MdmMappingCode", metaDataMap)>
+                <#else>
+                    "vesselName": "${vesselsMap[json.entityPayload.shipmentsList[0].carrierDetails.vessel][0].externalSources[0].reference}",
+                    "imo": "",
+                    "carrier": "${(leg.vessel.carrier)!""}"
+                </#if>
+              </#if>
+            },
+            <#if json.entityPayload.shipmentsList[0].carrierDetails.voyage??>
+              "voyage": "${json.entityPayload.shipmentsList[0].carrierDetails.voyage}"
+            <#else>
+              "voyage": null
+            </#if>
+          }<#if leg_has_next>,</#if>
+          </#list>
+        ]
+      }<#if job_has_next>,</#if>
+      </#list>
+    ]
+  }
+
+  <#assign additionalNote = "Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer." />
+
+  <#if hasMappingError>
+
+    <#assign formData = {
+    "organizationId": "24",
+    "templateName": "workflow_email_template",
+    "metadata": "{
+        \"from\": \"noreply@runner.cargoes.com\",
+        \"subject\": \"System Alert: ${json.entityNumber} - Master Data Mapping Error\",
+        \"data\": {
+            \"dataBody\": \"Dear User,<br><br>The mapping for the value in ${fieldToMap} doesn't exist. Global Shared Services (GSC) will look into the error. Operator will be informed when the file is ready for re-transfer to Destination.<br><br>Thanks,<br>Cargoes Runner Team\"
+        }
+    }",
+    "applicationId": "24",
+    "recipientEmails": "Aditya.Thakur@dpworld.com,reshma.kumari@dpworld.com,Mohammed.Suhail@dpworld.com,Dipti.Arya@dpworld.com,yogesh.malhotra@dpworld.com,Jabeer.Yusuf@dpworld.com,Kamal.Keswani@dpworld.com,tyrel.miranda@dpworld.com,Laxmi.Rawat@dpworld.com,Shubham.Singh1@dpworld.com,${json.entityPayload.TransferInitiatedUser}",
+    "priority": "high",
+    "trackEmailEvents": "true"
+    } />
+
+
+    <#assign headers = {
+    "X-Api-Key": "m0iSaqwivKsc6mzouKTaM3AOzaSmuQuh"
+    } />
+
+    <#assign response = MdmApiUtil.connectMultipartFormDataHttp(
+    "http://notification-service-api.private-cargoes.com/emailTemplates/sendEmail",
+    headers,
+    formData
+    ) />
+
+</#if>
+
+<#if hasError || hasMappingError>
+    <#stop  "This transformation has errors, please go to integration dashboard to check and rectify.">
+
+<#else>
+
+    <#assign formData = {
+    "organizationId": "24",
+    "templateName": "workflow_email_template",
+    "metadata": "{
+        \"from\": \"noreply@runner.cargoes.com\",
+        \"subject\": \"System Alert: ${json.entityNumber} - Transferred Successfully from Runner\",
+        \"data\": {
+            \"dataBody\": \"Dear Team,<br><br>The consol number ${json.entityNumber} has been successfully transferred to UK Branch.<br>This is an automated confirmation. No further action is required.<br><br>Regards,<br>DPW Runner Team\"
+        }
+    }",
+    "applicationId": "24",
+    "recipientEmails": "Aditya.Thakur@dpworld.com,reshma.kumari@dpworld.com,Mohammed.Suhail@dpworld.com,Dipti.Arya@dpworld.com,yogesh.malhotra@dpworld.com,Jabeer.Yusuf@dpworld.com,Kamal.Keswani@dpworld.com,tyrel.miranda@dpworld.com,Laxmi.Rawat@dpworld.com,Shubham.Singh1@dpworld.com,${json.entityPayload.TransferInitiatedUser}",
+    "priority": "high",
+    "trackEmailEvents": "true"
+    } />
+
+
+    <#assign headers = {
+    "X-Api-Key": "m0iSaqwivKsc6mzouKTaM3AOzaSmuQuh"
+    } />
+
+    <#assign response = MdmApiUtil.connectMultipartFormDataHttp(
+    "http://notification-service-api.private-cargoes.com/emailTemplates/sendEmail",
+    headers,
+    formData
+    ) />
+
+</#if>
