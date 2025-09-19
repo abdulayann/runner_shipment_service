@@ -1017,7 +1017,7 @@ class ShippingInstructionsServiceImplTest {
         };
 
         when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(
-                (EntityType.CONSOLIDATION), eq(List.of(123L))))
+                (EntityType.CONSOLIDATION), (List.of(123L))))
                 .thenReturn(List.of(projection));
         when(commonContainersDao.getAll(List.of(guid))).thenReturn(List.of());
 
