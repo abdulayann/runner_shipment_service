@@ -18,5 +18,5 @@ public class GetContractsCountForPartiesRequest implements IRunnerRequest {
     private String destination;
     private Boolean isDgEnabled = false;
     private List<String> customerOrgIds;
-    private ListContractRequest contractsCountRequests;
+    private ListContractRequest contractsCountRequest;
 }
