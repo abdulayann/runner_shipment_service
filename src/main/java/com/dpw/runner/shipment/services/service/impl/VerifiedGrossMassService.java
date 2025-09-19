@@ -1,33 +1,49 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -54,6 +70,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.transaction.Transactional;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -79,11 +98,13 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil;
     private final ICommonContainersRepository commonContainersRepository;
+    private final ITransactionHistoryDao transactionHistoryDao;
+    private final BridgeServiceAdapter bridgeServiceAdapter;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
-                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil) {
+                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, BridgeServiceAdapter bridgeServiceAdapter, ITransactionHistoryDao transactionHistoryDao) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -94,6 +115,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
         this.commonContainersRepository = commonContainersRepository;
         this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
+        this.bridgeServiceAdapter = bridgeServiceAdapter;
+        this.transactionHistoryDao = transactionHistoryDao;
     }
 
     @Override
@@ -103,6 +126,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
         updateReadOnlyDataToEntity(request, entity, verifiedGrossMass);
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
+        verifiedGrossMass.setCreateByUserEmail(UserContext.getUser().getEmail());
+        verifiedGrossMass.setSubmitByUserEmail(UserContext.getUser().getEmail());
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
     }
@@ -456,6 +481,170 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         return updatedContainers.stream()
                 .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
                 .toList();
+    }
+
+    public void submitOrAmendVerifiedGrossMass(VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest) throws RunnerException {
+
+        Optional<VerifiedGrossMass> verifiedGrossMassOptional = verifiedGrossMassDao.findById(verifiedGrossMassInttraRequest.getId());
+        if (verifiedGrossMassOptional.isEmpty()) {
+            throw new ValidationException("Invalid VGM Id: " + verifiedGrossMassInttraRequest.getId());
+        }
+
+        List<CommonContainers> containersList =
+                commonContainersRepository.findAllByIdIn(verifiedGrossMassInttraRequest.getContainerIds());
+        VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
+//        CarrierBooking carrierBooking = carrierBookingDao.findByBookingNo(verifiedGrossMass.getCarrierBookingNo());
+
+        for (CommonContainers container : containersList) {
+
+            VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse = new VerifiedGrossMassInttraResponse();
+
+            // Set Message Date Time
+            verifiedGrossMassInttraResponse.setMessageGuid(UUID.randomUUID());
+            verifiedGrossMassInttraResponse.setMessageDateTime(LocalDateTime.now());
+            verifiedGrossMassInttraResponse.setTenantId(VerifiedGrossMassConstants.INTTRA);
+
+            // Setting Submitter Party
+            verifiedGrossMassInttraResponse.setRequestor(fetchRequiredParty(verifiedGrossMass.getRequestor()));
+
+            NotificationContactResponse notificationContractResponse = new NotificationContactResponse();
+            notificationContractResponse.setUsername(UserContext.getUser().getUsername());
+            notificationContractResponse.setEmails(populateRequestorEmails(verifiedGrossMass));
+            verifiedGrossMassInttraResponse.setRequestorNotificationContact(notificationContractResponse);
+
+
+            CommonContainerResponse containerResponse = new CommonContainerResponse();
+
+            containerResponse.setContainerNo(container.getContainerNo());
+            containerResponse.setVgmWeight(container.getVgmWeight());
+            containerResponse.setVgmWeightUnit(container.getVgmWeightUnit());
+            containerResponse.setApprovalSignature(container.getApprovalSignature());
+            containerResponse.setApprovalDate(container.getApprovalDate());
+            containerResponse.setWeightDeterminationMethod(container.getWeightDeterminationMethod());
+            containerResponse.setWeightDeterminationDateTime(container.getWeightDeterminationDateTime());
+
+            // Other container fields
+            containerResponse.setGrossWeight(container.getGrossWeight());
+            containerResponse.setGrossWeightUnit(container.getGrossWeightUnit());
+            containerResponse.setTareWeight(container.getTareWeight());
+            containerResponse.setTareWeightUnit(container.getTareWeightUnit());
+            containerResponse.setSealNumber(container.getSealNumber());
+
+            verifiedGrossMassInttraResponse.setContainer(containerResponse);
+
+            // Set Other parties
+            verifiedGrossMassInttraResponse.setResponsible(fetchRequiredParty(verifiedGrossMass.getResponsible()));
+            verifiedGrossMassInttraResponse.setAuthorised(fetchRequiredParty(verifiedGrossMass.getAuthorised()));
+
+            // Set carrier carrier booking details
+            verifiedGrossMassInttraResponse.setCarrierBookingNo(verifiedGrossMass.getCarrierBookingNo());
+            verifiedGrossMassInttraResponse.setSubmitterReference(verifiedGrossMass.getCarrierBookingNo());
+
+            verifiedGrossMassMasterDataHelper.populateCarrierDetails(
+                    verifiedGrossMassMasterDataHelper.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
+                    verifiedGrossMassInttraResponse);
+
+            // Generates number between 10000 and 99999 and set fileName
+            SecureRandom random = new SecureRandom();
+            int rnd = 10000 + random.nextInt(90000);
+            String fileName = "VGMRequest_" + verifiedGrossMassInttraRequest.getId() + "_" + rnd + ".xml";
+            verifiedGrossMassInttraResponse.setFileName(fileName);
+
+            verifiedGrossMassInttraResponse.setDelegated(verifiedGrossMass.getIsDelegated());
+
+
+            // Set Response State
+            if (OperationType.SUBMIT.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+                verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.ORIGINAL);
+                log.info("Bridge payload {}", jsonHelper.convertToJson(verifiedGrossMassInttraResponse));
+                BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestTactResponse(CommonRequestModel.buildRequest((IRunnerRequest) verifiedGrossMassInttraResponse));
+                if (isBridgeServiceResponseNotValid(bridgeServiceResponse)) {
+                    log.error("Getting error from Bridge while uploading template to: " + jsonHelper.convertToJson(bridgeServiceResponse));
+                    throw new RunnerException("Getting error from Bridge");
+                }
+            } else if (OperationType.AMEND.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+                verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.AMEND);
+                log.info("Bridge payload {}",  verifiedGrossMassInttraResponse);
+            }
+
+            // TO DO: send Email Notification
+        }
+
+
+        // Create single Transaction history for single operation
+        String description = "";
+        if (OperationType.SUBMIT.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+            description = "Booking Requested by : " + UserContext.getUser().getUsername();
+        } else if (OperationType.AMEND.equals(verifiedGrossMassInttraRequest.getOperationType())) {
+            description = "Amend Requested by : " + UserContext.getUser().getUsername();
+        }
+        createTransactionHistory(verifiedGrossMass.getStatus().getDescription(),
+                FlowType.Inbound, description, SourceSystem.CargoRunner, verifiedGrossMassInttraRequest.getId());
+    }
+
+    private boolean isBridgeServiceResponseNotValid(BridgeServiceResponse bridgeServiceResponse) {
+        return bridgeServiceResponse.getExtraResponseParams().containsKey(AwbConstants.SERVICE_HTTP_STATUS_CODE) && !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "200") &&
+                !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "400");
+    }
+
+    private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+                .actionStatusDescription(actionStatus)
+                .flowType(flowType)
+                .description(description)
+                .sourceSystem(sourceSystem)
+                .actualDateTime(LocalDateTime.now())
+                .entityType(EntityTypeTransactionHistory.VGM)
+                .entityId(id)
+                .build();
+        transactionHistoryDao.save(transactionHistory);
+    }
+
+    private PartiesResponse fetchRequiredParty(Parties party) {
+        if (Objects.isNull(party)) {
+            return null;
+        }
+
+        return PartiesResponse.builder()
+                .id(party.getId())
+                .entityId(party.getEntityId())
+                .entityType(party.getEntityType())
+                .type(party.getType())
+                .orgCode(party.getOrgCode())
+                .tenantId(party.getTenantId())
+                .addressCode(party.getAddressCode())
+                .orgId(party.getOrgId())
+                .addressId(party.getAddressId())
+                .orgData(party.getOrgData())
+                .addressData(party.getAddressData())
+                .isAddressFreeText(party.getIsAddressFreeText())
+                .countryCode(party.getCountryCode())
+                .build();
+    }
+
+    private String populateRequestorEmails(VerifiedGrossMass verifiedGrossMass) {
+
+        List<String> requestorEmailsList = new ArrayList<>();
+        // Add existing external emails if any
+        if (Objects.nonNull(verifiedGrossMass.getExternalEmails()) && !verifiedGrossMass.getExternalEmails().isBlank()) {
+            String[] externalEmails = verifiedGrossMass.getExternalEmails().split(";");
+            for (String email : externalEmails) {
+                if (!email.isBlank()) {
+                    requestorEmailsList.add(email.trim());
+                }
+            }
+        }
+
+        // Add createdBy and submitBy emails if present
+        if (Objects.nonNull(verifiedGrossMass.getCreateByUserEmail()) && !verifiedGrossMass.getCreateByUserEmail().isBlank()) {
+            requestorEmailsList.add(verifiedGrossMass.getCreateByUserEmail().trim());
+        }
+
+        if (Objects.nonNull(verifiedGrossMass.getSubmitByUserEmail()) && !verifiedGrossMass.getSubmitByUserEmail().isBlank()) {
+            requestorEmailsList.add(verifiedGrossMass.getSubmitByUserEmail().trim());
+        }
+
+        return String.join(";", requestorEmailsList);
     }
 }
 

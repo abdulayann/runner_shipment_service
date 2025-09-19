@@ -24,7 +24,8 @@ public class VerifiedGrossMassRequest implements Serializable {
     private VerifiedGrossMassStatus status;
     private String carrierBookingNo;
     private String carrierBlNo;
-    @NotBlank(message = "Entity type can not be empty")
+    private Boolean isDelegated;
+    @NotNull(message = "Entity type can not be empty")
     private EntityType entityType;
     @NotNull(message = "Entity Id can not be null")
     @Min(value = 1, message = "Entity id can not be zero/negative")
