@@ -494,7 +494,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         List<CommonContainers> containersList =
                 commonContainersRepository.findAllByIdIn(verifiedGrossMassInttraRequest.getContainerIds());
         VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
-//        CarrierBooking carrierBooking = carrierBookingDao.findByBookingNo(verifiedGrossMass.getCarrierBookingNo());
 
         for (CommonContainers container : containersList) {
 

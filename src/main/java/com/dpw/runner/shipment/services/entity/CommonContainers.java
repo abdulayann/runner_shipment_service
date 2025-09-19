@@ -33,7 +33,7 @@ public class CommonContainers extends MultiTenancy {
 
     @Column(name = "container_code")
     @DedicatedMasterData(type = Constants.CONTAINER_TYPE_MASTER_DATA)
-    private String containerCode;
+    private String containerCode; // store
 
     @Column(name = "count")
     private Long count;
@@ -57,42 +57,42 @@ public class CommonContainers extends MultiTenancy {
     private String marksNums;
 
     @Column(name = "gross_weight")
-    private BigDecimal grossWeight;
+    private BigDecimal grossWeight;  //..ded
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "net_weight")
-    private BigDecimal netWeight;
+    private BigDecimal netWeight;  //
 
     @Column(name = "net_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    private String netWeightUnit;
+    private String netWeightUnit;  //
 
     @Column(name = "gross_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    private String grossWeightUnit;
+    private String grossWeightUnit;  //
 
     @Column(name = "volume_unit", length = 10)
     @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "container_no")
-    private String containerNo;
+    private String containerNo;  // store
 
     @Column(name = "packs")
-    private Integer packs;
+    private Integer packs;  //
 
     @Column(name = "packs_unit")
     @MasterData(type = MasterDataType.PACKS_UNIT)
-    private String packsUnit;
+    private String packsUnit; //
 
     @Column(name = "tare_weight")
-    private BigDecimal tareWeight;
+    private BigDecimal tareWeight;   //
 
     @Column(name = "tare_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    private String tareWeightUnit;
+    private String tareWeightUnit;  //
 
     @Column(name = "seal_number")
     private String sealNumber;
