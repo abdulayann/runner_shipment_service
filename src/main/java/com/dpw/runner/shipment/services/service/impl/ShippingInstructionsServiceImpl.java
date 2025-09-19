@@ -633,7 +633,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         sendForDownstreamProcess(si);
-        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "Submit Requested", SourceSystem.Carrier, id);
+        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -691,7 +691,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);
-        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "Amende Requested", SourceSystem.Carrier, id);
+        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
