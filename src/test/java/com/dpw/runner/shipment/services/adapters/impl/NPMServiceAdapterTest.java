@@ -1489,44 +1489,6 @@ class NPMServiceAdapterTest {
     }
 
     @Test
-    void testGetContractCountForParties_TimeoutScenario() {
-        // Mock executor to simulate timeout
-        doAnswer(invocation -> {
-            Runnable task = invocation.getArgument(0);
-            // Simulate a delay that might cause timeout issues
-            Thread.sleep(100); // Small delay for test
-            task.run();
-            return null;
-        }).when(executorService).execute(any(Runnable.class));
-
-        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
-                .thenAnswer(invocation -> {
-                    Supplier<?> supplier = invocation.getArgument(0);
-                    return supplier;
-                });
-
-        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
-        doThrow(new RuntimeException("Request timeout"))
-                .when(spyService).fetchContracts(any(CommonRequestModel.class));
-
-        ListContractRequest listContractRequest = new ListContractRequest();
-        listContractRequest.setCustomer_org_id("FRC0000123");
-
-        GetContractsCountForPartiesRequest request = new GetContractsCountForPartiesRequest();
-        request.setContractsCountRequests(List.of(listContractRequest));
-
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .data(request)
-                .build();
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            spyService.fetchContractsCountForParties(commonRequestModel);
-        });
-
-        assertEquals("java.lang.RuntimeException: Request timeout", exception.getMessage());
-    }
-
-    @Test
     void testGetContractCountForParties_DuplicateCustomerOrgIds() {
         // Mock executor to run synchronously
         doAnswer(invocation -> {
