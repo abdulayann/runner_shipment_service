@@ -396,4 +396,11 @@ class ShipmentControllerV3Test {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
+    @Test
+    void resetShipmentQuoteRules_successResponse() {
+        when(shipmentService.resetShipmentQuoteRules(any())).thenReturn(new QuoteResetRulesResponse());
+        var response = shipmentControllerV3.resetShipmentQuoteRules(1L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
 }

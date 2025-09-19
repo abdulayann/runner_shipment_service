@@ -78,6 +78,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -4466,5 +4467,42 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         booking.setNotifyParty(new Parties());
         booking.setAdditionalParties(new ArrayList<>());
         return booking;
+    }
+
+    @Test
+    void testResetBookingQuoteRules() {
+        Long bookingId = 123L;
+
+        QuoteResetRulesResponse response = customerBookingService.resetBookingQuoteRules(bookingId);
+        List<QuoteResetField> fields = response.getQuotesResetFields();
+
+        Map<String, QuoteResetField> fieldMap = fields.stream()
+                .collect(Collectors.toMap(QuoteResetField::getLabel, f -> f));
+
+        assertTrue(fieldMap.get("Quote Party").isSelected());
+        assertTrue(fieldMap.get("Transport Mode").isSelected());
+        assertTrue(fieldMap.get("Cargo Type").isSelected());
+        assertTrue(fieldMap.get("Service Type").isSelected());
+        assertTrue(fieldMap.get("Origin").isSelected());
+        assertTrue(fieldMap.get("POL").isSelected());
+        assertTrue(fieldMap.get("POD").isSelected());
+        assertTrue(fieldMap.get("Destination").isSelected());
+        assertTrue(fieldMap.get("Incoterms").isSelected());
+        assertTrue(fieldMap.get("PaymentTerm").isSelected());
+
+        assertTrue(fieldMap.get("Sales Branch").isSelected());
+        assertTrue(fieldMap.get("Primary Email").isSelected());
+        assertTrue(fieldMap.get("Secondary Email").isSelected());
+
+        assertFalse(fieldMap.get("Sales Branch").isEditable());
+        assertFalse(fieldMap.get("Primary Email").isEditable());
+        assertFalse(fieldMap.get("Secondary Email").isEditable());
+
+        assertTrue(fieldMap.get("Quote Party").isEditable());
+        assertTrue(fieldMap.get("Service Type").isEditable());
+        assertTrue(fieldMap.get("Origin").isEditable());
+        assertTrue(fieldMap.get("Destination").isEditable());
+        assertTrue(fieldMap.get("Incoterms").isEditable());
+        assertTrue(fieldMap.get("PaymentTerm").isEditable());
     }
 }

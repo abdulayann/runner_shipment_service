@@ -883,6 +883,44 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return commonUtils.getCloneFieldResponse(type);
     }
 
+    @Override
+    public QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId) {
+        if(Objects.isNull(shipmentId)) {
+            log.error("ShipmentId is null with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+        if(optionalShipmentDetails.isEmpty()) {
+            log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
+        }
+        boolean hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
+                .map(Routings::getCarriage)
+                .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
+
+        List<QuoteResetField> quoteResetFields = new ArrayList<>();
+        quoteResetFields.add(QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Transport Mode").fieldName("transportMode").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Cargo Type").fieldName("shipmentType").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Service Type").fieldName("serviceType").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName("orgin").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName("destination").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Incoterms").fieldName("incoterms").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("PaymentTerm").fieldName("paymentTerms").editable(true).selected(true).build());
+
+        if (!hasMainCarriage) {
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(true).selected(true).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(true).selected(true).build());
+        } else {
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(false).selected(false).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(false).selected(false).build());
+        }
+        return new QuoteResetRulesResponse(quoteResetFields);
+    }
+
     public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
         if (request.getFlags().isGeneral()) {
             commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);
