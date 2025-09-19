@@ -4,11 +4,8 @@ import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
@@ -122,7 +119,7 @@ public class VerifiedGrossMassMasterDataHelper {
 
     public Map<String,EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(VerifiedGrossMass verifiedGrossMass) {
 
-        Map<String, EntityTransferCarrier> carrierDatav1Map = null;
+        Map<String, EntityTransferCarrier> carrierDatav1Map = new HashMap<>();
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -131,7 +128,7 @@ public class VerifiedGrossMassMasterDataHelper {
                 carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest((IRunnerResponse) verifiedGrossMass.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
             }
             if (CollectionUtils.isEmpty(carrierList)) {
-                return null;
+                return new HashMap<>();
             }
             carrierDatav1Map = masterDataUtils.fetchInBulkCarriers(carrierList);
             return carrierDatav1Map;
