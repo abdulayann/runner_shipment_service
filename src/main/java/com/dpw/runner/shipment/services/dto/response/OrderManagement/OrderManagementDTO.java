@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
