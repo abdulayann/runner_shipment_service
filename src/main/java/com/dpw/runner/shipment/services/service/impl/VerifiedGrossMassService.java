@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -8,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -17,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInfor
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -33,14 +36,19 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -54,14 +62,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -81,11 +82,14 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil;
     private final ICommonContainersRepository commonContainersRepository;
+    private final INotificationService notificationService;
+    private final IV1Service iv1Service;
+
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
-                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil) {
+                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, INotificationService notificationService, IV1Service iv1Service) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -96,6 +100,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
         this.commonContainersRepository = commonContainersRepository;
         this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
+        this.notificationService = notificationService;
+        this.iv1Service = iv1Service;
     }
 
     @Override
@@ -104,6 +110,10 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
         updateReadOnlyDataToEntity(request, entity, verifiedGrossMass);
+        // Auto-populate emails only when it's Carrier Booking
+        if (EntityType.CARRIER_BOOKING.equals(request.getEntityType()) && entity instanceof CarrierBooking booking) {
+            autoPopulateEmailsFromBooking(verifiedGrossMass, booking);
+        }
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
@@ -465,5 +475,64 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         // Convert to response DTOs
         return responseDtos;
     }
+
+    //call when status Change
+    private void sendNotification(VerifiedGrossMass verifiedGrossMass) {
+        try {
+            List<String> requests = new ArrayList<>(
+                    List.of(Constants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE));
+            List<EmailTemplatesRequest> emailTemplates = getVerifedGrossMassEmailTemplate(requests);
+            EmailTemplatesRequest carrierBookingTemplate = emailTemplates.stream()
+                    .filter(Objects::nonNull)
+                    .filter(template -> Constants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
+                    .findFirst()
+                    .orElse(null);
+            if (carrierBookingTemplate != null) {
+                SendEmailBaseRequest request =  getSendEmailBaseRequest(verifiedGrossMass, carrierBookingTemplate);
+                notificationService.sendEmail(request);
+                log.info("Email sent with Excel attachment");
+            }
+        } catch (Exception e) {
+            log.error("Error in  sending carrier booking email: {}", e.getMessage());
+        }
+    }
+
+    @NotNull
+    private static SendEmailBaseRequest getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass, EmailTemplatesRequest verifiedGrossMassTemplate) {
+        String toEmails = verifiedGrossMass.getInternalEmails() == null ? "" : verifiedGrossMass.getInternalEmails() + ",";
+        toEmails += verifiedGrossMass.getCreateByUserEmail();
+        if(!verifiedGrossMass.getCreateByUserEmail().equalsIgnoreCase(verifiedGrossMass.getSubmitByUserEmail())){
+            toEmails += "," + verifiedGrossMass.getSubmitByUserEmail();
+        }
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(verifiedGrossMassTemplate.getSubject());
+        request.setTemplateName(verifiedGrossMassTemplate.getName());
+        request.setHtmlBody(verifiedGrossMassTemplate.getBody());
+        return request;
+    }
+
+    public List<EmailTemplatesRequest> getVerifedGrossMassEmailTemplate(List<String> templateCodes) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        if (v1DataResponse != null && v1DataResponse.entities != null) {
+            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+        }
+        return new ArrayList<>();
+    }
+
+    private void autoPopulateEmailsFromBooking(VerifiedGrossMass vgm, CarrierBooking booking) {
+            // Always copy from Booking on amend/submit
+            vgm.setInternalEmails(booking.getInternalEmails());
+            vgm.setExternalEmails(booking.getExternalEmails());
+            vgm.setCreateByUserEmail(booking.getCreateByUserEmail());
+            vgm.setSubmitByUserEmail(booking.getSubmitByUserEmail());
+
+        }
 }
 
