@@ -144,7 +144,7 @@ public class VerifiedGrossMassController {
             @ApiResponse(code = 200, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL, response = VerifiedGrossMassController.MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = VerifiedGrossMassController.MyResponseClass.class)
     })
-    @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND_BY_ID)
+    @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND)
     public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest) {
         log.info("Received Verified Gross Mass request with RequestId: {} and OperationType: {}",
                 LoggerHelper.getRequestIdFromMDC(), verifiedGrossMassInttraRequest.getOperationType());

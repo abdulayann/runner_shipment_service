@@ -954,7 +954,7 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             verify(carrierBookingInttraUtil).createTransactionHistory(
-                    "Draft", FlowType.Inbound, "Booking Requested by : testUser",
+                    "Draft", FlowType.Inbound, "Amend Requested by : testUser",
                     SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
             );
         }
