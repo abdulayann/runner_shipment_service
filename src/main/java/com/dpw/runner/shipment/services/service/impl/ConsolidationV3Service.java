@@ -5095,8 +5095,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
             if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
                 response.setSendingAgent(partiesResponse);
-                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get(Constants.TENANTID)!=null)
-                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get(Constants.TENANTID).toString()));
+                Long originBranchId = commonUtils.getReceivingBranch(partiesResponse.getOrgId(), partiesResponse.getAddressId());
+                response.setOriginBranch(originBranchId);
             } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
                 response.setReceivingAgent(partiesResponse);
             }
