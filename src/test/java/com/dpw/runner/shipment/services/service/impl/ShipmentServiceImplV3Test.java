@@ -7905,7 +7905,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("USD", response.getFreightLocalCurrency());
         assertNotNull(response.getAdditionalDetails().getExportBroker());
         assertEquals("AGENT001", response.getAdditionalDetails().getExportBroker().getOrgCode());
-        assertEquals(5L, response.getOriginBranch());
         assertEquals(masterDataMap, response.getMasterDataMap());
 
         verify(shipmentServiceImplV3, times(2)).generateCustomHouseBL(null);

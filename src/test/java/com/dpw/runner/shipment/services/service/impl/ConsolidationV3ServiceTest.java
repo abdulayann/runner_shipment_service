@@ -6270,8 +6270,11 @@ if (unitConversionUtilityMockedStatic != null) {
 
         PartiesResponse defaultAgent = new PartiesResponse();
         defaultAgent.setOrgCode("AGENT001");
+        defaultAgent.setOrgId("AGENT001");
+        defaultAgent.setAddressId("AGENT001");
         defaultAgent.setOrgData(Map.of("TenantId", 5));
         when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        when(commonUtils.getReceivingBranch(any(), any())).thenReturn(5L);
 
         // Act
         consolidationV3Service.setTenantAndDefaultAgent(response);

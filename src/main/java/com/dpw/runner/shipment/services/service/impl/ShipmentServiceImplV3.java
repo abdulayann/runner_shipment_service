@@ -4889,11 +4889,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if(Constants.DIRECTION_EXP.equals(direction)) {
                 // populate export broker and origin branch
                 response.getAdditionalDetails().setExportBroker(partiesResponse);
-                if(partiesResponse.getOrgData() != null) {
-                    var originBranch = partiesResponse.getOrgData().get(Constants.TENANTID);
-                    if (originBranch != null) {
-                        response.setOriginBranch(Long.valueOf(originBranch.toString()));
-                    }
+                if(partiesResponse.getOrgId() != null && partiesResponse.getAddressId() != null) {
+                    Long originBranchId = commonUtils.getReceivingBranch(partiesResponse.getOrgId(), partiesResponse.getAddressId());
+                    response.setOriginBranch(originBranchId);
                 }
 
             } else if(Constants.DIRECTION_IMP.equals(direction)) {
