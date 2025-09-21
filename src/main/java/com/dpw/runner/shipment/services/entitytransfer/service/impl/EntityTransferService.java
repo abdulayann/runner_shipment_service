@@ -1415,6 +1415,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
+
     public void createBulkExportEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Integer currentTenant) {
         if (Objects.isNull(entityId) || CommonUtils.listIsNullOrEmpty(tenantIds))
             return;
