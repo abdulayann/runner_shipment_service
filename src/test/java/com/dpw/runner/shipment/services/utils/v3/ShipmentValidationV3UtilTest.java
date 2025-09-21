@@ -692,7 +692,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ShipmentDetails shipment = new ShipmentDetails();
 
         LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
-        LocalDateTime shippedOnBoard = actualTimeOfDeparture.plusHours(1);
+        LocalDateTime shippedOnBoard = actualTimeOfDeparture.plusDays(1).plusHours(1);
 
         AdditionalDetails additionalDetails = new AdditionalDetails();
         additionalDetails.setShippedOnboard(shippedOnBoard);
