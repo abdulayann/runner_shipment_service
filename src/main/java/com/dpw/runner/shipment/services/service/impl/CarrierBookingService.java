@@ -12,7 +12,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
@@ -31,6 +33,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
@@ -65,6 +68,7 @@ import com.dpw.runner.shipment.services.notification.request.SendEmailBaseReques
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
@@ -135,10 +139,11 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IPartiesDao partiesDao;
     private final IntraCommonKafkaHelper kafkaHelper;
     private final ITransactionHistoryDao transactionHistoryDao;
+    private final IRoutingsV3Service routingsV3Service;
 
 
     @Autowired
-    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao) {
+    public CarrierBookingService(ICarrierBookingDao carrierBookingDao, JsonHelper jsonHelper, CarrierBookingMasterDataHelper carrierBookingMasterDataHelper, CarrierBookingValidationUtil carrierBookingValidationUtil, CommonUtils commonUtils, INotificationService notificationService, IV1Service iv1Service, CarrierBookingUtil carrierBookingUtil, MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, IConsolidationDetailsDao consolidationDetailsDao, IConsolidationV3Service consolidationV3Service, IShipmentDao shipmentDao, IPartiesDao partiesDao, IntraCommonKafkaHelper kafkaHelper, ITransactionHistoryDao transactionHistoryDao, IRoutingsV3Service routingsV3Service) {
         this.carrierBookingDao = carrierBookingDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingMasterDataHelper = carrierBookingMasterDataHelper;
@@ -155,6 +160,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         this.partiesDao = partiesDao;
         this.kafkaHelper = kafkaHelper;
         this.transactionHistoryDao = transactionHistoryDao;
+        this.routingsV3Service = routingsV3Service;
     }
 
     @Override
@@ -191,7 +197,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setStatus(CarrierBookingStatus.Draft);
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
 
-        if(request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()){
+        if (request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()) {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, true), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
@@ -239,19 +245,19 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     public List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> carrierBookingList, boolean getMasterData,
-                                                             Set<String> includeColumns) {
+                                                            Set<String> includeColumns) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<CarrierBookingListResponse> carrierBookingListResponses = new ArrayList<>();
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
             CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
-            if(carrierBooking.getShippingInstruction() != null) {
+            if (carrierBooking.getShippingInstruction() != null) {
                 carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
             }
-            if(carrierBooking.getVerifiedGrossMass() != null) {
+            if (carrierBooking.getVerifiedGrossMass() != null) {
                 carrierBookingListResponse.setVgmStatus(carrierBooking.getVerifiedGrossMass().getStatus());
             }
-            if(!CollectionUtils.isEmpty(carrierBooking.getReferenceNumbersList())) {
+            if (!CollectionUtils.isEmpty(carrierBooking.getReferenceNumbersList())) {
                 Optional<ReferenceNumbers> contractReferenceNumber = carrierBooking.getReferenceNumbersList()
                         .stream()
                         .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
@@ -303,7 +309,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
 
-        if(request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()){
+        if (request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()) {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, false), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
@@ -350,7 +356,64 @@ public class CarrierBookingService implements ICarrierBookingService {
             syncCutOffFields(consolidationDetails, carrierBooking);
 
             consolidationDetailsDao.save(consolidationDetails);
+            //updates Routes to consol and dependent shipments
+            List<CarrierRouting> carrierRoutingList = carrierBooking.getCarrierRoutingList();
+            if (!CollectionUtils.isEmpty(carrierRoutingList)) {
+                List<Routings> routings = routingsV3Service.getRoutingsByConsolidationId(carrierBooking.getEntityId());
+                List<RoutingsRequest> routingsRequests = createRoutingsRequestList(routings, carrierRoutingList);
+                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                bulkUpdateRoutingsRequest.setRoutings(routingsRequests);
+                bulkUpdateRoutingsRequest.setEntityId(carrierBooking.getEntityId());
+                routingsV3Service.bulkUpdateWithValidateWrapper(bulkUpdateRoutingsRequest, Constants.CONSOLIDATION);
+            }
         }
+    }
+
+    private List<RoutingsRequest> createRoutingsRequestList(List<Routings> routings, List<CarrierRouting> carrierRoutings) {
+        // Step 1: Convert CarrierRouting to RoutingsRequest
+        List<RoutingsRequest> carrierRoutingRequests = carrierRoutings.stream()
+                .map(this::convertCarrierRoutingToRequest)
+                .toList();
+
+        List<RoutingsRequest> result = new ArrayList<>(carrierRoutingRequests);
+
+        // Step 2: Extract carriageTypes from CarrierRouting for comparison
+        Set<RoutingCarriage> carrierRoutingCarriageTypes = carrierRoutings.stream()
+                .map(CarrierRouting::getCarriageType)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // Step 3: Add Routings where carriage is not in carrierRoutingCarriageTypes
+        List<RoutingsRequest> remainingRoutings = routings.stream()
+                .filter(routing -> routing.getCarriage() == null ||
+                        !carrierRoutingCarriageTypes.contains(routing.getCarriage()))
+                .map(this::convertRoutingToRequest)
+                .toList();
+
+        result.addAll(remainingRoutings);
+
+        return result;
+
+    }
+
+    private RoutingsRequest convertRoutingToRequest(Routings routings) {
+        return jsonHelper.convertValue(routings, RoutingsRequest.class);
+    }
+
+    /**
+     * Converts CarrierRouting to RoutingsRequest
+     */
+    private RoutingsRequest convertCarrierRoutingToRequest(CarrierRouting carrierRouting) {
+        return RoutingsRequest.builder()
+                .carriage(carrierRouting.getCarriageType())
+                .mode(carrierRouting.getTransportMode())
+                .vesselName(carrierRouting.getVesselName())
+                .pol(carrierRouting.getPol())
+                .pod(carrierRouting.getPod())
+                .eta(carrierRouting.getEta())
+                .etd(carrierRouting.getEtd())
+                .voyage(carrierRouting.getVoyageNo())
+                .build();
     }
 
     private void syncCutOffFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) throws RunnerException {
@@ -582,7 +645,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
     }
 
-    private void sendForDownstreamProcess(CarrierBooking carrierBooking,  IntraKafkaOperationType operationType) {
+    private void sendForDownstreamProcess(CarrierBooking carrierBooking, IntraKafkaOperationType operationType) {
         String payload = jsonHelper.convertToJson(carrierBooking);
         kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.CB, operationType);
     }
@@ -819,7 +882,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request =  getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
+                SendEmailBaseRequest request = getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
                 notificationService.sendEmail(request);
                 log.info("Email sent with Excel attachment");
             }
@@ -832,7 +895,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     private static SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
         String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
         toEmails += carrierBooking.getCreateByUserEmail();
-        if(!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())){
+        if (!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())) {
             toEmails += "," + carrierBooking.getSubmitByUserEmail();
         }
         SendEmailBaseRequest request = new SendEmailBaseRequest();
