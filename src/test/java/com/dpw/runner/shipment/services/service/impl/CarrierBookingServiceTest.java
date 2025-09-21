@@ -21,10 +21,12 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBooki
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
@@ -50,6 +52,7 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
@@ -141,6 +144,8 @@ class CarrierBookingServiceTest extends CommonMocks {
     private ITransactionHistoryDao transactionHistoryDao;
     @Mock
     private IntraCommonKafkaHelper kafkaHelper;
+    @Mock
+    private IRoutingsV3Service routingsV3Service;
 
     @Spy
     @InjectMocks
@@ -572,14 +577,28 @@ class CarrierBookingServiceTest extends CommonMocks {
         carrierBooking.setStatus(CarrierBookingStatus.Draft);
         SailingInformation sailingInformation = new SailingInformation();
         carrierBooking.setSailingInformation(sailingInformation);
+        CarrierRouting carrierRouting = new CarrierRouting();
+        carrierRouting.setCarriageType(RoutingCarriage.ON_CARRIAGE);
+        carrierRouting.setPol("DXB");
+        carrierRouting.setPod("BOM");
+        carrierRouting.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        carrierBooking.setCarrierRoutingList(List.of(carrierRouting));
+        carrierRouting.setId(1L);
+        carrierBooking.setEntityId(1L);
+        carrierBooking.setEntityType(EntityType.CONSOLIDATION.name());
         SyncBookingToService request = new SyncBookingToService();
         request.setEntityType(CarrierBookingConstants.CARRIER_BOOKING);
         request.setEntityId(1L);
+        Routings routings = new Routings();
+        routings.setId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVoyage("0123");
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
 
         carrierBooking.setEntityType(Constants.CONSOLIDATION);
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         when(carrierBookingValidationUtil.validateRequest(any(), any())).thenReturn(consolidationDetails);
-
+        when(routingsV3Service.getRoutingsByConsolidationId(anyLong())).thenReturn(List.of(routings));
         carrierBookingService.syncCarrierBookingToService(request);
 
         verify(consolidationDetailsDao, times(1)).save(consolidationDetails);
@@ -596,12 +615,28 @@ class CarrierBookingServiceTest extends CommonMocks {
         sailingInformation.setEmptyContainerPickupCutoff(LocalDateTime.now());
         sailingInformation.setLoadedContainerGateInCutoff(LocalDateTime.now());
         carrierBooking.setSailingInformation(sailingInformation);
+        CarrierRouting carrierRouting = new CarrierRouting();
+        carrierRouting.setCarriageType(RoutingCarriage.ON_CARRIAGE);
+        carrierRouting.setPol("DXB");
+        carrierRouting.setPod("BOM");
+        carrierRouting.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        carrierBooking.setCarrierRoutingList(List.of(carrierRouting));
+        carrierRouting.setId(1L);
+        carrierBooking.setEntityId(1L);
+        carrierBooking.setEntityType(EntityType.CONSOLIDATION.name());
+        Routings routings = new Routings();
+        routings.setId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVoyage("0123");
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+
         SyncBookingToService request = new SyncBookingToService();
         request.setEntityType(CarrierBookingConstants.CARRIER_BOOKING);
         request.setEntityId(1L);
 
         carrierBooking.setEntityType(Constants.CONSOLIDATION);
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
+        when(routingsV3Service.getRoutingsByConsolidationId(anyLong())).thenReturn(List.of(routings));
         when(carrierBookingValidationUtil.validateRequest(any(), any())).thenReturn(consolidationDetails);
 
         carrierBookingService.syncCarrierBookingToService(request);
