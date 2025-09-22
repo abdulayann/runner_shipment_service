@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
