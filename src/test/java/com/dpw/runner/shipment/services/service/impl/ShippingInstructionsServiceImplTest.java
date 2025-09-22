@@ -15,17 +15,20 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInst
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,6 +55,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -101,7 +105,7 @@ class ShippingInstructionsServiceImplTest {
     @Mock
     private IPackingV3Service packingV3Service;
     @Mock
-    ITransactionHistoryDao transactionHistoryDao;
+    CarrierBookingInttraUtil carrierBookingInttraUtil;
     @InjectMocks
     private ShippingInstructionUtil shippingInstructionUtil;
 
@@ -113,6 +117,9 @@ class ShippingInstructionsServiceImplTest {
 
     @Mock
     private ICommonPackagesDao commonPackagesDao;
+
+    @Mock
+    private IShipmentDao shipmentDao;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -989,19 +996,18 @@ class ShippingInstructionsServiceImplTest {
         // verify SI status updated
         verify(repository).save(argThat(instr -> instr.getStatus() == ShippingInstructionStatus.SiSubmitted));
 
-        // verify transaction history is created
-        ArgumentCaptor<TransactionHistory> historyCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
-        verify(transactionHistoryDao, times(1)).save(historyCaptor.capture());
-
-        TransactionHistory history = historyCaptor.getValue();
-        assertEquals(Requested.getDescription(), history.getActionStatusDescription());
-        assertEquals(FlowType.Inbound, history.getFlowType());
-        assertEquals("SI Requested", history.getDescription());
-        assertEquals(SourceSystem.CargoRunner, history.getSourceSystem());
-        assertEquals(siId, history.getEntityId());
-        assertEquals(EntityTypeTransactionHistory.CARRIER_BOOKING, history.getEntityType());
-        assertNotNull(history.getActualDateTime());
+        // verify util method is called correctly
+        verify(carrierBookingInttraUtil, times(1))
+                .createTransactionHistory(
+                        (Requested.getDescription()),
+                        (FlowType.Inbound),
+                        ("SI Requested"),
+                        (SourceSystem.CargoRunner),
+                        (siId),
+                        (EntityTypeTransactionHistory.SI)
+                );
     }
+
 
     @Test
     void testSyncCommonContainers_shouldAttachShippingInstructionId() {
@@ -1032,6 +1038,91 @@ class ShippingInstructionsServiceImplTest {
         CommonContainers saved = captor.getValue().get(0);
         assertEquals(guid, saved.getContainerRefGuid());
         assertEquals(999L, saved.getShippingInstructionId());
+    }
+
+    @Test
+    void testSyncCommonPackings_shouldPersistPackingWithNoShippingInstructionId() {
+        // given
+        UUID guid = UUID.randomUUID();
+
+        Packing packing = new Packing();
+        packing.setGuid(guid);
+        packing.setShipmentId(10L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setConsolidationNumber("C123");
+        shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
+
+        // projection is mocked, but won't be mapped in current code
+        ShippingConsoleNoProjection projection = new ShippingConsoleNoProjection() {
+            @Override public Long getId() { return 999L; }
+            @Override public String getEntityId() { return "C123"; }
+        };
+
+        when(shipmentDao.findByIdIn(List.of(10L)))
+                .thenReturn(List.of(shipmentDetails));
+        when(shippingInstructionDao.findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, List.of("C123")))
+                .thenReturn(List.of(projection));
+        when(commonPackagesDao.findByPackingRefGuidIn(List.of(guid)))
+                .thenReturn(List.of());
+
+        // when
+        shippingInstructionUtil.syncCommonPackings(List.of(packing));
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CommonPackages>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonPackagesDao).saveAll(captor.capture());
+
+        CommonPackages saved = captor.getValue().get(0);
+        assertEquals(guid, saved.getPackingRefGuid());
+        // with current implementation, SI id is never set
+        assertNull(saved.getShippingInstructionId());
+    }
+
+    @Test
+    void updateShippingInstructions_shouldThrow_whenNotFound() {
+        ShippingInstructionRequest req = buildSimpleRequest();
+        when(repository.findById(req.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateShippingInstructions(req))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid shipping instruction id");
+    }
+
+    @Test
+    void deleteShippingInstructions_shouldThrow_whenNotFound() {
+        doThrow(new DataRetrievalFailureException("not found"))
+                .when(repository).delete(anyLong());
+
+        assertThatThrownBy(() -> service.deleteShippingInstructions(99L))
+                .isInstanceOf(DataRetrievalFailureException.class)
+                .hasMessageContaining("not found");
+    }
+
+    @Test
+    void submitShippingInstruction_shouldThrow_whenNotFound() {
+        Long invalidId = 123L;
+        when(repository.findById(invalidId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.submitShippingInstruction(invalidId))
+                .isInstanceOf(GenericException.class)
+                .hasMessageContaining("Shipping Instruction not found");
+    }
+
+    @Test
+    void createShippingInstruction_shouldThrow_whenUnsupportedEntityType() {
+        ShippingInstructionRequest req = buildSimpleRequest();
+        ShippingInstruction si = buildSimpleEntity();
+        si.setEntityType(null); // not supported
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(si);
+
+        assertThatThrownBy(() -> service.createShippingInstruction(req))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid value of Shipping Instruction Type");
     }
 
 }

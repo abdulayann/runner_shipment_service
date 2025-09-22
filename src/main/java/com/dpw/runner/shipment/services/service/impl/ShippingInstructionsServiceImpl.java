@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -107,7 +108,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private IPartiesDao partiesDao;
 
     @Autowired
-    private ITransactionHistoryDao transactionHistoryDao;
+    private CarrierBookingInttraUtil carrierBookingInttraUtil;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -630,7 +631,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         sendForDownstreamProcess(si);
-        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id);
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -688,7 +689,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);
-        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id);
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -712,20 +713,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         return jsonHelper.convertToJson(packageSiPayload);
-    }
-
-    private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {
-        TransactionHistory transactionHistory = TransactionHistory.builder()
-                .actionStatusDescription(actionStatus)
-                .flowType(flowType)
-                .description(description)
-                .sourceSystem(sourceSystem)
-                .actualDateTime(LocalDateTime.now())
-                .entityType(EntityTypeTransactionHistory.CARRIER_BOOKING)
-                .entityId(id)
-                .build();
-
-        transactionHistoryDao.save(transactionHistory);
     }
 
 }
