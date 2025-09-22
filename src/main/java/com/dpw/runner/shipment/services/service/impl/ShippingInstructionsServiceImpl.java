@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsCo
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -32,6 +29,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +45,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -58,6 +57,7 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -107,6 +107,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     private IPartiesDao partiesDao;
 
+    @Autowired
+    private CarrierBookingInttraUtil carrierBookingInttraUtil;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -629,6 +631,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         sendForDownstreamProcess(si);
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -686,6 +689,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         sendForDownstreamProcess(shippingInstruction);
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
