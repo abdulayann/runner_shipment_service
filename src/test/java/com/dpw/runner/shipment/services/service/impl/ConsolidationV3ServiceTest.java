@@ -501,6 +501,103 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(ValidationException.class, () -> consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request));
   }
 
+    @Test
+    void testCreateFromBooking_Success3() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
+        consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success6() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
+        consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
+        when(commonUtils.checkIfPartyExists((Parties) any())).thenReturn(true);
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success4() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success5() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.setCarrierDetails(null);
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
 
   @Test
   void testCreateFromBooking_ThrowsValidationException() {
@@ -2668,56 +2765,6 @@ if (unitConversionUtilityMockedStatic != null) {
         ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
         assertNotNull(response);
     }
-    @Test
-    void detachShipments_Success2() throws RunnerException {
-        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
-        request.setShipmentIds(Set.of(1L,2L));
-        request.setConsolidationId(1L);
-        request.setIsFCLDelete(Boolean.FALSE);
-        request.setIsForcedDetach(Boolean.TRUE);
-
-
-        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
-        shipmentDetails.setEventsList(List.of(Events.builder().build()));
-        shipmentDetails.setContainersList(new HashSet<>());
-        shipmentDetails.setContainsHazardous(Boolean.TRUE);
-
-        ShipmentDetails shipmentDetails1 = shipmentDetails;
-        shipmentDetails1.setId(1L);
-        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
-        Containers container = new Containers();
-        container.setId(1L);
-
-        ShipmentDetails shipmentDetails2 = shipmentDetails;
-        shipmentDetails2.setId(2L);
-        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
-        consolidationDetails.setInterBranchConsole(true);
-        consolidationDetails.setShipmentsList(new HashSet<>());
-        consolidationDetails.setOverride(true);
-        consolidationDetails.setId(1L);
-        consolidationDetails.setHazardous(Boolean.TRUE);
-        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
-        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
-        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
-        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
-
-        var spyService = Mockito.spy(consolidationV3Service);
-
-        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
-        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
-        mockShipmentSettings();
-        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
-        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(RunnerException.class, () -> {
-            spyService.detachShipments(request);
-        });
-    }
 
     @Test
     void detachShipments_Success3() throws RunnerException {
@@ -4790,7 +4837,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // other essential mocks
     doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
-    doNothing().when(awbDao).validateAirMessaging(anyLong());
     HashSet<Long> hashSet = new HashSet<>();
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
@@ -4857,7 +4903,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // other essential mocks
     doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
-    doNothing().when(awbDao).validateAirMessaging(anyLong());
     HashSet<Long> hashSet = new HashSet<>();
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
@@ -6698,8 +6743,11 @@ if (unitConversionUtilityMockedStatic != null) {
 
         PartiesResponse defaultAgent = new PartiesResponse();
         defaultAgent.setOrgCode("AGENT001");
+        defaultAgent.setOrgId("AGENT001");
+        defaultAgent.setAddressId("AGENT001");
         defaultAgent.setOrgData(Map.of("TenantId", 5));
         when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        when(commonUtils.getReceivingBranch(any(), any())).thenReturn(5L);
 
         // Act
         consolidationV3Service.setTenantAndDefaultAgent(response);

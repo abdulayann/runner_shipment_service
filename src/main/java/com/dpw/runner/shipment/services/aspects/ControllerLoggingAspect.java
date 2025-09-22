@@ -39,7 +39,9 @@ public class ControllerLoggingAspect {
     @Around("controllerMethods()")
     public Object logSingleLineRequest(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request =
-                ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes()))
+                        .getRequest();
+
 
         this.logRequest(joinPoint, request);
 
@@ -69,7 +71,7 @@ public class ControllerLoggingAspect {
 
         List<String> jsonBodies = new ArrayList<>();
         for (Object arg : joinPoint.getArgs()) {
-            if (arg != null && !(arg instanceof HttpServletRequest)) {
+            if (arg != null && !(arg instanceof HttpServletRequest || arg instanceof HttpServletResponse) ) {
                 try {
                     String json = jsonHelper.convertToJson(arg);
                     jsonBodies.add(json);

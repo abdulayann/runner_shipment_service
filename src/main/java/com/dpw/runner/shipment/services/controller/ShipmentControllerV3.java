@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -41,6 +42,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,7 +50,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import java.util.Optional;
 
 
@@ -312,5 +313,19 @@ public class ShipmentControllerV3 {
             log.error("Error processing getCloneConfig", ex);
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
+    @PostMapping(ApiConstants.API_RESET_QUOTE_FIELDS)
+    public ResponseEntity<IRunnerResponse> resetShipmentQuoteRules(@RequestParam Long shipmentId) {
+        return ResponseHelper.buildSuccessResponse(shipmentService.resetShipmentQuoteRules(shipmentId));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
+    public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request) throws RunnerException{
+        ShipmentPatchV3Request patchRequest = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
+        log.info("Received Shipment patch request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return ResponseHelper.buildSuccessResponse(shipmentService.partialUpdate(CommonRequestModel.buildRequest(patchRequest)));
     }
 }

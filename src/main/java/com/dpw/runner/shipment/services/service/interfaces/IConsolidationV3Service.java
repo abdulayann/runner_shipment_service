@@ -78,7 +78,7 @@ public interface IConsolidationV3Service {
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
     AchievedQuantitiesResponse getConsoleSyncAchievedData(Long consolidationId) throws RunnerException, JsonMappingException;
 
-    AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException, JsonMappingException;
+    AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException;
     ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationEtV3Request request);
     ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationEtV3Request request) throws RunnerException;
     Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsV3Response consolidationDetailsV3Response);
@@ -90,4 +90,6 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsV3Response getDefaultConsolidation();
     ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException;
+    void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+                                                ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment);
 }

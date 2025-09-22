@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -163,12 +164,10 @@ class MawbStocksServiceTest {
         when(mawbStocksDao.save(any())).thenThrow(new RuntimeException(errorMessage));
 
         // Test
-        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.create(commonRequestModel);
-
+        Exception e = assertThrows(ValidationException.class, () -> mawbStocksService.create(commonRequestModel));
 
         // Assert
-        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
-        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+        assertEquals(errorMessage, e.getMessage());
 
     }
 
@@ -201,13 +200,11 @@ class MawbStocksServiceTest {
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.validateDuplicateMawbNumber(anyList())).thenReturn(2L);
 
-        // Test
-        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.create(commonRequestModel);
-
+        //Test
+        Exception e = assertThrows(ValidationException.class, () -> mawbStocksService.create(commonRequestModel));
 
         // Assert
-        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
-        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+        assertEquals(errorMessage, e.getMessage());
 
     }
 

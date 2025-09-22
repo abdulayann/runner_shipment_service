@@ -26,4 +26,6 @@ public class NetworkTransferConstants {
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL = "/create/external";
 
     public static final Set<NetworkTransferStatus> TRANSFER_RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.TRANSFERRED);
+    public static final String NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE = "/create/external/bridge";
+
 }

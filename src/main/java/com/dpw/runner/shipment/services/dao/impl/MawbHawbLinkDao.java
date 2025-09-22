@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 @Slf4j
@@ -22,6 +23,11 @@ public class MawbHawbLinkDao implements IMawbHawbLinkDao {
     @Override
     public MawbHawbLink save(MawbHawbLink mawbHawbLink) {
         return mawbHawbLinkRepository.save(mawbHawbLink);
+    }
+
+    @Override
+    public List<MawbHawbLink> saveAll(List<MawbHawbLink> mawbHawbLinks) {
+        return mawbHawbLinkRepository.saveAll(mawbHawbLinks);
     }
 
     @Override
@@ -37,6 +43,11 @@ public class MawbHawbLinkDao implements IMawbHawbLinkDao {
     @Override
     public void delete(MawbHawbLink mawbHawbLink) {
         mawbHawbLinkRepository.delete(mawbHawbLink);
+    }
+
+    @Override
+    public void deleteByHawbIdsAndMawbIds(Set<Long> hawbIds, Long mawbId) {
+        mawbHawbLinkRepository.deleteByHawbIdsAndMawbIds(hawbIds, mawbId);
     }
 
     @Override

@@ -495,4 +495,9 @@ public class JsonTestUtility {
     public Notification getNotification() {
         return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
     }
+
+    public ShippingInstruction getTestShippingInstruction() {
+        ShippingInstruction si = objectMapper.convertValue(payload.get("SI"), ShippingInstruction.class);
+        return si;
+    }
 }

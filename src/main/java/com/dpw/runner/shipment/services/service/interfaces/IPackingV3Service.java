@@ -76,4 +76,6 @@ public interface IPackingV3Service {
     PackSummaryV3Response getPackSummaryV3Response(List<Packing> packingList, String transportMode, String module, Long consolidationId, Long shipmentId);
 
     void updateShipmentAndContainerDataForFCLAndFTLShipments(UnAssignContainerParams unAssignContainerParams) throws RunnerException;
+
+    List<Packing> getPackingsByConsolidationId(Long consolidationId);
 }
