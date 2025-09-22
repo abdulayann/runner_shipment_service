@@ -77,6 +77,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
     private String vinNumber;
+    private String containerNumber;
     private Long containerId;
     private String transportMode;
     private String innerPackageNumber;
@@ -110,5 +111,6 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private BigDecimal subLineNo;
     private String productCode;
     private Long shipmentOrderId;
+    private Long orderLineId;
 
 }

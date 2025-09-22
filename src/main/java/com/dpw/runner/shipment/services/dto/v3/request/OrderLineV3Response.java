@@ -28,6 +28,8 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
     private String commodityGroup;
 
     @JsonProperty("container")
+    private String containerNumber;
+
     private Long containerId;
 
     @Size(max = 25000, message = "Max size is 25000 for goods description")
@@ -75,4 +77,6 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
     private String productCode;
 
     private Long shipmentOrderId;
+
+    private Long orderLineId;
 }
