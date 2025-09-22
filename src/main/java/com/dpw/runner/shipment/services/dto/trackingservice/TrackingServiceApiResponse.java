@@ -32,7 +32,6 @@ public class TrackingServiceApiResponse {
         private String identifierValue;
         @JsonProperty("container")
         private ContainerBase containerBase;
-        private String shipmentReference; // when containerBase is null
         private Journey journey;
         private List<Place> places;
         private List<Transport> transports;
