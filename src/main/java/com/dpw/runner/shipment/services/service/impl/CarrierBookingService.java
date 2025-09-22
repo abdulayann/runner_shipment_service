@@ -46,8 +46,6 @@ import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
-import com.dpw.runner.shipment.services.entity.enums.GenericKafkaMsgType;
-import com.dpw.runner.shipment.services.entity.enums.IntraKafkaOperationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
@@ -79,7 +77,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
@@ -90,8 +87,6 @@ import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -101,7 +96,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.security.SecureRandom;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -591,27 +585,9 @@ public class CarrierBookingService implements ICarrierBookingService {
         return carrierBookingDao.findById(entityId);
     }
 
-    @Override
-    @Transactional
-    public void submit(Long id) {
-        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
-                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
-
-        carrierBooking.setSubmitByUserEmail(UserContext.getUser().getEmail());
-        carrierBooking.setStatus(Requested);
-        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
-        String description = "Booking Requested by : " + UserContext.getUser().getUsername();
-        createTransactionHistory(Requested.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
-        sendNotification(carrierBooking);
-
-        jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
-    }
-
-
-    private void sendPayloadToBridge(CarrierBookingResponse carrierBookingResponse, boolean isOperationTypeSubmit) throws RunnerException {
-        log.info("Bridge payload {}", jsonHelper.convertToJson(carrierBookingResponse));
-        convertWeightVolumeToRequiredUnit(carrierBookingResponse);
-        CarrierBookingBridgeRequest bridgeRequest = carrierBookingBridgeMapper.mapToBridgeRequest(carrierBookingResponse);
+    private void sendPayloadToBridge(CarrierBookingBridgeRequest bridgeRequest, boolean isOperationTypeSubmit) throws RunnerException {
+        log.info("Bridge payload {}", jsonHelper.convertToJson(bridgeRequest));
+        convertWeightVolumeToRequiredUnit(bridgeRequest);
         String integrationCode;
         if(isOperationTypeSubmit) {
             integrationCode = bridgeServiceConfig.getCbInttraCreateIntegrationRequestCode();
@@ -625,7 +601,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
     }
 
-    public void convertWeightVolumeToRequiredUnit(CarrierBookingResponse carrierBooking) throws RunnerException {
+    public void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
 
         for (CommonContainerResponse container : carrierBooking.getContainersList()) {
             BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
@@ -650,44 +626,35 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    public void amend(Long id) {
-        CarrierBooking carrierBooking = carrierBookingDao.findById(id)
-                .orElseThrow(() -> new ValidationException("Invalid booking Id: " + id));
-
-        // Modification ??
-        carrierBooking.setStatus(Changed);
-        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
-
-        String description = "Amend Requested by : " + UserContext.getUser().getUsername();
-        createTransactionHistory(Changed.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
-        sendForDownstreamProcess(carrierBooking, IntraKafkaOperationType.AMEND);
-        sendNotification(carrierBooking);
-
-        jsonHelper.convertValue(savedCarrierBooking, CarrierBookingResponse.class);
-    }
-
-    @Override
-    public void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) {
+    @Transactional
+    public void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException {
         CarrierBooking carrierBooking = carrierBookingDao.findById(submitAmendInttraRequest.getId())
                 .orElseThrow(() -> new ValidationException("Invalid booking Id: " + submitAmendInttraRequest.getId()));
 
-        CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
-
-//        SecureRandom random = new SecureRandom();
-//        int rnd = 10000 + random.nextInt(90000);
-//        String fileName = "CarrierBookingRequest_" + submitAmendInttraRequest.getId() + "_" + rnd + ".xml";
-//        carrierBookingBridgeRequest.setFileName(fileName);
-        carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBooking.getSailingInformation()), carrierBookingBridgeRequest);
-
         if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
-            carrierBookingBridgeRequest.setState(Constants.ORIGINAL);
+            carrierBooking.setStatus(CarrierBookingStatus.Requested);
+            carrierBooking.setSubmitByUserEmail(UserContext.getUser().getEmail());
         } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
-            carrierBookingBridgeRequest.setState(Constants.AMEND);
+            carrierBooking.setStatus(CarrierBookingStatus.Changed);
         }
 
-        sendNotification(carrierBooking);
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
+        CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(savedCarrierBooking, CarrierBookingBridgeRequest.class);
+        carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(savedCarrierBooking.getSailingInformation()), carrierBookingBridgeRequest);
+
+        sendPayloadToBridge(carrierBookingBridgeRequest, OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType()));
+
+        saveTransactionHistory(submitAmendInttraRequest, savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
+        sendNotification(savedCarrierBooking);
     }
 
+    private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, CarrierBooking carrierBooking, FlowType flowType
+    , SourceSystem sourceSystem) {
+        String description = carrierBooking.getStatus().getDescription() + "by: " + UserContext.getUser().getUsername();
+
+        carrierBookingInttraUtil.createTransactionHistory(carrierBooking.getStatus().getDescription(),
+                flowType, description, sourceSystem, submitAmendInttraRequest.getId(), EntityTypeTransactionHistory.VGM);
+    }
 
     @NotNull
     private static CommonContainerResponse getCommonContainerResponse(Containers containers) {

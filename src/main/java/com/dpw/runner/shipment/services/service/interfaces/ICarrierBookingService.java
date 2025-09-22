@@ -62,10 +62,6 @@ public interface ICarrierBookingService {
 
     Optional<CarrierBooking> findById(Long entityId);
 
-    void submit(Long id);
-
-    void amend(Long id);
-
-    void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest);
+    void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
 }
 
