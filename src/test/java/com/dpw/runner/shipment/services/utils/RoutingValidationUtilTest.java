@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -753,7 +755,8 @@ class RoutingValidationUtilTest {
     void shouldThrowExceptionWhenVoyageLengthExceeds20() {
 
         RoutingsRequest routing = new RoutingsRequest();
-        routing.setVoyage("123456789012345678901"); // 21 chars
+        routing.setVoyage("123456789012345678901");
+        routing.setMode(TRANSPORT_MODE_SEA);// 21 chars
         BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
         request.setRoutings(List.of(routing));
         ValidationException ex = assertThrows(
@@ -767,6 +770,7 @@ class RoutingValidationUtilTest {
     void shouldNotThrowWhenVoyageLengthIsExactly20() {
 
         RoutingsRequest routing = new RoutingsRequest();
+        routing.setMode(TRANSPORT_MODE_SEA);// 21 chars
         routing.setVoyage("12345678901234567890"); // exactly 20 chars
         BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
         request.setRoutings(List.of(routing));
@@ -776,7 +780,18 @@ class RoutingValidationUtilTest {
     @Test
     void shouldNotThrowWhenVoyageIsNull() {
         RoutingsRequest routing = new RoutingsRequest();
+        routing.setMode(TRANSPORT_MODE_SEA);// 21 chars
         routing.setVoyage(null);
+        BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
+        request.setRoutings(List.of(routing));
+        assertDoesNotThrow(() -> routingValidationUtil.validateVoyageLengthRequest(request));
+    }
+
+    @Test
+    void shouldNotThrowWhenModeIsAir() {
+        RoutingsRequest routing = new RoutingsRequest();
+        routing.setMode(TRANSPORT_MODE_AIR);// 21 chars
+        routing.setVoyage("43243243232423424324");
         BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
         request.setRoutings(List.of(routing));
         assertDoesNotThrow(() -> routingValidationUtil.validateVoyageLengthRequest(request));

@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+
 
 @Component
 @AllArgsConstructor
@@ -360,9 +362,12 @@ public class RoutingValidationUtil {
      * @param request Update Request
      */
     public void validateVoyageLengthRequest(BulkUpdateRoutingsRequest request) {
-        if (Objects.nonNull(request)) {
+        if (Objects.nonNull(request) && Objects.nonNull(request.getRoutings())) {
             for (RoutingsRequest routingsRequest : request.getRoutings()) {
-                if (StringUtility.isNotEmpty(routingsRequest.getVoyage()) && routingsRequest.getVoyage().length() > 20) {
+                if (Objects.nonNull(routingsRequest.getMode())
+                        && TRANSPORT_MODE_SEA.equalsIgnoreCase(routingsRequest.getMode())
+                        && StringUtility.isNotEmpty(routingsRequest.getVoyage())
+                        && routingsRequest.getVoyage().length() > 20) {
                     throw new ValidationException("max size is 20 for voyage");
                 }
             }
