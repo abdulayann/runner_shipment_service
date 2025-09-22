@@ -41,7 +41,6 @@ import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
@@ -49,6 +48,7 @@ import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -67,7 +67,6 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
-import com.dpw.runner.shipment.services.mapper.CarrierBookingBridgeMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -117,11 +116,8 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INVALID_CARRIER_BOOKING_ID;
-import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Cancelled;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
-import static com.dpw.runner.shipment.services.entity.enums.FlowType.Outbound;
-import static com.dpw.runner.shipment.services.entity.enums.SourceSystem.INTTRA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -145,7 +141,6 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IShipmentDao shipmentDao;
     private final IPartiesDao partiesDao;
     private final ITransactionHistoryDao transactionHistoryDao;
-    private final CarrierBookingBridgeMapper carrierBookingBridgeMapper;
     private final BridgeServiceAdapter bridgeServiceAdapter;
     private final BridgeServiceConfig bridgeServiceConfig;
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
@@ -323,9 +318,8 @@ public class CarrierBookingService implements ICarrierBookingService {
                 .orElseThrow(() -> new ValidationException(INVALID_CARRIER_BOOKING_ID + id));
 
         carrierBooking.setStatus(CarrierBookingStatus.Cancelled);
-        carrierBookingDao.save(carrierBooking);
-        String description = "Cancelled by : " + UserContext.getUser().getUsername();
-        createTransactionHistory(Cancelled.getDescription(), FlowType.Inbound, description, SourceSystem.Carrier, id);
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
+        saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         sendNotification(carrierBooking);
     }
 
@@ -482,9 +476,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
         setCarrierRoutings(inttraCarrierBookingEventDto, carrierBooking);
         setContainerEmptyAndDropOffLocationDetails(inttraCarrierBookingEventDto, carrierBooking);
-        carrierBookingDao.save(carrierBooking);
-        String description = carrierBooking.getStatus().getDescription() + " by: " + UserContext.getUser().getUsername();
-        createTransactionHistory(carrierBooking.getStatus().getDescription(), Outbound, description, INTTRA, carrierBooking.getId());
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
+        saveTransactionHistory(savedCarrierBooking, FlowType.Outbound, SourceSystem.INTTRA);
     }
 
     @Override
@@ -597,11 +590,14 @@ public class CarrierBookingService implements ICarrierBookingService {
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(bridgeRequest, integrationCode, null, null);
         if (carrierBookingInttraUtil.isBridgeServiceResponseNotValid(bridgeServiceResponse)) {
             log.error("Getting error from Bridge while uploading template to: " + jsonHelper.convertToJson(bridgeServiceResponse));
-            throw new RunnerException("Getting error from Bridge");
+            throw new GenericException("Getting error from Bridge");
         }
     }
 
-    public void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
+    private void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
+        if (carrierBooking == null || carrierBooking.getContainersList() == null || carrierBooking.getContainersList().isEmpty()) {
+            return;
+        }
 
         for (CommonContainerResponse container : carrierBooking.getContainersList()) {
             BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
@@ -609,20 +605,6 @@ public class CarrierBookingService implements ICarrierBookingService {
             container.setVolume(volume);
             container.setGrossWeight(weight);
         }
-    }
-
-    private void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id) {
-        TransactionHistory transactionHistory = TransactionHistory.builder()
-                .actionStatusDescription(actionStatus)
-                .flowType(flowType)
-                .description(description)
-                .sourceSystem(sourceSystem)
-                .actualDateTime(LocalDateTime.now())
-                .entityType(EntityTypeTransactionHistory.CARRIER_BOOKING)
-                .entityId(id)
-                .build();
-
-        transactionHistoryDao.save(transactionHistory);
     }
 
     @Override
@@ -644,16 +626,14 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         sendPayloadToBridge(carrierBookingBridgeRequest, OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType()));
 
-        saveTransactionHistory(submitAmendInttraRequest, savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
+        saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         sendNotification(savedCarrierBooking);
     }
 
-    private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, CarrierBooking carrierBooking, FlowType flowType
-    , SourceSystem sourceSystem) {
+    private void saveTransactionHistory(CarrierBooking carrierBooking, FlowType flowType, SourceSystem sourceSystem) {
         String description = carrierBooking.getStatus().getDescription() + "by: " + UserContext.getUser().getUsername();
-
         carrierBookingInttraUtil.createTransactionHistory(carrierBooking.getStatus().getDescription(),
-                flowType, description, sourceSystem, submitAmendInttraRequest.getId(), EntityTypeTransactionHistory.VGM);
+                flowType, description, sourceSystem, carrierBooking.getId(), EntityTypeTransactionHistory.VGM);
     }
 
     @NotNull
@@ -888,28 +868,13 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request = getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
+                SendEmailBaseRequest request = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
                 notificationService.sendEmail(request);
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {
             log.error("Error in  sending carrier booking email: {}", e.getMessage());
         }
-    }
-
-    @NotNull
-    private static SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
-        String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
-        toEmails += carrierBooking.getCreateByUserEmail();
-        if (!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())) {
-            toEmails += "," + carrierBooking.getSubmitByUserEmail();
-        }
-        SendEmailBaseRequest request = new SendEmailBaseRequest();
-        request.setTo(toEmails);
-        request.setSubject(carrierBookingTemplate.getSubject());
-        request.setTemplateName(carrierBookingTemplate.getName());
-        request.setHtmlBody(carrierBookingTemplate.getBody());
-        return request;
     }
 
     public List<EmailTemplatesRequest> getCarrierBookingEmailTemplate(List<String> templateCodes) {

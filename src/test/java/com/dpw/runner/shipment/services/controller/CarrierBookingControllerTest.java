@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -220,6 +221,16 @@ class CarrierBookingControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         verify(carrierBookingService).cancel(id);
+    }
+
+    @Test
+    void submitOrAmend_Success() throws RunnerException {
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        doNothing().when(carrierBookingService).submitOrAmend(submitAmendInttraRequest);
+
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.submitOrAmend(submitAmendInttraRequest);
+
+        assertNotNull(responseEntity);
     }
 
 }
