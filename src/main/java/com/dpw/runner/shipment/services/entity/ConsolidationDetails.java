@@ -420,6 +420,14 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+
+    @Column(name = "parent_guid")
+    private UUID parentGuid;
+
+    @Column(name = "parent_tenant_id")
+    @TenantIdData
+    private Long parentTenantId;
+
     @Column(name = "booking_id")
     private String bookingId;
     @Column(name = "booking_status")

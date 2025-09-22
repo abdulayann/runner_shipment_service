@@ -275,6 +275,10 @@ public class ShipmentDetails extends MultiTenancy {
     @TenantIdData
     private Long sourceTenantId;
 
+    @Column(name = "parent_tenant_id")
+    @TenantIdData
+    private Long parentTenantId;
+
     @Column(name = "documentation_partner")
     @TenantIdData
     private Long documentationPartner;
@@ -488,6 +492,9 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+
+    @Column(name = "parent_guid")
+    private UUID parentGuid;
 
     @Column(name = "consignee_dps_address_id")
     private Long consigneeDpsAddressId;

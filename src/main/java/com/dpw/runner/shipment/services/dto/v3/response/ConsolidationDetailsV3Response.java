@@ -127,6 +127,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private String ediTransactionId;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
