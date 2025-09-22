@@ -886,7 +886,7 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             verify(carrierBookingInttraUtil).createTransactionHistory(
-                    "Draft", FlowType.Inbound, "Booking Requested by : testUser",
+                    "Processed By INNTRA", FlowType.Inbound, "Booking Requested by : testUser",
                     SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
             );
             verify(bridgeServiceAdapter).requestTactResponse(any());
@@ -954,7 +954,7 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             verify(carrierBookingInttraUtil).createTransactionHistory(
-                    "Draft", FlowType.Inbound, "Amend Requested by : testUser",
+                    "Processed By INNTRA", FlowType.Inbound, "Amend Requested by : testUser",
                     SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
             );
         }

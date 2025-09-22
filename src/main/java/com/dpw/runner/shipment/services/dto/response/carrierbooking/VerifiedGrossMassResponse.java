@@ -39,4 +39,5 @@ public class VerifiedGrossMassResponse implements IRunnerResponse {
     private List<PartiesResponse> additionalParties;
     private List<CommonContainerResponse> containersList;
     private List<ReferenceNumberResponse> referenceNumbersList;
+    private List<CommonContainerResponse> submittedContainersList;
 }

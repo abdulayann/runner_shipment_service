@@ -98,6 +98,22 @@ public class VerifiedGrossMassUtil {
                 .build();
     }
 
+    public CommonContainers buildSubmittedContainer(CommonContainers container) {
+        CommonContainers submittedContainer = new CommonContainers();
+        submittedContainer.setContainerRefGuid(container.getContainerRefGuid());
+        submittedContainer.setContainerCode(container.getContainerCode());
+        submittedContainer.setGrossWeight(container.getGrossWeight());
+        submittedContainer.setNetWeight(container.getNetWeight());
+        submittedContainer.setNetWeightUnit(container.getNetWeightUnit());
+        submittedContainer.setGrossWeightUnit(container.getGrossWeightUnit());
+        submittedContainer.setContainerNo(container.getContainerNo());
+        submittedContainer.setPacks(container.getPacks());
+        submittedContainer.setPacksUnit(container.getPacksUnit());
+        submittedContainer.setTareWeight(container.getTareWeight());
+        submittedContainer.setTareWeightUnit(container.getTareWeightUnit());
+        return submittedContainer;
+    }
+
     public Map<String,EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(VerifiedGrossMass verifiedGrossMass) {
 
         Map<String, EntityTransferCarrier> carrierDatav1Map = new HashMap<>();

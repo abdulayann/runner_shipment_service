@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS verified_gross_mass (
     requestor_id BIGINT REFERENCES parties(id),
     authorised_id BIGINT REFERENCES parties(id),
     responsible_id BIGINT REFERENCES parties(id),
-    sailing_information_id BIGINT REFERENCES sailing_information(id)
+    sailing_information_id BIGINT REFERENCES sailing_information(id),
+    submitted_containers_list JSONB
 );
 -- Step 3: Create carrier_booking table
 CREATE TABLE IF NOT EXISTS carrier_booking (
