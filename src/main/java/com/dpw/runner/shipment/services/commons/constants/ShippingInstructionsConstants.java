@@ -23,7 +23,7 @@ public class ShippingInstructionsConstants {
     public static final String PAYMENT_TERM_COLLECT = "CCX";
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Shipping Instruction Retrieval";
     public static final String SUBMIT_SUCCESSFUL = "Shipping Instruction submitted successfully.";
-    public static final String AMEND_SUCCESSFUL = "Shipping Instruction amend successfully.";
+    public static final String AMEND_SUCCESSFUL = "Shipping Instruction amend successful.";
     public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Type";
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
 

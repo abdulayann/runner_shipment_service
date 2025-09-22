@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInst
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -109,6 +111,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     @Autowired
     private CarrierBookingInttraUtil carrierBookingInttraUtil;
+
+    @Autowired
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -630,7 +635,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
-        sendForDownstreamProcess(si);
+        callBridge(si, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -665,10 +670,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
     }
 
-    private void sendForDownstreamProcess(ShippingInstruction shippingInstruction) {
-        String payload = jsonHelper.convertToJson(shippingInstruction);
-        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI, IntraKafkaOperationType.ORIGINAL);
-    }
 
     public ShippingInstructionResponse amendShippingInstruction(Long id) {
         Optional<ShippingInstruction> shippingInstructionEntity = repository.findById(id);
@@ -684,11 +685,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         validateSIRequest(shippingInstruction);
 
-        // Step 3: Mark SI as submitted
+        // Step 3: Mark SI as amended
         shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
-        sendForDownstreamProcess(shippingInstruction);
+        callBridge(shippingInstruction, "SI_AMEND");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -715,5 +716,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
+    private void callBridge(ShippingInstruction shippingInstruction, String integrationCode) {
+        UUID transactionId = UUID.randomUUID();
+        try {
+            bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
+        } catch (RunnerException e) {
+            log.error("Exception while calling bridge. id {} {}", shippingInstruction.getId(), e.getMessage());
+        }
+    }
 
 }
