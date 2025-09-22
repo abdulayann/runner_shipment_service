@@ -85,6 +85,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String bookingType;
     private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
@@ -191,6 +193,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String destinationSecondarySalesAgentEmail;
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
+    private String destinationParentContractId;
     private String destinationContractType;
     private String updatedBy;
     private DateBehaviorType dateType;
@@ -236,6 +239,12 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
@@ -262,4 +271,10 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Boolean isBorrowed;
     private Long originBranch;
     private Integer slac;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

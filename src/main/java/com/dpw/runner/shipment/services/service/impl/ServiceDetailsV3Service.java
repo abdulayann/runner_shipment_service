@@ -61,7 +61,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ID;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -322,7 +321,7 @@ public class ServiceDetailsV3Service implements IServiceDetailsV3Service {
         return message;
     }
 
-    private Optional<ServiceDetails> retrieveForNte(Long id, String guid) {
+    private Optional<ServiceDetails> retrieveServiceDetailsByIdWithQuery(Long id, String guid) {
         Optional<ServiceDetails> serviceDetails;
         if (id != null) {
             serviceDetails = serviceDetailsDao.findByIdWithQuery(id);
@@ -341,8 +340,8 @@ public class ServiceDetailsV3Service implements IServiceDetailsV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Optional<ServiceDetails> serviceDetailsOptional;
-            if (Objects.equals(source, NETWORK_TRANSFER)) {
-                serviceDetailsOptional = retrieveForNte(id, guid);
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+                serviceDetailsOptional = retrieveServiceDetailsByIdWithQuery(id, guid);
             } else {
                 if (id != null) {
                     serviceDetailsOptional = serviceDetailsDao.findById(id);
@@ -373,7 +372,7 @@ public class ServiceDetailsV3Service implements IServiceDetailsV3Service {
         // construct specifications for filter request
         Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
         Page<ServiceDetails> serviceDetailsPage;
-        if (Objects.equals(source, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source))
             serviceDetailsPage = serviceDetailsDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             serviceDetailsPage = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -431,7 +430,7 @@ public class ServiceDetailsV3Service implements IServiceDetailsV3Service {
     public Map<String, Object> getAllMasterData(Long id, String source) {
         try {
             Optional<ServiceDetails> serviceDetailsOptional;
-            if (Objects.equals(source, NETWORK_TRANSFER))
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(source))
                 serviceDetailsOptional = serviceDetailsDao.findByIdWithQuery(id);
             else
                 serviceDetailsOptional = serviceDetailsDao.findById(id);

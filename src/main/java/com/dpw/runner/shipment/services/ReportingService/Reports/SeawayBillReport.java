@@ -1,5 +1,28 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
@@ -17,28 +40,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_WC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
-
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 @Component
 @NoArgsConstructor
@@ -75,33 +76,43 @@ public class SeawayBillReport extends IReport {
 
     public void validatePrinting(Long shipmentId) {
         tenantSettings = getCurrentTenantSettings();
+        ShipmentDetails shipment = getShipmentDetailsOrThrow(shipmentId);
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+            validateShipmentModules(shipment);
+        }
+    }
+
+    private ShipmentDetails getShipmentDetailsOrThrow(Long shipmentId) {
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
+        return shipment;
+    }
+
+    private void validateShipmentModules(ShipmentDetails shipment) {
+        if (shouldValidateModules(shipment)) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
-            if(shipment==null){
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
-
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                    && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                    || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
-                    && ObjectUtils.isNotEmpty(shipment.getJobType())
-                    && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-
-                shipmentService.validateCarrierDetails(shipment, missingFields);
-                shipmentService.validateContainerDetails(shipment, missingFields);
-
-            }
+            shipmentService.validateCarrierDetails(shipment, missingFields);
+            shipmentService.validateContainerDetails(shipment, missingFields);
 
             if (ObjectUtils.isNotEmpty(missingFields)) {
-                String missingFieldsDescription = missingFields.stream()
+                String errorMessage = missingFields.stream()
                         .map(ModuleValidationFieldType::getDescription)
                         .collect(Collectors.joining(" | "));
-                throw new ReportException(missingFieldsDescription);
+                throw new ReportException(errorMessage);
             }
         }
+    }
+
+    private boolean shouldValidateModules(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
     }
 
     @Override
@@ -219,6 +230,8 @@ public class SeawayBillReport extends IReport {
         dict.put("BLCustomConsigner", consignerWithNameAndAddress);
         dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+        populateBlTransportSectionDetails(model.blObject.getHblData(), dict);
+        populateFreightsAndCharges(dict, model.blObject);
     }
 
     private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {

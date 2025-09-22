@@ -25,4 +25,6 @@ public class ErrorConstants {
     public static final String JSON_INT_ERROR = "Error: Value for {} is not an integer.";
     public static final String SAME_SHIPPER_CONSIGNEE = "Shipper & Consignee parties can't be selected as same.";
     public static final String CONSOLE_ALREADY_EXISTS = "A consolidation already exists in the shipment. Please detach it before updating the shipment.";
+    public static final String INVALID_TENANT_ID_FOR_SHIPMENT_ID = "Invalid Tenant Id : %s for Shipment Id : %s";
+    public static final String CANNOT_UPDATE_PARTY = "Can't update party as it's not exist for the given shipment id : %s";
 }

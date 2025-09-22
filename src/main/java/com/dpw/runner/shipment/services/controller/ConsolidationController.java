@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -375,15 +376,23 @@ public class ConsolidationController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.EXPORT_LIST)
-    public void exportConsolidationList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> exportConsolidationList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
         String responseMsg = "failure executing :(";
         try {
-            consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
-        } catch (Exception e) {
+            ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+            exportExcelResponse.setEmailSent(false);
+            consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest), exportExcelResponse);
+            if (exportExcelResponse.isEmailSent()) {
+                return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+            }
+        }
+        catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error listing shipment for shipment";
             log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
+        return ResponseEntity.ok().build();
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.IMPORT_SUCCESSFUL)})

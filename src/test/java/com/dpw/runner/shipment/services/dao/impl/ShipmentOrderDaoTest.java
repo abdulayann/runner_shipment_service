@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -125,4 +125,21 @@ class ShipmentOrderDaoTest extends CommonMocks {
         assertNull(response);
     }
 
+    @Test
+    void testDeleteAdditionalShipmentOrderByShipmentId() {
+        List<Long> shipmentOrderIds = List.of(1L, 2L);
+        Long shipmentId = 100L;
+        shipmentOrderDao.deleteAdditionalShipmentOrderByShipmentId(shipmentOrderIds, shipmentId);
+        verify(shipmentOrderRepository, times(1))
+                .deleteAdditionalShipmentOrderByShipmentId(shipmentOrderIds, shipmentId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByshipmentOrderIdsAndShipmentId() {
+        List<Long> shipmentOrderIds = List.of(3L, 4L);
+        Long shipmentId = 200L;
+        shipmentOrderDao.revertSoftDeleteByshipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
+        verify(shipmentOrderRepository, times(1))
+                .revertSoftDeleteByShipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
+    }
 }

@@ -27,4 +27,8 @@ public interface IServiceDetailsDao {
     Optional<ServiceDetails> findByIdWithQuery(Long id);
     Optional<ServiceDetails> findByGuidWithQuery(UUID guid);
     Page<ServiceDetails> findAllWithoutTenantFilter(Specification<ServiceDetails> spec, Pageable pageable);
+
+    void deleteAdditionalServiceDetailsByShipmentId(List<Long> serviceDetailsIds, Long shipmentId);
+
+    void revertSoftDeleteByServiceDetailsIdsAndShipmentId(List<Long> serviceDetailsIds, Long shipmentId);
 }

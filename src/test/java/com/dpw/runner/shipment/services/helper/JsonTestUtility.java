@@ -189,6 +189,9 @@ public class JsonTestUtility {
     public ShipmentDetails getTestShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
+    }public ShipmentDetails getTestShipmentForAutoDetach() {
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT2"), ShipmentDetails.class);
+        return shipmentDetails;
     }
     public ShipmentDetails getCompleteShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("COMPLETE_SHIPMENT"), ShipmentDetails.class);
@@ -491,5 +494,10 @@ public class JsonTestUtility {
 
     public Notification getNotification() {
         return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
+    }
+
+    public ShippingInstruction getTestShippingInstruction() {
+        ShippingInstruction si = objectMapper.convertValue(payload.get("SI"), ShippingInstruction.class);
+        return si;
     }
 }

@@ -5,6 +5,11 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,12 +17,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository @Generated
 @InterBranchEntity
@@ -34,6 +33,25 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     default Optional<Events> findById(Long id) {
         Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
+    }
+
+    @ExcludeTenantFilter
+    default Optional<Events> findByIdWithoutTenant(Long id) {
+        Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
+
+    @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = true WHERE id = ?1", nativeQuery = true)
+    void deleteByIdWithoutTenant(Long id);
+
+    @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    default Events saveWithoutTenant(Events event) {
+        return save(event);
     }
 
     default Optional<Events> findByGuid(UUID id) {
@@ -58,4 +76,24 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     @Modifying @Transactional
     @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)
     void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, Boolean isPartial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByEventsIdsConsolidationId(List<Long> eventsIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = false WHERE id IN (?1)", nativeQuery = true)
+    void revertSoftDeleteByEventsIds(List<Long> eventsIds);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = true WHERE id NOT IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
+    void deleteAdditionalEventDetailsByEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = false WHERE id IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
+    void revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
 }

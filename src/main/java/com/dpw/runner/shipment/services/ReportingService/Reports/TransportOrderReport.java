@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 
 @Component
@@ -47,6 +48,8 @@ public class TransportOrderReport extends IReport{
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             validateAirDGAndAirSecurityCheckShipments(transportOrderModel.shipmentDetails);
+        }else{
+            validateAirDGCheckShipments(transportOrderModel.shipmentDetails);
         }
         validateAirAndOceanDGCheck(transportOrderModel.shipmentDetails);
         return transportOrderModel;
@@ -75,6 +78,11 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
         dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
+
+        populateShippedOnboardFields(shipmentModel, dictionary);
+        populateDGFields(shipmentModel, dictionary);
+        populateReeferFields(shipmentModel, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipmentModel.getShipmentType());
 
         if(shipmentModel.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));

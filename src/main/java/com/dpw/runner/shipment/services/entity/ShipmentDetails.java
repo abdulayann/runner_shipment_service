@@ -36,7 +36,7 @@ import java.util.UUID;
 @Getter
 @Table(name = "shipment_details")
 @Accessors(chain = true)
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -250,6 +250,12 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
+
+    @Column(name = "is_shipper_client_equal")
+    private Boolean isShipperClientEqual;
+
+    @Column(name = "is_consignee_client_equal")
+    private Boolean isConsigneeClientEqual;
 
     //ShipmentOrderId
 
@@ -522,6 +528,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "destination_contract_id")
     private String destinationContractId;
 
+    @Column(name = "destination_parent_contract_id")
+    private String destinationParentContractId;
+
     @Column(name = "destination_contract_type")
     private String destinationContractType;
 
@@ -666,6 +675,12 @@ public class ShipmentDetails extends MultiTenancy {
     @OrganizationMasterData
     private Long brokerageAtDestination;
 
+    @Column(name = "est_brokerage_at_origin_date")
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @Column(name = "est_brokerage_at_destination_date")
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
     @Column(name = "brokerage_at_origin_date")
     private LocalDateTime brokerageAtOriginDate;
 
@@ -718,6 +733,25 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "transport_info_status")
     @Enumerated(EnumType.STRING)
     private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
+    @Column(name = "trigger_migration_warning")
+    private Boolean triggerMigrationWarning = false;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
 
 
     @Override

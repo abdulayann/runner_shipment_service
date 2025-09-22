@@ -70,6 +70,8 @@ public class EventConstants {
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
     public static final String INGE  = "INGE";
+    public static final String INGO  = "INGO";
+    public static final String INGI  = "INGI";
     public static final String SISC  = "SISC";
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";
@@ -77,6 +79,7 @@ public class EventConstants {
     public static final String PUED = "PUED";
     public static final String TRED = "TRED";
     public static final String BKAC = "BKAC";
+    public static final String INTR = "INTR";
     // ~~~~~~ end runner event short codes
 
     public static final String BKAC_DESCRIPTION = "Booking Acknowledged";
@@ -108,9 +111,17 @@ public class EventConstants {
     public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
     public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
     public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
+    public static final String GATE_OUT_WITH_CONTAINER_EMPTY = "gateOutWithContainerEmpty";
     public static final String FLIGHT_ARRIVAL = "flightArrival";
     public static final String FLIGHT_DEPARTURE = "flightDeparture";
     public static final String LITERAL = "literal";
+    public static final String DEPARTED_DESTINATION_DELIVERY = "DEPARTED_DESTINATION_DELIVERY";
+    public static final String AT_DESTINATION_DELIVERY = "AT_DESTINATION_DELIVERY";
+    public static final String TESLA_HYPHEN_PREFIX = "Tesla -";
+    public static final String IN_TRANSIT = "IN_TRANSIT";
+    public static final String AT_ORIGIN_PICKUP = "AT_ORIGIN_PICKUP";
+    public static final String DEPARTED_ORIGIN_PICKUP = "DEPARTED_ORIGIN_PICKUP";
+    public static final String DRIVER_APP = "DRIVER_APP";
 
     public static final String DESTINATION = "destination";
     public static final String ORIGIN = "origin";
@@ -119,6 +130,7 @@ public class EventConstants {
     public static final String ERROR_FETCHING_EVENTS_MSG = "Error fetching Events";
     public static final String ENTITY_ID = "entityId";
     public static final String ENTITY_TYPE = "entityType";
+    public static final String SHIPMENT_NUMBER = "shipmentNumber";
     public static final String ORIGIN_PORT = "originPort";
     public static final String LOAD_ON_VESSEL = "loadOnVessel";
     public static final String MSCU = "MSCU";

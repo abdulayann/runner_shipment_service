@@ -24,6 +24,7 @@ public interface IShipmentDao {
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
+    List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
@@ -75,4 +76,14 @@ public interface IShipmentDao {
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
 
     void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId);
+
+    void revertSoftDeleteShipmentIdAndTenantId(List<Long> allShipmentIdsFromContainerMap, Integer tenantId);
+    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
+    void deleteShipmentDetailsByIds(Set<Long> ids);
+
+    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
+    void updateTriggerMigrationWarning(Long shipmentId);
+
+    void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
+    List<Long> findAllShipmentIdsByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
 }

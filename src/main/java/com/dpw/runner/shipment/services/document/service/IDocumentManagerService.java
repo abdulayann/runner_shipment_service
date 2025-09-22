@@ -27,8 +27,9 @@ public interface IDocumentManagerService {
     ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel request);
     ResponseEntity<DocumentDownloadResponse> downloadDocument(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request);
+    void storeDocument(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> list(CommonRequestModel request, Long page, Long size);
     ResponseEntity<IRunnerResponse> listDocTypes(CommonRequestModel request);
-    void pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest);
+    DocumentManagerResponse<DocumentManagerDataResponse> pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest);
 }

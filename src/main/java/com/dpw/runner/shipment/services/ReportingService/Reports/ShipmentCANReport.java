@@ -32,6 +32,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REVENUE_MEASUREMENT_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REVENUE_TOTAL_UNIT_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SELL_EXCHANGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TAXES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TAX_PERCENTAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TENANT_NAME;
@@ -137,6 +138,10 @@ public class ShipmentCANReport extends IReport {
         }
         processBillChargesTags(allBillCharges, shipmentCANModel, v1TenantSettingsResponse, chargeTypesWithoutTranslation, dictionary);
 
+        populateShippedOnboardFields(shipmentCANModel.shipmentDetails, dictionary);
+        populateDGFields(shipmentCANModel.shipmentDetails, dictionary);
+        populateReeferFields(shipmentCANModel.shipmentDetails, dictionary);
+        dictionary.put(SHIPMENT_CARGO_TYPE, shipmentCANModel.shipmentDetails.getShipmentType());
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
@@ -171,7 +176,7 @@ public class ShipmentCANReport extends IReport {
         List<BillingResponse> billingsList = getBillingData(shipmentCANModel.shipmentDetails.getGuid());
         if (processBillingList(billingsList)) {
             for (BillingResponse bill : billingsList) {
-                List<BillChargesResponse> billChargesList = getBillChargesData(bill);
+                List<BillChargesResponse> billChargesList = getBillChargesData(bill, false);
                 if (billChargesList == null || billChargesList.isEmpty()) {
                     continue;
                 }

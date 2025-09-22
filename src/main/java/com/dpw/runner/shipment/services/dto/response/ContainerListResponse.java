@@ -23,6 +23,7 @@ public class ContainerListResponse implements IRunnerResponse {
     private Map<String, Object> masterData;
     private Long assignedContainerCount = 0L;
     private Long unassignedContainerCount = 0L;
+    private Boolean triggerMigrationWarning;
     @JsonIgnore
     private Integer totalPages;
     @JsonIgnore

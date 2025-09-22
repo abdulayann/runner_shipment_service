@@ -60,6 +60,8 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String CONSOLIDATION_PACKING = "CONSOLIDATION_PACKING";
+    public static final String SHIPMENT_PACKING = "SHIPMENT_PACKING";
     public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
@@ -67,6 +69,8 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CONSOLIDATION_CONTAINER = "CONSOLIDATION_CONTAINER";
+    public static final String SHIPMENT_CONTAINER = "SHIPMENT_CONTAINER";
     public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
@@ -149,6 +153,8 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String SHIPMENT_TYPE_ROR = "ROR";
+    public static final String SHIPMENT_TYPE_BBK = "BBK";
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
     public static final String SHIPMENT_TYPE_HSE = "HSE";
@@ -238,6 +244,8 @@ public class Constants {
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
+    public static final String DATE_TIME_FORMAT_DDMMMYYYY_HHMM = "ddMMMyyyy HH:mm";
+
     public static final String AGENT_PREFIX = "A";
     public static final String CARRIER_PREFIX = "C";
 
@@ -253,7 +261,7 @@ public class Constants {
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
     public static final String CONSOLIDATION_TYPE_DRT = "DRT";
-
+    public static final String CONSOLIDATION_TYPE_STD = "STD";
     public static final String METRIC_TON = "MT";
     public static final String METRE = "M";
     public static final String CENTI = "CM";
@@ -275,6 +283,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
     public static final String NETWORK_TRANSFER = "network_transfer";
+    public static final String CROSS_TENANT_SOURCE = "cross_tenant";
 
     public static final String METER = "M";
     public static final String ANGSTROM = "A";
@@ -415,6 +424,12 @@ public class Constants {
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
     public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String CARGO_WEIGHT = "cargoWeight";
+    public static final String CARGO_WEIGHT_UNIT = "cargoWeightUnit";
+    public static final String GROSS_WEIGHT_UNIT = "grossWeightUnit";
+    public static final String GROSS_VOLUME = "grossVolume";
+    public static final String GROSS_VOLUME_UNIT = "grossVolumeUnit";
+    public static final String PACKS_TYPE = "packsType";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String ORGANIZATIONS = "Organizations";
@@ -439,6 +454,7 @@ public class Constants {
     public static final String CONSIGNEE_COUNTRY = "consigneeCountry";
     public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
     public static final String AWB_COUNTRY = "country";
+    public static final String SERVICE_MODE = "serviceMode";
 
     // Include Column fields
     public static final String BILLING_DATA = "billingData";
@@ -448,7 +464,7 @@ public class Constants {
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+            GROSS_WEIGHT,GROSS_WEIGHT_UNIT,GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
@@ -492,6 +508,7 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String DESCARTES = "Descartes";
     public static final String INTTRA = "INTTRA";
+    public static final String CARRIER_PORTAL = "Carrier Portal";
     public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
@@ -624,10 +641,12 @@ public class Constants {
     public static final String NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE = "You are not allowed to view this consolidation as this tenant is not part of receiving agent or triangulation partner.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
-
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String NOTIFY_PARTY_ORG_CODE = "notifyPartyOrgCode";
+    public static final String ORIGIN_AGENT_ORG_CODE = "originAgentOrgCode";
+    public static final String DESTINATION_AGENT_ORG_CODE = "destinationAgentOrgCode";
     public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
     public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
@@ -648,6 +667,7 @@ public class Constants {
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+    public static final String MIGRATION_API = "MIGRATION_API";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
 
@@ -698,6 +718,36 @@ public class Constants {
     public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
+    public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
+    public static final String PACKING_LC = "packing";
+    public static final String COMMODITY_GROUP = "commodityGroup";
+    public static final String COMMODITY = "commodity";
+    public static final String HS_CODE = "HSCode";
+    public static final String GOODS_DESCRIPTION = "goodsDescription";
+    public static final String MARKS_N_NUMBERS = "marksnNums";
+    public static final String PROPER_SHIPPING_NAME = "properShippingName";
+    public static final String UN_NUMBER = "unNumber";
+    public static final String PACKING_GROUP = "packingGroup";
+    public static final String TENANTS = "Tenants";
+    public static final String ORG_DATA = "orgData";
+    public static final String ADDRESS_DATA = "addressData";
+    public static final String SHIPMENT_ROOT_KEY_NAME = "shipmentDetails";
+    public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
+    public static final String DOT = ".";
+
+    public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
+    public static final String BEARER = "Bearer ";
+
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
+    public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
+    public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
+    public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
+
+    public static final String PROD_ENV = "prod";
+    public static final String DEMO_ENV = "demo";
+    public static final String CONTRACT_TYPE = "CONTRACT";
+    public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
+    public static final String EXPORT_EXCEL_MESSAGE = "The export will be available in approximately ";
 
     private Constants() {
     }

@@ -20,6 +20,7 @@ public class NPMConstants {
     public static final String UNIT = "unit";
     public static final String SELL_COST_MARGIN = "SELL_COST_MARGIN";
     public static final String CHEAPEST_OFFER_TYPE = "CHEAPEST";
+    public static final String LIST_CONTRACTS_MULTI_PARTY = "/retrieve/contracts/count";
 
     public static final String OFFERS_V2 = "OFFERS-V2";
 
@@ -29,8 +30,16 @@ public class NPMConstants {
 
     public static final String QUOTE_CONTRACTS_LIST_SUCCESSFUL = "Successful quote contracts Data List Retrieval";
 
-    public static final String CONTAINER_COUNT = "ContainerCount";
+    public static final String CONTAINER_COUNT = "Container_Count";
+    public static final String VOLUME = "Volume";
     public static final String SHIPMENT_CAMEL_CASE = "Shipment";
     public static final String SHIPMENT = "SHIPMENT";
+    public static final String WEIGHT = "Weight";
+    public static final String PACKAGE = "Package";
+    public static final String CHARGEABLE = "Chargeable";
+    public static final String PER_MILE = "Per_Mile";
+    public static final String PER_KILOMETER = "Per_Kilometer";
+    public static final String PER_BL_AWB = "Per_Bl_Awb";
+    public static final String CUSTOM = "Custom";
 
 }

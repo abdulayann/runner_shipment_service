@@ -16,6 +16,8 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
@@ -24,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingNotific
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,18 +51,16 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildFailedResponse;
 
 
 @SuppressWarnings(ALL)
@@ -67,7 +68,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @RequestMapping(ShipmentConstants.SHIPMENT_API_HANDLE)
 @Slf4j
 public class ShipmentController {
-    
+
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
@@ -129,7 +130,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DELETE_SUCCESSFUL, response = RunnerResponse.class)})
@@ -151,7 +152,7 @@ public class ShipmentController {
            ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
             return  response;
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+            return buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
 
@@ -163,7 +164,7 @@ public class ShipmentController {
         try {
             return shipmentService.fullShipmentsExternalList(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+            return buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
 
@@ -212,7 +213,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
@@ -231,7 +232,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
@@ -247,7 +248,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -280,7 +281,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -298,7 +299,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.ASSIGN_CONTAINERS_SUCCESSFUL, response = RunnerListResponse.class) })
@@ -325,7 +326,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
@@ -340,7 +341,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
@@ -355,7 +356,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
@@ -370,7 +371,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -387,7 +388,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -405,7 +406,7 @@ public class ShipmentController {
                     : "Error syncing provided Shipment";
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -422,7 +423,7 @@ public class ShipmentController {
                     : "Error syncing provided audit logs";
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
@@ -446,7 +447,7 @@ public class ShipmentController {
                     : "Error listing transport instructions for provided shipment";
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -463,7 +464,7 @@ public class ShipmentController {
                     : "Error listing containers for shipment TI";
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -471,7 +472,7 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.EXPORT_LIST)
-    public void exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
         String responseMsg = "Failure executing :(";
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
@@ -480,15 +481,20 @@ public class ShipmentController {
         try {
             CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
             log.debug("Built CommonRequestModel: {}", commonRequestModel);
-
-            shipmentService.exportExcel(response, commonRequestModel);
-
+            ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+            exportExcelResponse.setEmailSent(false);
+            shipmentService.exportExcel(response, commonRequestModel, exportExcelResponse);
             log.info("Shipment export completed successfully. RequestId: {}", requestId);
-        } catch (Exception e) {
+            if (exportExcelResponse.isEmailSent()) {
+                return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+            }
+        }  catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error exporting shipment list";
             log.error("Exception occurred while exporting shipment list. RequestId: {}, Error: {}", requestId, responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
+        return ResponseEntity.ok().build();
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})
@@ -515,7 +521,7 @@ public class ShipmentController {
         try {
             return consolidationService.getConsolFromShipment(id);
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -525,7 +531,7 @@ public class ShipmentController {
         try {
         return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -545,7 +551,7 @@ public class ShipmentController {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -556,7 +562,7 @@ public class ShipmentController {
             CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
             return shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -605,7 +611,7 @@ public class ShipmentController {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             return shipmentService.getGuidFromId(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -615,7 +621,7 @@ public class ShipmentController {
         try {
             return shipmentService.checkCreditLimitFromV1(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -625,7 +631,7 @@ public class ShipmentController {
         try {
             return shipmentService.getDateTimeChangeUpdates(shipmentId);
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -637,7 +643,7 @@ public class ShipmentController {
         try {
             return shipmentService.getContainerListFromTrackingService(shipmentId, consolidationId);
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -648,7 +654,7 @@ public class ShipmentController {
         try {
             return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, consoleGuid, isAttached, getMasterData, fromNte);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            return buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -659,7 +665,7 @@ public class ShipmentController {
         try {
             return shipmentService.getAllShipments(consoleId);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -670,7 +676,7 @@ public class ShipmentController {
         try {
             return shipmentService.updateShipments(request);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -695,7 +701,7 @@ public class ShipmentController {
         try {
             return shipmentService.getLatestCargoDeliveryDate(consoleId);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -706,7 +712,7 @@ public class ShipmentController {
         try {
             return shipmentService.getPendingNotifications(CommonRequestModel.builder().data(request).build());
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
@@ -716,7 +722,7 @@ public class ShipmentController {
         try {
             return shipmentService.requestInterBranchConsole(shipId, consoleId, rejectRemarks);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -732,7 +738,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
@@ -742,7 +748,7 @@ public class ShipmentController {
         try {
             return shipmentService.sendOceanDGApprovalEmail(request);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -754,7 +760,7 @@ public class ShipmentController {
         try {
             return shipmentService.dgApprovalResponse(request);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -765,7 +771,7 @@ public class ShipmentController {
         try {
             return shipmentService.listWithoutTenantCheck(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -775,7 +781,7 @@ public class ShipmentController {
         try {
             return shipmentService.attachDetachOrder(shipmentOrderRequest);
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return buildFailedResponse(ex.getMessage());
         }
     }
 
@@ -804,7 +810,7 @@ public class ShipmentController {
             ListCommonRequest request = ListCommonRequest.builder().pageNo(pageNo).pageSize(pageSize).entityId(entityId).build();
             return shipmentService.fetchBillChargesShipmentList(CommonRequestModel.buildRequest(guid, request));
         } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
+            return buildFailedResponse(e.getMessage());
         }
     }
 
@@ -819,7 +825,7 @@ public class ShipmentController {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "";
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            return buildFailedResponse(responseMsg);
         }
     }
 
@@ -853,7 +859,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
     // update
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
@@ -871,7 +877,7 @@ public class ShipmentController {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return buildFailedResponse(responseMsg);
     }
     // list
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
@@ -885,7 +891,7 @@ public class ShipmentController {
             ResponseEntity<IRunnerResponse> response = shipmentService.listV3(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
             return  response;
         } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+            return buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
     // retrieve
@@ -897,6 +903,29 @@ public class ShipmentController {
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.retrieveByIdV3(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.PARTY_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PutMapping(ApiConstants.API_UPDATE_PARTIES)
+    @PreAuthorize("hasAuthority('" + PermissionConstants.TENANT_SUPER_ADMIN + "')")
+    public ResponseEntity<String> updateShipmentParty(@Valid @RequestBody ShipmentPartyRequestV2 request) {
+        log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String responseMsg;
+        try {
+            return shipmentService.updateShipmentParties(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.MDM_OCEAN_DG_APPROVAL_RESPONSE)
+    public ResponseEntity<IRunnerResponse> mdmOceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request) throws RunnerException {
+        log.info("Received for MDM_OCEAN_DG_APPROVAL_RESPONSE with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = shipmentService.mdmDGApprovalResponse(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }

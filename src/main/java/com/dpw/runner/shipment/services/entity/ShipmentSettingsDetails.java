@@ -157,6 +157,10 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "volume_chargeable_unit")
     private String volumeChargeableUnit;
 
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    @Column(name = "default_pack_unit")
+    private String defaultPackUnit;
+
     @Column(name = "measurement_chargeable_unit")
     @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String measurementChargeableUnit;
@@ -609,4 +613,14 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "enable_domestic_mawb_mbl_validations")
     private Boolean enableDomesticMawbMblValidations;
+
+    @Column(name = "allow_unassigned_bl_inv_generation")
+    private Boolean allowUnassignedBlInvGeneration;
+
+    @Column(name = "is_migration_running")
+    private Boolean isMigrationRunning;
+
+    @Column(name = "is_restore_running")
+    private Boolean isRestoreRunning;
+
 }

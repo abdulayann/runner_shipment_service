@@ -120,6 +120,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -149,6 +150,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
@@ -246,20 +248,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -278,6 +285,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -303,6 +311,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_CACHE_KEY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
@@ -351,6 +360,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -505,6 +516,11 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
+    @Autowired
+    @Qualifier("redisTemplateExport")
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private CustomKeyGenerator customKeyGenerator;
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
@@ -804,6 +820,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
@@ -1055,7 +1072,7 @@ public class ConsolidationService implements IConsolidationService {
 
         for(Long shipmentId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_PULL_REQUESTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, null, null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_PULL_REQUESTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, null, null, false);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }
@@ -1089,7 +1106,7 @@ public class ConsolidationService implements IConsolidationService {
 
         for(Long shipmentId : interbranchShipIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_DETACH, remarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_DETACH, remarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, null, false);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }
@@ -1108,8 +1125,6 @@ public class ConsolidationService implements IConsolidationService {
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
         }
-        if (!Objects.isNull(consolidationId))
-            awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         boolean isConsolePullCall = false;
         if(shipmentRequestedType == null && !shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection())) {
@@ -1204,7 +1219,7 @@ public class ConsolidationService implements IConsolidationService {
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
             List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
-            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails, false);
         }
     }
 
@@ -1384,7 +1399,7 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
             }
-            if(checkForAirDGFlag(consolidationDetails) && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
+            if(isAirExport(consolidationDetails) && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
                 anyInterBranchShipment = true;
                 if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                     if(fromConsolidation)
@@ -1400,7 +1415,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void validateAirDgHazardousForConsole(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, boolean fromConsolidation, int existingShipments, boolean anyInterBranchShipment) throws RunnerException {
-        if(checkForAirDGFlag(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
+        if(isAirExport(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
             if(existingShipments + shipmentIds.size() > 1) {
                 if(fromConsolidation)
                     throw new RunnerException(AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT);
@@ -1417,14 +1432,12 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
     }
 
-    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
-            return false;
-        return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
+    private boolean isAirExport(ConsolidationDetails consolidationDetails) {
+        return (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) && DIRECTION_EXP.equals(consolidationDetails.getShipmentType()));
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if(!checkForAirDGFlag(consolidationDetails))
+        if(!isAirExport(consolidationDetails))
             return false;
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
@@ -1798,8 +1811,6 @@ public class ConsolidationService implements IConsolidationService {
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             return false;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
-            return false;
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
         if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
             return true;
@@ -4613,13 +4624,155 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (invalidateExcel(commonRequestModel, request)) return;
 
         applyPermissionFilter(commonRequestModel);
-        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        String username = UserContext.getUser().getUsername();
+        String expireTime = applicationConfigService.getValue(Constants.EXPORT_EXCEL_EXPIRE_TIME);
+        int defaultTime = 10;
+        if (StringUtility.isNotEmpty(expireTime)) {
+            defaultTime = Integer.valueOf(expireTime);
+        }
+        StringBuilder key = customKeyGenerator.cacheBaseKey();
+        key = key.append(EXPORT_EXCEL_CACHE_KEY).append(username).append(UserContext.getUser().getTenantId());
+        Object value = redisTemplate.opsForValue().get(key.toString());
+        if (Objects.nonNull(value)) {
+            Long seconds = redisTemplate.getExpire(key.toString(), TimeUnit.SECONDS);
+            String message = commonUtils.convertSeconds(seconds);
+            throw new ValidationException(message);
+        }
+        redisTemplate.opsForValue().set(key.toString(), username, Duration.ofMinutes(defaultTime));
+
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+        request.setPageSize(exportExcelLimit);
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.TENANT_ID, UserContext.getUser().getTenantId(), Constants.EQ, request);
+        Page<ConsolidationLiteResponse> consolidationDetailsPageLite = fetchConsolidationPageForExport(listCommonRequest);
+        long consolidationCount = consolidationDetailsPageLite.getTotalElements();
+
+        if(consolidationCount <= exportExcelLimit){
+            downloadShipmentListExcel(response, consolidationDetailsPageLite);
+        }else{
+            exportExcelResponse.setEmailSent(true);
+            listCommonRequest.setPageSize((int)consolidationCount);
+            listCommonRequest.setContainsText(request.getContainsText());
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
+                TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+                txTemplate.execute(status -> {
+                    emailConsolidationListExcel(response, listCommonRequest);
+                    return null;
+                });
+            }), executorService);
+        }
+        log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
+    }
+
+    private Page<ConsolidationLiteResponse> fetchConsolidationPageForExport(ListCommonRequest request) {
+        log.info("Entering fetchConsolidationPageForExport with request: {}", request);
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple =
+                fetchData(request, ConsolidationDetails.class, tableNames);
+
+        log.debug("Specification generated: {}", tuple.getLeft());
+        log.debug("Pageable details: {}", tuple.getRight());
+
         Page<ConsolidationLiteResponse> consolidationDetailsPageLite = customConsolidationDetailsRepository.findAllLiteConsol(tuple.getLeft(), tuple.getRight());
+
+        log.info("Fetched {} records, totalElements: {}, totalPages: {}",
+                consolidationDetailsPageLite.getNumberOfElements(),
+                consolidationDetailsPageLite.getTotalElements(),
+                consolidationDetailsPageLite.getTotalPages());
+
+        return consolidationDetailsPageLite;
+    }
+
+    private void downloadShipmentListExcel(HttpServletResponse response, Page<ConsolidationLiteResponse> consolidationLiteResponsePage) {
+        log.info("Starting download of Consolidation list Excel. Request Id {}", LoggerHelper.getRequestIdFromMDC());
+
+        exportConsolidationListToExcel(consolidationLiteResponsePage, response, false);
+        log.info("Shipment list Excel download completed successfully.");
+    }
+
+    private void emailConsolidationListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
+        log.info("Starting email of Consolidation list Excel. Request model: {}", listCommonRequest);
+
+        Page<ConsolidationLiteResponse> consolidationDetailsPage = fetchConsolidationPageForExport(listCommonRequest);
+        log.info("Fetched {} Consolidations(s) for Excel email.", consolidationDetailsPage.getTotalElements());
+
+        exportConsolidationListToExcel(consolidationDetailsPage, response, true);
+        log.info("Shipment list Excel email process completed successfully.");
+    }
+
+    public void exportConsolidationListToExcel(Page<ConsolidationLiteResponse> consolidationDetailsPage, HttpServletResponse response, boolean sendEmail) {
+        // Build the Excel workbook
+        Workbook workbook = buildExcelWorkbook(consolidationDetailsPage);
+
+        // Generate filename with timestamp
+        String filenameWithTimestamp = generateFilename();
+
+        if (sendEmail) {
+            // Send via email if limit exceeded
+            sendExcelViaEmail(workbook, filenameWithTimestamp);
+        } else {
+            // Download directly
+            downloadExcelFile(workbook, filenameWithTimestamp, response);
+        }
+    }
+
+    // Method 3: Download Excel file
+    private void downloadExcelFile(Workbook workbook, String filename, HttpServletResponse response) {
+        try {
+            response.reset();
+            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
+                workbook.write(outputStream);
+                log.info("Excel file written to response successfully with filename: {}", filename);
+            } catch (IOException e) {
+                log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
+                throw new GenericException("Failed to write Excel file to response", e);
+            }
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Method 2: Send Excel via email
+    private void sendExcelViaEmail(Workbook workbook, String filename) {
+        try {
+            log.info("Record count exceeds export limit. Sending Excel via email.");
+            commonUtils.sendExcelFileViaEmail(workbook, filename);
+            log.info("Excel file sent via email successfully with filename: {}", filename);
+        } catch (Exception e) {
+            log.error("Error sending Excel file via email: {}", e.getMessage(), e);
+            throw new GenericException("Failed to send Excel file via email", e);
+        } finally {
+            closeWorkbook(workbook);
+        }
+    }
+
+    // Utility method to safely close workbook
+    private void closeWorkbook(Workbook workbook) {
+        if (workbook != null) {
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                log.warn("Error closing workbook: {}", e.getMessage(), e);
+            }
+        }
+    }
+
+    private String generateFilename() {
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
+        String timestamp = currentTime.format(formatter);
+        return "Consolidations_listing_" + timestamp + Constants.XLSX;
+    }
+
+    private Workbook buildExcelWorkbook(Page<ConsolidationLiteResponse> consolidationDetailsPageLite) {
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean isShipmentLevelContainer = shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer();
@@ -4627,95 +4780,62 @@ public class ConsolidationService implements IConsolidationService {
 
         List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsList, isShipmentLevelContainer);
 
-        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
             headerMap.put(ConsolidationConstants.CONSOLIDATION_HEADER.get(i), i);
         }
-        try(Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("ConsolidationList");
-            makeHeadersInSheet(sheet, workbook);
 
-            for (int i = 0; i < consoleResponse.size(); i++) {
-                Row itemRow = sheet.createRow(i + 1);
-                ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ConsolidationList");
+        makeHeadersInSheet(sheet, workbook);
+
+        for (int i = 0; i < consoleResponse.size(); i++) {
+            Row itemRow = sheet.createRow(i + 1);
+            ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+            try {
                 LocalTimeZoneHelper.transformTimeZone(consol);
-                itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(getValueOrDefault(consol.getConsolidationType(), ""));
-
-                itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(getValueOrDefault(consol.getConsolidationNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(getValueOrDefault(consol.getTransportMode(), ""));
-
-                itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(getValueOrDefault(consol.getShipmentType(), ""));
-
-                addItemRowForCarrierDetailsDate(itemRow, headerMap, consol);
-
-                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getIsDomestic(), ""));
-
-                itemRow.createCell(headerMap.get("Created By")).setCellValue(getValueOrDefault(consol.getCreatedBy(), ""));
-
-                itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
-
-                itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(getValueOrDefault(consol.getPayment(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
-
-                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
-
-                itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getEstimatedTerminalCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getTerminalCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(getStringValueOrDefault(consol.getShipInstructionCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getHazardousBookingCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(getStringValueOrDefault(consol.getVerifiedGrossMassCutoff(), ""));
-
-                itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(getStringValueOrDefault(consol.getReeferCutoff(), ""));
-
-
-                itemRow.createCell(headerMap.get("Booking Type")).setCellValue(getValueOrDefault(consol.getBookingType(), ""));
-
-                itemRow.createCell(headerMap.get("Reference Number")).setCellValue(getValueOrDefault(consol.getReferenceNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(getValueOrDefault(consol.getBookingStatus(), ""));
-
-                itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
-
-                itemRow.createCell(headerMap.get("Container Count")).setCellValue(getStringValueOrDefault(consol.getContainerCount(), ""));
-
-                addPolPodItemRow(itemRow, headerMap, consol);
-
-                itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
-
-                addItemRowForCarrierDetailsUnLocation(itemRow, headerMap, consol);
+            } catch (IllegalAccessException e) {
+                throw new GenericException(e);
             }
 
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Consolidations_listing_" + timestamp + Constants.XLSX;
-
-            Integer exportExcelLimit = getExportExcelLimit();
-            if (consoleResponse.size() > exportExcelLimit) {
-                // Send the file via email
-                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
-            }else {
-                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-                response.setHeader("Content-Disposition",
-                    "attachment; filename=" + filenameWithTimestamp);
-
-                try (OutputStream outputStream = response.getOutputStream()) {
-                    workbook.write(outputStream);
-                }
-            }
+            populateRowData(itemRow, headerMap, consol);
         }
 
+        return workbook;
+    }
+
+    private void populateRowData(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
+        itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(getValueOrDefault(consol.getConsolidationType(), ""));
+        itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(getValueOrDefault(consol.getConsolidationNumber(), ""));
+        itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(getValueOrDefault(consol.getTransportMode(), ""));
+        itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(getValueOrDefault(consol.getShipmentType(), ""));
+
+        addItemRowForCarrierDetailsDate(itemRow, headerMap, consol);
+
+        itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getIsDomestic(), ""));
+        itemRow.createCell(headerMap.get("Created By")).setCellValue(getValueOrDefault(consol.getCreatedBy(), ""));
+        itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
+        itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(getValueOrDefault(consol.getPayment(), ""));
+        itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
+        itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
+        itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getEstimatedTerminalCutoff(), ""));
+        itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getTerminalCutoff(), ""));
+        itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
+        itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(getStringValueOrDefault(consol.getShipInstructionCutoff(), ""));
+        itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getHazardousBookingCutoff(), ""));
+        itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(getStringValueOrDefault(consol.getVerifiedGrossMassCutoff(), ""));
+        itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(getStringValueOrDefault(consol.getReeferCutoff(), ""));
+        itemRow.createCell(headerMap.get("Booking Type")).setCellValue(getValueOrDefault(consol.getBookingType(), ""));
+        itemRow.createCell(headerMap.get("Reference Number")).setCellValue(getValueOrDefault(consol.getReferenceNumber(), ""));
+        itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(getValueOrDefault(consol.getBookingStatus(), ""));
+        itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+        itemRow.createCell(headerMap.get("Container Count")).setCellValue(getStringValueOrDefault(consol.getContainerCount(), ""));
+
+        addPolPodItemRow(itemRow, headerMap, consol);
+
+        itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+
+        addItemRowForCarrierDetailsUnLocation(itemRow, headerMap, consol);
     }
 
   private boolean invalidateExcel(CommonRequestModel commonRequestModel, ListCommonRequest request) {

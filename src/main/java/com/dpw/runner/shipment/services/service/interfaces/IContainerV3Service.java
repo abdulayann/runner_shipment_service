@@ -7,9 +7,12 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -19,6 +22,7 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IContainerV3Service {
@@ -28,6 +32,9 @@ public interface IContainerV3Service {
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module) throws RunnerException;
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module, boolean isForceDelete) throws RunnerException;
+    void bulkUnAssign(List<ShipmentDetails> shipmentDetails, List<Long> containerIds, List<Packing> shipmentPackings,
+                      boolean isFCLDelete, boolean isForcedDetach, boolean fromDelete) throws RunnerException;
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
 
@@ -46,7 +53,14 @@ public interface IContainerV3Service {
             Set<Long> interBranchRequestedShipIds);
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
-    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams,
+                                         Map<String, List<Containers>> unassignedContainersToSave, List<List<Long>> shipmentIdsForDetachmentList,
+                                           List<UnAssignContainerParams> unAssignContainerParamsList, Boolean allowPackageReassignment, Boolean isForcedDetach) throws RunnerException;
+    void saveUnAssignContainerResultsBatch(List<List<Long>> allShipmentIdsForDetachment, Map<String, List<Containers>> containersToSaveMap,
+                                           List<UnAssignContainerParams> globalUnAssignContainerParams, Boolean isFCLDelete, boolean fromDelete);
+    Containers setAssignContainerParams(AssignContainerRequest request, String module, AssignContainerParams assignContainerParams) throws RunnerException;
+    ContainerResponse calculateAndSaveAssignContainerResults(Containers container, AssignContainerParams assignContainerParams, AssignContainerRequest request, String module) throws RunnerException;
+    void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
     void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;
@@ -55,7 +69,11 @@ public interface IContainerV3Service {
 
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
     void pushContainersToDependentServices(List<Containers> containersList);
-    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
-    void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
+    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request, String module) throws RunnerException;
+
+
+    Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData);
+
     ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException;
+
 }

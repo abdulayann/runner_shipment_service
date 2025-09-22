@@ -13,13 +13,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -43,6 +42,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
@@ -61,6 +61,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
@@ -109,6 +111,9 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "restTemplateForNPM")
     private RestTemplate restTemplate3;
+
+    @MockBean(name = "executorService")
+    private ExecutorService executorService;
 
     /**
      * Method under test:
@@ -812,25 +817,65 @@ class NPMServiceAdapterTest {
     /**
      * Method under test: {@link NPMServiceAdapter#fetchOffers(CommonRequestModel)}
      */
-    @Test
-    void testFetchOffers() throws RunnerException, JsonProcessingException {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "perCTR",
+            "perSHIP",
+            "perM3",
+            "perCBM",
+            "perKG",
+            "perhawb",
+            "perawb",
+            "perpiece",
+            "perGWKG",
+            "perCHKG",
+            "permi",
+            "perkm",
+            "custom"
+    })
+    void testFetchOffersWithDifferentUOMs(String uom) throws Exception {
         UsersDto usersDto = new UsersDto();
         usersDto.setTenantId(1);
         usersDto.setCompanyCurrency("AED");
         UserContext.setUser(usersDto);
-        String json = "{\"origin\":\"INMAA_POR\",\"destination\":\"LzpprcihHCD42MNLUaM1\",\"preferred_date\":\"2024-05-22 12:40:33\",\"preferred_date_type\":\"PICKUP\",\"mode_of_transport\":\"SEA\",\"cargo_type\":\"FCL\",\"service_mode\":\"P2F\",\"fetch_default_rates\":\"false\",\"direction\":\"EXP\",\"offer_filter_type\":\"CHEAPEST\",\"weight\":null,\"volume\":null,\"volume_uom\":null,\"contracts_info\":{\"customer_org_id\":\"FRC00003392\",\"contract_id\":\"DPWQ-171434-101744\"},\"pol\":\"INMAA_POR\",\"pod\":\"USMIA_POR\",\"containers\":[{\"id\":null,\"isContractEnforced\":true,\"commodityGroup\":\"FAK\",\"containerCode\":\"20FR\",\"containerCount\":\"1\",\"contractEnforcedQuantityLimit\":100,\"customId\":\"1cbcb101-6b2f-4541-ab70-30c9a1ff8534\",\"initalCount\":100,\"masterData\":{\"commodityGroup\":\"FREIGHTALLKINDS-FAK\"},\"containerType\":\"20FR\",\"quantity\":\"1\",\"commodityCode\":\"FAK\"}]}";
+
+        String json = "{\"origin\":\"INMAA_POR\",\"destination\":\"LzpprcihHCD42MNLUaM1\","
+                + "\"preferred_date\":\"2024-05-22 12:40:33\",\"preferred_date_type\":\"PICKUP\","
+                + "\"mode_of_transport\":\"SEA\",\"cargo_type\":\"FCL\",\"service_mode\":\"P2F\","
+                + "\"fetch_default_rates\":\"false\",\"direction\":\"EXP\",\"offer_filter_type\":\"CHEAPEST\","
+                + "\"weight\":null,\"volume\":null,\"volume_uom\":null,"
+                + "\"contracts_info\":{\"customer_org_id\":\"FRC00003392\",\"contract_id\":\"DPWQ-171434-101744\"},"
+                + "\"pol\":\"INMAA_POR\",\"pod\":\"USMIA_POR\","
+                + "\"containers\":[{\"id\":null,\"isContractEnforced\":true,\"commodityGroup\":\"FAK\","
+                + "\"containerCode\":\"20FR\",\"containerCount\":\"1\",\"contractEnforcedQuantityLimit\":100,"
+                + "\"customId\":\"1cbcb101-6b2f-4541-ab70-30c9a1ff8534\",\"initalCount\":100,"
+                + "\"masterData\":{\"commodityGroup\":\"FREIGHTALLKINDS-FAK\"},\"containerType\":\"20FR\","
+                + "\"quantity\":\"1\",\"commodityCode\":\"FAK\"}]}";
+
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         NPMFetchOffersRequestFromUI fetchOffersRequest = objectMapper.readValue(json, NPMFetchOffersRequestFromUI.class);
-        String rates = "{\"offer_type\":\"CONTRACTUAL_OFFER\",\"offers\":[{\"offer_type\":\"CONTRACTUAL_OFFER\",\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"entity_rate_cards\":[{\"loads_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"perctr\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}],\"aggregated_shipment_load_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"pership\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}]}],\"product_name\":\"LCL\",\"tenant_uuid\":\"ab2f6b79-0384-43b2-ba09-e6c38c1df6f6\",\"meta\":{\"route\":[{\"type\":\"LEG\",\"origin\":{\"code\":\"EGDAM_POR\"},\"destination\":{\"code\":\"AEJEA_POR\"}}]},\"shipment_level_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"percbm\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}]}],\"reason\":\"\",\"message\":\"\"}";
+
+        String rates = String.format(
+                "{\"offer_type\":\"CONTRACTUAL_OFFER\",\"offers\":[{\"offer_type\":\"CONTRACTUAL_OFFER\","
+                        + "\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"entity_rate_cards\":[{\"loads_rates_info\":[{\"associated_rates\":["
+                        + "{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,"
+                        + "\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,"
+                        + "\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"%s\",\"conversion_rate\":46.6417910448,"
+                        + "\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\","
+                        + "\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\","
+                        + "\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,"
+                        + "\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\","
+                        + "\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}],"
+                        + "\"aggregated_shipment_load_rates_info\":[]}]}],\"product_name\":\"LCL\",\"tenant_uuid\":\"ab2f6b79-0384-43b2-ba09-e6c38c1df6f6\"}",
+                uom
+        );
+
         FetchOffersResponse fetchOffersResponse = objectMapper.readValue(rates, FetchOffersResponse.class);
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
         when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
                 .thenReturn(ResponseEntity.ok(fetchOffersResponse));
-        var mock = mock(ResponseEntity.class);
-        when(mock.getBody()).thenReturn(fetchOffersResponse);
 
-        // Arrange and Act
         var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -1400,6 +1445,163 @@ class NPMServiceAdapterTest {
         assertEquals("Origin1", contracts.get(0).getOrigin());
         assertEquals("Destination1", contracts.get(0).getDestination());
         assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    @Test
+    void testGetContractCountForParties_NullResponseBody() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        // Mock response with null body
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(null))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        ListContractRequest listContractRequest = new ListContractRequest();
+
+        GetContractsCountForPartiesRequest request = new GetContractsCountForPartiesRequest();
+        request.setContractsCountRequest(listContractRequest);
+        request.setCustomerOrgIds(List.of("FRC0000678"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(request)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(1, actualData.getPartyContractsCount().size());
+        assertEquals(0, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties_DuplicateCustomerOrgIds() {
+        // Mock executor to run synchronously
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest = new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000123", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(getContractsCountForPartiesRequest)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(2, actualData.getPartyContractsCount().size());
+        assertEquals(4, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest =
+                new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setDestination("destination");
+        getContractsCountForPartiesRequest.setOrigin("origin");
+        getContractsCountForPartiesRequest.setCargoType("FCL");
+        getContractsCountForPartiesRequest.setIsDgEnabled(Boolean.TRUE);
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000678", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel =
+                CommonRequestModel.builder().data(getContractsCountForPartiesRequest).build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        assertNotNull(responseEntity.getBody());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        assertNotNull(actualResponse.getData());
+
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(3, actualData.getPartyContractsCount().size());
+
+        assertEquals(9, actualData.getTotalContractCount());
+
+        List<PartyContractsCountResponse> partyResponses = actualData.getPartyContractsCount();
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000123".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000456".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000678".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
     }
 
     private static Stream<Arguments> provideDgContractTestData() {

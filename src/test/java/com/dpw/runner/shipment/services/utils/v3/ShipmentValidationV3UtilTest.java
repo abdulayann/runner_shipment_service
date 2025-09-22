@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -34,6 +36,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -214,7 +217,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cd.setTransportMode(TRANSPORT_MODE_SEA);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -226,7 +229,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+        ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
 
         assertTrue(ex.getMessage().contains("LCL Cargo Type"));
@@ -253,10 +256,9 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         Set<ConsolidationDetails> set = Set.of(cd);
 
-        RunnerException ex = assertThrows(RunnerException.class,
+     ValidationException ex = assertThrows(ValidationException.class,
                 () -> shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, set));
-
-        assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
+     assertTrue(ex.getMessage().contains("Shipment as DG Shipment"));
     }
 
     @Test
@@ -287,7 +289,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cd.setTransportMode(TRANSPORT_MODE_SEA);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-002");
 
@@ -423,7 +425,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setControlled(true);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -451,16 +453,16 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_CargoDeliveryDate_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCargoDeliveryDate(LocalDateTime.now());
-
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_SEA, shipment.getTransportMode());
     }
 
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_Origin_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("USPOR")
                 .destinationLocCode("ERTEW")
@@ -472,7 +474,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_Destination_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .destinationLocCode("USPOR")
@@ -484,7 +486,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForFmcTlcField_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .destinationLocCode("CAPOR")
@@ -495,7 +497,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyDestination_SEA() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setCarrierDetails(CarrierDetails.builder()
                 .originLocCode("ERTTR")
                 .build());
@@ -524,7 +526,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForCutOffFields() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
         shipment.setLatestArrivalTime(LocalDateTime.now());
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
@@ -665,6 +667,111 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     }
 
     @Test
+    void testValidateShippedOnBoardDate_NullShippedOnBoard() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setAdditionalDetails(new AdditionalDetails());
+        shipment.setCarrierDetails(new CarrierDetails());
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_NullATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(LocalDateTime.now().minusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        shipment.setCarrierDetails(new CarrierDetails());
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_ShippedOnBoardAfterATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+        LocalDateTime shippedOnBoard = actualTimeOfDeparture.plusDays(1).plusHours(1);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_ShippedOnBoardInFuture() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now().plusDays(3);
+        LocalDateTime shippedOnBoard = actualTimeOfDeparture.plusDays(1);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+        Executable executable = () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment);
+
+        ValidationException exception = assertThrows(ValidationException.class, executable);
+        assertEquals("Shipped On Board cannot be a future date.", exception.getMessage());
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_NullCarrierDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime shippedOnBoard = LocalDateTime.now().minusDays(1);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+        shipment.setCarrierDetails(null);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_NullAdditionalDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+        shipment.setAdditionalDetails(null);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_Success() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime shippedOnBoard = LocalDateTime.now().minusDays(1);
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
     void testValidationForPolPodFields_Exception1() {
         ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
         newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
@@ -704,5 +811,139 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         newShipment.getCarrierDetails().setDestination("abc");
         newShipment.getCarrierDetails().setDestinationPort("abc");
         assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_Success() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now().plusDays(1));
+        carrierDetails.setAtd(LocalDateTime.now().plusDays(2));
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        carrierDetails.setAta(LocalDateTime.now().plusDays(6));
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now());
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(5));
+
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setAdditionalDetails(additionalDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(5));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_NullAdditionalDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now().plusDays(1));
+        carrierDetails.setAtd(LocalDateTime.now().plusDays(2));
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        carrierDetails.setAta(LocalDateTime.now().plusDays(6));
+
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setAdditionalDetails(null);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_NullCarrierDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now());
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(7));
+
+        shipment.setCarrierDetails(null);
+        shipment.setAdditionalDetails(additionalDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(6));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDates_EstimatedPickupDateAfterETD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEstimatedPickupDate(LocalDateTime.now().plusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Est. Origin Transport Date should be less than or equal to ETD",
+                validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_ActualPickupDateAfterATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(LocalDateTime.now());
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setPickupDate(LocalDateTime.now().plusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Act. Origin Transport Date should be less than or equal to ATD", validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_EstimatedCargoDeliveryDateBeforeETA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.now().plusDays(5));
+        shipment.setCarrierDetails(carrierDetails);
+        shipment.setCargoDeliveryDate(LocalDateTime.now().plusDays(3));
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Est. Destination Transport Date should be more than or equal to ETA", validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_ActualCargoDeliveredDateBeforeATA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAta(LocalDateTime.now().plusDays(1));
+        shipment.setCarrierDetails(carrierDetails);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setCargoDeliveredDate(LocalDateTime.now().plusDays(5));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        ValidationException validationException = assertThrows(ValidationException.class, executable);
+        assertEquals("Act. Destination Transport Date should be less than or equal to ATA",
+                validationException.getMessage());
+    }
+
+    @Test
+    void testValidationForCarrierDetailsDate_AllDateFieldsNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setAdditionalDetails(new AdditionalDetails());
+        shipment.setCarrierDetails(new CarrierDetails());
+
+        Executable executable = () -> shipmentValidationV3Util.validateCarrierDetailsDates(shipment);
+        assertDoesNotThrow(executable);
     }
 }

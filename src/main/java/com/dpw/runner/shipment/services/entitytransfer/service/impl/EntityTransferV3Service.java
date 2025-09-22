@@ -39,6 +39,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3Service;
 import com.dpw.runner.shipment.services.service.impl.PackingV3Service;
@@ -116,15 +118,21 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     private INotificationDao notificationDao;
     private PackingV3Service packingV3Service;
     private ContainerV3Service containerV3Service;
+    private IConsolidationMigrationV3Service consolidationMigrationV3Service;
+    private IShipmentMigrationV3Service shipmentMigrationV3Service;
+    private IShipmentSettingsDao shipmentSettingsDao;
+
 
     @Autowired
-    public EntityTransferV3Service(IShipmentDao shipmentDao, @Lazy IShipmentServiceV3 shipmentService, @Lazy IConsolidationV3Service consolidationService
+    public EntityTransferV3Service(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, @Lazy IShipmentServiceV3 shipmentService, @Lazy IConsolidationV3Service consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper,
                                    MasterDataUtils masterDataUtils, IContainerDao containerDao,
                                    IPackingDao packingDao, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil,
                                    INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao,
                                    INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventsV3Service eventService,
-                                   INotificationDao notificationDao, PackingV3Service packingV3Service, ContainerV3Service containerV3Service) {
+                                   INotificationDao notificationDao, PackingV3Service packingV3Service, ContainerV3Service containerV3Service,
+                IConsolidationMigrationV3Service consolidationMigrationV3Service, IShipmentMigrationV3Service shipmentMigrationV3Service) {
+        this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
         this.consolidationService = consolidationService;
@@ -148,6 +156,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         this.eventService = eventService;
         this.packingV3Service = packingV3Service;
         this.containerV3Service = containerV3Service;
+        this.consolidationMigrationV3Service = consolidationMigrationV3Service;
+        this.shipmentMigrationV3Service = shipmentMigrationV3Service;
     }
 
     @Transactional
@@ -174,12 +184,16 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
         List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
+
+        Map<Integer, Boolean> v2V3Map = getV2V3TenantMap(shipment, null);
+        Map<Integer, EntityTransferV3ShipmentDetails> v2V3TaskPayloadMap = getV3V2TaskPayloadMap(v2V3Map, shipment, tenantMap, additionalDocs);
+
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
         entityTransferPayload.setAdditionalDocs(additionalDocs);
 
         for (Integer tenant : destinationTenantList) {
-            var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
+            var taskPayload = v2V3TaskPayloadMap.get(tenant);
             setDirectionInTaskPayload(tenant, shipment, taskPayload);
             taskPayload.setSendToBranch(tenant);
             processNetworkTransfer(tenant, shipment, taskPayload, shipId);
@@ -199,6 +213,43 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         this.createBulkExportEvent(shipId, EventConstants.PRST, SHIPMENT, successTenantIds, shipment.getTenantId());
 
         return successTenantIds;
+    }
+
+    private Map<Integer, EntityTransferV3ShipmentDetails> getV3V2TaskPayloadMap(Map<Integer, Boolean> v2V3Map, ShipmentDetails shipment, Map<Integer, V1TenantResponse> tenantMap, List<String> additionalDocs) throws RunnerException {
+        Map<Integer, EntityTransferV3ShipmentDetails> v2V3TaskPayloadMap = new HashMap<>();
+
+        EntityTransferV3ShipmentDetails v2Payload = null;
+        EntityTransferV3ShipmentDetails v3Payload = null;
+
+        for (Map.Entry<Integer, Boolean> entry : v2V3Map.entrySet()) {
+            Integer tenantId = entry.getKey();
+            if(Objects.equals(tenantId, shipment.getTenantId()))
+                continue;
+            Boolean isV3 = entry.getValue();
+
+            if (Boolean.TRUE.equals(isV3)) {
+                if (v3Payload == null) {
+                    var entityTransferPayload = prepareShipmentPayload(shipment);
+                    entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+                    entityTransferPayload.setAdditionalDocs(additionalDocs);
+                    entityTransferPayload.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+                    v3Payload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
+                }
+                v2V3TaskPayloadMap.put(tenantId, v3Payload);
+            } else {
+                if (v2Payload == null) {
+                    ShipmentDetails v3Shipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
+                    ShipmentDetails v2ShipmentDetails = shipmentMigrationV3Service.mapShipmentV3ToV2(v3Shipment, null);
+                    var entityTransferPayload = prepareShipmentPayload(v2ShipmentDetails);
+                    entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+                    entityTransferPayload.setAdditionalDocs(additionalDocs);
+                    entityTransferPayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+                    v2Payload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
+                }
+                v2V3TaskPayloadMap.put(tenantId, v2Payload);
+            }
+        }
+        return v2V3TaskPayloadMap;
     }
 
     private void processNetworkTransfer(Integer tenant, ShipmentDetails shipment, EntityTransferV3ShipmentDetails taskPayload, Long shipId) {
@@ -257,7 +308,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             taskPayload.getAdditionalDetails().setRegulatedEntityCategory(null);
             taskPayload.getAdditionalDetails().setAdditionalSecurityInformation(null);
             taskPayload.getAdditionalDetails().setHouseBillType(null);
-            taskPayload.getAdditionalDetails().setReleaseType(null);
             taskPayload.getAdditionalDetails().setPlaceOfSupply(null);
             taskPayload.getAdditionalDetails().setPlaceOfIssue(null);
             taskPayload.getAdditionalDetails().setBLChargesDisplay(null);
@@ -321,13 +371,12 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         Map<UUID, ShipmentDetails> guidVsShipmentMap = getGuidVsShipmentMap(consol);
 
         interBranchValidation(consol, sendConsolidationRequest);
-        EntityTransferV3ConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
+        Map<Integer, EntityTransferV3ConsolidationDetails> v2V3TaskPayloadMap = getV3V2TaskPayloadMap(consol, sendConsolidationRequest);
 
         Map<String, List<Integer>> shipmentGuidBranchMap = new HashMap<>();
         for (int index = 0; index < sendToBranch.size(); index++) {
             var tenant = sendToBranch.get(index);
-
-            var consolidationPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ConsolidationDetails.class);
+            var consolidationPayload = v2V3TaskPayloadMap.get(tenant);
             consolidationPayload.setSendToBranch(tenant);
 
             processConsoleShipmentList(consolidationPayload, shipmentGuidSendToBranch, index, tenant, shipmentGuidBranchMap, guidVsShipmentMap, consol);
@@ -358,6 +407,41 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         return successTenantIds;
 
+    }
+
+    private Map<Integer, EntityTransferV3ConsolidationDetails> getV3V2TaskPayloadMap(ConsolidationDetails consol, SendConsolidationRequest sendConsolidationRequest) throws RunnerException {
+        Map<Integer, EntityTransferV3ConsolidationDetails> v2V3TaskPayloadMap = new HashMap<>();
+
+        Map<Integer, Boolean> v2V3Map = getV2V3TenantMap(null, consol);
+
+        EntityTransferV3ConsolidationDetails v2Payload = null;
+        EntityTransferV3ConsolidationDetails v3Payload = null;
+
+        for (Map.Entry<Integer, Boolean> entry : v2V3Map.entrySet()) {
+            Integer tenantId = entry.getKey();
+            Boolean isV3 = entry.getValue();
+            if(Objects.equals(tenantId, consol.getTenantId()))
+                continue;
+
+            if (Boolean.TRUE.equals(isV3)) {
+                if (v3Payload == null) {
+                    var entityTransferConsolePayload = prepareConsolidationPayload(consol, sendConsolidationRequest, false);
+                    entityTransferConsolePayload.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+                    v3Payload = jsonHelper.convertValue(entityTransferConsolePayload, EntityTransferV3ConsolidationDetails.class);
+                }
+                v2V3TaskPayloadMap.put(tenantId, v3Payload);
+            } else {
+                if (v2Payload == null) {
+                    ConsolidationDetails v3Consol = jsonHelper.convertValue(consol, ConsolidationDetails.class);
+                    ConsolidationDetails v2ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV3ToV2(v3Consol);
+                    var entityTransferConsolePayload = prepareConsolidationPayload(v2ConsolidationDetails, sendConsolidationRequest, true);
+                    entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+                    v2Payload = jsonHelper.convertValue(entityTransferConsolePayload, EntityTransferV3ConsolidationDetails.class);
+                }
+                v2V3TaskPayloadMap.put(tenantId, v2Payload);
+            }
+        }
+        return v2V3TaskPayloadMap;
     }
 
     private void logIdNull(String shipmentDetailsIsNullForIdWithRequestId, Long id) {
@@ -563,8 +647,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
-        // Find old shipment with source guid
-        List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
+        List<ShipmentDetails> oldShipmentDetailsList = getOldShipmentDetailsList(entityTransferShipmentDetails);
         ShipmentDetails oldShipmentDetails = oldShipmentDetailsList!=null && !oldShipmentDetailsList.isEmpty()? oldShipmentDetailsList.get(0): null;
 
         // Import shipment implementation
@@ -584,6 +667,15 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         updateNteStatus(importShipmentRequest, shipmentDetailsResponse);
 
         return shipmentId;
+    }
+
+    private List<ShipmentDetails> getOldShipmentDetailsList(EntityTransferV3ShipmentDetails entityTransferShipmentDetails) {
+        var tenantId = UserContext.getUser().getTenantId();
+        if(entityTransferShipmentDetails.getSendToBranch() == null) {
+            entityTransferShipmentDetails.setSendToBranch(tenantId);
+        }
+        // Find old shipment with source guid
+        return shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
     }
 
     private void rejectionForReTransferNte(Long taskId, String rejectionRemarks, String entityType) {
@@ -916,7 +1008,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 }
                 MutableBoolean isCreateShip = new MutableBoolean(false);
 
-                List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(ship.getGuid(), ship.getSendToBranch());
+                List<ShipmentDetails> oldShipmentDetailsList = getOldShipmentDetailsList(ship);
 
                 // Create shipment
                 ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest, isCreateShip, department, oldShipmentDetailsList);
@@ -961,9 +1053,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         ShipmentEtV3Request shipmentRequest = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class);
         var tenantId = UserContext.getUser().getTenantId();
         shipmentRequest.setDepartment(department);
-        if(entityTransferShipmentDetails.getSendToBranch() == null) {
-            entityTransferShipmentDetails.setSendToBranch(tenantId);
-        }
         // Set Inter Branch TenantId in TenantContext for inter branch Shipment
         if(Objects.equals(shipmentRequest.getTransportMode(), TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();
@@ -1232,7 +1321,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return Collections.emptyList();
     }
 
-    private EntityTransferV3ConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, SendConsolidationRequest sendConsolidationRequest) throws RunnerException {
+    private EntityTransferV3ConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, SendConsolidationRequest sendConsolidationRequest, boolean skipShipmentMap) throws RunnerException {
         List<Integer> tenantIds = new ArrayList<>();
         tenantIds.add(consolidationDetails.getTenantId());
         tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
@@ -1249,16 +1338,12 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             for(var shipment : consolidationDetails.getShipmentsList()) {
                 Long id = shipment.getId();
                 UUID guid = shipment.getGuid();
-                Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
-                if(shipmentDetailsOptional.isEmpty()) {
-                    log.error("Shipment with id : {}, is not present while creating task payload", id);
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
+                ShipmentDetails shipmentDetails = getShipmentDetails(skipShipmentMap, shipment, id);
                 List<String> shipAdditionalDocs = Collections.emptyList();
                 if(sendConsolidationRequest.getShipAdditionalDocs() != null && sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString()) != null) {
                     shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString());
                 }
-                var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
+                var entityTransferShipment = prepareShipmentPayload(shipmentDetails);
 
                 entityTransferShipment.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                 entityTransferShipment.setAdditionalDocs(shipAdditionalDocs);
@@ -1266,8 +1351,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
 
                 // populate container vs shipment guid map
-                var shipmentGuid = shipmentDetailsOptional.get().getGuid();
-                processContainersList(shipmentDetailsOptional.get(), containerVsShipmentGuid, shipmentGuid);
+                var shipmentGuid = shipmentDetails.getGuid();
+                processContainersList(shipmentDetails, containerVsShipmentGuid, shipmentGuid);
             }
         }
 
@@ -1291,20 +1376,37 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return payload;
     }
 
-    private void setAdditionalParametersInPayload(ConsolidationDetails consolidationDetails, EntityTransferV3ConsolidationDetails payload) throws RunnerException {
-        List<Packing> packingList = new ArrayList<>();
-
-        if(!consolidationDetails.getShipmentsList().isEmpty()) {
-            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                packingList.addAll(shipmentDetails.getPackingList());
+    private ShipmentDetails getShipmentDetails(boolean skipShipmentMap, ShipmentDetails shipment, Long id) {
+        ShipmentDetails shipmentDetails;
+        if(!skipShipmentMap) {
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            if (shipmentDetailsOptional.isEmpty()) {
+                log.error("Shipment with id : {}, is not present while creating task payload", id);
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            shipmentDetails = shipmentDetailsOptional.get();
+        }else{
+            shipmentDetails = shipment;
         }
-        payload.setShipmentWtVolResponse(consolidationService.calculateShipmentWtVol(consolidationDetails));
+        return shipmentDetails;
+    }
+
+    private void setAdditionalParametersInPayload(ConsolidationDetails consolidationDetails, EntityTransferV3ConsolidationDetails payload) throws RunnerException
+        {
+            List<Packing> packingList = new ArrayList<>();
+
+            if (!consolidationDetails.getShipmentsList().isEmpty()) {
+                for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                    packingList.addAll(shipmentDetails.getPackingList());
+                }
+            }
+            payload.setShipmentWtVolResponse(consolidationService.calculateShipmentWtVol(consolidationDetails));
 
         payload.setPackV3Summary(packingV3Service.getPackSummaryV3Response(packingList, consolidationDetails.getTransportMode(), CONSOLIDATION, consolidationDetails.getId(), null));
         if(consolidationDetails.getContainersList()!=null && !consolidationDetails.getContainersList().isEmpty())
             payload.setContainerSummary(containerV3Service.getContainerSummaryResponse(new ArrayList<>(consolidationDetails.getContainersList()), false, NETWORK_TRANSFER));
     }
+
 
     private void processContainersList(ShipmentDetails shipmentDetails, Map<UUID, List<UUID>> containerVsShipmentGuid, UUID shipmentGuid) {
         if(shipmentDetails.getContainersList() != null) {
@@ -1719,7 +1821,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
         var tenantMap = getTenantMap(sourceTenantIds.stream().toList());
         for(Integer tenantId: tenantIds) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId);
             List<String> importerEmailIds;
             importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
             List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
@@ -1881,6 +1983,39 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             }
         }
         return userEmailIds;
+    }
+
+    public Map<Integer, Boolean> getV2V3TenantMap(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails){
+        Set<Integer> tenantIds = (consolidationDetails != null)
+                ? extractTenantIds(consolidationDetails.getReceivingBranch(), consolidationDetails.getTriangulationPartnerList(), consolidationDetails.getTenantId())
+                : extractTenantIds(shipmentDetails.getReceivingBranch(), shipmentDetails.getTriangulationPartnerList(), shipmentDetails.getTenantId());
+
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(new ArrayList<>(tenantIds));
+        Map<Integer, Boolean> v2V3Map = new HashMap<>();
+        if (shipmentSettingsDetailsList == null || shipmentSettingsDetailsList.isEmpty()) {
+            return v2V3Map;
+        }
+        for(ShipmentSettingsDetails shipmentSettingsDetails: shipmentSettingsDetailsList){
+            v2V3Map.put(shipmentSettingsDetails.getTenantId(), Objects.equals(shipmentSettingsDetails.getIsRunnerV3Enabled(), Boolean.TRUE));
+        }
+        return v2V3Map;
+    }
+    private Set<Integer> extractTenantIds(Long receivingBranch, List<TriangulationPartner> partners, Integer tenantId) {
+        Set<Integer> tenantIds = new HashSet<>();
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch.intValue());
+        }
+        if (partners != null && !partners.isEmpty()) {
+            for (TriangulationPartner partner : partners) {
+                if (partner.getTriangulationPartner() != null) {
+                    tenantIds.add(partner.getTriangulationPartner().intValue());
+                }
+            }
+        }
+        if (tenantId != null) {
+            tenantIds.add(tenantId);
+        }
+        return tenantIds;
     }
 
 }

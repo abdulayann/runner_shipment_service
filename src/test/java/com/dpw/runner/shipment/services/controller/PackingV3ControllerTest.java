@@ -1,17 +1,21 @@
 package com.dpw.runner.shipment.services.controller;
 
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import org.apache.http.auth.AuthenticationException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -23,19 +27,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import javax.servlet.http.HttpServletResponse;
-
 import java.util.Collections;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 
 @ContextConfiguration(classes = {PackingV3Controller.class})
@@ -121,21 +118,21 @@ class PackingV3ControllerTest {
 
     @Test
     void updateBulkFromShipment() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("SHIPMENT"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("SHIPMENT"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromShipment(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
     void updateBulkFromConsolidation() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("CONSOLIDATION"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("CONSOLIDATION"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromConsolidation(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
     void updateBulkFromCustomerBooking() throws RunnerException {
-        when(packingV3Service.updateBulk(any(), eq("BOOKING"))).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), eq("BOOKING"), anyBoolean())).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.updateBulkFromCustomerBooking(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -195,4 +192,36 @@ class PackingV3ControllerTest {
         var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest, "network_transfer");
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+
+    @Test
+    void assignContainersAtShipmentLevel() throws RunnerException {
+        AssignContainerRequest request = new AssignContainerRequest();
+        when(packingV3Service.assignShipmentPackagesContainers(request)).thenReturn(new ContainerResponse());
+        var response = packingV3Controller.assignContainersAtShipmentLevel(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void unAssignContainersAtShipmentLevel() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.SHIPMENT_PACKING);
+        var response = packingV3Controller.unAssignContainersAtShipmentLevel(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void unAssignContainers() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        var response = packingV3Controller.unAssignContainers(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void calculateCargoSummary() throws RunnerException {
+        var response = packingV3Controller.calculateCargoSummary(12L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
 }

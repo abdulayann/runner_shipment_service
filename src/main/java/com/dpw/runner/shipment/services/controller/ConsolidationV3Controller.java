@@ -38,6 +38,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
+
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
 @Slf4j
@@ -135,7 +137,7 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.API_LIST_V3)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
-        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(listCommonRequest, getMasterData);
+        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
         return ResponseHelper.buildListSuccessConsolidationResponse(consolidationListV3Response.getConsolidationListResponses(), consolidationListV3Response.getTotalPages(),
             consolidationListV3Response.getNumberOfRecords());
 
@@ -215,6 +217,15 @@ public class ConsolidationV3Controller {
     @GetMapping(ApiConstants.GET_DG_SHIPMENT)
     public ResponseEntity<IRunnerResponse> getDGShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getDGShipment(id));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)
+    })
+    @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
+        ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
+        return ResponseHelper.buildSuccessResponse(defaultConsolidation);
     }
 
 }

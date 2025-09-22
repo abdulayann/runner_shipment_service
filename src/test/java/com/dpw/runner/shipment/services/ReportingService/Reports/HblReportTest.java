@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
@@ -12,12 +12,20 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -32,8 +40,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -43,19 +51,22 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -79,6 +90,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +102,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -449,6 +463,7 @@ class HblReportTest extends CommonMocks {
         hblModel.setUser(usersDto);
         Hbl hbl = new Hbl();
         hbl.setId(123L);
+        hbl.setShipmentId(123L);
 
         HblDataDto hblDataDto = new HblDataDto();
         hblDataDto.setMarksAndNumbers("123");
@@ -543,6 +558,12 @@ class HblReportTest extends CommonMocks {
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setWeightUnit("KG");
+        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setVolumeUnit("M3");
+        packingModel.setPacks("5");
+        packingModel.setPacksType("BAL");
         shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
@@ -599,11 +620,488 @@ class HblReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        additionalDetails.setPlaceOfIssue("mumbai");
+        hblModel.shipment.setAdditionalDetails(additionalDetails);
+        EntityTransferAddress entityAddress = new EntityTransferAddress();
+        entityAddress.setCountry("India");
+        when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
     @Test
+    void testPopulateFreightsAndCharges_nullAdditionalDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(null);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_nullShipmentDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(null);
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_emptyShipmentDetails() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, hbl);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void testPopulateFreightsAndCharges_nullHbl() {
+
+        Map<String, Object> dict = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dict, null);
+        assertTrue(dict.isEmpty());
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueAndValidCharges() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("PREPAID");
+        hblFreightsAndCharges.setValue(11.00);
+        hblFreightsAndCharges.setCurrency("INR");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+        assertTrue(dictionary.containsKey("freightsAndCharges")
+                        || !dictionary.isEmpty(), "Should populate dictionary with charges");
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullCurrency() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setValue(11.00);
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullValue() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("100");
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setCurrency("USD");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullCharges() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setChargeType("COLLECT");
+        hblFreightsAndCharges.setCurrency("USD");
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLTrueNullChargeType() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        hblFreightsAndCharges.setCharges("1001");
+        hblFreightsAndCharges.setCurrency("USD");
+        hblFreightsAndCharges.setValue(100.00);
+        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenFreightsAndChargesIsNull_11() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(null);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void whenFreightsAndChargesIsNull_thenSkipProcessing() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(null);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void whenFreightsAndChargesIsEmpty_thenSkipProcessing() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(1L);
+        hbl.setHblFreightsAndCharges(Collections.emptyList());
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(new ShipmentDetails()));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+
+        assertTrue(dictionary.isEmpty());
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenRatedBLThrowsValidationError() {
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(4L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(4L)).thenReturn(Optional.of(shipmentDetails));
+        hbl.setHblFreightsAndCharges(new ArrayList<>());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        assertThrows(ValidationException.class,
+                () -> hblReport.populateFreightsAndCharges(dictionary, hbl));
+    }
+
+    @Test
+    void populateFreightsAndCharges_whenIsRatedBLFalse() {
+
+        Hbl hbl = new Hbl();
+        hbl.setShipmentId(2L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setIsRatedBL(false);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(2L)).thenReturn(Optional.of(shipmentDetails));
+        Map<String, Object> dictionary = new HashMap<>();
+
+        hblReport.populateFreightsAndCharges(dictionary, hbl);
+        assertFalse(dictionary.isEmpty());
+    }
+
+    void setData(HblModel hblModel, Hbl hbl, ConsolidationModel consolidationModel) {
+
+
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setMarksAndNumbers("123");
+        hblDataDto.setPlaceOfDelivery("deliveryAddress");
+        hbl.setHblData(hblDataDto);
+        hblModel.setTenant(new TenantModel());
+        hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        hblModel.setCommonContainers(Arrays.asList(shipmentContainers));
+
+        HblPartyDto hblPartyDto = new HblPartyDto();
+        hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .partiesList(List.of(
+                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+                        PartiesModel.builder().type("DAG").orgData(Map.of("FullName", "name", "ContactPhone","88")).addressData(Map.of()).build()
+                ))
+                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+                .transporterDetail(PartiesModel.builder().type("EXA").build())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+        ernReferenceNumbersModel.setType(ERN);
+        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+        cenReferenceNumbersModel.setType(CEN);
+        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+        frnReferenceNumbersModel.setType(FRN);
+        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setPacks("3");
+        packingModel.setPacksType("BAG");
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+        hblModel.setTransportInstructionId(12L);
+        hblModel.setShipment(shipmentModel);
+
+        consolidationModel.setPayment("PPM");
+        consolidationModel.setReceivingAgent(partiesModel);
+        consolidationModel.setSendingAgent(partiesModel);
+        consolidationModel.setCarrierDetails(carrierDetailModel);
+        partiesModel = new PartiesModel();
+        partiesModel.setType("Notify Party 1");
+        orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+        hblModel.setConsolidation(consolidationModel);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'US MOCK PLACE', true, 'US001', '', ''",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', 'AB'",
+            "'US MOCK PLACE', true, 'US001', '', 'AB'",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', ''",
+            "'US MOCK PLACE', true, 'US001', 'XYZ', null",
+            "'US MOCK PLACE', true, 'US001', null, 'AB'",
+            "'Mumbai', true, 'GB001', '', ''",
+            "'Mumbai', false, 'GB001', '', ''",
+            "'', true, '', '', ''",
+            "'Mumbai', true, '', 'ZBC', ''"
+    })
+    void populateDictionaryWithDifferentLocationAndRunnerV3(String placeOfIssue, boolean isRunnerV3Enabled,
+                                                            String expectedLocCode, String cityName, String stateName) throws JsonProcessingException {
+
+        // Setup ShipmentSettings with the varying RunnerV3Enabled flag
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .autoUpdateShipmentBL(true)
+                .hblLockSettings(jsonTestUtility.getJson("HBL_LOCK_ALL_FALSE", HblLockSettings.class))
+                .isRunnerV3Enabled(isRunnerV3Enabled)
+                .build();
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        // Setup HblModel and other common objects
+        HblModel hblModel = new HblModel();
+        hblModel.setIsHbl(false);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setHouseBillLogo("123");
+        hblModel.setUser(usersDto);
+
+        Hbl hbl = new Hbl();
+        hbl.setId(123L);
+        hbl.setShipmentId(123L);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        setData(hblModel, hbl, consolidationModel);
+
+        // Mock the shared methods (LocationData, VesselData, etc.)
+        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(Arrays.asList(new MasterData()));
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
+
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(1L);
+        consoleShipmentMapping.setConsolidationId(1L);
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("id", "123");
+        Map<String, Object> dictionary = new HashMap<>();
+        dictionary.put("id", "123");
+
+        // Populating the EntityTransferUnLocations and UnlocationsResponse mocks
+        EntityTransferUnLocations mockEntityTransferUnLocations = new EntityTransferUnLocations();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put(placeOfIssue, mockEntityTransferUnLocations);
+        when(masterDataUtils.getLocationDataFromCache(anySet(), anyString()))
+                .thenReturn(entityTransferUnLocationsMap);
+
+        UnlocationsResponse mockUnlocationsResponse = new UnlocationsResponse();
+        mockUnlocationsResponse.setName(placeOfIssue);
+        mockUnlocationsResponse.setLocCode(expectedLocCode);
+        mockUnlocationsResponse.setName(cityName);
+        mockUnlocationsResponse.setCountry(stateName);
+        when(jsonHelper.convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class)))
+                .thenReturn(mockUnlocationsResponse);
+
+        // Mock the JSON and other related methods
+        String blObjectJson = objectMapper.writeValueAsString(dataMap);
+        when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+        when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder());
+
+        // Setup Additional Details based on the PlaceOfIssue value
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        additionalDetails.setPlaceOfIssue(placeOfIssue);
+        hblModel.shipment.setAdditionalDetails(additionalDetails);
+
+        EntityTransferAddress entityAddress = new EntityTransferAddress();
+        entityAddress.setCountry("India");
+        when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
+
+        // Perform the actual test
+        assertNotNull(hblReport.populateDictionary(hblModel));
+
+        // Optionally, you could add assertions to check if the locCode was properly processed.
+        // For instance:
+        assertEquals(expectedLocCode, mockUnlocationsResponse.getLocCode());
+    }
+
+    @Test
     void populateDictionaryWithIsHblTrue() throws JsonProcessingException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
         HblModel hblModel = new HblModel();
         hblModel.setIsHbl(true);
         UsersDto usersDto = new UsersDto();
@@ -641,6 +1139,7 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setTransportInstructionId(12L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
         shipmentModel.setFreightLocalCurrency("INR");
         shipmentModel.setFreightOverseas(BigDecimal.TEN);
@@ -650,6 +1149,8 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setVolume(BigDecimal.TEN);
         shipmentModel.setChargable(BigDecimal.TEN);
         shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setGoodsDescription("DESC");
+        shipmentModel.setMarksNum("Marks");
         shipmentModel.setNoOfPacks(10);
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(ERN);
@@ -704,7 +1205,27 @@ class HblReportTest extends CommonMocks {
         packingModel.setCommodity("123");
         packingModel.setHazardous(true);
         packingModel.setIsTemperatureControlled(true);
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setWeightUnit("KG");
+        packingModel.setVolumeUnit("M3");
+        packingModel.setPacks("2");
+        packingModel.setPacksType("Bag");
+        packingModel.setContainerId(22L);
         shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        ContainerModel containerModel = new ContainerModel();
+        containerModel.setId(22L);
+        containerModel.setContainerCode("20GP");
+        containerModel.setContainerNumber("CONT3233323");
+        containerModel.setContainerCount(1L);
+        containerModel.setGrossWeight(BigDecimal.TEN);
+        containerModel.setGrossVolume(BigDecimal.TEN);
+        containerModel.setGrossWeightUnit("KG");
+        containerModel.setGrossVolumeUnit("M3");
+        containerModel.setDescriptionOfGoods("DESC");
+        containerModel.setMarksNums("MarksNums");
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
@@ -746,7 +1267,183 @@ class HblReportTest extends CommonMocks {
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put("id", "123");
         String blObjectJson = objectMapper.writeValueAsString(dataMap);
-        when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
+        when(jsonHelper.convertToJson(any())).thenReturn(blObjectJson);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+        when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        assertNotNull(hblReport.populateDictionary(hblModel));
+    }
+
+    @Test
+    void populateDictionaryWithIsHblTrue_LCL() throws JsonProcessingException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
+        HblModel hblModel = new HblModel();
+        hblModel.setIsHbl(true);
+        UsersDto usersDto = new UsersDto();
+        hblModel.setUser(usersDto);
+        Hbl hbl = new Hbl();
+        hbl.setId(123L);
+
+        HblDataDto hblDataDto = new HblDataDto();
+        hblDataDto.setPlaceOfDelivery("deliveryAddress");
+        hblDataDto.setMarksAndNumbers("123");
+        hbl.setHblData(hblDataDto);
+        hblModel.setBlObject(hbl);
+        Map<String, Long> containerGroupMap = new HashMap<>();
+        containerGroupMap.put("TEST", 40L);
+        containerGroupMap.put("TEST2", 40L);
+        hblModel.setContainerCountGrouped(containerGroupMap);
+        hblModel.setContainerPacksGrouped(containerGroupMap);
+        Map<String, Double> volumeGroupMap = new HashMap<>();
+        volumeGroupMap.put("TEST", 40.1);
+        volumeGroupMap.put("TEST2", 40.1);
+        hblModel.setContainerVolumeGrouped(volumeGroupMap);
+        hblModel.setContainerWeightGrouped(volumeGroupMap);
+        hblModel.setTenant(new TenantModel());
+        hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        hblModel.setShipmentSettingsDetails(ShipmentSettingsDetails.builder().build());
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+
+        HblPartyDto hblPartyDto = new HblPartyDto();
+        hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setGoodsDescription("DESC");
+        shipmentModel.setMarksNum("Marks");
+        shipmentModel.setNoOfPacks(10);
+        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ERN);
+        shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("RFS");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        additionalDetailModel.setSendingAgent(partiesModel);
+        additionalDetailModel.setReceivingAgent(partiesModel);
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setEstimatedPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        hblModel.setShipment(shipmentModel);
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setCommodity("123");
+        packingModel.setHazardous(true);
+        packingModel.setIsTemperatureControlled(true);
+        packingModel.setPacks("2");
+        packingModel.setPacksType("Bag");
+        packingModel.setContainerId(22L);
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        ContainerModel containerModel = new ContainerModel();
+        containerModel.setId(22L);
+        containerModel.setContainerCode("20GP");
+        containerModel.setContainerNumber("CONT3233323");
+        containerModel.setContainerCount(1L);
+        containerModel.setGrossWeight(BigDecimal.TEN);
+        containerModel.setGrossVolume(BigDecimal.TEN);
+        containerModel.setGrossWeightUnit("KG");
+        containerModel.setGrossVolumeUnit("M3");
+        containerModel.setDescriptionOfGoods("DESC");
+        containerModel.setMarksNums("MarksNums");
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setPayment("PPM");
+        consolidationModel.setCarrierDetails(carrierDetailModel);
+        partiesModel = new PartiesModel();
+        partiesModel.setType("Notify Party 1");
+        orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+        consolidationModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
+        when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new MasterData());
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
+
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
+
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(1L);
+        consoleShipmentMapping.setConsolidationId(1L);
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("id", "123");
+        Map<String, Object> dictionary = new HashMap<>();
+        dictionary.put("id", "123");
+        String blObjectJson = objectMapper.writeValueAsString(dataMap);
+        when(jsonHelper.convertToJson(any())).thenReturn(blObjectJson);
         when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
@@ -849,6 +1546,8 @@ class HblReportTest extends CommonMocks {
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
         packingModel.setHazardous(true);
+        packingModel.setPacks("3");
+        packingModel.setPacksType("BBK");
         shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
@@ -1155,7 +1854,9 @@ class HblReportTest extends CommonMocks {
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
-        shipmentModel.setPackingList(List.of(packingModel));
+        packingModel.setPacks("4");
+        packingModel.setPacksType("BAG");
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
@@ -1359,7 +2060,9 @@ class HblReportTest extends CommonMocks {
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
-        shipmentModel.setPackingList(List.of(packingModel));
+        packingModel.setPacks("4");
+        packingModel.setPacksType("BAG");
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
@@ -1545,7 +2248,9 @@ class HblReportTest extends CommonMocks {
         packingModel.setLength(BigDecimal.TEN);
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
-        shipmentModel.setPackingList(List.of(packingModel));
+        packingModel.setPacks("4");
+        packingModel.setPacksType("BAG");
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);

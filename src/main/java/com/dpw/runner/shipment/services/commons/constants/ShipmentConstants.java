@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 
 import java.math.BigDecimal;
@@ -49,6 +50,9 @@ public class ShipmentConstants {
             Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.NOTIFY_PARTY_ORG_CODE, RunnerEntityMapping.builder().parentTable(Constants.ADDITIONAL_DETAILS).tableName("notifyParty").dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.ORIGIN_AGENT_ORG_CODE, RunnerEntityMapping.builder().parentTable(Constants.ADDITIONAL_DETAILS).tableName("exportBroker").dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.DESTINATION_AGENT_ORG_CODE, RunnerEntityMapping.builder().parentTable(Constants.ADDITIONAL_DETAILS).tableName("importBroker").dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CLIENT_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
@@ -152,9 +156,84 @@ public class ShipmentConstants {
             Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
             Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
             Map.entry("isFrob", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isFrob").build()),
+            Map.entry("isReefer", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("isReefer").build()),
+            Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).fieldName("bookingNumber").isContainsText(true).build()),
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("contractId").isContainsText(true).build()),
+            Map.entry("parentContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("parentContractId").isContainsText(true).build()),
+            Map.entry("destinationContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("destinationContractId").isContainsText(true).build()),
+            Map.entry("destinationParentContractId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("destinationParentContractId").isContainsText(true).build()),
             Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
 
     );
+    // Entity Mapping Keys (using Constants class where available)
+    public static final String PACKING_LIST = "packingList";
+    public static final String EL_DETAILS_LIST = "elDetailsList";
+    public static final String SHIPMENT_ADDRESSES = "shipmentAddresses";
+    public static final String BOOKING_CARRIAGES_LIST = "bookingCarriagesList";
+    public static final String EVENTS_LIST = "eventsList";
+    public static final String SERVICES_LIST = "servicesList";
+    public static final String TRUCK_DRIVER_DETAILS = "truckDriverDetails";
+    public static final String TRIANGULATION_PARTNER_LIST = "triangulationPartnerList";
+    public static final String NOTES_LIST = "notesList";
+    public static final String JOBS_LIST = "jobsList";
+    public static final String SHIPMENT_ORDERS = "shipmentOrders";
+    public static final String PICKUP_DELIVERY_DETAILS_INSTRUCTIONS = "pickupDeliveryDetailsInstructions";
+    public static final String FILE_REPO_LIST = "fileRepoList";
+    public static final String CONSOLIDATION_ADDRESSES = "consolidationAddresses";
+    public static final String CO_LOAD_WITH = "coLoadWith";
+    public static final String CREDITOR = "creditor";
+    public static final String BORROWED_FROM = "borrowedFrom";
+    public static final String RECEIVING_AGENT = "receivingAgent";
+    public static final String SENDING_AGENT = "sendingAgent";
+    public static final String DEPARTURE_DETAILS = "departureDetails";
+    public static final String ARRIVAL_DETAILS = "arrivalDetails";
+    public static final String ALLOCATIONS = "allocations";
+    public static final String ACHIEVED_QUANTITIES = "achievedQuantities";
+    public static final String SHIPMENT_DETAILS = "shipmentDetails";
+    public static final String CONSOLIDATION_DETAILS = "consolidationDetails";
+    public static final String TRANSPORTER_DETAIL = "transporterDetail";
+    private static final String CONSOLIDATION_DETAILS_SET = "consolidationList";
+    public static final Map<String, Class<?>> ENTITY_MAPPINGS = Map.ofEntries(
+            Map.entry(SHIPMENT_DETAILS, ShipmentDetails.class),
+            Map.entry(Constants.ADDITIONAL_DETAILS, AdditionalDetails.class),
+            Map.entry(Constants.CARRIER_DETAILS, CarrierDetails.class),
+            Map.entry(PACKING_LIST, Packing.class),
+            Map.entry(EL_DETAILS_LIST, ELDetails.class),
+            Map.entry(SHIPMENT_ADDRESSES, Parties.class),
+            Map.entry(BOOKING_CARRIAGES_LIST, BookingCarriage.class),
+            Map.entry(EVENTS_LIST, Events.class),
+            Map.entry(REFERENCE_NUMBERS_LIST, ReferenceNumbers.class),
+            Map.entry(Constants.ROUTING_LIST, Routings.class),
+            Map.entry(SERVICES_LIST, ServiceDetails.class),
+            Map.entry(TRUCK_DRIVER_DETAILS, TruckDriverDetails.class),
+            Map.entry(TRIANGULATION_PARTNER_LIST, TriangulationPartner.class),
+            Map.entry(NOTES_LIST, Notes.class),
+            Map.entry(Constants.DELIVERY_DETAILS, PickupDeliveryDetails.class),
+            Map.entry(Constants.PICKUP_DETAILS, PickupDeliveryDetails.class),
+            Map.entry(Constants.CLIENT, Parties.class),
+            Map.entry(Constants.CONSIGNER, Parties.class),
+            Map.entry(Constants.CONSIGNEE, Parties.class),
+            Map.entry(JOBS_LIST, Jobs.class),
+            Map.entry(SHIPMENT_ORDERS, ShipmentOrder.class),
+            Map.entry(PICKUP_DELIVERY_DETAILS_INSTRUCTIONS, PickupDeliveryDetails.class),
+            Map.entry(CONSOLIDATION_DETAILS, ConsolidationDetails.class),
+            Map.entry(CONSOLIDATION_DETAILS_SET, ConsolidationDetails.class),
+            Map.entry(FILE_REPO_LIST, FileRepo.class),
+            Map.entry(CONSOLIDATION_ADDRESSES, Parties.class),
+            Map.entry(Constants.CONTAINERS_LIST, Containers.class),
+            Map.entry(CO_LOAD_WITH, Parties.class),
+            Map.entry(CREDITOR, Parties.class),
+            Map.entry(BORROWED_FROM, Parties.class),
+            Map.entry(RECEIVING_AGENT, Parties.class),
+            Map.entry(SENDING_AGENT, Parties.class),
+            Map.entry(DEPARTURE_DETAILS, ArrivalDepartureDetails.class),
+            Map.entry(ARRIVAL_DETAILS, ArrivalDepartureDetails.class),
+            Map.entry(ALLOCATIONS, Allocations.class),
+            Map.entry(ACHIEVED_QUANTITIES, AchievedQuantities.class),
+            Map.entry(TRANSPORTER_DETAIL, Parties.class)
+
+    );
+    public static final Set<String> JSON_FIELDS = Set.of("orgData");
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";
     public static final String UPDATE_SAILING_SCHEDULE_SUCCESSFUL = "Sailing schedule data updated successfully";
@@ -232,6 +311,8 @@ public class ShipmentConstants {
 
     // Shipment V3.0 API Endpoints
     public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
+    public static final String SHIPMENT_EXTERNAL_API_HANDLE = "/api/v3/shipment/external";
+    public static final String CONSOLIDATION_EXTERNAL_API_HANDLE = "/api/v3/consolidation/external";
     public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
 
 
@@ -281,5 +362,18 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
     public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
+    public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
+    public static final String SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
+    public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
+
+    public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
+    public static final String ERROR_INVALID_REQUEST_DG_APPROVE = "Invalid request for sendEmailForDGApprove";
+    public static final String WARNING_DG_APPROVAL_NOT_REQUIRED = "DG approval not required for Import Shipment";
+    public static final String ERROR_SHIPMENT_NOT_FOUND = "Shipment details not found for ID: ";
+    public static final String ERROR_AUDIT_FAILED = "Audit failed for shipmentId: {} and operation: {}. Error: {}";
+    public static final String DESTINATION_AGENT_IS_MANDATORY = "Destination Agent is mandatory";
+    public static final String ORIGIN_AGENT_IS_MANDATORY = "Origin Agent is mandatory";
+    public static final String ORIGIN_AND_DESTINATION_AGENT_ARE_MANDATORY = "Origin and Destination Agent are mandatory";
+    public static final String FETCH_RESET_QUOTE_SUCCESSFUL = "Shipment Quote reset rules retrieve successful";
 
 }

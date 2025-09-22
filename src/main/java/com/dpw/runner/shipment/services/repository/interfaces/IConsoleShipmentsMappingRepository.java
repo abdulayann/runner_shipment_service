@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,7 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     @Query(value = "SELECT * FROM console_shipment_mapping WHERE consolidation_id = ?1 AND is_attachment_done = true", nativeQuery = true)
     List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
 
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM console_shipment_mapping WHERE shipment_id = ?1 AND is_attachment_done = true", nativeQuery = true)
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
 
@@ -61,4 +63,7 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
 
     @Query(value = "SELECT COUNT(*) FROM console_shipment_mapping csm join shipment_details sd on csm.shipment_id = sd.id WHERE csm.is_attachment_done = false AND csm.request_type = ?1 AND sd.tenant_id = ?2", nativeQuery = true)
     Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId);
+
+    @Query(value = "SELECT * FROM console_shipment_mapping WHERE consolidation_id in ?1", nativeQuery = true)
+    List<ConsoleShipmentMapping> findByConsolidationIdsByQuery(Set<Long> consolidationsIds);
 }

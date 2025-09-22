@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -22,6 +20,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doReturn;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -1424,6 +1423,15 @@ class MasterDataUtilsTest extends CommonMocks {
     }
 
     @Test
+    void withMdcSupplier() {
+        boolean isSuccess = true;
+        var runnable = masterDataUtils.withMdcSupplier(() -> {
+            return null;
+        });
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void getUNLocRow() {
         var response = masterDataUtils.getUNLocRow(null);
         assertNull(response);
@@ -1702,6 +1710,16 @@ class MasterDataUtilsTest extends CommonMocks {
         when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
         var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, "1234");
         assertNull(responseEntity);
+    }
+
+    @Test
+    void getMultipleMasterListData() {
+
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(MasterData.builder().build())).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(MasterData.builder().id(11).itemValue("PKG").build()));
+        var responseEntity = masterDataUtils.getMultipleMasterListData(MasterDataType.COMMODITY_GROUP, Set.of("1234"));
+        assertNotNull(responseEntity);
+        assertEquals(11, responseEntity.get("PKG").getId());
     }
 
     @Test
@@ -3007,6 +3025,45 @@ class MasterDataUtilsTest extends CommonMocks {
 
         // Assert
         assertNull(result);
+    }
+
+    @Test
+    void testGetPackTypeDes1() {
+        var masterdata = MasterData.builder().itemValue("BX").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(masterdata));
+
+        var resp = masterDataUtils.getPackTypeDesc("BX");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(masterdata.getItemDescription()), resp);
+    }
+
+    @Test
+    void testGetPackTypeDes2() {
+        var masterdata = MasterData.builder().itemValue("BX1").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        var resp = masterDataUtils.getPackTypeDesc("BX");
+        assertNotNull(resp);
+        assertEquals("BX", resp);
+    }
+
+    @Test
+    void testGetPackTypeDes3() {
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of()).build());
+        var resp = masterDataUtils.getPackTypeDesc("PKG");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(ReportConstants.PACKAGES), resp);
+    }
+
+    @Test
+    void testGetPackTypeDes4() {
+        var masterdata = MasterData.builder().itemValue("BX").itemDescription("Description").build();
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterdata)).build());
+        when(jsonHelper.convertValueToList(any(), eq(MasterData.class))).thenReturn(List.of(masterdata));
+
+        var resp = masterDataUtils.getPackTypeDesc("PKG");
+        assertNotNull(resp);
+        assertEquals(StringUtility.toUpperCase(ReportConstants.PACKAGES), resp);
     }
 
 }

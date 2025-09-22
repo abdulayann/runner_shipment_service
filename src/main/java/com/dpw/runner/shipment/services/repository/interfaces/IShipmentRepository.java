@@ -75,6 +75,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
 
@@ -161,6 +162,15 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
+
+    @Query(value = "SELECT sd.id FROM shipment_details sd "+
+            "LEFT JOIN console_shipment_mapping csm " +
+            "ON sd.id = csm.shipment_id " +
+            "WHERE csm.shipment_id IS NULL and sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
+    List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
+    @Query(value = "SELECT sd.id FROM shipment_details sd WHERE sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
+    List<Long> findAllShipmentIdsByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
 
     @Modifying
     @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
@@ -276,4 +286,32 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
                                   @Param("oceanDGStatus") String oceanDGStatus,
                                   @Param("shipmentId") Long shipmentId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE shipment_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId);
+
+    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1", nativeQuery = true)
+    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update shipment_details set is_deleted = true WHERE id IN ?1", nativeQuery = true)
+    void deleteShipmentDetailsByIds(Set<Long> ids);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM triangulation_partner_shipment WHERE shipment_id = ?1", nativeQuery = true)
+    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update shipment_details set trigger_migration_warning = false WHERE id = ?1", nativeQuery = true)
+    void updateTriggerMigrationWarning(Long shipmentId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE shipment_details SET is_deleted = true WHERE id NOT IN (?1) and migration_status != 'CREATED_IN_V2' and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalShipmentsByShipmentIdAndTenantId(Set<Long> allBackupShipmentIds, Integer tenantId);
 }

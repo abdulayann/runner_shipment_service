@@ -1,6 +1,12 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.anyBoolean;
@@ -26,7 +32,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -134,6 +143,32 @@ class EventDaoTest {
 
         assertNotNull(r);
         assertNotNull(r.getId());
+    }
+
+    @Test
+    void testSaveWithoutTenant() {
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        testData.setId(1L);
+        when(eventRepository.saveWithoutTenant(any())).thenReturn(testData);
+
+        var r = eventDao.saveWithoutTenant(testData);
+
+        assertNotNull(r);
+        assertNotNull(r.getId());
+    }
+
+    @Test
+    void testFindByIdWithoutTenant() {
+        when(eventRepository.findByIdWithoutTenant(any())).thenReturn(Optional.of(testData));
+
+        var r = eventDao.findByIdWithoutTenant(any());
+
+        assertNotNull(r);
+    }
+
+    @Test
+    void testDeleteByIdWithoutTenant() {
+        assertDoesNotThrow(() -> eventDao.deleteByIdWithoutTenant(any()));
     }
 
     @Test
@@ -249,7 +284,6 @@ class EventDaoTest {
 
         when(eventRepository.findById(2L)).thenReturn(Optional.of(oldEvent));
         when(eventRepository.save(testData)).thenReturn(testData);
-        when(eventRepository.save(oldEvent)).thenReturn(oldEvent);
         when(jsonHelper.convertToJson(oldEvent)).thenReturn(objectMapper.writeValueAsString(oldEvent));
 
         try {
@@ -511,5 +545,41 @@ class EventDaoTest {
         assertEquals(1L, events.getConsolidationId());
     }
 
+    @Test
+    void testDeleteAdditionalDataByEventsIdsConsolidationId() {
+        List<Long> eventsIds = List.of(1L, 2L, 3L);
+        Long consolidationId = 100L;
+        eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
+        verify(eventRepository, times(1))
+                .deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByEventsIds() {
+        List<Long> eventsIds = List.of(4L, 5L);
+        eventDao.revertSoftDeleteByEventsIds(eventsIds);
+        verify(eventRepository, times(1))
+                .revertSoftDeleteByEventsIds(eventsIds);
+    }
+
+    @Test
+    void testDeleteAdditionalEventDetailsByEntityIdAndEntityType() {
+        List<Long> eventsIds = List.of(6L, 7L);
+        Long entityId = 200L;
+        String entityType = "SHIPMENT";
+        eventDao.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+        verify(eventRepository, times(1))
+                .deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
+
+    @Test
+    void testRevertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType() {
+        List<Long> eventsIds = List.of(8L, 9L);
+        Long entityId = 300L;
+        String entityType = "BOOKING";
+        eventDao.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
+        verify(eventRepository, times(1))
+                .revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
 
 }

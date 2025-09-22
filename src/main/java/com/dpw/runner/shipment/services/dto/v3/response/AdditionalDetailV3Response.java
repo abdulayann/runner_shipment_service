@@ -122,6 +122,10 @@ public class AdditionalDetailV3Response implements IRunnerResponse {
     private LocalDateTime dateOfIssue;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
+    private Boolean isRatedBL;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -161,11 +165,12 @@ public class AdditionalDetailV3Response implements IRunnerResponse {
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime pickupDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
     private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
     private LocalDateTime proofOfDeliveryDate;

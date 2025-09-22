@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -55,6 +57,9 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "is_domestic")
     private Boolean isDomestic;
+
+    @Column(name = "assigned_to")
+    private String assignedTo;
 
     @Column(name = "mawb")
     private String mawb;
@@ -139,6 +144,18 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "ship_instruction_cutoff")
     private LocalDateTime shipInstructionCutoff;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
 
     @Column(name = "hazardous_booking_cutoff")
     private LocalDateTime hazardousBookingCutoff; // DG Cutoff
@@ -509,6 +526,24 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "transport_info_status")
     @Enumerated(EnumType.STRING)
     private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
+    @Column(name = "trigger_migration_warning")
+    private Boolean triggerMigrationWarning = false;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 50, message = "max size is 50 for controlled reference number")
+    private String controlledReferenceNumber;
+
+    @Column(name = "si_status")
+    @Enumerated(EnumType.STRING)
+    private ShippingInstructionStatus siStatus;
 
     @Override
     public boolean equals(Object o) {

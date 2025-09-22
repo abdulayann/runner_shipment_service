@@ -2,8 +2,11 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingLegWarning;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -13,11 +16,15 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -25,13 +32,17 @@ import java.util.stream.Collectors;
 
 
 @Component
+@AllArgsConstructor
 public class RoutingValidationUtil {
-    @Autowired
-    private IShipmentServiceV3 shipmentService;
-    @Autowired
-    private IConsolidationService consolidationService;
-    @Autowired
-    private ICustomerBookingService customerBookingService;
+
+    private final IShipmentServiceV3 shipmentService;
+
+    private final IConsolidationService consolidationService;
+
+    private final ICustomerBookingService customerBookingService;
+
+    private final IRoutingsDao routingsV3Dao;
+
 
     public void validateUpdateRequest(RoutingsRequest request) {
         if (request == null) {
@@ -49,6 +60,51 @@ public class RoutingValidationUtil {
         if (request.getId() == null) {
             throw new ValidationException("Routing ID is missing.");
         }
+    }
+
+    public void validateMainCarriageRoutingLegs(List<RoutingsRequest> routingsList) {
+        RoutingsRequest firstMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, true);
+        RoutingsRequest lastMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, false);
+        if (Objects.isNull(firstMainCarriageRoutingLeg) || Objects.isNull(lastMainCarriageRoutingLeg)) return;
+
+        validateMainCarriageRoutingLegs(firstMainCarriageRoutingLeg.getEtd(), lastMainCarriageRoutingLeg.getEta(),
+                firstMainCarriageRoutingLeg.getAtd(), lastMainCarriageRoutingLeg.getAta());
+    }
+
+    private void validateMainCarriageRoutingLegs(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
+
+        Set<String> validationErrors = new LinkedHashSet<>();
+        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
+            validationErrors.add("ETA (Last main-carriage) cannot be less than ETD (First Main-carriage)");
+        }
+
+        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
+            validationErrors.add("ATA (Last Main-carriage) cannot be less than ATD (First Main-carriage)");
+        }
+
+        if (Objects.nonNull(ata) && ata.isAfter(LocalDateTime.now().plusHours(24))) {
+            validationErrors.add("ATA (Last Main-carriage) cannot be more than Current Date");
+        }
+
+        if (Objects.nonNull(atd) && atd.isAfter(LocalDateTime.now().plusHours(24))) {
+            validationErrors.add("ATD (First Main-carriage) cannot be more than Current Date");
+        }
+
+        if (!validationErrors.isEmpty()) {
+            throw new ValidationException(String.join("###", validationErrors));
+        }
+    }
+
+    private RoutingsRequest findMainCarriageLeg(List<RoutingsRequest> routingsList, boolean toFindFirstMainCarriageRoutingLeg) {
+
+        RoutingsRequest currMainCarriageRoutingLeg = null;
+        for (RoutingsRequest routingsRequest : routingsList) {
+            if (RoutingCarriage.MAIN_CARRIAGE.equals(routingsRequest.getCarriage())) {
+                if (toFindFirstMainCarriageRoutingLeg) return routingsRequest;
+                else currMainCarriageRoutingLeg = routingsRequest;
+            }
+        }
+        return currMainCarriageRoutingLeg;
     }
 
     public void validateUpdateBulkRequest(List<RoutingsRequest> routingListRequest, List<Routings> existingRoutings) {
@@ -116,6 +172,21 @@ public class RoutingValidationUtil {
         Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
+        }
+    }
+
+    public void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest) {
+        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
+            if (shipmentDetails.isEmpty()) {
+                throw new ValidationException("Please provide the valid shipment id");
+            }
+            if (StringUtility.isNotEmpty(shipmentDetails.get().getConsolRef())) {
+                int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
+                if (inheritCarriage == 0) {
+                    throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
+                }
+            }
         }
     }
 
@@ -194,5 +265,91 @@ public class RoutingValidationUtil {
             validateRoutingsRequest(request.getRoutings(), module);
             validateMainCarriageAdjacencyInIncoming(request.getRoutings());
         }
+    }
+
+    /**
+     * Validates routing legs for ETD/ETA timing conflicts
+     *
+     * @param routingsResponses List of routing requests sorted by leg number
+     * @param legsWarning
+     * @return List of validation error messages
+     */
+    public List<String> validateRoutingLegs(List<RoutingsResponse> routingsResponses, Map<String, RoutingLegWarning> legsWarning) {
+        List<String> validationErrors = new ArrayList<>();
+
+        if (routingsResponses == null || routingsResponses.size() <= 1) {
+            return validationErrors; // No validation needed for null, empty, or single leg
+        }
+
+        // Validate each leg against the previous one (starting from second leg)
+        for (int i = 1; i < routingsResponses.size(); i++) {
+            RoutingsResponse currentLeg = routingsResponses.get(i);
+            RoutingsResponse previousLeg = routingsResponses.get(i - 1);
+
+            String errorMessage = validateLegTiming(currentLeg, previousLeg);
+            if (errorMessage != null) {
+                validationErrors.add(errorMessage);
+                RoutingLegWarning routingLegWarning = new RoutingLegWarning();
+                routingLegWarning.setEtd(errorMessage);
+                legsWarning.put(currentLeg.getLeg() + Constants.EMPTY_STRING, routingLegWarning);
+                setPreviousLegData(legsWarning, previousLeg, currentLeg);
+
+            }
+        }
+
+        return validationErrors;
+    }
+
+    private static void setPreviousLegData(Map<String, RoutingLegWarning> legsWarning, RoutingsResponse previousLeg, RoutingsResponse currentLeg) {
+        RoutingLegWarning routingLegWarning = legsWarning.get(previousLeg.getLeg() + Constants.EMPTY_STRING);
+        if (Objects.isNull(routingLegWarning)) {
+            routingLegWarning = new RoutingLegWarning();
+        }
+        String etaWarning = String.format("ETA (of Leg No. %d) should be lesser than ETD (of Leg No. %d)",
+                previousLeg.getLeg(), currentLeg.getLeg());
+        routingLegWarning.setEta(etaWarning);
+        legsWarning.put(previousLeg.getLeg() + Constants.EMPTY_STRING, routingLegWarning);
+    }
+
+    /**
+     * Validates timing between current leg and previous leg
+     *
+     * @param currentLeg  Current routing leg
+     * @param previousLeg Previous routing leg
+     * @return Error message if validation fails, null if validation passes
+     */
+    private static String validateLegTiming(RoutingsResponse currentLeg, RoutingsResponse previousLeg) {
+        // Check if required fields are present
+        if (currentLeg.getEtd() == null || previousLeg.getEta() == null) {
+            return null; // Skip validation if required dates are missing
+        }
+
+        LocalDateTime currentEtd = currentLeg.getEtd();
+        LocalDateTime previousEta = previousLeg.getEta();
+
+        // Check if current ETD is less than (previous ETA)
+        if (currentEtd.isBefore(previousEta)) {
+            return String.format("ETD (of Leg No. %d) should be greater than ETA (of Leg No. %d)",
+                    currentLeg.getLeg(), previousLeg.getLeg());
+        }
+
+        return null; // Validation passed
+    }
+
+    /**
+     * Alternative method that returns a single formatted message
+     *
+     * @param routingsResponses List of routing requests
+     * @param legsWarning
+     * @return Single string with all validation errors, or null if no errors
+     */
+    public String getWarningMessage(List<RoutingsResponse> routingsResponses, Map<String, RoutingLegWarning> legsWarning) {
+        List<String> errors = validateRoutingLegs(routingsResponses, legsWarning);
+
+        if (errors.isEmpty()) {
+            return null;
+        }
+
+        return String.join("###", errors);
     }
 }

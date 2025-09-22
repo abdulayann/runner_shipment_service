@@ -14,20 +14,94 @@ import java.util.concurrent.*;
 
 @Configuration
 @EnableAsync
-@Slf4j @Generated
+@Slf4j
+@Generated
 public class AsyncConfig implements AsyncConfigurer {
 
     // Used for Async
     @Bean(name = "asyncExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
+        return createBackupRestoreMigrationExecutor("MyAsyncThread-", 20, 20);
+    }
+
+    @Bean(name = "asyncShipmentBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
+        return createExecutor("BackupShipmentHandlerAsyncThread-", 10, 10);
+    }
+
+    @Bean(name = "asyncRestoreHandlerExecutor")
+    public ThreadPoolTaskExecutor rollbackTaskExecutor() {
+        return createBackupRestoreMigrationExecutor("RestoreThread-", 5, 5);
+    }
+
+    @Bean(name = "asyncBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupHandlerExecutor() {
+        return createBackupRestoreMigrationExecutor("BackupHandlerAsyncThread-", 5, 5);
+    }
+
+
+    @Bean(name = "asyncConsoleBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor asyncConsoleBackupHandlerExecutor() {
+        return createExecutor("BackupConsoleHandlerAsyncThread-", 10, 10);
+    }
+
+    @Bean(name = "asyncBookingBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupBookingHandlerExecutor() {
+        return createExecutor("BackupBookingHandlerAsyncThread-", 10, 10);
+    }
+
+    @Bean(name = "asyncNetworkTransferBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupNetworkTransferHandlerExecutor() {
+        return createExecutor("BackupNetworkTransferHandlerAsyncThread-", 10, 10);
+    }
+
+
+    @Bean(name = "asyncExecutorForConsole")
+    public ThreadPoolTaskExecutor asyncConsoleRestoreHandlerExecutor() {
+        return createExecutor("RestoreConsoleHandlerAsyncThread-", 10, 20);
+    }
+
+    @Bean(name = "asyncExecutorForBooking")
+    public ThreadPoolTaskExecutor asyncBookingRestoreHandlerExecutor() {
+        return createExecutor("RestoreBookingHandlerAsyncThread-", 10, 20);
+    }
+
+    @Bean(name = "asyncExecutorForShipment")
+    public ThreadPoolTaskExecutor asyncShipmentRestoreHandlerExecutor() {
+        return createExecutor("RestoreShipmentHandlerAsyncThread-", 10, 20);
+    }
+
+    @Bean(name = "asyncExecutorForMigration3")
+    public ThreadPoolTaskExecutor taskExecutorForMigration3() {
+        return createBackupRestoreMigrationExecutor("MyMigrationAsyncThread-", 10, 10);
+    }
+
+    private ThreadPoolTaskExecutor createBackupRestoreMigrationExecutor(String threadNamePrefix, int corePoolSize, int maxPoolSize) {
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(20);
-        executor.setMaxPoolSize(20);
-        executor.setThreadNamePrefix("MyAsyncThread-");
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setThreadNamePrefix(threadNamePrefix);
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
         executor.initialize();
         return executor;
     }
+
+    private ThreadPoolTaskExecutor createExecutor(String threadNamePrefix, int corePoolSize, int maxPoolSize) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix(threadNamePrefix);
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
 
     // Used for Completable future
     @Bean
@@ -77,11 +151,12 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean
     public ExecutorService executorServiceRouting() {
-        int corePoolSize = 5; // Min threads
-        int maximumPoolSize = 10; // Adjusted max pool size
+        return commonExecutorService(5, 10, 100);
+    }
+
+    public ExecutorService commonExecutorService(int corePoolSize, int maximumPoolSize, int queueCapacity){
         long keepAliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
-        int queueCapacity = 100; // Define queue capacity
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);
         RejectedExecutionHandler handler = (r, executor) -> {
             try {
@@ -118,5 +193,21 @@ public class AsyncConfig implements AsyncConfigurer {
             }
         };
         return new ThreadPoolExecutor(corePool, maxPool, aliveTime, unit, workingQueue, executionHandler);
+    }
+
+    @Bean(name = "asyncHsCodeValidationExecutor")
+    public ThreadPoolTaskExecutor hsCodeValidationExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("HsCodeValidationExecutorAsyncThread-");
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
     }
 }

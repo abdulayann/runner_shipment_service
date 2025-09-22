@@ -67,9 +67,14 @@ public class AuthFilter extends OncePerRequestFilter {
             "/configuration/security",
             "/swagger-ui.html",
             "/webjars/**",
+            "/migration/consolidation/**",
+            "/api/restore",
+            "/rollback/**",
             "/api/v2/enums/**",
             "/api/v2/events/push-tracking-events",
-            "/api/v2/cache/**"};
+            "/api/v2/cache/**",
+            "/api/v2/network-transfer/create/external/bridge"
+    };
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -82,6 +87,11 @@ public class AuthFilter extends OncePerRequestFilter {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = servletRequest;
+        if(req.getServletPath().contains("/v3/"))
+        {
+            ShipmentVersionContext.markV3();
+        }
+
         log.info("Request For Shipment Service API: {} with RequestId: {} from Source Service: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC(), getSourceServiceType(req));
         if(shouldNotFilter(req))
         {
@@ -146,6 +156,7 @@ public class AuthFilter extends OncePerRequestFilter {
             log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.clear();
+            ShipmentVersionContext.remove();
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();

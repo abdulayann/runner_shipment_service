@@ -5,10 +5,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -16,13 +15,15 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Resp
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -38,7 +39,9 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,12 +49,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -60,8 +68,13 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
@@ -71,11 +84,14 @@ import static org.mockito.Mockito.*;
 @Execution(CONCURRENT)
 class PackingV3ServiceTest extends CommonMocks {
 
+    @Spy
     @InjectMocks
     private PackingV3Service packingV3Service;
 
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IContainerDao containerDao;
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
@@ -104,6 +120,10 @@ class PackingV3ServiceTest extends CommonMocks {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
     private ShipmentValidationV3Util shipmentValidationV3Util;
+    @Mock
+    private ConsolidationV3Service consolidationV3Service;
+    @Mock
+    private ShippingInstructionUtil shippingInstructionUtil;
 
     private Packing packing;
     private PackingV3Request request;
@@ -131,6 +151,9 @@ class PackingV3ServiceTest extends CommonMocks {
         request.setShipmentId(100L);
         request.setBookingId(200L);
         request.setConsolidationId(300L);
+        request.setIsTemperatureControlled(Boolean.FALSE);
+        request.setHazardous(Boolean.FALSE);
+        request.setCommodity("Community");
 
         packing = new Packing();
         packing.setId(1L);
@@ -183,7 +206,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         doNothing().when(auditLogService).addAuditLog(any());
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
         mockShipmentSettings();
 
@@ -214,7 +237,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         when(jsonHelper.convertValue(any(), eq(PackingResponse.class))).thenReturn(response);
         doNothing().when(auditLogService).addAuditLog(any());
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         PackingResponse result = packingV3Service.update(request, "SHIPMENT");
@@ -243,7 +266,7 @@ class PackingV3ServiceTest extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         String result = packingV3Service.delete(1L, "SHIPMENT");
@@ -285,7 +308,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT", true);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(1, result.getPackingResponseList().size());
@@ -302,7 +325,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response, response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "CONSOLIDATION");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "CONSOLIDATION", false);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(2, result.getPackingResponseList().size());
@@ -323,7 +346,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT");
+        BulkPackingResponse result = packingV3Service.updateBulk(requestList, "SHIPMENT", true);
 
         assertNotNull(result.getPackingResponseList());
         assertEquals(1, result.getPackingResponseList().size());
@@ -485,7 +508,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, true, null);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, true, null, Constants.SHIPMENT);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -501,7 +524,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAllWithoutTenantFilter(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, false, Constants.NETWORK_TRANSFER);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, false, Constants.NETWORK_TRANSFER, Constants.SHIPMENT);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -578,7 +601,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
     @Test
     void testList_requestNull_logsError() {
-        assertThrows(ValidationException.class, () -> packingV3Service.list(null, false, null));
+        assertThrows(ValidationException.class, () -> packingV3Service.list(null, false, null, Constants.SHIPMENT));
     }
 
     @Test
@@ -812,7 +835,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary2() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.of(testShipment));
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.of(testShipment));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
@@ -823,7 +846,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary3() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.empty());
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
 
@@ -831,7 +854,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary4() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
-        when(consolidationService.findById(any())).thenReturn(Optional.of(testconsol));
+        when(consolidationV3Service.findById(any())).thenReturn(Optional.of(testconsol));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, null);
@@ -842,7 +865,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary5() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
-        when(consolidationService.retrieveForNte(any())).thenReturn(Optional.of(testconsol));
+        when(consolidationV3Service.retrieveConsolidationByIdWithQuery(any(), any())).thenReturn(Optional.of(testconsol));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
@@ -850,18 +873,24 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculatePackSummary6() throws AuthenticationException, RunnerException {
+    void testCalculatePackSummary6() {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
-        when(consolidationService.retrieveForNte(any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
 
     @Test
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        packingV3Service.unAssignPackageContainers(request);
-        verify(containerV3Service, never()).unAssignContainers(any(), any());
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+    }
+
+    @Test
+    void testUnAssignPackageContainersWithReassignFlow() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -872,8 +901,8 @@ class PackingV3ServiceTest extends CommonMocks {
         packing.setShipmentId(1L);
         packing.setContainerId(1L);
         when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
-        packingV3Service.unAssignPackageContainers(request);
-        verify(containerV3Service).unAssignContainers(any(), any());
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -1073,5 +1102,536 @@ class PackingV3ServiceTest extends CommonMocks {
         when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
         packingV3Service.updateOceanDGStatus(shipmentDetails, null, updatedPackings);
         verify(commonUtils, times(1)).changeShipmentDGStatusToReqd(any(), anyBoolean());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_success() throws RunnerException {
+
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setContainerId(100L);
+        request.setShipmentPackIds(Map.of(10L, List.of(1L, 2L)));
+
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setShipmentId(10L);
+
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setShipmentId(10L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        ContainerResponse expectedResponse = new ContainerResponse();
+        expectedResponse.setContainerCode("C123");
+
+        when(packingDao.findByIdIn(List.of(1L, 2L))).thenReturn(List.of(packing1, packing2));
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerV3Service.assignContainers(request, SHIPMENT_PACKING))
+                .thenReturn(expectedResponse);
+
+        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(request);
+
+        assertNotNull(response);
+        assertEquals(expectedResponse, response);
+
+        verify(packingDao).findByIdIn(List.of(1L, 2L));
+        verify(shipmentService).findById(10L);
+        verify(containerV3Service).assignContainers(request, SHIPMENT_PACKING);
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_noPackingIdsProvided_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(new HashMap<>());
+        request.setPackingIds(Collections.emptyList());
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
+        assertEquals("No Shipment/Packing Ids provided.", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_noPackingFound_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(Collections.emptyList());
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
+        assertEquals("No Packing found with Ids: [1, 2]", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_multipleShipmentIds_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setShipmentId(100L);
+
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setShipmentId(200L);
+          List<Packing> packingList = List.of(
+               packing1, packing2 // Shipment ID 200
+        );
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(packingList);
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
+        assertEquals("Please select Packages of single shipment only for assignment.", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_invalidShipmentType_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L));
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setShipmentId(100L); // Shipment ID 100
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType("LCL"); // Invalid type
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing));
+        when(shipmentService.findById(100L)).thenReturn(Optional.of(shipmentDetails));
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(assignContainerRequest));
+        assertEquals("Shipment level package assignment is only allowed for FCL/FTL shipments.", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_nullContainerId_shouldThrowValidationException() {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(null);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(100L);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+        });
+
+        assertEquals("Container Id is null for packing with Id: 1", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_multipleShipmentIds_shouldThrowValidationException() {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(100L);
+        packing1.setShipmentId(10L);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(101L);
+        packing2.setShipmentId(20L);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+        });
+
+        assertEquals("Please select Packages of only one shipment for unAssign action", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_validRequest_shouldProcessSuccessfully() {
+        UnAssignPackageContainerRequest unAssignedPackageContainerRequest = new UnAssignPackageContainerRequest();
+        unAssignedPackageContainerRequest.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(100L);
+        packing1.setShipmentId(10L);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(100L);
+        packing2.setShipmentId(10L);
+
+        when(packingDao.findByIdIn(unAssignedPackageContainerRequest.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        assertDoesNotThrow(() -> packingV3Service.unAssignPackageContainers(unAssignedPackageContainerRequest, Constants.CONTAINER));
+    }
+
+    @Test
+    void testUpdateShipmentAndContainerDataForFCLAndFTLShipments_WithValidShipments_ShouldUpdateSummaries() throws RunnerException {
+        Long shipmentId1 = 100L;
+        Long shipmentId2 = 200L;
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        Map<Long, ShipmentDetails> shipmentMap = Map.of(
+                shipmentId1, shipment1,
+                shipmentId2, shipment2
+        );
+        Set<Long> fclOrFtlIds = Set.of(shipmentId1, shipmentId2);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(fclOrFtlIds);
+        params.setShipmentDetailsMap(shipmentMap);
+        params.setConsolidationDetails(consolidationDetails);
+        packingV3Service.updateShipmentAndContainerDataForFCLAndFTLShipments(params);
+        ArgumentCaptor<ShipmentDetails> captor = ArgumentCaptor.forClass(ShipmentDetails.class);
+        verify(shipmentService, times(2)).calculateAndUpdateShipmentCargoSummary(captor.capture());
+        List<ShipmentDetails> capturedArgs = captor.getAllValues();
+        assertTrue(capturedArgs.contains(shipment1));
+        assertTrue(capturedArgs.contains(shipment2));
+    }
+
+    @Test
+    void testUpdateShipmentAndContainerDataForFCLAndFTLShipments_WithNullIds_ShouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(null);
+        packingV3Service.updateShipmentAndContainerDataForFCLAndFTLShipments(params);
+        Mockito.verifyNoInteractions(shipmentService, consolidationV3Service);
+    }
+
+    @Test
+    void testUpdateShipmentAndContainerDataForFCLAndFTLShipments_WithEmptyIds_ShouldDoNothing() throws RunnerException {
+        UnAssignContainerParams params = new UnAssignContainerParams();
+        params.setFclOrFtlShipmentIds(Collections.emptySet());
+        packingV3Service.updateShipmentAndContainerDataForFCLAndFTLShipments(params);
+        Mockito.verifyNoInteractions(shipmentService, consolidationV3Service);
+    }
+
+    @Test
+    void testAssignPackagesContainers_WhenMultipleShipmentIds_ThrowsValidationException() {
+        AssignContainerRequest assignedContainerRequest = new AssignContainerRequest();
+        assignedContainerRequest.setShipmentPackIds(Map.of(1L, List.of(100L), 2L, List.of(200L)));
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> packingV3Service.assignPackagesContainers(assignedContainerRequest)
+        );
+        assertEquals("Please select Packages of single shipment only for assignment.", ex.getMessage());
+    }
+
+    @Test
+    void assignPackagesContainers_multipleShipments_throwsValidationException() {
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, Arrays.asList(101L));
+        shipmentPackIds.put(2L, Arrays.asList(201L));
+        request.setShipmentPackIds(shipmentPackIds);
+
+        assertThrows(ValidationException.class,
+                () -> packingV3Service.assignPackagesContainers(request));
+    }
+
+    @Test
+    void assignPackagesContainers_singleShipment_delegatesToAssignContainers() throws RunnerException {
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, Arrays.asList(101L, 102L));
+        request.setShipmentPackIds(shipmentPackIds);
+
+        ContainerResponse expectedResponse = new ContainerResponse();
+        expectedResponse.setContainerCode("C123");
+
+        when(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING)).thenReturn(expectedResponse);
+
+        ContainerResponse actualResponse = packingV3Service.assignPackagesContainers(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(containerV3Service).assignContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
+
+    @Test
+    void testCalculateCargoSummary_FCL() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(123L).build();
+        ShipmentDetails shipmentDetail = new ShipmentDetails();
+        shipmentDetail.setDirection(DIRECTION_EXP);
+        shipmentDetail.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetail.setShipmentType(CARGO_TYPE_FCL);
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setNoOfPacks(23);
+
+        when(commonUtils.isSeaFCLOrRoadFTL(TRANSPORT_MODE_SEA, CARGO_TYPE_FCL)).thenReturn(true);
+        when(shipmentService.calculateShipmentSummary(anyString(), any(), any())).thenReturn(cargoDetailsResponse);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetail));
+        var resp = packingV3Service.calculateCargoSummary(commonGetRequest);
+        assertEquals(23, resp.getNoOfPacks());
+
+    }
+
+    @Test
+    void testCalculateCargoSummary_LCL() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(123L).build();
+        ShipmentDetails shipmentDetail = new ShipmentDetails();
+        shipmentDetail.setDirection(DIRECTION_EXP);
+        shipmentDetail.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetail.setShipmentType(CARGO_TYPE_LCL);
+        shipmentDetail.setPackingList(List.of(new Packing()));
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setNoOfPacks(23);
+
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        when(commonUtils.isSeaFCLOrRoadFTL(TRANSPORT_MODE_SEA, CARGO_TYPE_LCL)).thenReturn(false);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetail));
+        var resp = packingV3Service.calculateCargoSummary(commonGetRequest);
+        assertEquals(TRANSPORT_MODE_SEA, resp.getTransportMode());
+    }
+
+    @Test
+    void list_shouldHandleContainerSearchAndSetFilterCriteria() {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("123"); // String value that will be converted to Long
+        request.setContainsText("CONTAINER123");
+        when(commonUtils.getLongValue("123")).thenReturn(123L);
+        when(packingDao.getContainerIdByContainerNumberAndType("CONTAINER123", 123L, "SHIPMENT"))
+                .thenReturn(Arrays.asList(1L, 2L, 3L));
+        Page<Packing> mockPage = new PageImpl<>(Collections.emptyList());
+        when(packingDao.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+        PackingListResponse response = packingV3Service.list(request, true, "WEB", "SHIPMENT");
+        assertNotNull(response);
+        assertEquals(StringUtils.EMPTY, request.getContainsText());
+        assertNotNull(request.getFilterCriteria());
+        assertEquals(1, request.getFilterCriteria().size());
+        FilterCriteria filter = request.getFilterCriteria().get(0);
+        Criteria containerCriteria = filter.getInnerFilter().get(0).getCriteria();
+        assertEquals("containerId", containerCriteria.getFieldName());
+        assertEquals("IN", containerCriteria.getOperator());
+        assertEquals(Arrays.asList(1L, 2L, 3L), containerCriteria.getValue());
+    }
+
+    @Test
+    void list_shouldSetFilterWhenContainerIdsFound() {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("123");
+        request.setContainsText("CONTAINER123");
+        when(commonUtils.getLongValue("123")).thenReturn(123L);
+        when(packingDao.getContainerIdByContainerNumberAndType("CONTAINER123", 123L, "SHIPMENT"))
+                .thenReturn(Arrays.asList(1L, 2L, 3L));
+        Page<Packing> mockPage = new PageImpl<>(Collections.emptyList());
+        when(packingDao.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+        packingV3Service.list(request, true, "WEB", "SHIPMENT");
+        assertEquals(StringUtils.EMPTY, request.getContainsText()); // Now this should pass
+        assertNotNull(request.getFilterCriteria());
+        assertEquals(1, request.getFilterCriteria().size());
+        FilterCriteria filter = request.getFilterCriteria().get(0);
+        Criteria containerCriteria = filter.getInnerFilter().get(0).getCriteria();
+        assertEquals("containerId", containerCriteria.getFieldName());
+        assertEquals("IN", containerCriteria.getOperator());
+        assertEquals(Arrays.asList(1L, 2L, 3L), containerCriteria.getValue());
+    }
+
+    @Test
+    void list_shouldThrowValidationExceptionForNullRequest() {
+        assertThrows(ValidationException.class,
+                () -> packingV3Service.list(null, true, "WEB", "SHIPMENT"));
+    }
+    @Test
+    void testUpdateBulk_FCLError() {
+        List<PackingV3Request> requestList = List.of(request);
+        testShipment.setDirection(null);
+        testShipment.setShipmentType("FCL");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false);
+        testShipment.setConsolidationList(Set.of(consolidationDetails));
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(commonUtils.isFCL(anyString())).thenReturn(true);
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT", false));
+    }
+    @Test
+    void testUpdateBulk_LCLError() {
+        List<PackingV3Request> requestList = List.of(request);
+        testShipment.setDirection(null);
+        testShipment.setShipmentType("LCL");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOpenForAttachment(false);
+        testShipment.setConsolidationList(Set.of(consolidationDetails));
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(commonUtils.isLCL(anyString())).thenReturn(true);
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () ->  packingV3Service.updateBulk(requestList, "SHIPMENT", false));
+    }
+
+    @Test
+    void testAddDGValidation_NoValidationTriggered_DGClassNotAdded() {
+        Packing oldPacking = new Packing();
+        oldPacking.setDGClass("EXISTING");
+
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(100L);
+
+        Containers container = new Containers();
+        container.setDgClass(null);
+
+        when(containerDao.findById(100L)).thenReturn(Optional.of(container));
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
+
+        // Verify that the container was queried
+        verify(containerDao).findById(100L);
+    }
+
+    @Test
+    void testAddDGValidation_ValidationTriggered() {
+        Packing oldPacking = new Packing();
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(200L);
+
+        Containers container = new Containers();
+        container.setDgClass(null);
+        container.setUnNumber(null);
+        container.setProperShippingName(null);
+
+        when(containerDao.findById(200L)).thenReturn(Optional.of(container));
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds)
+        );
+
+        assertEquals(OCEAN_DG_CONTAINER_FIELDS_VALIDATION, ex.getMessage());
+    }
+
+    @Test
+    void testAddDGValidation_DGClassAddedButValidContainerFields() {
+        Packing oldPacking = new Packing();
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(300L);
+
+        Containers container = new Containers();
+        container.setDgClass("DGC");
+        container.setUnNumber("UN1234");
+        container.setProperShippingName("Some Name");
+
+        when(containerDao.findById(300L)).thenReturn(Optional.of(container));
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+        packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds);
+
+        // Verify that the container was queried and no exception was thrown
+        verify(containerDao).findById(300L);
+    }
+
+    @Test
+    void testAddDGValidation_ContainerNotFound() {
+        Packing oldPacking = new Packing();
+        oldPacking.setDGClass(null);
+
+        Packing updatedPacking = new Packing();
+        updatedPacking.setDGClass("NEW");
+        updatedPacking.setContainerId(400L);
+
+        when(containerDao.findById(400L)).thenReturn(Optional.empty());
+
+        Map<Long, Packing> oldPackingMap = Map.of(1L, oldPacking);
+        Map<Long, Packing> updatedPackingMap = Map.of(1L, updatedPacking);
+        Set<Long> requestIds = new HashSet<>(Set.of(1L));
+
+       assertThrows(ValidationException.class, () ->
+                packingV3Service.addDGValidation(oldPackingMap, updatedPackingMap, requestIds)
+        );
+
+        // Verify that the container lookup was attempted
+        verify(containerDao).findById(400L);
+    }
+    @Test
+    void testAirModeWithNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cargoDetailsResponse.setShipmentType("ANY");
+
+        Packing packing1 = new Packing();
+        Packing packing2 = new Packing();
+        packing1.setWeight(BigDecimal.TEN);
+
+        List<Packing> packings = Arrays.asList(packing1, packing2);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when AIR and any packing has null weight");
+    }
+
+    @Test
+    void testSeaModeWithLCLAndNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when SEA + LCL and null weight exists");
+    }
+
+    @Test
+    void testSeaModeWithLCLAndAllWeightsPresent_shouldNotSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LCL);
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(BigDecimal.TEN);
+        Packing packing2 = new Packing();
+        packing2.setWeight(BigDecimal.ONE);
+
+        List<Packing> packings = Arrays.asList(packing1, packing2);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertFalse(result, "Should not skip when SEA + LCL but all weights present");
+    }
+
+    @Test
+    void testRoadModeWithLTLAndNullWeight_shouldSkip() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        cargoDetailsResponse.setShipmentType(Constants.CARGO_TYPE_LTL);
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, false);
+
+        assertTrue(result, "Should skip weight when ROAD + LTL and null weight exists");
+    }
+
+    @Test
+    void testOtherModes_shouldRespectInitialFlag() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoDetailsResponse.setTransportMode("OTHER_MODE");
+        cargoDetailsResponse.setShipmentType("OTHER");
+
+        Packing packing1 = new Packing();
+
+        List<Packing> packings = Collections.singletonList(packing1);
+
+        boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, true);
+
+        assertTrue(result, "Should keep initial flag when mode/type not in condition");
     }
 }

@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -72,6 +73,8 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isDomestic;
     private Boolean isLocked;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private Boolean isShipmentReadOnly;
     private String jobType;
     private String lockedBy;
@@ -166,9 +169,9 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String destinationSecondarySalesAgentEmail;
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
+    private String destinationParentContractId;
     private String destinationContractType;
     private Boolean isAutoSellRequired;
-
     private UpstreamDateUpdateRequest dateUpdateRequest;
     private LocalDateTime createdAt;
     private String createdBy;
@@ -227,6 +230,10 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
@@ -245,5 +252,12 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Integer slac;
     private Integer dgPacksCount;
     private String dgPacksUnit;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days")
+    private Integer numberOfFreeDaysCutOff;
 
 }

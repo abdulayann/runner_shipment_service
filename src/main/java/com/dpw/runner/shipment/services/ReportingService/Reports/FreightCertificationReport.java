@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVOICE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT_CURRENCY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addTenantDetails;
@@ -39,6 +40,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ObjectUtils;
@@ -135,7 +138,13 @@ public class FreightCertificationReport extends IReport{
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
+        populateShippedOnboardFields(freightCertificationModel.shipmentDetails, dictionary);
+        populateDGFields(freightCertificationModel.shipmentDetails, dictionary);
+        populateReeferFields(freightCertificationModel.shipmentDetails, dictionary);
         processBillingList(freightCertificationModel, dictionary);
+
+        if (Objects.nonNull(freightCertificationModel.shipmentDetails) && Objects.nonNull(freightCertificationModel.shipmentDetails.getShipmentType()))
+            dictionary.put(SHIPMENT_CARGO_TYPE, freightCertificationModel.shipmentDetails.getShipmentType());
 
         if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
             ConsolidationModel consolidationModel = freightCertificationModel.shipmentDetails.getConsolidationList().get(0);
@@ -220,7 +229,7 @@ public class FreightCertificationReport extends IReport{
     }
 
     private void processBillCharges(BillingResponse bill, BillingSummary summary) {
-        List<BillChargesResponse> billChargesList = getBillChargesData(bill);
+        List<BillChargesResponse> billChargesList = getBillChargesData(bill, false);
         if (billChargesList == null || billChargesList.isEmpty()) {
             return;
         }

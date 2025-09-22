@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -11,6 +13,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerV3PatchBulkUpdateRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -23,12 +27,15 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
@@ -77,10 +84,36 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, CONSOLIDATION));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PatchMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_PATCH_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updatePatchBulk(@RequestBody @Valid Object request) throws RunnerException {
+        ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, CONSOLIDATION));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PatchMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_PATCH_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updatePatchBulkShipment(@RequestBody @Valid Object request) throws RunnerException {
+        ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, SHIPMENT));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updateBulkShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, SHIPMENT));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
+    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, CONSOLIDATION, isForceDelete));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
+    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT, isForceDelete));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
@@ -92,6 +125,26 @@ public class ContainerV3Controller {
     @GetMapping(ApiConstants.API_DOWNLOAD)
     public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
         containerV3Util.downloadContainers(response, request);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = RunnerResponse.class),
+            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_UPLOAD)
+    public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request, @RequestParam String module) throws IOException {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
+            return ResponseHelper.buildFailedResponse("No File Found !");
+        }
+        try {
+            containerV3Util.uploadContainers(request, module);
+            return ResponseHelper.buildSuccessResponse(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
+        } catch (Exception e) {
+            String responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+            return ResponseHelper.buildFailedResponse(responseMessage, HttpStatus.EXPECTATION_FAILED);
+        }
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
@@ -132,19 +185,26 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_CONTAINER));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
     public ResponseEntity<IRunnerResponse> fetchConsolidationContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest);
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, CONSOLIDATION);
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
+    public ResponseEntity<IRunnerResponse> fetchShipmentContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, SHIPMENT);
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
