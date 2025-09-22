@@ -352,4 +352,20 @@ public class RoutingValidationUtil {
 
         return String.join("###", errors);
     }
+
+    /**
+     * Added validation for routing voyage.
+     * In every scenario its max length must not cross 20  digit.
+     * If it is then throw Validation error.
+     * @param request Update Request
+     */
+    public void validateVoyageLengthRequest(BulkUpdateRoutingsRequest request) {
+        if (Objects.nonNull(request)) {
+            for (RoutingsRequest routingsRequest : request.getRoutings()) {
+                if (StringUtility.isNotEmpty(routingsRequest.getVoyage()) && routingsRequest.getVoyage().length() > 20) {
+                    throw new ValidationException("max size is 20 for voyage");
+                }
+            }
+        }
+    }
 }
