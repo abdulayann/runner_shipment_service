@@ -700,6 +700,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     @Transactional
     public BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
+        routingValidationUtil.validateVoyageLengthRequest(request);
         if (module.equalsIgnoreCase(Constants.SHIPMENT)) {
             List<RoutingsRequest> mainCarriageList = request.getRoutings().stream()
                     .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getId() == null)

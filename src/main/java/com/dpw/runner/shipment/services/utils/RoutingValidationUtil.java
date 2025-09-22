@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+
 
 @Component
 @AllArgsConstructor
@@ -351,5 +353,24 @@ public class RoutingValidationUtil {
         }
 
         return String.join("###", errors);
+    }
+
+    /**
+     * Added validation for routing voyage.
+     * In every scenario its max length must not cross 20  digit.
+     * If it is then throw Validation error.
+     * @param request Update Request
+     */
+    public void validateVoyageLengthRequest(BulkUpdateRoutingsRequest request) {
+        if (Objects.nonNull(request) && Objects.nonNull(request.getRoutings())) {
+            for (RoutingsRequest routingsRequest : request.getRoutings()) {
+                if (Objects.nonNull(routingsRequest.getMode())
+                        && TRANSPORT_MODE_SEA.equalsIgnoreCase(routingsRequest.getMode())
+                        && StringUtility.isNotEmpty(routingsRequest.getVoyage())
+                        && routingsRequest.getVoyage().length() > 20) {
+                    throw new ValidationException("max size is 20 for voyage");
+                }
+            }
+        }
     }
 }
