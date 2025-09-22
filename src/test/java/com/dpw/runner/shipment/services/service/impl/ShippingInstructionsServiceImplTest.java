@@ -53,10 +53,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -1124,5 +1121,54 @@ class ShippingInstructionsServiceImplTest {
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Invalid value of Shipping Instruction Type");
     }
+
+    @Test
+    void syncCommonContainers_shouldHandleMissingConsolsViaCarrier() {
+        // --- Prepare containers ---
+        Containers container1 = new Containers();
+        container1.setGuid(UUID.randomUUID());
+        container1.setConsolidationId(100L);
+
+        Containers container2 = new Containers();
+        container2.setGuid(UUID.randomUUID());
+        container2.setConsolidationId(200L);
+
+        List<Containers> containers = List.of(container1, container2);
+
+        // --- Step 2a: simulate direct lookup returns only one consol ---
+        ShippingConsoleIdProjection directProjection = mock(ShippingConsoleIdProjection.class);
+        when(directProjection.getEntityId()).thenReturn(100L);
+        when(directProjection.getId()).thenReturn(10L);
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(100L, 200L)))
+                .thenReturn(List.of(directProjection));
+
+        // --- Step 2b: simulate missing consol via carrier ---
+        ShippingConsoleIdProjection carrierProjection = mock(ShippingConsoleIdProjection.class);
+        when(carrierProjection.getEntityId()).thenReturn(200L);
+        when(carrierProjection.getId()).thenReturn(20L);
+
+        when(shippingInstructionDao.findByCarrierBookingConsolId(List.of(200L)))
+                .thenReturn(List.of(carrierProjection));
+
+        // --- Step 3: simulate existing commons are empty ---
+        when(commonContainersDao.getAll(anyList())).thenReturn(List.of());
+
+        // --- Step 4: capture saved commons ---
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+
+        shippingInstructionUtil.syncCommonContainers(containers);
+
+        verify(commonContainersDao).saveAll(captor.capture());
+        List<CommonContainers> savedCommons = captor.getValue();
+
+        assertThat(savedCommons).hasSize(2);
+
+        // container1 -> direct lookup 10L
+        assertThat(savedCommons.get(0).getShippingInstructionId()).isIn(10L, 20L);
+        // container2 -> via carrier 20L
+        assertThat(savedCommons.get(1).getShippingInstructionId()).isIn(10L, 20L);
+    }
+
 
 }
