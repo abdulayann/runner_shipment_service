@@ -28,6 +28,8 @@ import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -580,5 +582,51 @@ public class PackingV3Util {
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
+    }
+
+    public List<PackingV3Request> mapOrderLineListToPackingV3RequestList(List<OrderLineV3Response> orderLinesList) {
+        if (orderLinesList == null || orderLinesList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orderLinesList.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapOrderLineToPackingV3Request)
+                .toList();
+    }
+
+    public PackingV3Request mapOrderLineToPackingV3Request(OrderLineV3Response orderLineResponse) {
+        if (orderLineResponse == null) {
+            return null;
+        }
+
+        return PackingV3Request.builder()
+                .id(orderLineResponse.getId())
+                .guid(orderLineResponse.getGuid())
+                .commodityGroup(orderLineResponse.getCommodityGroup())
+                .containerNumber(orderLineResponse.getContainerNumber())
+                .containerId(orderLineResponse.getContainerId())
+                .goodsDescription(orderLineResponse.getGoodsDescription())
+                .HSCode(orderLineResponse.getHSCode())
+                .commodity(orderLineResponse.getHSCode())
+                .length(orderLineResponse.getLength())
+                .lengthUnit(orderLineResponse.getLengthUnit())
+                .width(orderLineResponse.getWidth())
+                .widthUnit(orderLineResponse.getWidthUnit())
+                .height(orderLineResponse.getHeight())
+                .heightUnit(orderLineResponse.getHeightUnit())
+                .weight(orderLineResponse.getWeight())
+                .weightUnit(orderLineResponse.getWeightUnit())
+                .volume(orderLineResponse.getVolume())
+                .volumeUnit(orderLineResponse.getVolumeUnit())
+                .netWeight(orderLineResponse.getNetWeight())
+                .netWeightUnit(orderLineResponse.getNetWeightUnit())
+                .packs(orderLineResponse.getPacks())
+                .packsType(orderLineResponse.getPacksType())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .lineNo(orderLineResponse.getLineNo())
+                .subLineNo(orderLineResponse.getSubLineNo())
+                .productCode(orderLineResponse.getProductCode())
+                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .build();
     }
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.OrderManagement;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -60,7 +60,7 @@ public class OrderManagementDTO implements IRunnerResponse {
     public String shipmentATA;
     public String shipmentATD;
     private String terminalCutOffDate;
-    private List<PackingV3Request> orderLines;
+    private List<OrderLineV3Response> orderLines;
     private String direction;
     private List<OrderContainerResponse> containers;
     private List<OrderEventsResponse> events;
