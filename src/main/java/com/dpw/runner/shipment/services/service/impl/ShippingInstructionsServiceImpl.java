@@ -422,8 +422,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
         Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
-        // List<ShippingInstructionResponse> shipmentListResponses = new ArrayList<>();
-
 
         List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
 
