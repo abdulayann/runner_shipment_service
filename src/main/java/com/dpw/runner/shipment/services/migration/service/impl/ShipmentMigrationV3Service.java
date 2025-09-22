@@ -202,6 +202,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         setDeliveryPartiesInGeneral(shipmentDetails);
 
+        setShippedOnBoardDate(shipmentDetails);
+
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
             //Existing values from Additional Details → HBL Details → Agent Reference field should be migrated to the References section with the type AGR
@@ -221,6 +223,15 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
         }
     }
+
+    private void setShippedOnBoardDate(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getCarrierDetails()!=null && shipmentDetails.getCarrierDetails().getEtd()!=null){
+            if(shipmentDetails.getAdditionalDetails()==null)
+                shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+            shipmentDetails.getAdditionalDetails().setShippedOnboard(shipmentDetails.getCarrierDetails().getEtd());
+        }
+    }
+
     private void setDeliveryPartiesInGeneral(ShipmentDetails shipmentDetails) {
         if(shipmentDetails.getDeliveryDetails()!=null){
             if(shipmentDetails.getDeliveryDetails().getBrokerDetail()!=null && shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()!=null)
