@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -150,6 +151,8 @@ public class MasterDataUtils{
             setUnlocationMasterDataInCarrierDetails(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         } else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             setUnlocationMasterDataInCarrierDetails(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        } else if(response instanceof CarrierBookingListResponse carrierBookingListResponse){
+            setUnlocationMasterDataInSailing(carrierBookingListResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         }
     }
 
@@ -199,6 +202,11 @@ public class MasterDataUtils{
     private void setUnlocationMasterDataInCarrierDetails(CarrierDetailResponse carrierDetails, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (carrierDetails != null)
             carrierDetails.setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + carrierDetails.getId()), CacheConstants.UNLOCATIONS, cacheMap));
+    }
+
+    private void setUnlocationMasterDataInSailing(SailingInformationResponse sailingInformationResponse, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (sailingInformationResponse != null)
+            sailingInformationResponse.setUnlocationData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + sailingInformationResponse.getId()), CacheConstants.UNLOCATIONS, cacheMap));
     }
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
@@ -430,6 +438,12 @@ public class MasterDataUtils{
         if (response instanceof NotificationListResponse notificationListResponse) {
             setTenantsMasterDataForNotificationListResponse(fieldNameKeyMap, cacheMap, notificationListResponse);
         }
+        if(response instanceof CarrierBookingListResponse carrierBookingListResponse){
+            carrierBookingListResponse.setTenantMasterData(new HashMap<>());
+            if (carrierBookingListResponse.getTenantId() != null)
+                carrierBookingListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + carrierBookingListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+            carrierBookingListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + carrierBookingListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+        }
     }
 
     private void setTenantsMasterDataForNotificationListResponse(Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap, NotificationListResponse notificationListResponse) {
@@ -462,6 +476,9 @@ public class MasterDataUtils{
         }
         if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null || notificationListResponse.getReassignedFromBranchId() != null)) {
             tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
+        }
+        if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getTenantId() != null) {
+            tenantIdList.addAll(createInBulkTenantsRequest(carrierBookingListResponse, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + carrierBookingListResponse.getId(), cacheMap));
         }
     }
 
