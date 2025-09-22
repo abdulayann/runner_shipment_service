@@ -81,6 +81,13 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquPickUp;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;

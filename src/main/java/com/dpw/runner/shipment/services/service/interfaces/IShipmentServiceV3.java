@@ -115,4 +115,6 @@ public interface IShipmentServiceV3 {
     ShipmentRetrieveLiteResponse cloneShipment(@Valid CloneRequest request) throws RunnerException;
     CloneFieldResponse getCloneConfig(String type) throws RunnerException;
     QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId);
+
+    ShipmentDetailsV3Response partialUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 }

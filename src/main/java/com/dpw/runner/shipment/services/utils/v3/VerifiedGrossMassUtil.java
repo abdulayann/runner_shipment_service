@@ -98,6 +98,44 @@ public class VerifiedGrossMassUtil {
                 .build();
     }
 
+    public CommonContainers buildSubmittedContainer(CommonContainers container) {
+        CommonContainers submittedContainer = new CommonContainers();
+        submittedContainer.setContainerRefGuid(container.getContainerRefGuid());
+        submittedContainer.setContainerCode(container.getContainerCode());
+        submittedContainer.setGrossWeight(container.getGrossWeight());
+        submittedContainer.setNetWeight(container.getNetWeight());
+        submittedContainer.setNetWeightUnit(container.getNetWeightUnit());
+        submittedContainer.setGrossWeightUnit(container.getGrossWeightUnit());
+        submittedContainer.setContainerNo(container.getContainerNo());
+        submittedContainer.setPacks(container.getPacks());
+        submittedContainer.setPacksUnit(container.getPacksUnit());
+        submittedContainer.setTareWeight(container.getTareWeight());
+        submittedContainer.setTareWeightUnit(container.getTareWeightUnit());
+        return submittedContainer;
+    }
+
+    public Map<String,EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(VerifiedGrossMass verifiedGrossMass) {
+
+        Map<String, EntityTransferCarrier> carrierDatav1Map = new HashMap<>();
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> carrierList = new HashSet<>();
+            if (!Objects.isNull(verifiedGrossMass.getSailingInformation())) {
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest((IRunnerResponse) verifiedGrossMass.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+            }
+            if (CollectionUtils.isEmpty(carrierList)) {
+                return new HashMap<>();
+            }
+            carrierDatav1Map = masterDataUtils.fetchInBulkCarriers(carrierList);
+            return carrierDatav1Map;
+
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+        }
+        return carrierDatav1Map;
+    }
+
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {
 
         if (Objects.isNull(carrierDatav1Map)) return;

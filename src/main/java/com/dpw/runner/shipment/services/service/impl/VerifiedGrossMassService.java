@@ -495,6 +495,9 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 commonContainersRepository.findAllByIdIn(submitAmendInttraRequest.getContainerIds());
         VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
 
+        // Creating List of submittedContainers
+        List<CommonContainers> submittedContainersList = new ArrayList<>();
+
         for (CommonContainers container : containersList) {
 
             VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse = new VerifiedGrossMassInttraResponse();
@@ -546,9 +549,16 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             // Sending Payload To Bridge
             sendPayloadToBridge(verifiedGrossMassInttraResponse);
 
+            // Building Submit Containers
+            submittedContainersList.add(verifiedGrossMassUtil.buildSubmittedContainer(container));
+
             // TO DO: send Email Notification
         }
 
+        // Storing in VGM
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.AcceptedByINTTRA);
+        verifiedGrossMass.setSubmittedContainersList(submittedContainersList);
+        verifiedGrossMassDao.save(verifiedGrossMass);
 
         // Create single Transaction history for single operation
         saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
