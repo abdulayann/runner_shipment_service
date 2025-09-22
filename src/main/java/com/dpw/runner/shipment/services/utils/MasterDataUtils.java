@@ -9,9 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -150,6 +148,8 @@ public class MasterDataUtils{
             setUnlocationMasterDataInCarrierDetails(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         } else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             setUnlocationMasterDataInCarrierDetails(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        } else if (response instanceof ShippingInstructionResponse shippingInstructionResponse) {
+            setUnlocationMasterDataSailingInfo(shippingInstructionResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         }
     }
 
@@ -179,6 +179,9 @@ public class MasterDataUtils{
         else if(response instanceof CarrierBookingListResponse carrierBookingListResponse) {
             addLocCodesFromCarrierBookingResponse(carrierBookingListResponse, locCodes, fieldNameKeyMap, cacheMap);
         }
+        else if(response instanceof ShippingInstructionResponse shippingInstructionListResponse) {
+            addLocCodesFromSiResponse(shippingInstructionListResponse, locCodes, fieldNameKeyMap, cacheMap);
+        }
     }
 
     private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -190,16 +193,30 @@ public class MasterDataUtils{
 
     }
 
+    private void addLocCodesFromSiResponse(ShippingInstructionResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(Objects.nonNull(response.getSailingInformation())) {
+            locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
+        }
+
+    }
+
     private void addLocCodesFromCarrierDetailsResponse(CarrierDetailResponse carrierDetails, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (carrierDetails != null) {
             locCodes.addAll(createInBulkUnLocationsRequest(carrierDetails, CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + carrierDetails.getId(), cacheMap));
         }
     }
 
+
     private void setUnlocationMasterDataInCarrierDetails(CarrierDetailResponse carrierDetails, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (carrierDetails != null)
             carrierDetails.setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + carrierDetails.getId()), CacheConstants.UNLOCATIONS, cacheMap));
     }
+
+    private void setUnlocationMasterDataSailingInfo(SailingInformationResponse sailingInformationResponse, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (sailingInformationResponse != null)
+            sailingInformationResponse.setUnlocationData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + sailingInformationResponse.getId()), CacheConstants.UNLOCATIONS, cacheMap));
+    }
+
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
         try {

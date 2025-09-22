@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -417,17 +418,19 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
         }
 
+
         Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
-        Page<ShippingInstruction> carrierBookingPage = repository.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+        // List<ShippingInstructionResponse> shipmentListResponses = new ArrayList<>();
 
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData);
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
-                carrierBookingPage.getTotalPages(),
-                carrierBookingPage.getTotalElements());
+                shippingInstructionPage.getTotalPages(),
+                shippingInstructionPage.getTotalElements());
     }
 
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
@@ -511,7 +514,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return fieldClassDto;
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList, boolean getMasterData) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList,
+                                                             boolean getMasterData) {
         List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
