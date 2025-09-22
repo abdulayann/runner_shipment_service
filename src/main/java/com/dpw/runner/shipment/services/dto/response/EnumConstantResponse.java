@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @Builder
 @ApiModel("Enum Constant Response Model")
@@ -14,4 +16,5 @@ public class EnumConstantResponse implements IRunnerResponse {
     private String name;
     private int id;
     private String description;
+    private List<String> meta;
 }

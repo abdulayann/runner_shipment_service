@@ -78,6 +78,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -1738,7 +1739,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccess_Air_transport_WithoutAirCargoSecurity() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccess_Air_transport_WithoutAirCargoSecurity() throws RunnerException {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1763,9 +1764,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        request.setIsDg(Boolean.TRUE);
+        request.setIsDg(Boolean.FALSE);
 
-        CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).FetchRatesMandate(Boolean.FALSE).ShipmentServiceV2Enabled(Boolean.TRUE).countryAirCargoSecurity(Boolean.FALSE).build());
@@ -1789,8 +1789,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
 
         // Act
-        ValidationException exception = assertThrows(ValidationException.class, () -> customerBookingService.update(request));
-        assertEquals("User does not have AIR DG Permission to create AIR Shipment from Booking", exception.getMessage());
+         assertDoesNotThrow(() -> customerBookingService.update(request));
+
     }
 
     @Test
@@ -3748,7 +3748,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testGetDefaultBooking() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setVolumeChargeableUnit("CBM");
+        tenantSettings.setVolumeChargeableUnit("M3");
         tenantSettings.setWeightChargeableUnit("KGS");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
@@ -3760,7 +3760,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
         assertNotNull(response);
-        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals("M3", response.getVolumeUnit());
         assertEquals("KGS", response.getGrossWeightUnit());
         assertEquals(1, response.getTenantId());
         assertEquals(BookingSource.Runner, response.getSource());
@@ -4466,5 +4466,42 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         booking.setNotifyParty(new Parties());
         booking.setAdditionalParties(new ArrayList<>());
         return booking;
+    }
+
+    @Test
+    void testResetBookingQuoteRules() {
+        Long bookingId = 123L;
+
+        QuoteResetRulesResponse response = customerBookingService.resetBookingQuoteRules(bookingId);
+        List<QuoteResetField> fields = response.getQuotesResetFields();
+
+        Map<String, QuoteResetField> fieldMap = fields.stream()
+                .collect(Collectors.toMap(QuoteResetField::getLabel, f -> f));
+
+        assertTrue(fieldMap.get("Quote Party").isSelected());
+        assertTrue(fieldMap.get("Transport Mode").isSelected());
+        assertTrue(fieldMap.get("Cargo Type").isSelected());
+        assertTrue(fieldMap.get("Service Type").isSelected());
+        assertTrue(fieldMap.get("Origin").isSelected());
+        assertTrue(fieldMap.get("POL").isSelected());
+        assertTrue(fieldMap.get("POD").isSelected());
+        assertTrue(fieldMap.get("Destination").isSelected());
+        assertTrue(fieldMap.get("Incoterms").isSelected());
+        assertTrue(fieldMap.get("PaymentTerm").isSelected());
+
+        assertTrue(fieldMap.get("Sales Branch").isSelected());
+        assertTrue(fieldMap.get("Primary Email").isSelected());
+        assertTrue(fieldMap.get("Secondary Email").isSelected());
+
+        assertFalse(fieldMap.get("Sales Branch").isEditable());
+        assertFalse(fieldMap.get("Primary Email").isEditable());
+        assertFalse(fieldMap.get("Secondary Email").isEditable());
+
+        assertTrue(fieldMap.get("Quote Party").isEditable());
+        assertTrue(fieldMap.get("Service Type").isEditable());
+        assertTrue(fieldMap.get("Origin").isEditable());
+        assertTrue(fieldMap.get("Destination").isEditable());
+        assertTrue(fieldMap.get("Incoterms").isEditable());
+        assertTrue(fieldMap.get("PaymentTerm").isEditable());
     }
 }

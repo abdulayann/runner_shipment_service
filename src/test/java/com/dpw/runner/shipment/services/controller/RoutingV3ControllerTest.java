@@ -85,7 +85,7 @@ class RoutingV3ControllerTest {
     }
     @Test
     void consolidationUpdateBulk() throws RunnerException {
-        when(routingService.updateBulk(any(), any())).thenReturn(BulkRoutingResponse.builder().build());
+        when(routingService.bulkUpdateWithValidateWrapper(any(), any())).thenReturn(BulkRoutingResponse.builder().build());
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
         var response = routingController.consolidationUpdateBulk(bulkUpdateRoutingsRequest);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());

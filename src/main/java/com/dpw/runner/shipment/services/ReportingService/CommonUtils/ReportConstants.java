@@ -140,6 +140,7 @@ public class ReportConstants {
     public static final String CARGO_GROSS_QUANTITY_CODE = "CargoGrossQunatityCode";
     public static final String BL_COMMENTS = "BlComments";
     public static final String GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
+    public static final String US = "US";
 
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
@@ -213,6 +214,13 @@ public class ReportConstants {
     public static final String DELIVERY_TIME = "DeliveryTime";
     public static final String DELIVERY_AGENT = "DeliveryAgent";
     public static final String MARKS_N_NUMS = "MarksnNums";
+    public static final String INFO = "INFO";
+    public static final String TOTAL_PACKS_AND_TYPE = "S_TotalPacksAndType";
+    public static final String TOTAL_CONTAINERS_AND_TYPE = "S_TotalContainersAndType";
+    public static final String TOTAL_TOTAL_CONTAINERS_OR_PACKS = "S_TotalContainersOrPacks";
+    public static final String S_CONTAINERS = "S_Containers";
+    public static final String SHIPMENT_DESCRIPTION = "S_Description";
+    public static final String SLACFCL= "SLACFCL";
     public static final String GOODS_DESCRIPTION = "GoodsDescription";
     public static final String MARKS_NO = "MarksNo";
     public static final String MARKS_AND_NUMBER = "Marks&Number";
@@ -237,7 +245,9 @@ public class ReportConstants {
     public static final String SMTPIGM_NUMBER = "SMTPIGMNumber";
     public static final String LOCAL_LINE_NUMBER = "LocalLineNumber";
     public static final String ISSUE_PLACE_NAME = "IssuePlaceName";
+    public static final String ISSUE_PLACE_NAME_V2 = "IssuePlaceNameV2";
     public static final String ISSUE_PLACE_COUNTRY = "IssuePlaceCountry";
+    public static final String ISSUE_PLACE_COUNTRY_V2 = "IssuePlaceCountryV2";
     public static final String PAID_PLACE_NAME = "PaidPlaceName";
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_NAME_IN_CAPS = "PaidPlaceNameInCaps";
@@ -1556,4 +1566,13 @@ public class ReportConstants {
 
     public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
 
+    public static final String C_PACK = "C_Pack";
+    public static final String C_PACK_TYPE = "C_PackType";
+    public static final String S_PACK = "S_Pack";
+    public static final String S_PACK_TYPE = "S_PackType";
+    public static final String BL_RELEASE_TYPE = "BL_ReleaseType";
+    public static final String S_MASTER_BILL = "S_MasterBill";
+
+    public static final String PACKAGE_STRING = "PACKAGE(S)";
+    public static final String CONTAINERS_STRING = "CONTAINERS";
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.COUNTRY;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -9,12 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
@@ -26,18 +22,16 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidat
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
-import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +46,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -114,10 +109,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
 
+    @Autowired
+    IPartiesRepository partiesRepository;
+
 
     @Transactional
     @Override
-    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap) {
+    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
 
         log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
@@ -134,11 +132,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Step 3: Convert V2 console + its attached shipments into V3 structure
-        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap, weightDecimal, volumeDecimal);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
-        // Step 4: Save all containers separately first, as they must be saved before referencing in packings
+        // Step 4: Removed linkage of containers with booking as new Containers are created in booking
         List<Containers> updatedContainersList = console.getContainersList();
+
+        // Step 5: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         log.info("Saved {} updated container(s) for Consolidation [id={}]", savedUpdatedContainersList.size(), consolidationId);
 
@@ -163,6 +163,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             }
             referenceNumbersRepository.saveAll(referenceNumbersList);
             packingRepository.saveAll(packingList);
+            if(consolShipment.getShipmentAddresses()!=null && !consolShipment.getShipmentAddresses().isEmpty())
+                partiesRepository.saveAll(consolShipment.getShipmentAddresses());
             log.info("Saved {} packing(s) for Shipment [id={}]", packingList.size(), consolShipment.getId());
         }
 
@@ -176,6 +178,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
+
+        if(console.getConsolidationAddresses()!=null && !console.getConsolidationAddresses().isEmpty()) {
+            partiesRepository.saveAll(console.getConsolidationAddresses());
+            log.info("Updated consolidation Addresses for Consolidation [id={}]", consolidationId);
+        }
+
 
         // Step 8: Mark consolidation itself as migrated and save
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
@@ -194,7 +202,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param packingVsContainerGuid map to record packing-to-container association during transformation
      * @return transformed V3-compatible consolidation
      */
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
 
         if(codeTeuMap.isEmpty()){
             codeTeuMap = migrationUtil.initCodeTeuMap();
@@ -212,8 +220,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new IllegalStateException("Failed to clone Consolidation object");
         }
 
+        setConsolidationFields(clonedConsole);
+
         // Extract shipments from the cloned clonedConsole object
-        List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList().stream().toList();
+        List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList() == null
+                ? new ArrayList<>() : clonedConsole.getShipmentsList().stream().toList();
         log.info("Cloned Consolidation has {} shipment(s) [guid={}]", shipmentDetailsList.size(), consolGuid);
 
         // Step 2: Prepare shipment <→> container mappings
@@ -239,8 +250,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         log.info("Prepared shipment ↔ container mappings for [{}] container(s)", containerGuidToShipments.size());
 
         // Step 4: Distribute multi-count containers into individual container instances
-        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap);
+        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments, codeTeuMap, weightDecimal, volumeDecimal);
         clonedConsole.setContainersList(splitContainers);
+        for(Containers updatedContainer: splitContainers) {
+            updatedContainer.setBookingId(null);
+        }
+
 
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
         log.info("Distributed containers. Total after split: {}", splitContainers.size());
@@ -259,14 +274,48 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 }
             }
         }
+        // Step 7: Console summary update
+        try {
+            if(Objects.isNull(clonedConsole.getAchievedQuantities()))
+                clonedConsole.setAchievedQuantities(new AchievedQuantities());
+            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
+        } catch (Exception e){
+            log.error("Failed to calculate AchievedQuantitiesEntity for console [id={}] to V3 format", clonedConsole.getId(), e);
+        }
 
         log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
 
         clonedConsole.setOpenForAttachment(true);
         clonedConsole.setTriggerMigrationWarning(true);
         clonedConsole.setIsLocked(false);
+        clonedConsole.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
         return clonedConsole;
+    }
+
+    private void setConsolidationFields(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getCarrierBookingRef()!=null){
+            consolidationDetails.setBookingNumber(consolidationDetails.getCarrierBookingRef());
+        }
+        if(consolidationDetails.getSendingAgent() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
+            consolidationDetails.getSendingAgent().setCountryCode(country);
+            consolidationDetails.setSendingAgentCountry(country);
+        }
+        if(consolidationDetails.getReceivingAgent() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getReceivingAgentCountry());
+            consolidationDetails.getReceivingAgent().setCountryCode(country);
+            consolidationDetails.setReceivingAgentCountry(country);
+        }
+        if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
+            for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
+                if(consolidationAddress.getOrgData()!=null  && consolidationAddress.getOrgData().containsKey(COUNTRY)
+                        && consolidationAddress.getOrgData().get(COUNTRY)!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) consolidationAddress.getOrgData().get(COUNTRY));
+                    consolidationAddress.setCountryCode(country);
+                }
+            }
+        }
     }
 
     private void relinkContainerToShipment(Map<UUID, List<UUID>> containerGuidToShipments, Map<UUID, ShipmentDetails> guidToShipment, Map<UUID, Containers> guidVsContainer) {
@@ -295,15 +344,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
-        shipmentDetails.setTerminalCutoff(console.getTerminalCutoff());
-        shipmentDetails.setVerifiedGrossMassCutoff(console.getVerifiedGrossMassCutoff());
-        shipmentDetails.setShippingInstructionCutoff(console.getShipInstructionCutoff());
-        shipmentDetails.setDgCutoff(console.getHazardousBookingCutoff());
-        shipmentDetails.setReeferCutoff(console.getReeferCutoff());
-        shipmentDetails.setEarliestEmptyEquipmentPickUp(console.getEarliestEmptyEquPickUp());
-        shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
-        shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
-        shipmentDetails.setLatestArrivalTime(console.getLatDate());
+        shipmentDetails.setConsolRef(console.getConsolidationNumber());
+        if(Objects.equals(console.getShipmentType(), Constants.DIRECTION_DOM))
+            return;
+
+        if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
+            shipmentDetails.setTerminalCutoff(console.getTerminalCutoff());
+            shipmentDetails.setVerifiedGrossMassCutoff(console.getVerifiedGrossMassCutoff());
+            shipmentDetails.setShippingInstructionCutoff(console.getShipInstructionCutoff());
+            shipmentDetails.setDgCutoff(console.getHazardousBookingCutoff());
+            shipmentDetails.setReeferCutoff(console.getReeferCutoff());
+            shipmentDetails.setEarliestEmptyEquipmentPickUp(console.getEarliestEmptyEquPickUp());
+            shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
+            shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
+        }
+        if(Objects.equals(console.getTransportMode(), TRANSPORT_MODE_AIR))
+            shipmentDetails.setLatestArrivalTime(console.getLatDate());
     }
 
     @Override
@@ -395,6 +451,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             finalContainers.addAll(shipmentContainers);
         }
         console.setContainersList(new ArrayList<>(finalContainers));
+        setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V3);
 
         return console;
     }
@@ -418,7 +475,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param containerGuidToShipments   Mapping of original container GUID to shipment GUIDs (used to reattach new containers)
      * @return A list of containers where each has containerCount == 1
      */
-    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments, Map<String, BigDecimal> codeTeuMap) {
+    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         List<Containers> resultContainers = new ArrayList<>();
 
         for (Containers container : inputContainers) {
@@ -427,6 +484,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
             // If count is null or <= 1, keep container as-is (no splitting needed)
             if (count == null || count <= 1) {
+                setTeuInContainers(codeTeuMap, container);
                 resultContainers.add(container);
                 continue;
             }
@@ -436,7 +494,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             List<Containers> tempContainers = new ArrayList<>();
 
             // Step 1: Split container by duplicating with distributed weight/volume
-            distributeMultiCountContainer(container, count, tempContainers);
+            distributeMultiCountContainer(container, count, tempContainers, weightDecimal, volumeDecimal);
 
             // Step 2: For each newly generated container, propagate shipment links from original
             for (Containers tempContainer : tempContainers) {
@@ -464,7 +522,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
     }
 
-    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) { //NOSONAR
+    private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers, Integer weightDecimal, Integer volumeDecimal) { //NOSONAR
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
         BigDecimal tareWeight = safeBigDecimal(original.getTareWeight());
@@ -480,26 +538,39 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         BigDecimal baseWeight = weightParts[0];
         BigDecimal weightRemainder = weightParts[1];
+        weightRemainder = weightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
         BigDecimal baseVolume = volumeParts[0];
         BigDecimal volumeRemainder = volumeParts[1];
+        volumeRemainder = volumeRemainder.setScale(volumeDecimal, RoundingMode.HALF_UP);
         BigDecimal basePacks = packsParts[0];
         BigDecimal packsRemainder = packsParts[1];
         BigDecimal baseTareWeight = tareWeightParts[0];
         BigDecimal tareWeightRemainder = tareWeightParts[1];
+        tareWeightRemainder = tareWeightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
         BigDecimal baseNetWeight = netWeightParts[0];
         BigDecimal netWeightRemainder = netWeightParts[1];
+        netWeightRemainder = netWeightRemainder.setScale(weightDecimal, RoundingMode.HALF_UP);
 
         // Step 1: Convert original container into a 1-count container with base values
         original.setContainerCount(1L);
         original.setGrossWeight(baseWeight);
         if(weightRemainder.intValue() >= 1) {
-            original.setGrossWeight(baseWeight.add(BigDecimal.valueOf(1)));
-            weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = weightRemainder.remainder(BigDecimal.ONE);
+            original.setGrossWeight(baseWeight.add(BigDecimal.ONE).add(fractionalPart));
+            weightRemainder = weightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        } else{
+            original.setGrossWeight(baseWeight.add(weightRemainder));
+            weightRemainder = BigDecimal.ZERO;
         }
+
         original.setGrossVolume(baseVolume);
         if(volumeRemainder.intValue() >= 1) {
-            original.setGrossVolume(baseVolume.add(BigDecimal.valueOf(1)));
-            volumeRemainder = volumeRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = volumeRemainder.remainder(BigDecimal.ONE);
+            original.setGrossVolume(baseVolume.add(BigDecimal.ONE).add(fractionalPart));
+            volumeRemainder = volumeRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setGrossVolume(baseVolume.add(volumeRemainder));
+            volumeRemainder = BigDecimal.ZERO;
         }
         int packsCount = basePacks.intValue();
         if(packsRemainder.intValue() >= 1) {
@@ -510,14 +581,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         original.setTareWeight(baseTareWeight);
         if(tareWeightRemainder.intValue() >= 1) {
-            original.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
-            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = tareWeightRemainder.remainder(BigDecimal.ONE);
+            original.setTareWeight(baseTareWeight.add(BigDecimal.ONE).add(fractionalPart));
+            tareWeightRemainder = tareWeightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setTareWeight(baseTareWeight.add(tareWeightRemainder));
+            tareWeightRemainder = BigDecimal.ZERO;
         }
 
         original.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
-            original.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
-            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.valueOf(1));
+            BigDecimal fractionalPart = netWeightRemainder.remainder(BigDecimal.ONE);
+            original.setNetWeight(baseNetWeight.add(BigDecimal.ONE).add(fractionalPart));
+            netWeightRemainder = netWeightRemainder.subtract(BigDecimal.ONE).subtract(fractionalPart);
+        }else{
+            original.setNetWeight(baseNetWeight.add(netWeightRemainder));
+            netWeightRemainder = BigDecimal.ZERO;
         }
 
         resultContainers.add(original);
@@ -552,10 +631,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume,
-            BigDecimal weightRemainder, BigDecimal volumeRemainder, BigDecimal basePacks, BigDecimal packsRemainder,
+                                             BigDecimal weightRemainder, BigDecimal volumeRemainder, BigDecimal basePacks, BigDecimal packsRemainder,
                                              BigDecimal baseTareWeight, BigDecimal tareWeightRemainder,
                                              BigDecimal baseNetWeight, BigDecimal netWeightRemainder
-                                             ) {
+    ) {
         Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
         newContainer.setId(null); // Ensure new identity
         newContainer.setGuid(UUID.randomUUID());
@@ -577,11 +656,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         newContainer.setTareWeight(baseTareWeight);
         if(tareWeightRemainder.intValue() >= 1) {
-            newContainer.setTareWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setTareWeight(baseTareWeight.add(BigDecimal.valueOf(1)));
         }
         newContainer.setNetWeight(baseNetWeight);
         if(netWeightRemainder.intValue() >= 1) {
-            newContainer.setNetWeight(baseVolume.add(BigDecimal.valueOf(1)));
+            newContainer.setNetWeight(baseNetWeight.add(BigDecimal.valueOf(1)));
         }
 
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
@@ -598,7 +677,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private Set<Containers> setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
-                                                         Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
+                                                                    Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         //Identify container associated only with consolidation and and call setContainerUtilisationForShipment
         Set<Containers> consolContainers = getOnlyConsolidationContainers(console, shipmentDetailsList);
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(console.getShipmentType());
@@ -663,7 +742,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     });
                 } catch (Exception e) {
                     log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
-                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                    migrationUtil.saveErrorResponse(consoleIds, Constants.CONSOLIDATION, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();

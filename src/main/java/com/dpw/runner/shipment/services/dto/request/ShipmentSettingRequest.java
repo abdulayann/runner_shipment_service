@@ -56,6 +56,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String dpwDateFormat;
     private String weightChargeableUnit;
     private String volumeChargeableUnit;
+    private String defaultPackUnit;
     private String measurementChargeableUnit;
     private String temperatureUnit;
     private String defaultTransportMode;

@@ -2493,8 +2493,8 @@ class CommonUtilsTest {
         auditLogList.add(AuditLog.builder().changes(changes).build());
 
         when(iAuditLogDao.findByOperationAndParentId(
-                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
-        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
+        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, false);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
@@ -3155,6 +3155,19 @@ class CommonUtilsTest {
     void testGetCountryFromUnLocCode1() {
         String response = commonUtils.getCountryFromUnLocCode("IN");
         assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetTwoDigitCountryFromUnLocCode(String req) {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetTwoDigitCountryFromUnLocCode() {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode("CAN");
+        assertEquals("CA", response);
     }
 
     @ParameterizedTest
@@ -4725,6 +4738,12 @@ class CommonUtilsTest {
         when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
         String volumeUnit = commonUtils.getDefaultVolumeUnit();
         assertEquals("M3", volumeUnit);
+    }
+    
+    @Test
+    void getTaskIdHyperLinkV2_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2("SH", "TA");
+        assertNotNull(result);
     }
 
     private ShipmentDetails getMockShipmentDetails() {

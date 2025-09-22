@@ -19,32 +19,6 @@ FROM __SCHEMA__.air_messaging_logs AS saml
 WHERE aml.id = saml.id AND saml.tenant_id = __TENANT_ID__;
 
 
-UPDATE public.audit_log SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
-UPDATE public.audit_log AS al
-SET
-    guid = sal.guid,
-    operation = sal.operation,
-    entity = sal.entity,
-    entity_id = sal.entity_id,
-    changes = sal.changes,
-    entity_type = sal.entity_type,
-    parent_type = sal.parent_type,
-    parent_id = sal.parent_id,
-    tenant_id = sal.tenant_id,
-    created_at = sal.created_at,
-    created_by = sal.created_by,
-    updated_at = sal.updated_at,
-    updated_by = sal.updated_by,
-    is_deleted = sal.is_deleted,
-    data_type = sal.data_type,
-    flow = sal.flow,
-    is_integration_log = sal.is_integration_log
-FROM __SCHEMA__.audit_log AS sal
-WHERE al.id = sal.id AND sal.tenant_id = __TENANT_ID__;
-
-
-
-
 UPDATE public.awb SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
 UPDATE public.awb AS pawb
 SET
@@ -1178,7 +1152,7 @@ SET
     transport_info_status = ssd.transport_info_status,
     dg_packs_count = ssd.dg_packs_count,
     dg_packs_unit = ssd.dg_packs_unit,
-    is_migrated_to_v3 = ssd.is_migrated_to_v3
+    migration_status=ssd.migration_status
 FROM __SCHEMA__.shipment_details AS ssd
 WHERE psd.id = ssd.id AND ssd.tenant_id = __TENANT_ID__;
 
@@ -1621,7 +1595,7 @@ SET
     borrowed_from_organization_id = scd.borrowed_from_organization_id,
     reefer = scd.reefer,
     incoterms = scd.incoterms,
-    is_migrated_to_v3 = scd.is_migrated_to_v3
+    migration_status=scd.migration_status
 FROM __SCHEMA__.consolidation_details AS scd
 WHERE pcd.id = scd.id AND scd.tenant_id = __TENANT_ID__;
 
@@ -1746,7 +1720,7 @@ SET
     delivery_at_destination = scb.delivery_at_destination,
     cargo_delivery_date = scb.cargo_delivery_date,
     co_load_carrier_name = scb.co_load_carrier_name,
-    is_migrated_to_v3 = scb.is_migrated_to_v3
+    migration_status=scb.migration_status
 FROM __SCHEMA__.customer_booking AS scb
 WHERE pcb.id = scb.id AND scb.tenant_id = __TENANT_ID__;
 
@@ -1780,12 +1754,40 @@ SET
     is_hidden = snt.is_hidden,
     transferred_date = snt.transferred_date,
     "source" = snt."source",
-    is_migrated_to_v3 = snt.is_migrated_to_v3
+    migration_status = snt.migration_status
 FROM __SCHEMA__.network_transfer AS snt
 WHERE pnt.id = snt.id AND snt.source_branch_id = __TENANT_ID__;
 
 
 
+
+UPDATE public.network_transfer SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
+UPDATE public.network_transfer AS pnt
+SET
+    created_at = snt.created_at,
+    created_by = snt.created_by,
+    guid = snt.guid,
+    updated_at = snt.updated_at,
+    updated_by = snt.updated_by,
+    is_deleted = snt.is_deleted, -- Overwrites previous is_deleted
+    tenant_id = snt.tenant_id,
+    entity_type = snt.entity_type,
+    entity_number = snt.entity_number,
+    entity_id = snt.entity_id,
+    created_entity_id = snt.created_entity_id,
+    transport_mode = snt.transport_mode,
+    source_branch_id = snt.source_branch_id,
+    status = snt.status,
+    job_type = snt.job_type,
+    entity_payload = snt.entity_payload,
+    is_inter_branch_entity = snt.is_inter_branch_entity,
+    entity_guid = snt.entity_guid,
+    is_hidden = snt.is_hidden,
+    transferred_date = snt.transferred_date,
+    "source" = snt."source",
+    migration_status = snt.migration_status
+FROM __SCHEMA__.network_transfer AS snt
+WHERE pnt.id = snt.id AND snt.tenant_id = __TENANT_ID__;
 
 -- Table: public.carrier_details
 UPDATE public.carrier_details SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
