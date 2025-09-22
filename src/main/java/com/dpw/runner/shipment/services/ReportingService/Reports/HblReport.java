@@ -350,7 +350,6 @@ public class HblReport extends IReport {
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
-        populateFreightsAndCharges(dictionary, hblModel.blObject);
 
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
