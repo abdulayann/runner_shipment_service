@@ -369,4 +369,39 @@ class VerifiedGrossMassUtilTest {
         verify(response).setCarrierScacCode("CARRIER_SCAC2");
         verify(response).setCarrierDescription("Carrier 2 Description");
     }
+
+    @Test
+    void testBuildSubmittedContainer() {
+        // Step 1: Setup
+        CommonContainers container = new CommonContainers();
+        container.setContainerRefGuid(UUID.randomUUID());
+        container.setContainerCode("C123");
+        container.setGrossWeight(new BigDecimal("1500"));
+        container.setNetWeight(new BigDecimal("1400"));
+        container.setNetWeightUnit("KG");
+        container.setGrossWeightUnit("KG");
+        container.setContainerNo("CONT-999");
+        container.setPacks(10);
+        container.setPacksUnit("PACKS");
+        container.setTareWeight(new BigDecimal("100"));
+        container.setTareWeightUnit("KG");
+
+        // Step 2: Call the method under test
+        CommonContainers submittedContainer = util.buildSubmittedContainer(container);
+
+        // Step 3: Assertions
+        assertNotNull(submittedContainer);
+        assertEquals(container.getContainerRefGuid(), submittedContainer.getContainerRefGuid());
+        assertEquals(container.getContainerCode(), submittedContainer.getContainerCode());
+        assertEquals(container.getGrossWeight(), submittedContainer.getGrossWeight());
+        assertEquals(container.getNetWeight(), submittedContainer.getNetWeight());
+        assertEquals(container.getNetWeightUnit(), submittedContainer.getNetWeightUnit());
+        assertEquals(container.getGrossWeightUnit(), submittedContainer.getGrossWeightUnit());
+        assertEquals(container.getContainerNo(), submittedContainer.getContainerNo());
+        assertEquals(container.getPacks(), submittedContainer.getPacks());
+        assertEquals(container.getPacksUnit(), submittedContainer.getPacksUnit());
+        assertEquals(container.getTareWeight(), submittedContainer.getTareWeight());
+        assertEquals(container.getTareWeightUnit(), submittedContainer.getTareWeightUnit());
+    }
+
 }

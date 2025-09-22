@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.CascadeType;
@@ -99,5 +100,9 @@ public class VerifiedGrossMass extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "verified_gross_mass_id")
     private List<ReferenceNumbers> referenceNumbersList;
+
+    @Type(type = "jsonb")
+    @Column(name = "submitted_containers_list", columnDefinition = "jsonb")
+    private List<CommonContainers> submittedContainersList;
 }
 
