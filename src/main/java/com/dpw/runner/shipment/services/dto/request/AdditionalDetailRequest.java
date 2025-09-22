@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -147,4 +148,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
     private Integer fcrNumber = 0;
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
 }
