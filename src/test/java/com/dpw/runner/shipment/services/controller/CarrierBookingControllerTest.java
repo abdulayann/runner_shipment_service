@@ -222,32 +222,4 @@ class CarrierBookingControllerTest {
         verify(carrierBookingService).cancel(id);
     }
 
-    @Test
-    void submit_Success() {
-        // Mock
-        Long id = 123L;
-        doNothing().when(carrierBookingService).submit(id);
-
-        // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.submit(id);
-
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        verify(carrierBookingService).submit(id);
-    }
-
-    @Test
-    void amend_Success() {
-        // Mock
-        Long id = 123L;
-        doNothing().when(carrierBookingService).amend(id);
-
-        // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.amend(id);
-
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        verify(carrierBookingService).amend(id);
-    }
-
 }

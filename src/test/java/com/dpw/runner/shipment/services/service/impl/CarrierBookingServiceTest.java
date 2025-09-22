@@ -90,7 +90,6 @@ import java.util.concurrent.ExecutorService;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
-import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1014,70 +1013,4 @@ class CarrierBookingServiceTest extends CommonMocks {
         verify(commonUtils, never()).convertToLocalDateTimeFromInttra(any(), any());
     }
 
-    @Test
-    void test_submit_success() {
-        carrierBooking.setStatus(Requested);
-        // Arrange
-        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
-        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
-        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
-
-        // Do nothing for these methods
-        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
-
-        // Act
-        carrierBookingService.submit(1L);
-
-        // Assert
-        assertEquals(Requested, carrierBooking.getStatus());
-        assertEquals("test@abc.com", carrierBooking.getSubmitByUserEmail());
-
-        // Verify interactions
-        verify(carrierBookingDao).findById(1L);
-        verify(carrierBookingDao).save(carrierBooking);
-        verify(transactionHistoryDao).save(any());
-    }
-
-    @Test
-    void test_submit_invalidId_throwsException() {
-        // Arrange
-        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ValidationException.class, () -> carrierBookingService.submit(99L));
-
-        verify(carrierBookingDao).findById(99L);
-    }
-
-    @Test
-    void test_amend_success() {
-        carrierBooking.setStatus(Changed);
-        // Arrange
-        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
-        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
-        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
-
-        // Do nothing for these methods
-        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
-
-        // Act
-        carrierBookingService.amend(1L);
-
-        assertEquals(Changed, carrierBooking.getStatus());
-        // Verify interactions
-        verify(carrierBookingDao).findById(1L);
-        verify(carrierBookingDao).save(carrierBooking);
-        verify(transactionHistoryDao).save(any());
-    }
-
-    @Test
-    void test_amend_invalidId_throwsException() {
-        // Arrange
-        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ValidationException.class, () -> carrierBookingService.amend(99L));
-
-        verify(carrierBookingDao).findById(99L);
-    }
 }

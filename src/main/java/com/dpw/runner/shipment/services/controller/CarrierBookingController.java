@@ -168,7 +168,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = CarrierBookingController.MyResponseClass.class)
     })
     @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND)
-    public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody SubmitAmendInttraRequest submitAmendInttraRequest) {
+    public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException {
         log.info("Received Carrier Booking Request with RequestId: {} and OperationType: {}", LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType());
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
         log.info("Verified Gross Mass successful with RequestId: {}, OperationType: {} and response: {}",
