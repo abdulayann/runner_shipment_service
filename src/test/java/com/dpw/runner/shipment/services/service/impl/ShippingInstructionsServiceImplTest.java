@@ -56,6 +56,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1170,5 +1171,74 @@ class ShippingInstructionsServiceImplTest {
         assertThat(savedCommons.get(1).getShippingInstructionId()).isIn(10L, 20L);
     }
 
+    @Test
+    void syncCommonPackings_shouldHandleMissingConsolsViaCarrier() {
+        // --- Prepare packings ---
+        Packing packing1 = new Packing();
+        packing1.setGuid(UUID.randomUUID());
+        packing1.setShipmentId(101L);
+
+        Packing packing2 = new Packing();
+        packing2.setGuid(UUID.randomUUID());
+        packing2.setShipmentId(102L);
+
+        List<Packing> packings = List.of(packing1, packing2);
+
+        // --- Step 1: simulate shipment details ---
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(101L);
+        ConsolidationDetails cd1 = new ConsolidationDetails();
+        cd1.setId(1001L);
+        cd1.setConsolidationNumber("C100");
+        shipment1.setConsolidationList(Set.of(cd1));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(102L);
+        ConsolidationDetails cd2 = new ConsolidationDetails();
+        cd2.setId(1002L);
+        cd2.setConsolidationNumber("C200");
+        shipment2.setConsolidationList(Set.of(cd2));
+
+        when(shipmentDao.findByIdIn(List.of(101L, 102L)))
+                .thenReturn(List.of(shipment1, shipment2));
+
+        // --- Step 2a: simulate direct lookup returns only one consol ---
+        ShippingConsoleNoProjection directProjection = mock(ShippingConsoleNoProjection.class);
+        when(directProjection.getEntityId()).thenReturn("C100");
+        when(directProjection.getId()).thenReturn(10L);
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, List.of("C100", "C200")))
+                .thenReturn(List.of(directProjection));
+
+        // --- Step 2b: simulate missing consol via carrier ---
+        ShippingConsoleNoProjection carrierProjection = mock(ShippingConsoleNoProjection.class);
+        when(carrierProjection.getEntityId()).thenReturn("C200");
+        when(carrierProjection.getId()).thenReturn(20L);
+
+        when(shippingInstructionDao.findByCarrierBookingConsolNumbers(List.of("C200")))
+                .thenReturn(List.of(carrierProjection));
+
+        // --- Step 3: simulate existing commons are empty ---
+        when(commonPackagesDao.findByPackingRefGuidIn(anyList())).thenReturn(List.of());
+
+        // --- Step 4: capture saved commons ---
+        ArgumentCaptor<List<CommonPackages>> captor = ArgumentCaptor.forClass(List.class);
+
+        shippingInstructionUtil.syncCommonPackings(packings);
+
+        verify(commonPackagesDao).saveAll(captor.capture());
+        List<CommonPackages> savedCommons = captor.getValue();
+
+        assertThat(savedCommons).hasSize(2);
+
+        // Verify shippingInstructionId mapping in CommonPackages
+        Map<UUID, CommonPackages> guidToCommon = savedCommons.stream()
+                .collect(Collectors.toMap(CommonPackages::getPackingRefGuid, cp -> cp));
+
+        // packing1 -> direct lookup 10L
+        assertThat(guidToCommon.get(packing1.getGuid())).isNotNull();
+        // packing2 -> via carrier 20L
+        assertThat(guidToCommon.get(packing2.getGuid())).isNotNull();
+    }
 
 }
