@@ -1,0 +1,830 @@
+<#assign json = JsonUtil.jsonToMap(json)>
+
+
+<#function jsonEscape text>
+<#if text??>
+  <#local s = text>
+  <#local s = s?replace("\\", "\\\\")>
+  <#local s = s?replace('"', '\\"')>
+  <#local s = s?replace('\n', '\\n')>
+  <#local s = s?replace('\r', '\\r')>
+  <#local s = s?replace('\t', '\\t')>
+  <#return s>
+<#else>
+  <#return "">
+</#if>
+</#function>
+
+
+<#-- Generic macro -->
+<#function processRequestIfValueExists map key fieldName orgCode addressCode>
+    <#assign mapValue = (map[key!''])?if_exists>
+    <#if mapValue?? && (mapValue?size > 0)>
+        <#-- ✅ Value exists, proceed with your full request -->
+        <#if json.childJobs[0].customer?? && json.childJobs[0].customer.code?has_content>
+            <#assign requestPayloadMap = {
+                "Party": {
+                    "id": 726703,
+                    "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+                },
+                "AddressCode": "${addressMap[addressCode!''][0].addressShortCode}",
+                "OrgCode": "${orgMap[orgCode!''][0].organizationCode}"
+            }>
+
+            <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+
+            <#assign response = MdmApiUtil.connectHttp(
+                "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
+                requestPayload,
+                httpHeaders
+            )/>
+            <#assign res = JsonUtil.getStringFromStream(response.body)>
+            <#return res>
+        </#if>
+    <#else>
+        <#-- ❌ Value missing, log error -->
+        <#assign _ignore = ErrorUtil.logError(
+            fieldName,
+            (key)!"",
+            fieldName,
+            "",
+            "MissingRunnerMasterData",
+            "The master data for the value in ${fieldName} doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+            null, null, null
+        )>
+        <#return "">
+    </#if>
+</#function>
+
+
+
+
+
+
+<#-- Build list of all party codes and remove duplicates -->
+<#assign allPartyCodes = []>
+<#if json.childJobs??>
+    <#list json.childJobs as child>
+        <#assign childCodes = [
+            child.customer.code!'',
+            child.consignor.code!'',
+            child.consignee.code!'',
+            child.agent.code!'',
+            json.destinationAgent.code
+        ]>
+        <#list childCodes as code>
+            <#if code != "" && !allPartyCodes?seq_contains(code)>
+                <#assign allPartyCodes = allPartyCodes + [code]>
+            </#if>
+        </#list>
+    </#list>
+</#if>
+
+<#-- Build list of all address codes and remove duplicates -->
+<#assign allAddressCodes = []>
+<#if json.childJobs??>
+    <#list json.childJobs as child>
+        <#assign childCodes = [
+            child.customer.addressCode!'',
+            child.consignor.addressCode!'',
+            child.consignee.addressCode!'',
+            child.agent.addressCode!'',
+            json.destinationAgent.addressCode
+        ]>
+        <#list childCodes as code>
+            <#if code != "" && !allAddressCodes?seq_contains(code)>
+                <#assign allAddressCodes = allAddressCodes + [code]>
+            </#if>
+        </#list>
+    </#list>
+</#if>
+
+<#assign mdmPayloadMap = {
+    "sourceTenantId": 226,
+    "destinationTenantId": 780,
+    "sourceType": "EWL",
+    "destinationType": "RUNNER",
+    "data": [
+       {
+            "includeColumns": [],
+            "module": "ORGANIZATION",
+            "singleLevelSearchCriteria": [
+            {
+                "field": "reference",
+                "operator": "in",
+                "values": allPartyCodes
+            }
+        ]
+        },
+        {
+          "includeColumns": ["addressShortCode"],
+          "module": "ADDRESS",
+          "singleLevelSearchCriteria": [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": allAddressCodes
+              }
+          ]
+        },
+        {
+          "module": "CONTAINER_TYPE",
+          "singleLevelSearchCriteria": [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "20GP",
+                      "40GP",
+                      "20RE"
+                  ]
+              }
+          ]
+      },
+      {
+        "module": "VESSEL",
+        "singleLevelSearchCriteria": [
+            {
+                "field": "reference",
+                "operator": "in",
+                "values": [
+                    "${json.vesselName}"
+                ]
+            }
+        ]
+    },
+    {
+      "module": "MASTER_LIST",
+      "searchCriteria": [
+          [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "CTN"
+                  ]
+              }
+          ],
+          [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "Waybill"
+                  ]
+              }
+          ],
+          [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "FCL"
+                  ]
+              }
+          ],
+          [
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "SEA"
+                  ]
+              }
+          ]
+      ],
+      "includeColumns": []
+    },
+    {
+      "module": "CARRIER",
+      "singleLevelSearchCriteria": [
+          
+              {
+                  "field": "reference",
+                  "operator": "in",
+                  "values": [
+                      "${json.childJobs[0].legs[0].code}"
+                  ]
+              }
+          
+      ],
+      "includeColumns": []
+    },
+    {
+      "includeColumns": [],
+      "module": "UN_LOCATION",
+      "singleLevelSearchCriteria": [
+          {
+              "field": "reference",
+              "operator": "in",
+              "values": [
+                  "${json.childJobs[0].sailingLeg[0].polPort.code}",
+                  "${json.childJobs[0].sailingLeg[0].podPort.code}"
+              ]
+          }
+      ]
+  }
+  ]
+  }>
+  
+  <#assign mdmPayload = JsonUtil.objectToJsonString(mdmPayloadMap)>
+  <#assign headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "x-api-key": "74c64e61-78fe-44d8-9130-ced81ad0c54e"
+  }>
+  <#assign response = MdmApiUtil.connectHttp(
+      "https://staging-runner.cargoes.com/mdm/api/v2/middleware-integration/reverse/entity/transfer?httpMethod=POST",
+      mdmPayload,
+      headers
+  )/>
+  <#assign res = JsonUtil.getStringFromStream(response.body)>
+  <#assign responseBody = JsonUtil.jsonToMap(res)>
+  
+  
+  <#list responseBody.data[0].entityResponse as entity>
+      <#if entity.CONTAINER_TYPE??>
+          <#assign containerTypeMap = entity.CONTAINER_TYPE>
+      </#if>
+      <#if entity.MASTER_LIST??>
+          <#assign masterListMap = entity.MASTER_LIST>
+      </#if>
+      <#if entity.VESSEL??>
+          <#assign vesselsMap = entity.VESSEL>
+      </#if>
+      <#if entity.UN_LOCATION??>
+          <#assign unLocationMap = entity.UN_LOCATION>
+      </#if>
+      <#if entity.ORGANIZATION??>
+          <#assign orgMap = entity.ORGANIZATION>
+      </#if>
+       <#if entity.CARRIER??>
+          <#assign carrierMap = entity.CARRIER>
+      </#if>
+      <#if entity.ADDRESS??>
+          <#assign addressMap = entity.ADDRESS>
+      </#if>
+  </#list>
+
+
+    <#-- Calling Auth API -->
+    <#-- Prepare headers  -->
+    <#assign headers = {
+        "content-type": "application/json"
+    }>
+    
+    <#assign authPayloadMap = {
+        "Username": "xiamenaamirewl",
+        "Password": "Test@123"
+    }>
+    <#assign authPayload = JsonUtil.objectToJsonString(authPayloadMap)>
+    
+    <#assign response = MdmApiUtil.connectHttp(
+        "https://staging-runner.cargoes.com/Api/Account/GenerateToken?httpMethod=POST",
+        authPayload,
+        headers
+    )/>
+    
+    <#assign res = JsonUtil.getStringFromStream(response.body)>
+    <#assign responseBody = JsonUtil.jsonToMap(res)>
+    <#assign authToken = responseBody.token>
+    
+    
+    <#-- Prepare headers -->
+    <#assign httpHeaders = {  
+        "authorization": "Bearer " + "${authToken}",
+        "content-type": "application/json",
+        "Accept": "application/json"
+    }>
+
+    <#-- Fetch Consignee Org Data -->
+
+    <#assign consigneeOrgData = processRequestIfValueExists(
+    orgMap,
+    json.childJobs[0].customer.code,
+    "organizationCode",
+    json.childJobs[0].customer.code,
+    json.childJobs[0].customer.addressCode
+)>
+
+    <#-- <#if json.childJobs[0].customer?? && json.childJobs[0].customer.code?has_content>
+      <#assign requestPayloadMap = {
+        "Party": {
+            "id": 726703,
+            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+        },
+       "AddressCode": "${addressMap[json.childJobs[0].customer.addressCode!''][0].addressShortCode}",
+        "OrgCode": "${orgMap[json.childJobs[0].customer.code!''][0].organizationCode}"
+      }>
+      
+      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+
+      <#assign response = MdmApiUtil.connectHttp(
+          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
+          requestPayload,
+          httpHeaders
+      )/>
+      <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+      <#assign consigneeOrgData = res>
+    </#if> -->
+
+
+
+    <#-- Fetch Consigner Org Data -->
+
+    <#assign consignerOrgData = processRequestIfValueExists(
+    orgMap,
+    json.childJobs[0].supplier.code,
+    "organizationCode",
+    json.childJobs[0].supplier.code,
+    json.childJobs[0].supplier.addressCode
+)>
+
+
+    <#-- <#if json.childJobs[0].supplier?? && json.childJobs[0].supplier.code?has_content>
+      <#assign requestPayloadMap = {
+        "Party": {
+            "id": 726703,
+            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+        },
+       "AddressCode": "${addressMap[json.childJobs[0].supplier.addressCode!''][0].addressShortCode}", 
+        "OrgCode": "${orgMap[json.childJobs[0].supplier.code!''][0].organizationCode}"
+      }>
+      
+      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+      
+      <#assign response = MdmApiUtil.connectHttp(
+          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
+          requestPayload,
+          httpHeaders
+      )/>
+      <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+      <#assign consignerOrgData = res>
+    </#if> -->
+
+
+    <#-- Fetch NotifyParty Org Data -->
+
+    <#assign notifyPartyOrgData = processRequestIfValueExists(
+    orgMap,
+    json.childJobs[0].notify1.code,
+    "organizationCode",
+    json.childJobs[0].notify1.code,
+    json.childJobs[0].notify1.addressCode
+)>
+
+    <#-- <#if json.childJobs[0].notify1?? && json.childJobs[0].notify1.code?has_content>
+      <#assign requestPayloadMap = {
+        "Party": {
+            "id": 726703,
+            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+        },
+         "AddressCode": "${addressMap[json.childJobs[0].notify1.addressCode!''][0].addressShortCode}", 
+        "OrgCode": "${orgMap[json.childJobs[0].notify1.code!''][0].organizationCode}"
+      }>
+      
+      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+      
+      <#assign response = MdmApiUtil.connectHttp(
+          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
+          requestPayload,
+          httpHeaders
+      )/>
+      <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+      <#assign notifyPartyOrgData = res>
+    </#if> -->
+
+
+
+    <#-- Fetch sendingAgent Org Data -->
+
+    <#assign agentOrgData = processRequestIfValueExists(
+    orgMap,
+    json.childJobs[0].agent.code,
+    "organizationCode",
+    json.childJobs[0].agent.code,
+    json.childJobs[0].agent.addressCode
+)>
+
+    <#-- <#if json.agent?? && json.agent.code?has_content>
+      <#assign requestPayloadMap = {
+        "Party": {
+            "id": 726703,
+            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+        },
+       "AddressCode": "${addressMap[json.agent.addressCode!''][0].addressShortCode}", 
+        "OrgCode": "${orgMap[json.agent.code!''][0].organizationCode}"
+      }>
+      
+      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+      
+      <#assign response = MdmApiUtil.connectHttp(
+          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
+          requestPayload,
+          httpHeaders
+      )/>
+      <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+      <#assign agentOrgData = res>
+    </#if> -->
+
+
+    <#-- Fetch destinationAgent Org Data -->
+
+
+    <#if json.destinationAgent?? && json.destinationAgent.code?has_content>
+      <#assign requestPayloadMap = {
+        "Party": {
+            "id": 726703,
+            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
+        },
+        "AddressCode": "${addressMap[json.destinationAgent.addressCode!''][0].addressShortCode}", 
+        "OrgCode": "${orgMap[json.destinationAgent.code!''][0].organizationCode}"
+      }>
+      
+      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
+      
+      <#assign response = MdmApiUtil.connectHttp(
+          "https://staging-runner.cargoes.com/shipment-service/api/v3/parties/get?httpMethod=POST",
+          requestPayload,
+          httpHeaders
+      )/>
+      <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+      <#assign destinationAgentOrgData = res>
+      <#assign destinationAgentOrgDataMap = JsonUtil.jsonToMap(destinationAgentOrgData)>
+    </#if>
+  
+    <#function getAdditionalDocs docs httpHeaders>
+    <#assign additionalDocs = []>
+
+    <#list docs as doc>
+        <#assign payload = {
+            "entityType": doc.entityType,
+            "entityId": doc.entityId,
+            "source": doc.source,
+            "encodedFile": doc.encodedFile,
+            "fileName": doc.fileName,
+            "docType": doc.docType
+        }>
+
+        <#assign requestPayload = JsonUtil.objectToJsonString(payload) />
+
+        <#assign response = MdmApiUtil.connectHttp(
+            "https://staging-runner.cargoes.com/runner/v2/documentManagement/files-management/addFile?httpMethod=POST",
+            requestPayload,
+            httpHeaders
+        ) />
+
+        <#assign jsonResponse = JsonUtil.getStringFromStream(response.body) />
+        <#assign jsonResponseMap = JsonUtil.jsonToMap(jsonResponse) />
+
+        <#-- Extract GUID if present -->
+        <#if jsonResponseMap.success?? 
+            && jsonResponseMap.success 
+            && jsonResponseMap.data?? 
+            && jsonResponseMap.data.guid??>
+            
+            <#assign additionalDocs = additionalDocs + [jsonResponseMap.data.guid] />
+        </#if>
+    </#list>
+
+    <#-- Return the array of GUIDs -->
+    <#return additionalDocs />
+</#function>
+
+
+<#-- Fetch all consol document guids -->
+<#assign consolAdditionalDocs = []>
+<#if json.consolDocs?? && (json.consolDocs?size > 0)>
+  <#assign consolAdditionalDocs = getAdditionalDocs(json.consolDocs, httpHeaders) />
+</#if>
+
+<#-- Fetch all shipment document guids -->
+<#assign shipmentAdditionalDocs = []>
+<#if json.shipmentDocs?? && (json.shipmentDocs?size > 0)>
+  <#assign shipmentAdditionalDocs = getAdditionalDocs(json.shipmentDocs, httpHeaders) />
+</#if>
+
+
+ 
+
+<#function calculateContainerWeights equipment>
+    <#assign totalNetWeight = 0>
+    <#assign totalQuantity = 0>
+
+    <#-- Sum weights and quantities from orderItems -->
+    <#list equipment.orderItems as oi>
+        <#assign totalNetWeight = totalNetWeight + (oi.weight?number!0)>
+        <#assign totalQuantity = totalQuantity + (oi.quantity?number!0)>
+    </#list>
+
+    <#-- Add tareWeight for grossWeight -->
+    <#assign grossWeight = totalNetWeight + (equipment.tareWeight?number!0)>
+
+    <#return {
+        "totalNetWeight": totalNetWeight,
+        "grossWeight": grossWeight,
+        "packs": totalQuantity
+    } />
+</#function>
+
+
+
+    
+
+{
+  "entityType": "CONSOLIDATION",
+  "entityNumber": "${json.reference}",
+  "transportMode": "SEA",
+  "status": "TRANSFERRED",
+  "jobType": "IMP",
+  "tenantId": 13497,
+  "entityPayload":{
+  "guid": "${json.guid}",
+  "bol": "${json.masterBill!''}",
+  "reefer": ${json.reefer?c},
+  "payment": <#if paymentTerms??>
+                <#if paymentTerms == "PPD">"PPD"
+                <#elseif paymentTerms == "CCX">"CCX"
+                <#else>"${json.paymentTerms}"</#if>
+             <#else>null</#if>,
+  "borrowed": ${json.isBorrowed?c},
+  "isInland": ${json.isInland?c},
+  "isLinked": ${json.isLinked?c},
+  "coLoadMBL": "${json.parentJobId!''}",
+  "hazardous": "${json.dangerousGoods!''}",
+  "incoterms": "${(json.incoTerm.code)!'CFR'}",
+  "isCharter": ${json.isCharter?c},
+  "isDomestic": ${json.isDomestic?c},
+  "marksnNums": "${json.marksAndNumbers!''}",
+  "description": "${json.descriptionMaster!GoodsDescription!''}",
+  "deliveryMode": "${json.deliveryMode!'B.T/B.T'}",
+  "originBranch": "${json.originBranch!'0'}",
+  "shipmentType": "IMP",
+  "direction": "IMP",
+  "source": "External",
+  "isFrob": ${json.isFrob?c},
+  "b2b": ${json.b2B?c},
+  "partner": "${(json.agent.code)!'CLD'}",
+  "coLoadCarrierName": "OOCL",
+  "consolidationNumber": "${json.reference}",
+  "referenceNumber": "${json.reference}",
+  "containerCategory": <#if json.shipmentMode == 5>"FCL"<#elseif json.shipmentMode == 2>"LCL"</#if>,
+  "transportMode": "SEA",
+  "consolidationType": "STD",
+  "openForAttachment": true,
+  "allocations": {
+    "packs": ${json.noOfPacks!"0"},
+    "volume": ${json.volume!"0"},
+    "weight": ${json.weight!"0"},
+    "teuCount": ${json.teu!"0"},
+    "chargable": ${json.chargeableWeight!0},
+    "packsType": "${json.units!'BAG'}",
+    "volumeUnit": "M3",
+    "weightUnit": "KG",
+    "weightVolume": ${json.chargeableWeight!0},
+    "chargeableUnit": "M3",
+    "containerCount": ${json.equipment?size},
+    "dgContainerCount": 0,
+    "weightVolumeUnit": "M3"
+  },
+  "routingsList": [
+    <#list json.sailingLeg as leg>
+      {
+        "leg": ${leg.legSequence + 1},
+        "mode": "SEA",
+        "ata": "${leg.ata}",
+        "atd": "${leg.atd}",
+        "eta": "${leg.eta}",
+        "etd": "${leg.etd}",
+        "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+        "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+        "voyage": "${leg.voyage!''}",
+        "carrier": "",
+        "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
+        "domestic": ${json.isDomestic?c},
+        "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+        "transitDays": 0
+      }<#if leg_has_next>,</#if>
+    </#list>
+  ],
+  "containersList": [
+    <#list json.equipment as c>
+    {
+      <#assign result = calculateContainerWeights(c)>
+
+      "guid": "${c.guid}",
+      "containerNumber": "${c.containerNumber}",
+      "teu": ${c.teu!"1"},
+      "carrierSealNumber": "${c.seal!''}",
+      "containerCode": "${c.type}",
+      "containerCount": 1,
+      "isReefer": ${c.isGenSetRequired?c},
+      "minTemp": <#if c.temperature??>${c.temperature}<#else>null</#if>,
+      "isEmpty": ${(c.tareWeight == 0)?c},
+      "hazardous": "${json.dangerousGoods!''}",
+      "tareWeight": ${c.tareWeight!0},
+      "netWeight": ${result.totalNetWeight!0},
+      "grossWeight":  ${result.grossWeight!0},
+      "grossVolume": ${volume!0},
+      "marksNums": "${marksAndNumbers!''}",
+      "packs": ${result.packs},
+      "packsType": "${units!'BAG'}",
+      "commodityCode": "${commodity!''}",
+      "commodityGroup": "${c.commodityGroup!''}",
+      "netWeightUnit": "KG",
+      "grossWeightUnit": "KG",
+      "grossVolumeUnit": "M3",
+      "marinePollutant": ${json.marinePollutant?c}
+    }<#if c_has_next>,</#if>
+    </#list>
+  ],
+  "carrierDetails": {
+    "ata": "${json.sailingLeg[0].ata!'2025-08-04 00:00:00'}",
+    "atd": "${json.sailingLeg[0].atd!'2025-08-03 00:00:00'}",
+    "eta": "${json.sailingLeg[0].eta!'2025-08-02 00:00:00'}",
+    "etd": "${json.sailingLeg[0].etd!'2025-08-01 00:00:00'}",
+    "origin": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    "destination": "${unLocationMap[json.sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
+    "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+    "voyage": "${json.sailingLeg[0].voyage!'NA'}",
+    "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
+    "originPort": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    "destinationPort": "${unLocationMap[json.sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
+    "originLocCode": "${json.sailingLeg[0].polPort.code!'NA'}",
+    "destinationLocCode": "${json.sailingLeg[0].podPort.code!'NA'}"
+  },
+  "shipmentsList": [
+    <#list json.childJobs as child>
+    {
+      "guid": "${child.guid}",
+      "houseBill": "${child.houseBill}",
+      "shipmentId": "${child.reference}",
+      "consolRef": "${child.reference}",
+      "direction": "IMP",
+      "jobType": "STD",
+      "transportMode": "SEA",
+      "status" : 1,
+      <#if child.shipmentMode == 5>
+        "shipmentType": "FCL",
+      <#else>
+          "shipmentType": "LCL",
+      </#if>
+      "serviceType": "${child.serviceType!'P2P'}",
+      "incoterms": "${child.incoTerm.code!'CFR'}",
+      "volume": ${child.volume!0},
+      "weight": ${child.weight!0},
+      "noOfPacks": ${child.noOfPacks!0},
+      "partner": "${child.agent.code!'CLD'}",
+      "isReefer": ${child.reefer?c},
+      "controlled": ${child.controlled?c},
+      "isBorrowed": ${child.isBorrowed?c},
+      "masterBill": "${masterBill!''}",
+      "paymentTerms": <#if child.paymentTerms??><#if child.paymentTerms == "PPD">"PPD"<#elseif child.paymentTerms == "CCX">"CCX"<#else>"${child.paymentTerms}"</#if><#else>"CCX"</#if>,
+      "marksNum": "${child.marksAndNumbers!''}",
+      "goodsDescription": "${child.goodsDescription!''}",
+      "volumetricWeight": ${child.chargeableWeight!0},
+      "volumeUnit": "M3",
+      "weightUnit": "KG",
+      "chargable": ${child.chargeableWeight!0},
+      "chargeableUnit": "M3",
+      "client": ${consigneeOrgData},
+      "consigner": ${consignerOrgData},
+      "consignee": ${consigneeOrgData},
+      "notify1": ${notifyPartyOrgData},
+      "sendingAgent": ${agentOrgData},
+      "packingList": [
+          <#assign firstItem = true>
+          <#list child.equipment as ce>
+            <#list ce.orderItems as item>
+              <#if !firstItem>,</#if>
+              <#assign firstItem = false>
+              {
+                "packs": "${item.quantity!0}",
+                "hscode": "${item.hscode!''}",
+                "volume": ${item.cbm!0},
+                "weight": ${item.weight!0},
+                "commodity": "${item.commodity!''}",
+                "packsType": "${item.packsType!'BAG'}",
+                "volumeUnit": "${item.volumeUnit!'M3'}",
+                "weightUnit": "${item.weightUnit!'KG'}",
+                "goodsDescription": "${jsonEscape(item.description!'')}",
+                <#if child.isTemperatureControlled??>
+                  "isTemperatureControlled": ${child.isTemperatureControlled?c}
+                <#else>
+                  "isTemperatureControlled": ""  
+                </#if>
+              }
+            </#list>
+          </#list>
+        ],
+      "routingsList": [
+        <#list child.sailingLeg as leg>
+        {
+          "leg": ${leg.legSequence + 1},
+          "mode": "SEA",
+          "ata": "${leg.ata!''}",
+          "atd": "${leg.atd!''}",
+          "eta": "${leg.eta!''}",
+          "etd": "${leg.etd!''}",
+          "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+          "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+          "voyage": "${leg.voyage!''}",
+          "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+          "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
+          "domestic": false
+        }<#if leg_has_next>,</#if>
+        </#list>
+      ],
+      "containersList": [
+        <#list child.equipment as ce>
+        {
+          <#assign result = calculateContainerWeights(ce)>
+
+          "containerNumber": "${ce.containerNumber}",
+          "carrierSealNumber": "${ce.seal!''}",
+          "containerCode": "${ce.type}",
+          "containerCount": 1,
+          "teu": ${ce.teu!"1"},
+          "tareWeight": ${ce.tareWeight!0},
+          "netWeight": ${result.totalNetWeight},
+          "netWeightUnit": "KG",
+          "grossWeight": ${result.grossWeight},
+          "grossWeightUnit": "KG",
+          "packs": ${result.packs},
+          "isReefer": ${ce.isGenSetRequired?c}
+        }<#if ce_has_next>,</#if>
+        </#list>
+      ],
+      "referenceNumbersList": [
+        {
+          "type": "AGR",
+          "referenceNumber": "${child.agentReference!''}"
+        }
+      ],
+      "carrierDetails": {
+            "ata": "${json.childJobs[0].sailingLeg[0].ata!'2025-08-04 00:00:00'}",
+            "atd": "${json.childJobs[0].sailingLeg[0].atd!'2025-08-03 00:00:00'}",
+            "eta": "${json.childJobs[0].sailingLeg[0].eta!'2025-08-02 00:00:00'}",
+            "etd": "${json.childJobs[0].sailingLeg[0].etd!'2025-08-01 00:00:00'}",
+            "origin": "${unLocationMap[json.childJobs[0].sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            "destination": "${unLocationMap[json.childJobs[0].sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
+            "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+            "voyage": "${json.childJobs[0].sailingLeg[0].voyage!'NA'}",
+            "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
+            "originPort": "${unLocationMap[json.childJobs[0].sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            "destinationPort": "${unLocationMap[json.childJobs[0].sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
+            "originLocCode": "${json.childJobs[0].sailingLeg[0].polPort.code!'NA'}",
+            "destinationLocCode": "${json.childJobs[0].sailingLeg[0].podPort.code!'NA'}"
+        },
+      "additionalDocs": [<#list shipmentAdditionalDocs as doc>"${doc}"<#if doc_has_next>, </#if></#list>]
+    }<#if child_has_next>,</#if>
+    </#list>
+  ],
+  "referenceNumbersList": [
+    {
+      "type": "AGR",
+      "referenceNumber": "${json.agentReference!''}"
+    }
+  ],
+  "achievedQuantities": {
+    "packs": ${json.noOfPacks!0},
+    "teuCount": ${json.teu!0},
+    "packsType": "${json.units!'BAG'}",
+    "containerCount": ${json.equipment?size},
+    "consolidatedVolume": ${json.volume!0},
+    "consolidatedWeight": ${json.weight!0},
+    "consolidationChargeQuantity": ${json.chargeableWeight!0},
+    "consolidationChargeQuantityUnit": "M3"
+  },
+  "sendingAgent": ${agentOrgData},
+  "additionalDocs": [<#list consolAdditionalDocs as doc>"${doc}"<#if doc_has_next>, </#if></#list>],
+  "receivingBranch": 938,
+  "sendToBranch": 938,
+  "sourceTenantId": 13497,
+  "sourceBranchTenantName": "${destinationAgentOrgDataMap.data.orgData.FullName}",
+  "packingVsContainerGuid": {
+    <#list json.childJobs as job>
+      <#list job.equipment as eq>
+          <#list eq.orderItems as oi>
+              "${oi.guid}" : "${eq.guid}"
+              <#if !(job?is_last && eq?is_last && oi?is_last)>,</#if>
+          </#list>
+      </#list>
+    </#list>
+  },
+  "containerVsShipmentGuid": {
+    <#list json.childJobs as job>
+        <#list job.equipment as container>
+            "${container.guid}": [
+                "${job.guid}"
+            ]<#if !(job?is_last && container?is_last)>,</#if>
+        </#list>
+    </#list>
+  }
+}
+}
