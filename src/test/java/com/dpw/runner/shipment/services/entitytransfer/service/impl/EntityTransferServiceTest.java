@@ -9,9 +9,11 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -22,13 +24,16 @@ import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ArValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.enums.TransferStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -42,6 +47,7 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMi
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -49,6 +55,7 @@ import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +66,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -67,15 +75,21 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_IMPORT_EMAIL_TYPE;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
+import static com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferService.SHIPMENT_IMPORT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -3661,5 +3675,997 @@ class EntityTransferServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.sendFileToExternalSystem(commonRequestModel));
     }
+    @Test
+    void testSetPackingVsContainerGuid() throws Exception {
+        // Arrange
+        EntityTransferService service = new EntityTransferService();
 
+        EntityTransferV3ConsolidationDetails payload = new EntityTransferV3ConsolidationDetails();
+        payload.setPackingVsContainerGuid(new HashMap<>()); // initialize map
+
+        UUID packingGuid = UUID.randomUUID();
+        UUID containerGuid = UUID.randomUUID();
+
+        Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
+        packingVsContainerGuid.put(packingGuid, containerGuid);
+
+        // Use reflection to access private method
+        Method method = EntityTransferService.class.getDeclaredMethod(
+                "setPackingVsContainerGuid",
+                EntityTransferV3ConsolidationDetails.class,
+                Map.class
+        );
+        method.setAccessible(true);
+
+        // Act
+        method.invoke(service, payload, packingVsContainerGuid);
+
+        // Assert
+        assertNotNull(payload.getPackingVsContainerGuid());
+        assertEquals(1, payload.getPackingVsContainerGuid().size());
+        assertEquals(containerGuid, payload.getPackingVsContainerGuid().get(packingGuid));
+    }
+
+    @Test
+    void testEmptyShipNteList_NoSaveAllCalled() throws Exception {
+        Map<UUID, Long> oldVsNewShipIds = Map.of(UUID.randomUUID(), 100L);
+
+        when(networkTransferDao.findByEntityGuids(anyList())).thenReturn(Collections.emptyList());
+
+        Method method = EntityTransferService.class
+                .getDeclaredMethod("updateInterBranchShipmentStatus", Map.class);
+        method.setAccessible(true); // bypass private access
+
+        method.invoke(entityTransferService, oldVsNewShipIds);
+
+        verify(networkTransferDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testEntityNotInMap_NoUpdateButStillSaved() throws Exception {
+        UUID guid1 = UUID.randomUUID();
+        Map<UUID, Long> oldVsNewShipIds = Map.of(UUID.randomUUID(), 999L); // different guid
+
+        NetworkTransfer e1 = new NetworkTransfer();
+        e1.setEntityGuid(guid1);
+        e1.setJobType("EXPORT");
+
+        when(networkTransferDao.findByEntityGuids(anyList())).thenReturn(List.of(e1));
+
+        Method method = EntityTransferService.class
+                .getDeclaredMethod("updateInterBranchShipmentStatus", Map.class);
+        method.setAccessible(true); // bypass private access
+
+        method.invoke(entityTransferService, oldVsNewShipIds);
+
+        assertNull(e1.getCreatedEntityId()); // not updated
+        assertNull(e1.getStatus());          // not updated
+        verify(networkTransferDao).saveAll(List.of(e1));
+    }
+
+    @Test
+    void testJobTypeDirectionCts_ExcludedFromSave() throws Exception {
+        UUID guid1 = UUID.randomUUID();
+        Map<UUID, Long> oldVsNewShipIds = Map.of(guid1, 200L);
+
+        NetworkTransfer e1 = new NetworkTransfer();
+        e1.setEntityGuid(guid1);
+        e1.setJobType("CTS"); // assume DIRECTION_CTS == "CTS"
+
+        when(networkTransferDao.findByEntityGuids(anyList())).thenReturn(List.of(e1));
+        Method method = EntityTransferService.class
+                .getDeclaredMethod("updateInterBranchShipmentStatus", Map.class);
+        method.setAccessible(true);
+
+        method.invoke(entityTransferService, oldVsNewShipIds);
+        // Should NOT save, because it gets filtered out
+        verify(networkTransferDao).saveAll(List.of());
+    }
+    private Object invokePrivateMethod(String methodName, Class<?>[] parameterTypes, Object... args) throws Exception {
+        Method method = entityTransferService.getClass().getDeclaredMethod(methodName, parameterTypes);
+        method.setAccessible(true);
+        return method.invoke(shipmentService, args);
+    }
+
+    @Test
+    void shouldSaveShipment_WhenSeaTransportButNotExport_ReturnsFalse() {
+        when(shipmentData.getTransportMode()).thenReturn("SEA");
+        when(shipmentData.getDirection()).thenReturn("IMPORT");
+
+        boolean result = (Boolean) ReflectionTestUtils.invokeMethod(
+                entityTransferService, "shouldSaveShipment", shipmentData
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void shouldSaveShipment_WhenSeaTransportAndExportDirection_ReturnsTrue() {
+        when(shipmentData.getTransportMode()).thenReturn("SEA");
+        when(shipmentData.getDirection()).thenReturn("EXP");
+
+        boolean result = (Boolean) ReflectionTestUtils.invokeMethod(
+                entityTransferService, "shouldSaveShipment", shipmentData
+        );
+
+        assertTrue(result);
+    }
+
+
+    @Test
+    void updateNteStatus_WhenFeatureEnabledAndNtePresentAndNotExternalSource_ShouldUpdateStatusAndEntity() throws Exception {
+        // Given
+        boolean isNetworkTransferFeatureEnabled = true;
+        ImportShipmentRequest importShipmentRequest = mock(ImportShipmentRequest.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = mock(ShipmentDetailsResponse.class);
+
+        Long taskId = 123L;
+        Long entityId = 456L;
+        Integer tenantId = 789;
+        Long receivingBranchId = 789L;
+
+        NetworkTransfer nte = mock(NetworkTransfer.class);
+
+        when(importShipmentRequest.getTaskId()).thenReturn(taskId);
+        when(shipmentDetailsResponse.getId()).thenReturn(entityId);
+        when(shipmentDetailsResponse.getReceivingBranch()).thenReturn(receivingBranchId);
+        when(shipmentDetailsResponse.getTriangulationPartnerList()).thenReturn(null);
+
+        when(networkTransferDao.findById(taskId)).thenReturn(Optional.of(nte));
+        when(nte.getSource()).thenReturn(NetworkTransferSource.CARGOES_RUNNER);
+        when(nte.getEntityId()).thenReturn(entityId);
+
+        try (var mockedTenantContext = mockStatic(TenantContext.class)) {
+            // Return Integer instead of String
+            mockedTenantContext.when(TenantContext::getCurrentTenant).thenReturn(tenantId);
+
+            // When - Use ReflectionTestUtils
+            ReflectionTestUtils.invokeMethod(entityTransferService, "updateNteStatus",
+                    isNetworkTransferFeatureEnabled, importShipmentRequest, shipmentDetailsResponse);
+
+            // Then
+            verify(networkTransferService).updateStatusAndCreatedEntityId(taskId, "ACCEPTED", entityId);
+            verify(networkTransferDao).findById(taskId);
+            verify(shipmentDao).saveIsTransferredToReceivingBranch(entityId, Boolean.TRUE);
+        }
+    }
+
+    @Test
+    void attachShipmentToContainers_WhenOldContVsOldShipGuidMapContainsGuid_ShouldCreateAndAddShipments() throws Exception {
+        // Given
+        Long consoleId = 1L;
+
+        // Setup container GUID mapping
+        UUID newContainerGuid = UUID.randomUUID();
+        UUID oldContainerGuid = UUID.randomUUID();
+        Map<UUID, UUID> newVsOldContainerGuid = new HashMap<>();
+        newVsOldContainerGuid.put(newContainerGuid, oldContainerGuid);
+
+        // Setup shipment GUID mapping - this is the key condition being tested
+        UUID oldShipGuid1 = UUID.randomUUID();
+        UUID oldShipGuid2 = UUID.randomUUID();
+        Map<UUID, List<UUID>> oldContVsOldShipGuidMap = new HashMap<>();
+        oldContVsOldShipGuidMap.put(oldContainerGuid, Arrays.asList(oldShipGuid1, oldShipGuid2));
+
+        // Setup shipment ID mapping
+        Long newShipId1 = 200L;
+        Long newShipId2 = 300L;
+        Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
+        oldVsNewShipIds.put(oldShipGuid1, newShipId1);
+        oldVsNewShipIds.put(oldShipGuid2, newShipId2);
+
+        Map<UUID, Long> oldGuidVsNewContainerId = new HashMap<>();
+
+        // Create a real container to verify the state changes
+        Containers container = new Containers();
+        container.setGuid(newContainerGuid);
+        container.setId(100L);
+
+        List<Containers> containersList = Arrays.asList(container);
+
+        when(containerDao.findByConsolidationId(consoleId)).thenReturn(containersList);
+        when(containerDao.saveAll(anyList())).thenReturn(containersList);
+
+        // When
+        ReflectionTestUtils.invokeMethod(entityTransferService, "attachShipmentToContainers",
+                consoleId, newVsOldContainerGuid, oldContVsOldShipGuidMap, oldVsNewShipIds, oldGuidVsNewContainerId);
+
+        // Then - Focus on testing the specific code section
+        // 1. Verify that oldContVsOldShipGuidMap contained the container GUID
+        assertTrue(oldContVsOldShipGuidMap.containsKey(oldContainerGuid));
+
+        // 2. Verify that shipment GUIDs were retrieved correctly
+        List<UUID> expectedShipmentGuids = Arrays.asList(oldShipGuid1, oldShipGuid2);
+        assertEquals(expectedShipmentGuids, oldContVsOldShipGuidMap.get(oldContainerGuid));
+
+        // 3. Verify that shipments were created with correct IDs
+        Set<ShipmentDetails> shipments = container.getShipmentsList();
+        assertNotNull(shipments);
+        assertEquals(2, shipments.size());
+
+        // 4. Verify each shipment has the correct ID mapped from oldVsNewShipIds
+        Set<Long> actualShipmentIds = shipments.stream()
+                .map(ShipmentDetails::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> expectedShipmentIds = Set.of(newShipId1, newShipId2);
+        assertEquals(expectedShipmentIds, actualShipmentIds);
+
+        // 5. Verify that the shipment details were properly created and added
+        assertTrue(shipments.stream().anyMatch(s -> s.getId().equals(newShipId1)));
+        assertTrue(shipments.stream().anyMatch(s -> s.getId().equals(newShipId2)));
+
+        // 6. Verify that all shipment GUIDs were processed
+        assertEquals(oldContVsOldShipGuidMap.get(oldContainerGuid).size(), shipments.size());
+    }
+
+    @Test
+    void isInterBranchConsoleCase_WhenAllConditionsTrue_ReturnsTrue() throws Exception {
+        // Given
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        Long receivingBranch = 123L;
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(Boolean.TRUE);
+        when(shipment.getReceivingBranch()).thenReturn(null);
+
+        boolean result = (Boolean) ReflectionTestUtils.invokeMethod(entityTransferService, "isInterBranchConsoleCase", shipment, consolidationDetails, receivingBranch);
+
+        assertTrue(result);
+    }
+    @Test
+    void isInterBranchConsoleCase_WhenShipmentHasReceivingBranch_ReturnsFalse() throws Exception {
+        // Given
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        Long receivingBranch = 123L;
+
+        when(consolidationDetails.getInterBranchConsole()).thenReturn(Boolean.TRUE);
+        when(shipment.getReceivingBranch()).thenReturn(456L); // Not null
+
+        // When
+        boolean result = (Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "isInterBranchConsoleCase", shipment, consolidationDetails, receivingBranch);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    void validateConditionsForHAWBNumber_AllScenarios_CorrectlyValidates() throws Exception {
+        // Test Case 1: Direction is CTS - should return TRUE
+        assertTrue((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "CTS", "ANY_TYPE", "HAWB123"));
+
+        // Test Case 2: Direction is IMP - should return TRUE
+        assertTrue((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "IMP", "ANY_TYPE", "HAWB123"));
+
+        // Test Case 3: Non-standard shipment type + empty house bill - should return TRUE
+        assertTrue((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "EXP", "NON_STD_TYPE", null));
+
+        // Test Case 4: Standard shipment type - should return FALSE
+        assertFalse((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "EXP", "STD", null));
+
+        // Test Case 5: DRT shipment type - should return FALSE
+        assertFalse((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "EXP", "DRT", null));
+
+        // Test Case 6: Non-standard shipment type but has house bill - should return FALSE
+        assertFalse((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", "EXP", "NON_STD_TYPE", "HAWB123"));
+
+        // Test Case 7: Empty direction - should return FALSE (falls to third condition but shipment type is STD)
+        assertFalse((Boolean) ReflectionTestUtils.invokeMethod(entityTransferService,
+                "validateConditionsForHAWBNumber", null, "STD", null));
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenBothV2AndV3TenantsPresent_ReturnsTrue() {
+        // Given
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+
+        // Mock consolidation details to trigger that path
+        when(consolidationDetails.getReceivingBranch()).thenReturn(123L);
+        when(consolidationDetails.getTenantId()).thenReturn(456);
+        when(consolidationDetails.getTriangulationPartnerList()).thenReturn(Arrays.asList(
+                mock(TriangulationPartner.class), mock(TriangulationPartner.class)
+        ));
+
+        // Mock shipment settings with both V2 and V3 tenants
+        ShipmentSettingsDetails v3Settings = new ShipmentSettingsDetails();
+        v3Settings.setIsRunnerV3Enabled(Boolean.TRUE);
+
+        ShipmentSettingsDetails v2Settings = new ShipmentSettingsDetails();
+        v2Settings.setIsRunnerV3Enabled(Boolean.FALSE);
+
+        List<ShipmentSettingsDetails> settingsList = Arrays.asList(v3Settings, v2Settings);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(settingsList);
+
+        // When - Call the public method directly
+        boolean result = entityTransferService.getIsV3TenantPresent(shipmentDetails, consolidationDetails);
+
+        // Then
+        assertTrue(result);
+        verify(shipmentSettingsDao).getSettingsByTenantIds(anyList());
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenOnlyV3TenantsPresent_ReturnsFalse() {
+        // Given
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getReceivingBranch()).thenReturn(123L);
+
+        // Only V3 tenants
+        ShipmentSettingsDetails v3Settings1 = new ShipmentSettingsDetails();
+        v3Settings1.setIsRunnerV3Enabled(Boolean.TRUE);
+
+        ShipmentSettingsDetails v3Settings2 = new ShipmentSettingsDetails();
+        v3Settings2.setIsRunnerV3Enabled(Boolean.TRUE);
+
+        List<ShipmentSettingsDetails> settingsList = Arrays.asList(v3Settings1, v3Settings2);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(settingsList);
+
+        // When
+        boolean result = entityTransferService.getIsV3TenantPresent(mock(ShipmentDetails.class), consolidationDetails);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenOnlyV2TenantsPresent_ReturnsFalse() {
+        // Given
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getReceivingBranch()).thenReturn(123L);
+        ShipmentSettingsDetails v2Settings1 = new ShipmentSettingsDetails();
+        v2Settings1.setIsRunnerV3Enabled(Boolean.FALSE);
+
+        ShipmentSettingsDetails v2Settings2 = new ShipmentSettingsDetails();
+        v2Settings2.setIsRunnerV3Enabled(Boolean.FALSE);
+
+        List<ShipmentSettingsDetails> settingsList = Arrays.asList(v2Settings1, v2Settings2);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(settingsList);
+        boolean result = entityTransferService.getIsV3TenantPresent(mock(ShipmentDetails.class), consolidationDetails);
+        assertFalse(result);
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenNoSettingsFound_ReturnsFalse() {
+        // Given
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getReceivingBranch()).thenReturn(123L);
+
+        // Empty or null settings list
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(Collections.emptyList());
+
+        // When
+        boolean result = entityTransferService.getIsV3TenantPresent(mock(ShipmentDetails.class), consolidationDetails);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenConsolidationDetailsNull_UsesShipmentDetails() {
+        // Given
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getReceivingBranch()).thenReturn(123L);
+        when(shipmentDetails.getTenantId()).thenReturn(456);
+
+        ConsolidationDetails consolidationDetails = null; // This should trigger shipmentDetails path
+
+        ShipmentSettingsDetails v3Settings = new ShipmentSettingsDetails();
+        v3Settings.setIsRunnerV3Enabled(Boolean.TRUE);
+
+        ShipmentSettingsDetails v2Settings = new ShipmentSettingsDetails();
+        v2Settings.setIsRunnerV3Enabled(Boolean.FALSE);
+
+        List<ShipmentSettingsDetails> settingsList = Arrays.asList(v3Settings, v2Settings);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(settingsList);
+
+        // When
+        boolean result = entityTransferService.getIsV3TenantPresent(shipmentDetails, consolidationDetails);
+
+        // Then
+        assertTrue(result);
+        verify(shipmentSettingsDao).getSettingsByTenantIds(anyList());
+    }
+
+    @Test
+    void getIsV3TenantPresent_WhenSettingsListIsNull_ReturnsFalse() {
+        // Given
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getReceivingBranch()).thenReturn(123L);
+
+        // Null settings list
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(null);
+
+        // When
+        boolean result = entityTransferService.getIsV3TenantPresent(mock(ShipmentDetails.class), consolidationDetails);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    void processDrtShipmentTypeForEmptyAgent_WhenReceivingAgentIsNullAndShipmentTypeIsDRT_ShouldProcess() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        UUID originGuid = UUID.randomUUID();
+        Long receivingBranch = 123L;
+        Long receivingAgent = null;
+
+        when(shipmentDetails.getJobType()).thenReturn(Constants.SHIPMENT_TYPE_DRT);
+        when(shipmentDetails.getReceivingBranch()).thenReturn(receivingBranch);
+        when(originShipment.getGuid()).thenReturn(originGuid);
+
+        // Create mock shipments with different tenant IDs
+        ShipmentDetails ship1 = mock(ShipmentDetails.class);
+        ShipmentDetails ship2 = mock(ShipmentDetails.class);
+        when(ship1.getTenantId()).thenReturn(456); // Different from receivingBranch
+        when(ship2.getTenantId()).thenReturn(123); // Same as receivingBranch
+
+        List<ShipmentDetails> ships = Arrays.asList(ship1, ship2);
+        destinationShipmentsMap.put(originGuid, ships);
+         ReflectionTestUtils.invokeMethod(entityTransferService,
+                "processDrtShipmentTypeForEmptyAgent", destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, receivingAgent);
+        // Assert
+        assertNotNull(arValidationResponse.getTriangulationShipment());
+        assertEquals(1, arValidationResponse.getTriangulationShipmentList().size());
+    }
+
+    @Test
+    void getReceivingBranchFromAgent_WhenShipmentTenantIdEqualsReceivingAgent_ShouldSetTransferToReceivingAgent() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        Long receivingBranch = 100L;
+        Long receivingAgent = 200L;
+
+        when(shipmentDetails.getTenantId()).thenReturn(200); // Same as receivingAgent
+        // Act
+        Long result = ReflectionTestUtils.invokeMethod(entityTransferService,
+                "getReceivingBranchFromAgent", destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, receivingBranch, receivingAgent);
+        // Assert
+        assertNotNull(arValidationResponse.getReceivingShipment());
+        assertEquals(receivingBranch, result); // Should return original receivingBranch
+    }
+
+    @Test
+    void getReceivingBranchFromAgent_WhenDestinationMapContainsOriginGuidAndMatchingShipFound_ShouldSetTransferToReceivingAgent() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        UUID originGuid = UUID.randomUUID();
+        Long receivingBranch = 100L;
+        Long receivingAgent = 200L;
+
+        when(shipmentDetails.getTenantId()).thenReturn(300); // Different from receivingAgent
+        when(originShipment.getGuid()).thenReturn(originGuid);
+
+        // Create mock ships with one matching receivingAgent
+        ShipmentDetails ship1 = mock(ShipmentDetails.class);
+        ShipmentDetails ship2 = mock(ShipmentDetails.class);
+        when(ship1.getTenantId()).thenReturn(150); // Different
+        when(ship2.getTenantId()).thenReturn(200); // Matching receivingAgent
+
+        List<ShipmentDetails> ships = Arrays.asList(ship1, ship2);
+        destinationShipmentsMap.put(originGuid, ships);
+
+        Long result = ReflectionTestUtils.invokeMethod(entityTransferService,
+                "getReceivingBranchFromAgent", destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, receivingBranch, receivingAgent);
+
+        // Assert
+        assertTrue(arValidationResponse.getTransferToReceivingAgent());
+        assertNotNull(arValidationResponse.getReceivingShipment());
+        assertEquals(receivingBranch, result); // Should return original receivingBranch
+    }
+
+
+    @Test
+    void getReceivingBranchFromAgent_WhenReceivingAgentIsNull_ShouldHandleGracefully() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        Long receivingBranch = 100L;
+        Long receivingAgent = null;
+
+        when(shipmentDetails.getTenantId()).thenReturn(200);
+
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            ReflectionTestUtils.invokeMethod(entityTransferService,
+                    "getReceivingBranchFromAgent", destinationShipmentsMap, shipmentDetails, originShipment,
+                    arValidationResponse, receivingBranch, receivingAgent);
+        });
+    }
+
+    @Test
+    void testProcessTriangulationPartnerList_WhenTriangulationPartnerMatchesTenantId() {
+        // Arrange
+        UUID originGuid = UUID.randomUUID();
+        ShipmentDetails originShipment = new ShipmentDetails();
+        originShipment.setGuid(originGuid);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTenantId(100); // tenantId longValue = 100L
+
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        destinationShipmentsMap.put(originGuid, Collections.singletonList(shipmentDetails));
+
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        ArValidationResponse.ProfitShareShipmentData existingShipment = new ArValidationResponse.ProfitShareShipmentData();
+        existingShipment.setBranchId(200);
+        arValidationResponse.setTriangulationShipmentList(Collections.singletonList(existingShipment));
+
+        List<Long> triangulationList = new ArrayList<>();
+        List<TriangulationPartner> triangulationPartnerList = new ArrayList<>();
+
+        TriangulationPartner partner1 = new TriangulationPartner();
+        partner1.setTriangulationPartner(200L); // already in branchIds
+        TriangulationPartner partner2 = new TriangulationPartner();
+        partner2.setTriangulationPartner(300L); // new partner -> should be added
+
+        triangulationPartnerList.add(partner1);
+        triangulationPartnerList.add(partner2);
+        ReflectionTestUtils.invokeMethod(entityTransferService,
+                "processTriangulationPartnerList",    destinationShipmentsMap,
+                shipmentDetails,
+                originShipment,
+                arValidationResponse,
+                triangulationList,
+                triangulationPartnerList);
+        assertEquals(1, triangulationList.size());
+        assertTrue(triangulationList.contains(300L));
+    }
+
+    @Test
+    void updateTriangulationListWithPartner_WhenShipmentTenantIdEqualsTriangulationPartner_ShouldSetTriangulationData() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+
+        when(shipmentDetails.getTenantId()).thenReturn(123);
+
+        // Act - let the private method execute normally
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateTriangulationListWithPartner",
+                destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+
+        // Assert - verify the behavior
+        assertTrue(arValidationResponse.getTransferToTriangulationPartner());
+        assertNotNull(arValidationResponse.getTriangulationShipment());
+        assertNotNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, arValidationResponse.getTriangulationShipmentList().size());
+        assertTrue(triangulationList.isEmpty());
+    }
+
+
+
+    @Test
+    void updateTriangulationListWithPartner_WhenNoMatchingConditions_ShouldAddToTriangulationList() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+
+        when(shipmentDetails.getTenantId()).thenReturn(999); // Different
+        when(originShipment.getGuid()).thenReturn(UUID.randomUUID());
+        // Don't put anything in destinationShipmentsMap
+
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateTriangulationListWithPartner",
+                destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+
+        // Assert - Handle null Boolean safely
+        Boolean transferFlag = arValidationResponse.getTransferToTriangulationPartner();
+        assertFalse(transferFlag != null && transferFlag); // Should be false or null
+        assertNull(arValidationResponse.getTriangulationShipment());
+        assertNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, triangulationList.size());
+        assertEquals(triangulationPartner, triangulationList.get(0));
+    }
+
+    @Test
+    void updateTriangulationListWithPartner_WhenDestinationMapContainsOriginGuidButNoMatchingShip_ShouldAddToTriangulationList() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        UUID originGuid = UUID.randomUUID();
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+        when(shipmentDetails.getTenantId()).thenReturn(999); // Different from triangulationPartner
+        when(originShipment.getGuid()).thenReturn(originGuid);
+        ShipmentDetails ship1 = mock(ShipmentDetails.class);
+        ShipmentDetails ship2 = mock(ShipmentDetails.class);
+        when(ship1.getTenantId()).thenReturn(456); // Different
+        when(ship2.getTenantId()).thenReturn(789); // Different
+        List<ShipmentDetails> ships = Arrays.asList(ship1, ship2);
+        destinationShipmentsMap.put(originGuid, ships);
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateTriangulationListWithPartner",
+                destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+        assertNull(arValidationResponse.getTransferToTriangulationPartner());
+        assertNull(arValidationResponse.getTriangulationShipment());
+        assertNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, triangulationList.size());
+        assertEquals(triangulationPartner, triangulationList.get(0));
+    }
+
+    @Test
+    void updateTriangulationListWithPartner_WhenDestinationMapContainsOriginGuidAndMatchingShip_ShouldSetTriangulationData() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        ShipmentDetails originShipment = mock(ShipmentDetails.class);
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+
+        UUID originGuid = UUID.randomUUID();
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+
+        // Mock the conditions
+        when(shipmentDetails.getTenantId()).thenReturn(999); // Different from triangulationPartner
+        when(originShipment.getGuid()).thenReturn(originGuid);
+
+        // Create ships in destination map, with one matching the triangulationPartner
+        ShipmentDetails nonMatchingShip = mock(ShipmentDetails.class);
+        ShipmentDetails matchingShip = mock(ShipmentDetails.class);
+        when(nonMatchingShip.getTenantId()).thenReturn(456); // Different
+        when(matchingShip.getTenantId()).thenReturn(123); // Matches triangulationPartner
+
+        List<ShipmentDetails> ships = Arrays.asList(nonMatchingShip, matchingShip);
+        destinationShipmentsMap.put(originGuid, ships);
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateTriangulationListWithPartner",
+                destinationShipmentsMap, shipmentDetails, originShipment,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+
+        // Assert
+        // The flag should be set to true since a matching ship was found
+        assertTrue(arValidationResponse.getTransferToTriangulationPartner());
+        assertNotNull(arValidationResponse.getTriangulationShipment());
+        assertNotNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, arValidationResponse.getTriangulationShipmentList().size());
+
+        // Should NOT add to triangulationList since a matching ship was found
+        assertTrue(triangulationList.isEmpty());
+    }
+
+
+    @Test
+    void testGetReceivingBranchFromAgent_WhenMatchingShipmentExists() {
+        UUID guid = UUID.randomUUID();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setGuid(guid);
+        shipmentDetails.setTenantId(100); // tenant of the origin shipment
+        Long receivingAgent = 200L;
+        ShipmentDetails receivingShipment = new ShipmentDetails();
+        receivingShipment.setTenantId(200); // matches receivingAgent.intValue()
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        destinationShipmentsMap.put(guid, Collections.singletonList(receivingShipment));
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        Long receivingBranch = null;
+        Long result = ReflectionTestUtils.invokeMethod(entityTransferService, "getReceivingBranchFromAgent",
+                destinationShipmentsMap,
+                shipmentDetails,
+                receivingAgent,
+                arValidationResponse,
+                receivingBranch
+        );
+        assertTrue(arValidationResponse.getTransferToReceivingAgent(), "Should mark transfer to receiving agent");
+        assertNotNull(arValidationResponse.getReceivingShipment(), "Receiving shipment should be set");
+        assertNull(result, "Receiving branch should remain null since a match was found");
+    }
+
+    @Test
+    void testProcessTriangulationPartnerList_WhenPartnerMatchesReceivingAgent() throws Exception {
+        EntityTransferService service = new EntityTransferService();
+
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setGuid(shipmentGuid);
+        shipmentDetails.setTenantId(100);
+
+        Long receivingAgent = 200L;
+
+        // ArValidationResponse with ReceivingShipment
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        ArValidationResponse.ProfitShareShipmentData receivingShipment =
+                new ArValidationResponse.ProfitShareShipmentData();
+        receivingShipment.setBranchId(200);
+        arValidationResponse.setReceivingShipment(receivingShipment);
+        arValidationResponse.setTransferToReceivingAgent(true);
+
+        // TriangulationPartner that matches receivingAgent
+        TriangulationPartner partner = new TriangulationPartner();
+        partner.setTriangulationPartner(200L);
+        List<TriangulationPartner> triangulationPartnerList = new ArrayList<>();
+        triangulationPartnerList.add(partner);
+
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        List<Long> triangulationList = new ArrayList<>();
+
+        // Get private method
+        Method method = EntityTransferService.class.getDeclaredMethod("processTriangulationPartnerList", Map.class, ShipmentDetails.class, List.class, Long.class, ArValidationResponse.class, List.class, Long.class);
+        method.setAccessible(true);
+        // Invoke private method
+        method.invoke(service,
+                destinationShipmentsMap,
+                shipmentDetails,
+                triangulationPartnerList,
+                receivingAgent,
+                arValidationResponse,
+                triangulationList,
+                partner.getTriangulationPartner()
+        );
+        assertTrue(arValidationResponse.getTransferToTriangulationPartner(),
+                "Transfer to triangulation partner should be set");
+        assertEquals(arValidationResponse.getReceivingShipment(),
+                arValidationResponse.getTriangulationShipment(),
+                "TriangulationShipment should equal ReceivingShipment");
+        assertNotNull(arValidationResponse.getTriangulationShipmentList(),
+                "TriangulationShipmentList should be set");
+        assertTrue(arValidationResponse.getTriangulationShipmentList()
+                        .contains(arValidationResponse.getReceivingShipment()),
+                "TriangulationShipmentList should contain ReceivingShipment");
+    }
+
+    @Test
+    void updateListFromPartner_WhenTriangulationPartnerEqualsReceivingAgent_ShouldSetTriangulationFromReceivingData() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        Long receivingAgent = 123L;
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L; // Same as receivingAgent
+
+        // Set up receiving data
+        ArValidationResponse.ProfitShareShipmentData receivingShipmentData =
+                new ArValidationResponse.ProfitShareShipmentData();
+        arValidationResponse.setTransferToReceivingAgent(true);
+        arValidationResponse.setReceivingShipment(receivingShipmentData);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(entityTransferService, "updateListFromPartner",
+                destinationShipmentsMap, shipmentDetails, receivingAgent,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+
+        // Assert
+        assertEquals(arValidationResponse.getTransferToReceivingAgent(),
+                arValidationResponse.getTransferToTriangulationPartner());
+        assertEquals(receivingShipmentData, arValidationResponse.getTriangulationShipment());
+        assertNotNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, arValidationResponse.getTriangulationShipmentList().size());
+        assertEquals(receivingShipmentData, arValidationResponse.getTriangulationShipmentList().get(0));
+        assertTrue(triangulationList.isEmpty());
+    }
+
+    @Test
+    void updateListFromPartner_WhenDestinationMapContainsMatchingShip_ShouldSetTriangulationData() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        Long receivingAgent = 456L; // Different from triangulationPartner
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+
+        UUID shipmentGuid = UUID.randomUUID();
+        when(shipmentDetails.getTenantId()).thenReturn(999); // Different from triangulationPartner
+        when(shipmentDetails.getGuid()).thenReturn(shipmentGuid);
+
+        // Create matching ship in destination map
+        ShipmentDetails matchingShip = mock(ShipmentDetails.class);
+        when(matchingShip.getTenantId()).thenReturn(123); // Matches triangulationPartner
+        List<ShipmentDetails> ships = Arrays.asList(matchingShip);
+        destinationShipmentsMap.put(shipmentGuid, ships);
+        ArValidationResponse.ProfitShareShipmentData triangulationData =
+                new ArValidationResponse.ProfitShareShipmentData();
+        ReflectionTestUtils.invokeMethod(entityTransferService, "updateListFromPartner",
+                destinationShipmentsMap, shipmentDetails, receivingAgent,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+        assertTrue(arValidationResponse.getTransferToTriangulationPartner());
+        assertNotNull(arValidationResponse.getTriangulationShipment());
+        assertNotNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, arValidationResponse.getTriangulationShipmentList().size());
+        assertTrue(triangulationList.isEmpty());
+    }
+    @Test
+    void updateListFromPartner_WhenDestinationMapDoesNotContainGuid_ShouldAddToTriangulationList() {
+        // Arrange
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        Long receivingAgent = 456L;
+        ArValidationResponse arValidationResponse = new ArValidationResponse();
+        List<Long> triangulationList = new ArrayList<>();
+        Long triangulationPartner = 123L;
+
+        UUID shipmentGuid = UUID.randomUUID();
+        when(shipmentDetails.getTenantId()).thenReturn(999);
+        when(shipmentDetails.getGuid()).thenReturn(shipmentGuid);
+
+        // Act
+        ReflectionTestUtils.invokeMethod(entityTransferService, "updateListFromPartner",
+                destinationShipmentsMap, shipmentDetails, receivingAgent,
+                arValidationResponse, triangulationList, triangulationPartner
+        );
+
+        // Assert
+        assertNull(arValidationResponse.getTransferToTriangulationPartner());
+        assertNull(arValidationResponse.getTriangulationShipment());
+        assertNull(arValidationResponse.getTriangulationShipmentList());
+        assertEquals(1, triangulationList.size());
+        assertEquals(triangulationPartner, triangulationList.get(0));
+    }
+
+
+    @Test
+    void mapShipmentDataToProfitShare_WithTransferStatusAndBranchId_ShouldReturnCorrectProfitShareShipmentData() {
+        // Arrange
+        TransferStatus transferStatus = TransferStatus.NOT_TRANSFERRED;
+        int branchId = 123;
+
+        // Act
+        ArValidationResponse.ProfitShareShipmentData result = ReflectionTestUtils.invokeMethod(
+                entityTransferService, "mapShipmentDataToProfitShare", transferStatus, branchId
+        );
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(branchId, result.getBranchId());
+        assertEquals(transferStatus, result.getTransferStatus());
+    }
+
+    @Test
+    void processTaskCreateRequestsList_WhenReceivingAgentInTenantIds_ShouldSetTransferredReceivingShipment() {
+        // Arrange
+        Long receivingAgent = 123L;
+        List<Long> triangulationPartnerList = Arrays.asList(456L, 789L);
+        ArValidationResponse response = new ArValidationResponse();
+        Set<Integer> tenantIds = new HashSet<>(Arrays.asList(123, 456)); // Contains receivingAgent but not all triangulation partners
+
+        // Act
+        ReflectionTestUtils.invokeMethod(entityTransferService, "processTaskCreateRequestsList",
+                receivingAgent, triangulationPartnerList, response, tenantIds
+        );
+
+        // Assert
+        assertNotNull(response.getReceivingShipment());
+        assertEquals(TransferStatus.TRANSFERRED, response.getReceivingShipment().getTransferStatus());
+        assertEquals(123, response.getReceivingShipment().getBranchId());
+
+        assertNotNull(response.getTriangulationShipmentList());
+        assertEquals(2, response.getTriangulationShipmentList().size());
+
+        // Verify triangulation partners - one should be transferred, one not transferred
+        boolean foundTransferred = false;
+        boolean foundNotTransferred = false;
+
+        for (ArValidationResponse.ProfitShareShipmentData triangulation : response.getTriangulationShipmentList()) {
+            if (triangulation.getBranchId() == 456 && triangulation.getTransferStatus() == TransferStatus.TRANSFERRED) {
+                foundTransferred = true;
+            }
+            if (triangulation.getBranchId() == 789 && triangulation.getTransferStatus() == TransferStatus.NOT_TRANSFERRED) {
+                foundNotTransferred = true;
+            }
+        }
+
+        assertTrue(foundTransferred, "Should have transferred triangulation partner with branchId 456");
+        assertTrue(foundNotTransferred, "Should have not transferred triangulation partner with branchId 789");
+    }
+
+    @Test
+    void processTaskCreateRequestsList_WhenReceivingAgentNotInTenantIds_ShouldSetNotTransferredReceivingShipment() {
+        // Arrange
+        Long receivingAgent = 123L;
+        List<Long> triangulationPartnerList = Arrays.asList(456L);
+        ArValidationResponse response = new ArValidationResponse();
+        Set<Integer> tenantIds = new HashSet<>(Arrays.asList(456));
+        ReflectionTestUtils.invokeMethod(entityTransferService, "processTaskCreateRequestsList",
+                receivingAgent, triangulationPartnerList, response, tenantIds
+        );
+        assertNotNull(response.getReceivingShipment());
+        assertEquals(TransferStatus.NOT_TRANSFERRED, response.getReceivingShipment().getTransferStatus());
+        assertEquals(123, response.getReceivingShipment().getBranchId());
+        assertNotNull(response.getTriangulationShipmentList());
+        assertEquals(1, response.getTriangulationShipmentList().size());
+        assertEquals(TransferStatus.TRANSFERRED, response.getTriangulationShipmentList().get(0).getTransferStatus());
+        assertEquals(456, response.getTriangulationShipmentList().get(0).getBranchId());
+    }
+
+    @Test
+    void retrieveTaskFromNte_WhenNetworkTransfersFoundWithTransferredStatus_ShouldReturnTenantIds() {
+        // Arrange
+        Long entityId = 999L;
+        String entityType = "SHIPMENT";
+        List<Integer> tenantIds = Arrays.asList(123, 456, 789);
+        NetworkTransfer transfer1 = mock(NetworkTransfer.class);
+        NetworkTransfer transfer2 = mock(NetworkTransfer.class);
+        when(transfer1.getStatus()).thenReturn(NetworkTransferStatus.TRANSFERRED);
+        when(transfer1.getTenantId()).thenReturn(123);
+        when(transfer2.getStatus()).thenReturn(NetworkTransferStatus.TRANSFERRED);
+        when(transfer2.getTenantId()).thenReturn(456);
+        List<NetworkTransfer> networkTransfers = Arrays.asList(transfer1, transfer2);
+        when(networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds))
+                .thenReturn(networkTransfers);
+        Set<Integer> result = ReflectionTestUtils.invokeMethod(
+                entityTransferService, "retrieveTaskFromNte", entityId, entityType, tenantIds);
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.contains(123));
+        assertTrue(result.contains(456));
+        assertFalse(result.contains(789)); // Should not contain this tenant ID
+        verify(networkTransferDao).findByEntityAndTenantList(entityId, entityType, tenantIds);
+    }
+
+    @Test
+    void retrieveTaskFromNte_WhenNetworkTransfersIsNull_ShouldReturnEmptySet() {
+        // Arrange
+        Long entityId = 999L;
+        String entityType = "SHIPMENT";
+        List<Integer> tenantIds = Arrays.asList(123, 456);
+        when(networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds))
+                .thenReturn(null);
+        Set<Integer> result = ReflectionTestUtils.invokeMethod(
+                entityTransferService, "retrieveTaskFromNte", entityId, entityType, tenantIds);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+    @Mock
+    private ArValidationResponse response;
+
+    @Test
+    void populateNonAcceptedShipment_WithNullReceivingAgentAndEmptyTriangulationList_ShouldDoNothing() {
+        // Arrange
+        Long receivingAgent = null;
+        List<Long> triangulationPartnerList = Collections.emptyList();
+        Long entityId = 1L;
+        String entityType = "TEST";
+        ArValidationResponse response = new ArValidationResponse();
+        ReflectionTestUtils.invokeMethod(
+                entityTransferService, "populateNonAcceptedShipment", receivingAgent, triangulationPartnerList, entityId, entityType, response);
+
+        assertNull(response.getReceivingShipment());
+        assertTrue(CollectionUtils.isEmpty(response.getTriangulationShipmentList()));
+    }
+
+    
 }

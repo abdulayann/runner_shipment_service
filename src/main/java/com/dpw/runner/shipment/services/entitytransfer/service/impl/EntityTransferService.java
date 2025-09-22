@@ -1786,9 +1786,8 @@ public class EntityTransferService implements IEntityTransferService {
                     errorShipIds.add(shipment.getId());
                 }
             }
-            if (!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_STD)
-                    && !Objects.equals(shipment.getJobType(), Constants.CONSOLIDATION_TYPE_DRT)
-                    && Strings.isNullOrEmpty(shipment.getHouseBill())) {
+
+            if (validateConditionsForHAWBNumber(shipment.getDirection(), shipment.getJobType(), shipment.getHouseBill())) {
                 isHawbNumberError = true;
                 errorShipments.add(shipment.getShipmentId());
                 errorShipIds.add(shipment.getId());
@@ -1809,6 +1808,11 @@ public class EntityTransferService implements IEntityTransferService {
         return SendConsoleValidationResponse.builder()
                 .isError(Boolean.FALSE)
                 .build();
+    }
+
+    private boolean validateConditionsForHAWBNumber(String direction, String shipmentType, String houseBill){
+        return Objects.equals(direction, DIRECTION_CTS) || Objects.equals(direction, DIRECTION_IMP) || (!Objects.equals(shipmentType, Constants.SHIPMENT_TYPE_STD)
+                && !Objects.equals(shipmentType, Constants.CONSOLIDATION_TYPE_DRT)) && Strings.isNullOrEmpty(houseBill);
     }
 
     private List<String> airConsoleFieldValidations(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
@@ -1833,6 +1837,11 @@ public class EntityTransferService implements IEntityTransferService {
                 && Strings.isNullOrEmpty(consolidationDetails.getBol())){
             missingField.add("MAWB Number");
         }
+
+        if((Objects.equals(consolidationDetails.getShipmentType(), Constants.IMP) || Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) && Strings.isNullOrEmpty(consolidationDetails.getBol())) {
+            missingField.add("MAWB Number");
+        }
+
         return missingField;
     }
     private String errorMsgPreparationForAirConsole(List<String> missingField, boolean isPrintMawbError, boolean isPrintHawbError, List<String> errorShipments, boolean isHawbNumberError, StringBuilder shipErrorMsg, boolean isAutomaticTransfer) {
