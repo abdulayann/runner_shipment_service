@@ -680,6 +680,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     @Transactional
     public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
+        routingValidationUtil.validateVoyageLengthRequest(request);
         routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
         List<RoutingsRequest> incomingRoutings = request.getRoutings();
         setFlightNumberInCaseAir(incomingRoutings);

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -262,5 +263,36 @@ class RoutingValidationUtilTest {
         assertThrows(ValidationException.class, () -> routingValidationUtil.validateBulkUpdateRoutingRequest(request, Constants.SHIPMENT));
     }
 
+    @Test
+    void shouldThrowExceptionWhenVoyageLengthExceeds20() {
 
+        RoutingsRequest routing = new RoutingsRequest();
+        routing.setVoyage("123456789012345678901"); // 21 chars
+        BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
+        request.setRoutings(List.of(routing));
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> routingValidationUtil.validateVoyageLengthRequest(request)
+        );
+        assertThat(ex.getMessage()).isEqualTo("max size is 20 for voyage");
+    }
+
+    @Test
+    void shouldNotThrowWhenVoyageLengthIsExactly20() {
+
+        RoutingsRequest routing = new RoutingsRequest();
+        routing.setVoyage("12345678901234567890"); // exactly 20 chars
+        BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
+        request.setRoutings(List.of(routing));
+        assertDoesNotThrow(() -> routingValidationUtil.validateVoyageLengthRequest(request));
+    }
+
+    @Test
+    void shouldNotThrowWhenVoyageIsNull() {
+        RoutingsRequest routing = new RoutingsRequest();
+        routing.setVoyage(null);
+        BulkUpdateRoutingsRequest request = new BulkUpdateRoutingsRequest();
+        request.setRoutings(List.of(routing));
+        assertDoesNotThrow(() -> routingValidationUtil.validateVoyageLengthRequest(request));
+    }
 }

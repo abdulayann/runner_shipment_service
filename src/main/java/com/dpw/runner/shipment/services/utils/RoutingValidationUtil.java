@@ -195,4 +195,14 @@ public class RoutingValidationUtil {
             validateMainCarriageAdjacencyInIncoming(request.getRoutings());
         }
     }
+
+    public void validateVoyageLengthRequest(BulkUpdateRoutingsRequest request) {
+        if (Objects.nonNull(request)) {
+            for (RoutingsRequest routingsRequest : request.getRoutings()) {
+                if (StringUtility.isNotEmpty(routingsRequest.getVoyage()) && routingsRequest.getVoyage().length() > 20) {
+                    throw new ValidationException("max size is 20 for voyage");
+                }
+            }
+        }
+    }
 }
