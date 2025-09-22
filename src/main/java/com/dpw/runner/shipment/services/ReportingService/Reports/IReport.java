@@ -169,6 +169,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_COST_AT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_SECURITY_INFORMATION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
@@ -921,6 +922,8 @@ public abstract class IReport {
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
             dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
                     shippedOnboardDate, "ddMMMyyyy", false));
+            dictionary.put(SHIPPED_ONBOARD_NEW, ReportConstants.SHIPPED_ONBOARD + ": "+ convertToDPWDateFormat(
+                    shippedOnboardDate, "dd/MMM/yyyy", false));
         }
     }
 

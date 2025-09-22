@@ -352,6 +352,8 @@ public class HblReport extends IReport {
         processBlObject(hblModel, dictionary);
 
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
+        if(hblModel.shipment.getAdditionalDetails() != null)
+            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MMM/yyyy", true));
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -1057,6 +1059,8 @@ public class HblReport extends IReport {
             dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoTermsDescription()));
             dictionary.put(BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getBlRemarksDescription()));
+            dictionary.put(BL_REMARKS, hblModel.blObject.getHblData().getBlRemark());
+            dictionary.put(CARGO_TERMS, hblModel.blObject.getHblData().getCargoTerms());
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));

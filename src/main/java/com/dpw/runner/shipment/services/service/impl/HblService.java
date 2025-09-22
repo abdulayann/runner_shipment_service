@@ -557,6 +557,7 @@ public class HblService implements IHblService {
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
+        hblData.setBlRemark("SHIPPER’S LOAD, STOWAGE, COUNT AND SEAL");
         List<ShipmentOrder> shipmentOrders = shipmentDetail.getShipmentOrders();
         if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
             hblData.setPurchaseOrderNumber(shipmentOrders.stream().map(ShipmentOrder::getOrderNumber).filter(Objects::nonNull).collect(Collectors.joining(", ")));
