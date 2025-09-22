@@ -520,24 +520,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
-        getMasterDataForList(responseList, getMasterData);
+        shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
         return responseList;
-    }
-
-    public void getMasterDataForList(List<IRunnerResponse> responseList, boolean getMasterData) {
-        if (getMasterData) {
-            try {
-                double startTime = System.currentTimeMillis();
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
-                var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
-                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
-
-                CompletableFuture.allOf(locationDataFuture, vesselDataFuture, carrierDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
-            } catch (Exception ex) {
-                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
-            }
-        }
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(ShippingInstructionResponse shippingInstructionResponse) {
