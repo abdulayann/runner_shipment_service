@@ -4049,13 +4049,14 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException, RunnerException {
         log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
         }
+        applyPermissionFilter(commonRequestModel);
         String username = UserContext.getUser().getUsername();
         String expireTime = applicationConfigService.getValue(Constants.EXPORT_EXCEL_EXPIRE_TIME);
         int defaultTime = 10;
@@ -4096,7 +4097,27 @@ public class ShipmentService implements IShipmentService {
         }
         log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
     }
+public void applyPermissionFilter(CommonRequestModel commonRequestModel) throws RunnerException {
+    ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
+    List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
+    if(permissionList == null || permissionList.isEmpty())
+        throw new RunnerException("Unable to download shipments due to insufficient list permissions");
+    permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
+    List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
+    FilterCriteria criteria1 = null;
+    if(listCommonRequest.getFilterCriteria() != null && !listCommonRequest.getFilterCriteria().isEmpty()) {
+        criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
+    }
+    FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+    if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && !criteria2.getInnerFilter().isEmpty()))) {
+        if (criteria1 != null && !criteria1.getInnerFilter().isEmpty()) {
+            criteria2.setLogicOperator("AND");
+            listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        } else
+            listCommonRequest.setFilterCriteria(List.of(criteria2));
+    }
+}
     private void downloadShipmentListExcel(HttpServletResponse response, Page<ShipmentDetails> shipmentDetailsPage) {
         log.info("Starting download of shipment list Excel. Request Id {}", LoggerHelper.getRequestIdFromMDC());
 

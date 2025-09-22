@@ -848,7 +848,7 @@ class ShipmentControllerTest {
      */
 
     @Test
-    void exportShipmentListTest() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    void exportShipmentListTest() throws IOException, IllegalAccessException, ExecutionException, InterruptedException, RunnerException {
         boolean isExecuted = true;
         // Mock
         doNothing().when(shipmentService).exportExcel(any(), any(), any());
@@ -859,7 +859,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentListTest2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    void exportShipmentListTest2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException, RunnerException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any(), any());
@@ -869,7 +869,7 @@ class ShipmentControllerTest {
         assertTrue(isExecuted);
     }
     @Test
-    void exportShipmentList_Success_EmailNotSent_ReturnsOk() throws IOException, ExecutionException, InterruptedException, IllegalAccessException {
+    void exportShipmentList_Success_EmailNotSent_ReturnsOk() throws IOException, ExecutionException, InterruptedException, IllegalAccessException, RunnerException {
         ListCommonRequest  validRequest = new ListCommonRequest();
         validRequest.setPageNo(1);
         validRequest.setPageSize(10);
@@ -905,7 +905,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentList_Success_EmailSent_ReturnsAccepted() throws IOException, ExecutionException, InterruptedException, IllegalAccessException {
+    void exportShipmentList_Success_EmailSent_ReturnsAccepted() throws IOException, ExecutionException, InterruptedException, IllegalAccessException, RunnerException {
         ListCommonRequest  validRequest = new ListCommonRequest();
         validRequest.setPageNo(1);
         validRequest.setPageSize(10);
@@ -942,7 +942,7 @@ class ShipmentControllerTest {
 
 
     @Test
-    void exportShipmentListTest3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+    void exportShipmentListTest3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException, RunnerException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel(any(), any(), any());
