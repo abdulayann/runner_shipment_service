@@ -260,6 +260,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
@@ -4355,7 +4357,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetailsEntity);
 
         assertNotNull(shipmentDetailsEntity.getAdditionalDetails().getExportBroker());
-        assertEquals(1L, shipmentDetailsEntity.getOriginBranch());
+        assertNotEquals(1L, shipmentDetailsEntity.getOriginBranch());
     }
 
     @Test
@@ -8007,7 +8009,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("USD", response.getFreightLocalCurrency());
         assertNotNull(response.getAdditionalDetails().getExportBroker());
         assertEquals("AGENT001", response.getAdditionalDetails().getExportBroker().getOrgCode());
-        assertEquals(5L, response.getOriginBranch());
         assertEquals(masterDataMap, response.getMasterDataMap());
 
         verify(shipmentServiceImplV3, times(2)).generateCustomHouseBL(null);

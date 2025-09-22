@@ -3235,8 +3235,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(Constants.TENANTID) != null)
-            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(Constants.TENANTID).toString()));
+        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData() != null) {
+            Long originBranchId = commonUtils.getReceivingBranch(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgId(), shipmentDetails.getAdditionalDetails().getExportBroker().getAddressId());
+            shipmentDetails.setOriginBranch(originBranchId);
+        }
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -5218,11 +5220,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if(Constants.DIRECTION_EXP.equals(direction)) {
                 // populate export broker and origin branch
                 response.getAdditionalDetails().setExportBroker(partiesResponse);
-                if(partiesResponse.getOrgData() != null) {
-                    var originBranch = partiesResponse.getOrgData().get(Constants.TENANTID);
-                    if (originBranch != null) {
-                        response.setOriginBranch(Long.valueOf(originBranch.toString()));
-                    }
+                if(partiesResponse.getOrgId() != null && partiesResponse.getAddressId() != null) {
+                    Long originBranchId = commonUtils.getReceivingBranch(partiesResponse.getOrgId(), partiesResponse.getAddressId());
+                    response.setOriginBranch(originBranchId);
                 }
 
             } else if(Constants.DIRECTION_IMP.equals(direction)) {
