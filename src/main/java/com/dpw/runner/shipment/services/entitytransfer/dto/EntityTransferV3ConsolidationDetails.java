@@ -79,6 +79,8 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private String ediTransactionId;
 
     private Long originBranch;

@@ -32,6 +32,8 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     @Size(max=25000, message = "max size is 25000 for additional terms")
     private String additionalTerms;
     private String assignedTo;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private Boolean autoUpdateWtVol;
     @Size(max = 50, message = "Max size is 50 for bookingNumber")
     private String bookingNumber;

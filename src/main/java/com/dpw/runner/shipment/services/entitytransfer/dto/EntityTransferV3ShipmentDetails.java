@@ -75,6 +75,8 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private Long documentationPartner;
     private Long originBranch;
     private boolean intraBranch;
