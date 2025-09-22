@@ -406,6 +406,18 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "reefer_cut_off")
     private LocalDateTime reeferCutoff;
 
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
+
     @Column(name = "earliest_empty_equipment_pickup")
     private LocalDateTime earliestEmptyEquipmentPickUp;
 
