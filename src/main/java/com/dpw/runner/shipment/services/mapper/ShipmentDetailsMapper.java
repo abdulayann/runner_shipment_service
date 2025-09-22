@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import org.mapstruct.*;
 
@@ -20,6 +22,7 @@ public interface ShipmentDetailsMapper {
     ShipmentDetails map(ShipmentRequest req);
     ShipmentDetailsResponse map(ShipmentDetails entity);
     ShipmentRequest getRequest(ShipmentDetails shipmentDetails);
+    ShipmentDetailsV3Response mapV3Response(ShipmentDetails entity);
 
     // Mappers for nested entities
     Parties map(PartiesRequest req);
@@ -44,4 +47,5 @@ public interface ShipmentDetailsMapper {
 
     @InheritConfiguration
     void update(ShipmentPatchRequest update, @MappingTarget ShipmentDetails destination);
+    void updateFromV3Patch(ShipmentPatchV3Request update, @MappingTarget ShipmentDetails destination);
 }

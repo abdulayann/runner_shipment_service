@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -401,6 +402,44 @@ class ShipmentControllerV3Test {
         when(shipmentService.resetShipmentQuoteRules(any())).thenReturn(new QuoteResetRulesResponse());
         var response = shipmentControllerV3.resetShipmentQuoteRules(1L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testPartialUpdate_Success() throws RunnerException {
+        // Arrange
+        Object request = new HashMap<>(); // The raw request body
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        ShipmentDetailsV3Response serviceResponse = new ShipmentDetailsV3Response();
+
+        when(jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class)).thenReturn(patchRequest);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}"); // For logging
+        when(shipmentService.partialUpdate(any())).thenReturn(serviceResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.partialUpdate(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(jsonHelper).convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
+        verify(shipmentService).partialUpdate(any());
+    }
+
+    @Test
+    void testPartialUpdate_ServiceThrowsException() throws RunnerException {
+        // Arrange
+        Object request = new HashMap<>();
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+
+        when(jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class)).thenReturn(patchRequest);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}"); // For logging
+        when(shipmentService.partialUpdate(any())).thenThrow(new RunnerException("Partial update failed"));
+
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> shipmentControllerV3.partialUpdate(request));
+
+        // Verify
+        verify(jsonHelper).convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
+        verify(shipmentService).partialUpdate(any());
     }
 
 }
