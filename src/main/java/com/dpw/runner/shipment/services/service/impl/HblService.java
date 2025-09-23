@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -76,7 +77,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.math3.analysis.function.Add;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -629,16 +629,6 @@ public class HblService implements IHblService {
         mapDeliveryDataInHbl(additionalDetails, hblData);
     }
 
-    private String generateNumberAndKindOfPack(String noOfPack, String packType) {
-        String numberAndKindOfPack = noOfPack == null ? "0" : noOfPack;
-        // Call masterDataApi for type
-        var masterData = masterDataUtil.getMasterListData(MasterDataType.PACKS_UNIT, packType);
-        if (Objects.nonNull(masterData)) {
-            numberAndKindOfPack += " " + masterData.getItemDescription();
-        }
-        return numberAndKindOfPack;
-    }
-
     private void mapVoyageVesselFromRouting(Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
         if (Objects.nonNull(routing)) {
             hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
@@ -684,6 +674,7 @@ public class HblService implements IHblService {
             }
         }
     }
+
     private void mapDeliveryDataInHbl(AdditionalDetails additionalDetails, HblDataDto hblData) {
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
@@ -764,25 +755,6 @@ public class HblService implements IHblService {
             return CountryListHelper.ISO3166.getAlpha2FromAlpha3(countryCode.toUpperCase());
         }
         return countryCode;
-    }
-
-    private String constructAddress(Map<String, Object> addressData) {
-        StringBuilder sb = new StringBuilder();
-        String newLine = "\r\n";
-        if (addressData.containsKey(PartiesConstants.COMPANY_NAME))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME)));
-        if (addressData.containsKey(PartiesConstants.ADDRESS1))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
-        if (addressData.containsKey(PartiesConstants.CITY))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
-        if (addressData.containsKey(PartiesConstants.COUNTRY))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
-        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
-        if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_PHONE)));
-
-        return  !sb.isEmpty() && sb.toString().length() >= 2 ? sb.substring(2) : sb.toString();
     }
 
     private Map<String, String> extractAddressComponents(Map<String, Object> addressData) {
@@ -936,13 +908,7 @@ public class HblService implements IHblService {
         List<HblPartyDto> hblParties = new ArrayList<>();
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null) {
-//            hblParty.setIsShipmentCreated(true);
-//            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-//            hblParty.setAddress(CommonUtils.constructAddress(party.getAddressData()));
-//            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-//            hblParties.add(hblParty);
-//        }
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())){
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())){
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
                 Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
@@ -1309,10 +1275,6 @@ public class HblService implements IHblService {
 
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null && createNotifyParty) {
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            hblParty.setAddress(CommonUtils.constructAddress(party.getAddressData()));
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
@@ -1336,6 +1298,11 @@ public class HblService implements IHblService {
             hbl.getHblNotifyParty().add(hblParty);
         }
 
+    }
+
+    // Helper method for safe uppercase conversion
+    private String toUpperCase(String value) {
+        return value != null ? value.toUpperCase() : null;
     }
 
     private HblPartyDto getDeleteParty(Parties party, HblLockSettings hblLock, HblPartyDto hblParty, HblPartyDto deleteParty) {
