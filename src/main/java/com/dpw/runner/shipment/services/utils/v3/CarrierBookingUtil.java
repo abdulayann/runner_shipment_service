@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -153,6 +154,21 @@ public class CarrierBookingUtil {
             // Set the fetched details in the VerifiedGrossMassInttraResponse
             carrierBookingBridgeRequest.setCarrierScacCode(carrierScacCode);
             carrierBookingBridgeRequest.setCarrierDescription(carrierDescription);
+        }
+    }
+
+    public void populateIntegrationCode(Map<String, EntityTransferContainerType> containerTypeMap, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
+
+        if (Objects.isNull(containerTypeMap)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferContainerType> entry : containerTypeMap.entrySet()) {
+            EntityTransferContainerType carrier = entry.getValue();
+
+            String integrationCode = carrier.IntegrationCode;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            carrierBookingBridgeRequest.setIntegrationCode(integrationCode);
         }
     }
 
