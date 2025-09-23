@@ -502,11 +502,7 @@ public class ContainerV3Util {
             if (container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
                     && !isStringNullOrEmpty(container.getTareWeightUnit())) {
                 container.setNetWeight(BigDecimal.ZERO);
-                if (isStringNullOrEmpty(container.getNetWeightUnit())) {
-                    container.setNetWeightUnit(
-                            isStringNullOrEmpty(container.getGrossWeightUnit()) ?
-                                    commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
-                }
+                validateAndSetNetWeight(container);
                 if (container.getGrossWeight() == null || BigDecimal.ZERO.equals(container.getGrossWeight()) || isStringNullOrEmpty(container.getGrossWeightUnit())) {
                     container.setNetWeight(container.getTareWeight());
                     container.setNetWeightUnit(container.getTareWeightUnit());
@@ -518,6 +514,14 @@ public class ContainerV3Util {
                 container.setNetWeight(container.getGrossWeight());
                 container.setNetWeightUnit(container.getGrossWeightUnit());
             }
+        }
+    }
+
+    private void validateAndSetNetWeight(Containers container) {
+        if (isStringNullOrEmpty(container.getNetWeightUnit())) {
+            container.setNetWeightUnit(
+                    isStringNullOrEmpty(container.getGrossWeightUnit()) ?
+                            commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
         }
     }
 
@@ -624,7 +628,7 @@ public class ContainerV3Util {
         this.validateIfPacksOrVolume(prevData, postData, request, module, containersList);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
-        validateHsCode(containersList, errorList);
+        validateHsCode(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         processErrorList(excelHeaders, errorList, containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
@@ -793,9 +797,9 @@ public class ContainerV3Util {
         }
     }
 
-    public void validateHsCode(List<Containers> containersList, List<String> errorList) {
+    public void validateHsCode(List<Containers> containersList) {
         if (!containersList.isEmpty()) {
-            Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList, errorList));
+            Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList));
             for (int i = 0; i < containersList.size(); i++) {
                 String hsCode = containersList.get(i).getHsCode();
                 if (StringUtils.isNotBlank(hsCode) && !hsCode.contains(",") && !validHsCode.contains(hsCode)) {
@@ -805,7 +809,7 @@ public class ContainerV3Util {
         }
     }
 
-    public static Set<String> syncCommodityAndHsCode(List<Containers> containersList, List<String> errorList) {
+    public static Set<String> syncCommodityAndHsCode(List<Containers> containersList) {
         Set<String> hsCodeList = new HashSet<>();
         for (Containers container : containersList) {
             String hsCode = container.getHsCode();

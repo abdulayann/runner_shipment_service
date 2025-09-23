@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.MultiValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -44,7 +46,6 @@ import org.mockito.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -56,6 +57,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
@@ -97,6 +100,9 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Mock
     private MasterDataUtils masterDataUtils;
@@ -171,7 +177,6 @@ class ContainerV3UtilTest extends CommonMocks {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
-        MockitoAnnotations.initMocks(this);
     }
 
     @Test
@@ -591,10 +596,15 @@ class ContainerV3UtilTest extends CommonMocks {
                 () -> containerV3Util.uploadContainers(requestData, CONSOLIDATION));
     }
 
-//    @Test
+    @Test
     void uploadContainers_shouldCompleteSuccessfully_whenExcelIsEmpty() throws Exception {
-        when(parser.parseExcelFile(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Collections.emptyList());
+        CSVParsingUtilV3<Containers> parserMock = Mockito.mock(CSVParsingUtilV3.class);
+        Field parserField = ContainerV3Util.class.getDeclaredField("parserV3");
+        parserField.setAccessible(true);
+        parserField.set(containerV3Util, parserMock);
+        when(parserMock.parseExcelFile(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(Collections.emptyList());
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mockResponse);
         requestData.setConsolidationId(123L);
@@ -602,12 +612,11 @@ class ContainerV3UtilTest extends CommonMocks {
         verify(containerV3FacadeService, never()).createUpdateContainer(any(), any());
     }
 
-//    @Test
+    @Test
     void validateHsCode_shouldThrowValidationException_whenHsCodeInvalid() {
         Containers container = createTestContainer();
         container.setHsCode("847040");
         List<Containers> containers = List.of(container);
-        List<String> errorList = Mockito.anyList();
         doAnswer(invocation -> {
             Runnable task = invocation.getArgument(0);
             task.run();
@@ -622,12 +631,12 @@ class ContainerV3UtilTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CommodityResponse.class)))
                 .thenReturn(List.of(invalidCommodity));
         assertThrows(ValidationException.class,
-                () -> containerV3Util.validateHsCode(containers, errorList));
+                () -> containerV3Util.validateHsCode(containers));
         verify(hsCodeValidationExecutor).execute(any(Runnable.class));
         verify(parser).getCommodityDataResponse(any());
     }
 
-//    @Test
+    @Test
     void syncCommodityAndHsCode_shouldSyncCodes() {
         Containers container1 = new Containers();
         container1.setHsCode("847040");
@@ -636,7 +645,7 @@ class ContainerV3UtilTest extends CommonMocks {
         container2.setHsCode(null);
         container2.setCommodityCode("COMM456");
         List<Containers> containers = List.of(container1, container2);
-        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers, Mockito.anyList());
+        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers);
         assertEquals("847040", container1.getCommodityCode());
         assertEquals("COMM456", container2.getHsCode());
         assertEquals(2, result.size());
@@ -1283,4 +1292,71 @@ class ContainerV3UtilTest extends CommonMocks {
         assertEquals("5", container.getPacks());
         assertEquals("PKG", container.getPacksType());
     }
+
+    @Test
+    void testProcessErrorListThrowsMultiValidationException() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Arrays.asList(
+                "Row 2: ContainerNumber is invalid",
+                "Row 3: Type is invalid",
+                "Row 2: ContainerNumber is invalid" // duplicate to test distinct()
+        );
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        InvocationTargetException wrappedException = assertThrows(InvocationTargetException.class,
+                () -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+        Throwable cause = wrappedException.getCause();
+        assertTrue(cause instanceof MultiValidationException);
+        MultiValidationException mvException = (MultiValidationException) cause;
+        assertEquals("2 out of 3 Container Details contains errors, Please rectify and upload.", mvException.getMessage());
+        assertEquals(2, mvException.getErrors().size()); // distinct and sorted
+        assertTrue(mvException.getErrors().contains("Row 2: ContainerNumber is invalid"));
+        assertTrue(mvException.getErrors().contains("Row 3: Type is invalid"));
+    }
+
+    @Test
+    void testProcessErrorListDoesNotThrowWhenNoErrors() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Collections.emptyList();
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        assertDoesNotThrow(() -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+    }
+
+    @Test
+    void testExtractHeaderOrderReturnsCorrectIndex() throws Exception {
+        Map<String, Integer> headerOrder = new HashMap<>();
+        headerOrder.put("containernumber", 0);
+        headerOrder.put("type", 1);
+        headerOrder.put("weight", 2);
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractHeaderOrder", String.class, Map.class);
+        method.setAccessible(true);
+        int index1 = (int) method.invoke(containerV3Util, "Row 2: ContainerNumber is invalid", headerOrder);
+        assertEquals(0, index1);
+        int index2 = (int) method.invoke(containerV3Util, "Row 3: Type is invalid", headerOrder);
+        assertEquals(1, index2);
+        int index3 = (int) method.invoke(containerV3Util, "Row 4: Weight is missing", headerOrder);
+        assertEquals(2, index3);
+        int indexUnknown = (int) method.invoke(containerV3Util, "Row 5: UnknownField is invalid", headerOrder);
+        assertEquals(Integer.MAX_VALUE, indexUnknown);
+    }
+
+    @Test
+    void testExtractRowNumCatchBlock() throws Exception {
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractRowNum", String.class);
+        method.setAccessible(true);
+        int result1 = (int) method.invoke(containerV3Util, "Some invalid message without row info");
+        assertEquals(Integer.MAX_VALUE, result1);
+        int result2 = (int) method.invoke(containerV3Util, "Row#ABC: ContainerNumber invalid");
+        assertEquals(Integer.MAX_VALUE, result2);
+        int result3 = (int) method.invoke(containerV3Util, "Row#5 ContainerNumber invalid");
+        assertEquals(Integer.MAX_VALUE, result3);
+    }
+
 }

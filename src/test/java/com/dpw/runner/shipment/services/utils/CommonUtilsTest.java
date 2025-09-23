@@ -197,6 +197,7 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -7803,6 +7804,18 @@ class CommonUtilsTest {
         long expectedSeconds = Long.MAX_VALUE % 60;
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
+    }
+
+    @Test
+    void testGetAppConfigValueByKeyThrowsValidationException() throws Exception {
+        String key = "badKey";
+        String jsonValue = "invalidJson";
+        when(applicationConfigService.getValue(key)).thenReturn(jsonValue);
+        when(objectMapper.readValue(jsonValue, new TypeReference<Map<String, Integer>>() {}))
+                .thenThrow(new RuntimeException("Parsing error"));
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> commonUtils.getAppConfigValueByKey(key, new TypeReference<Map<String, Integer>>() {}));
+        assertEquals("Invalid key", exception.getMessage());
     }
 
     @Test
