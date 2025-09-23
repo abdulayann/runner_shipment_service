@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
+import com.dpw.runner.shipment.services.exception.exceptions.MultiValidationException;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -191,5 +192,12 @@ public class ResponseHelper {
                 .header(REQUEST_ID, LoggerHelper.getRequestIdFromMDC())
                 .body(resource);
     }
+
+    public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, List<String> error, HttpStatus httpStatus) {
+        log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
+        RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg, error));
+        return new ResponseEntity<>(runnerResponse, httpStatus);
+    }
+
 }
 
