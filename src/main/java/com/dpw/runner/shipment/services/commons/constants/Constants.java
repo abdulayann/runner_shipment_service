@@ -174,6 +174,15 @@ public class Constants {
     public static final String DIRECTION_CTS = "CTS";
     public static final String DIRECTION_DOM = "DOM";
 
+    // Cargo Terms
+
+    public static final String FCL_FCL = "FCL/FCL";
+    public static final String LCL_LCL = "LCL/LCL";
+    public static final String LCL_FCL = "LCL/FCL";
+    public static final String FCL_LCL = "FCL/LCL";
+    public static final String BREAKBULK = "Breakbulk";
+    public static final String RORO = "RO-RO";
+
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
 

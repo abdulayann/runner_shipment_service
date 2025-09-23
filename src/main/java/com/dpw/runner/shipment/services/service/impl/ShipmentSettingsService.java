@@ -476,6 +476,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if(request.getIsExternalFileTransferEnabled() == null) {
             request.setIsExternalFileTransferEnabled(oldEntity.getIsExternalFileTransferEnabled());
         }
+        if(request.getIncludePortsInShipConsoleAttachFilter() == null) {
+            request.setIncludePortsInShipConsoleAttachFilter(oldEntity.getIncludePortsInShipConsoleAttachFilter());
+        }
     }
 
     private void setNteAdditionalEmailsFlag(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request) {
