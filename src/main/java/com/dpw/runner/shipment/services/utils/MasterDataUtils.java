@@ -348,24 +348,48 @@ public class MasterDataUtils{
         }
     }
 
-    private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-        if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
-                shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        }
-        else if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
-            if (attachListShipmentResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(attachListShipmentResponse.getCarrierDetails().getVessel()))
-                attachListShipmentResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + attachListShipmentResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        }
-        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
-                consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        }
-        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-            consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        } else if (response instanceof  CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isNotEmpty(carrierBookingListResponse.getSailingInformation().getVesselName())){
-            carrierBookingListResponse.getSailingInformation().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId()), CacheConstants.VESSELS, cacheMap));
 
+
+    private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        applyIfApplicable(response, ShipmentListResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, AttachListShipmentResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ConsolidationListResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ConsolidationDetailsResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, CarrierBookingListResponse.class,
+                r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
+    }
+
+    private void setCarrierDetailsVessels(
+            CarrierDetailResponse carrierDetails,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        if (carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getVessel())) {
+            carrierDetails.setVesselsMasterData(
+                    setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + carrierDetails.getId()),
+                            CacheConstants.VESSELS, cacheMap));
+        }
+    }
+
+    private void setSailingInfoVessels(
+            SailingInformationResponse sailingInfo,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        if (sailingInfo != null && StringUtility.isNotEmpty(sailingInfo.getVesselName())) {
+            sailingInfo.setVesselsMasterData(
+                    setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + sailingInfo.getId()),
+                            CacheConstants.VESSELS, cacheMap));
         }
     }
 
