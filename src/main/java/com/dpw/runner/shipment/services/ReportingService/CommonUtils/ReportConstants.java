@@ -561,6 +561,10 @@ public class ReportConstants {
     public static final String BL_VESSEL_NAME = "BL_VesselName";
     public static final String BL_VOYAGE = "BL_Voyage";
     public static final String BL_NOTIFY_PARTY = "BL_NotifyParty";
+    public static final String BL_NEW_SHIPPER = "BL_NewShipper";
+    public static final String BL_NEW_CONSIGNEE = "BL_NewConsignee";
+    public static final String BL_FORWARDER = "BL_Forwarder";
+    public static final String BL_DELIVERY = "BL_Delivery";
     public static final String TOTAL_PACKS_WEIGHT = "TotalPacksWeight";
     public static final String TOTAL_PACKS_VOLUME = "TotalPacksVolume";
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";

@@ -15,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -2060,4 +2063,421 @@ class HblReportTest extends CommonMocks {
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
+//    @Test
+//    void populateDictionaryfordeliveryForwardAgent() throws JsonProcessingException {
+//        HblModel hblModel = new HblModel();
+//        hblModel.setIsHbl(false);
+//        UsersDto usersDto = new UsersDto();
+//        usersDto.setHouseBillLogo("123");
+//        hblModel.setUser(usersDto);
+//        Hbl hbl = new Hbl();
+//        hbl.setId(123L);
+//        hbl.setShipmentId(123L);
+//
+//        HblDataDto hblDataDto = new HblDataDto();
+//        hblDataDto.setMarksAndNumbers("123");
+//        hblDataDto.setPlaceOfDelivery("deliveryAddress");
+//        // Add new fields for consignor and consignee
+//        hblDataDto.setConsignorName("Consignor Name");
+//        hblDataDto.setConsignorAddress("Consignor Address");
+//        hblDataDto.setConsigneeName("Consignee Name");
+//        hblDataDto.setConsigneeAddress("Consignee Address");
+//        // Add fields for delivery and forward agent
+//        hblDataDto.setDeliveryAgentName("Delivery Agent Name");
+//        hblDataDto.setDeliveryAgentAddress("Delivery Agent Address");
+//        hbl.setHblData(hblDataDto);
+//        hblModel.setBlObject(hbl); // Set the blObject
+//        hblModel.setTenant(new TenantModel());
+//        hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
+//        ShipmentContainers shipmentContainers = new ShipmentContainers();
+//        shipmentContainers.setContainerCount(1L);
+//        shipmentContainers.setContainerTypeCode("20GP");
+//        shipmentContainers.setNetWeight(BigDecimal.TEN);
+//        shipmentContainers.setNoofPackages(10L);
+//        hblModel.setCommonContainers(Arrays.asList(shipmentContainers));
+//
+//        HblPartyDto hblPartyDto = new HblPartyDto();
+//        hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
+//        ShipmentModel shipmentModel = new ShipmentModel();
+//        shipmentModel.setTransportInstructionId(12L);
+//        shipmentModel.setTransportMode(ReportConstants.SEA);
+//        shipmentModel.setTransportInstructionId(12L);
+//
+//        // Create delivery and forward agent parties for pickup/delivery details
+//        PartiesModel deliveryAgentParty = PartiesModel.builder()
+//                .type("DAG")
+//                .orgData(Map.of("FullName", "Delivery Agent", "ContactPhone", "123-456-7890"))
+//                .addressData(Map.of("AddressLine1", "Delivery Agent Address"))
+//                .build();
+//
+//        PartiesModel forwardAgentParty = PartiesModel.builder()
+//                .type("FAG")
+//                .orgData(Map.of("FullName", "Forward Agent", "ContactPhone", "987-654-3210"))
+//                .addressData(Map.of("AddressLine1", "Forward Agent Address"))
+//                .build();
+//
+//        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+//                .id(12L)
+//                .partiesList(List.of(
+//                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+//                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+//                        deliveryAgentParty, // Add delivery agent
+//                        forwardAgentParty  // Add forward agent
+//                ))
+//                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+//                .transporterDetail(PartiesModel.builder().type("EXA").build())
+//                .actualPickup(LocalDateTime.now())
+//                .actualDelivery(LocalDateTime.now())
+//                .build()));
+//        shipmentModel.setDirection(ReportConstants.EXP);
+//        shipmentModel.setFreightLocal(BigDecimal.TEN);
+//        shipmentModel.setFreightLocalCurrency("INR");
+//        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+//        shipmentModel.setFreightOverseasCurrency("INR");
+//        shipmentModel.setGoodsDescription("123");
+//        shipmentModel.setWeight(BigDecimal.TEN);
+//        shipmentModel.setVolume(BigDecimal.TEN);
+//        shipmentModel.setChargable(BigDecimal.TEN);
+//        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+//        shipmentModel.setNoOfPacks(10);
+//        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+//        ernReferenceNumbersModel.setType(ERN);
+//        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+//        cenReferenceNumbersModel.setType(CEN);
+//        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+//        frnReferenceNumbersModel.setType(FRN);
+//        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+//
+//        PartiesModel partiesModel = new PartiesModel();
+//        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+//        Map<String, Object> orgData = new HashMap<>();
+//        orgData.put(FULL_NAME, "123");
+//        orgData.put(CONTACT_PERSON, "123");
+//        partiesModel.setOrgData(orgData);
+//        partiesModel.setAddressData(orgData);
+//        shipmentModel.setConsignee(partiesModel);
+//        shipmentModel.setConsigner(partiesModel);
+//        shipmentModel.setClient(partiesModel);
+//        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+//        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+//        carrierDetailModel.setOrigin("test");
+//        carrierDetailModel.setOriginPort("test");
+//        carrierDetailModel.setEta(LocalDateTime.now());
+//        carrierDetailModel.setEtd(LocalDateTime.now());
+//        carrierDetailModel.setAtd(LocalDateTime.now());
+//        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+//        carrierDetailModel.setAta(LocalDateTime.now());
+//        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+//        additionalDetailModel.setPaidPlace("test");
+//        additionalDetailModel.setNotifyParty(partiesModel);
+//        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+//        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+//        additionalDetailModel.setOnBoard("SHP");
+//        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+//        shipmentModel.setCarrierDetails(carrierDetailModel);
+//        shipmentModel.setAdditionalDetails(additionalDetailModel);
+//        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+//
+//        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+//        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+//        delivertDetails.setDestinationDetail(partiesModel);
+//        delivertDetails.setAgentDetail(deliveryAgentParty); // Set delivery agent
+//        delivertDetails.setSourceDetail(partiesModel);
+//        delivertDetails.setTransporterDetail(partiesModel);
+//        shipmentModel.setPickupDetails(delivertDetails);
+//        shipmentModel.setDeliveryDetails(delivertDetails);
+//
+//        PackingModel packingModel = new PackingModel();
+//        packingModel.setLength(BigDecimal.TEN);
+//        packingModel.setWidth(BigDecimal.TEN);
+//        packingModel.setHeight(BigDecimal.TEN);
+//        shipmentModel.setPackingList(Arrays.asList(packingModel));
+//
+//        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+//        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+//        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+//        hblModel.setTransportInstructionId(12L);
+//        hblModel.setShipment(shipmentModel);
+//
+//        ConsolidationModel consolidationModel = new ConsolidationModel();
+//        consolidationModel.setPayment("PPM");
+//        consolidationModel.setReceivingAgent(partiesModel);
+//        consolidationModel.setSendingAgent(partiesModel);
+//        consolidationModel.setCarrierDetails(carrierDetailModel);
+//        partiesModel = new PartiesModel();
+//        partiesModel.setType("Notify Party 1");
+//        orgData = new HashMap<>();
+//        orgData.put(FULL_NAME, "123");
+//        partiesModel.setOrgData(orgData);
+//        partiesModel.setAddressData(orgData);
+//        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+//        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+//        hblModel.setConsolidation(consolidationModel);
+//
+//        // Mock shipment settings with disableBlPartiesName
+//        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+//        shipmentSettingsDetails.setDisableBlPartiesName(false); // Set appropriate value for test
+//        hblModel.setShipmentSettingsDetails(shipmentSettingsDetails);
+//
+//        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());
+//
+//        V1DataResponse v1DataResponse = new V1DataResponse();
+//        v1DataResponse.entities = Arrays.asList(new MasterData());
+//        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(Arrays.asList(new MasterData()));
+//
+//        v1DataResponse = new V1DataResponse();
+//        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+//        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
+//
+//        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+//        consoleShipmentMapping.setShipmentId(1L);
+//        consoleShipmentMapping.setConsolidationId(1L);
+//        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+//        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+//        consolidationDetails.setId(123L);
+//        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+//        Map<String, Object> dataMap = new HashMap<>();
+//        dataMap.put("id", "123");
+//        Map<String, Object> dictionary = new HashMap<>();
+//        dictionary.put("id", "123");
+//        String blObjectJson = objectMapper.writeValueAsString(dataMap);
+//        when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
+//        when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+//        when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+//        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+//        mockShipmentSettings();
+//        mockTenantSettings();
+//        when(cacheManager.getCache(any())).thenReturn(cache);
+//        when(cache.get(any())).thenReturn(null);
+//        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+//        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+//        additionalDetails.setPlaceOfIssue("mumbai");
+//        hblModel.shipment.setAdditionalDetails(additionalDetails);
+//        EntityTransferAddress entityAddress = new EntityTransferAddress();
+//        entityAddress.setCountry("India");
+//        when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
+//        assertNotNull(hblReport.populateDictionary(hblModel));
+//    }
+
+//
+//    @Test
+//    void populateDictionaryforConsigneeConsignor() throws JsonProcessingException {
+//        HblModel hblModel = new HblModel();
+//        hblModel.setIsHbl(false);
+//        UsersDto usersDto = new UsersDto();
+//        usersDto.setHouseBillLogo("123");
+//        hblModel.setUser(usersDto);
+//        Hbl hbl = new Hbl();
+//        hbl.setId(123L);
+//        hbl.setShipmentId(123L);
+//
+//        HblDataDto hblDataDto = new HblDataDto();
+//        hblDataDto.setMarksAndNumbers("123");
+//        hblDataDto.setPlaceOfDelivery("deliveryAddress");
+//        // Add new fields for consignor and consignee
+//        hblDataDto.setConsignorName("Consignor Name");
+//        hblDataDto.setConsignorAddress("Consignor Address");
+//        hblDataDto.setConsigneeName("Consignee Name");
+//        hblDataDto.setConsigneeAddress("Consignee Address");
+//        // Add fields for delivery and forward agent
+//        hblDataDto.setDeliveryAgentName("Delivery Agent Name");
+//        hblDataDto.setDeliveryAgentAddress("Delivery Agent Address");
+//        hbl.setHblData(hblDataDto);
+//        hblModel.setBlObject(hbl); // Set the blObject
+//        hblModel.setTenant(new TenantModel());
+//        hblModel.setTenantSettingsResponse(V1TenantSettingsResponse.builder().P100Branch(false).build());
+//        ShipmentContainers shipmentContainers = new ShipmentContainers();
+//        shipmentContainers.setContainerCount(1L);
+//        shipmentContainers.setContainerTypeCode("20GP");
+//        shipmentContainers.setNetWeight(BigDecimal.TEN);
+//        shipmentContainers.setNoofPackages(10L);
+//        hblModel.setCommonContainers(Arrays.asList(shipmentContainers));
+//
+//        HblPartyDto hblPartyDto = new HblPartyDto();
+//        hbl.setHblNotifyParty(Arrays.asList(hblPartyDto));
+//        ShipmentModel shipmentModel = new ShipmentModel();
+//        shipmentModel.setTransportInstructionId(12L);
+//        shipmentModel.setTransportMode(ReportConstants.SEA);
+//        shipmentModel.setTransportInstructionId(12L);
+//
+//        // Create delivery and forward agent parties for pickup/delivery details
+//        PartiesModel consignerParty = PartiesModel.builder()
+//                .type("CNE")   // or whatever enum/string your code expects
+//                .orgData(Map.of(
+//                        "FullName",       "Consignor Name",
+//                        "ContactPerson",  "John Doe",
+//                        "ContactPhone",   "111-222-3333",
+//                        "Email",          "consignor@example.com"
+//                ))
+//                .addressData(Map.of(
+//                        "AddressLine1", "Consignor Street 1",
+//                        "AddressLine2", "Suite 101",
+//                        "City",         "Mumbai",
+//                        "Country",      "India"
+//                ))
+//                .build();
+//
+//// --- CONSIGNEE ---
+//        PartiesModel consigneeParty = PartiesModel.builder()
+//                .type("CNEE")
+//                .orgData(Map.of(
+//                        "FullName",       "Consignee Name",
+//                        "ContactPerson",  "Jane Smith",
+//                        "ContactPhone",   "444-555-6666",
+//                        "Email",          "consignee@example.com"
+//                ))
+//                .addressData(Map.of(
+//                        "AddressLine1", "Consignee Lane 10",
+//                        "AddressLine2", "Warehouse Block B",
+//                        "City",         "Chennai",
+//                        "Country",      "India"
+//                ))
+//                .build();
+//
+//        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+//                .id(12L)
+//                .partiesList(List.of(
+//                        PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build(),
+//                        PartiesModel.builder().type("IMA").orgData(Map.of("FullName", "name", "ContactPhone", "99")).addressData(Map.of()).build(),
+//                        consigneeParty, // Add delivery agent
+//                        consignerParty  // Add forward agent
+//                ))
+//                .sourceDetail(PartiesModel.builder().type("EXA").orgData(Map.of("FullName", "name", "ContactPhone" , "88")).addressData(Map.of()).build())
+//                .transporterDetail(PartiesModel.builder().type("EXA").build())
+//                .actualPickup(LocalDateTime.now())
+//                .actualDelivery(LocalDateTime.now())
+//                .build()));
+//        shipmentModel.setDirection(ReportConstants.EXP);
+//        shipmentModel.setFreightLocal(BigDecimal.TEN);
+//        shipmentModel.setFreightLocalCurrency("INR");
+//        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+//        shipmentModel.setFreightOverseasCurrency("INR");
+//        shipmentModel.setGoodsDescription("123");
+//        shipmentModel.setWeight(BigDecimal.TEN);
+//        shipmentModel.setVolume(BigDecimal.TEN);
+//        shipmentModel.setChargable(BigDecimal.TEN);
+//        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+//        shipmentModel.setNoOfPacks(10);
+//        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+//        ernReferenceNumbersModel.setType(ERN);
+//        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+//        cenReferenceNumbersModel.setType(CEN);
+//        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+//        frnReferenceNumbersModel.setType(FRN);
+//        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+//
+//        PartiesModel partiesModel = new PartiesModel();
+//        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+//        Map<String, Object> orgData = new HashMap<>();
+//        orgData.put(FULL_NAME, "123");
+//        orgData.put(CONTACT_PERSON, "123");
+//        partiesModel.setOrgData(orgData);
+//        partiesModel.setAddressData(orgData);
+//        shipmentModel.setConsignee(partiesModel);
+//        shipmentModel.setConsigner(partiesModel);
+//        shipmentModel.setClient(partiesModel);
+//        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+//        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+//        carrierDetailModel.setOrigin("test");
+//        carrierDetailModel.setOriginPort("test");
+//        carrierDetailModel.setEta(LocalDateTime.now());
+//        carrierDetailModel.setEtd(LocalDateTime.now());
+//        carrierDetailModel.setAtd(LocalDateTime.now());
+//        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+//        carrierDetailModel.setAta(LocalDateTime.now());
+//        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+//        additionalDetailModel.setPaidPlace("test");
+//        additionalDetailModel.setNotifyParty(partiesModel);
+//        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+//        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+//        additionalDetailModel.setOnBoard("SHP");
+//        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+//        shipmentModel.setCarrierDetails(carrierDetailModel);
+//        shipmentModel.setAdditionalDetails(additionalDetailModel);
+//        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+//
+//        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+//        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+//        delivertDetails.setDestinationDetail(partiesModel);
+//        delivertDetails.setAgentDetail(consigneeParty); // Set delivery agent
+//        delivertDetails.setSourceDetail(partiesModel);
+//        delivertDetails.setTransporterDetail(partiesModel);
+//        shipmentModel.setPickupDetails(delivertDetails);
+//        shipmentModel.setDeliveryDetails(delivertDetails);
+//
+//        PackingModel packingModel = new PackingModel();
+//        packingModel.setLength(BigDecimal.TEN);
+//        packingModel.setWidth(BigDecimal.TEN);
+//        packingModel.setHeight(BigDecimal.TEN);
+//        shipmentModel.setPackingList(Arrays.asList(packingModel));
+//
+//        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+//        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+//        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+//        hblModel.setTransportInstructionId(12L);
+//        hblModel.setShipment(shipmentModel);
+//
+//        ConsolidationModel consolidationModel = new ConsolidationModel();
+//        consolidationModel.setPayment("PPM");
+//        consolidationModel.setReceivingAgent(partiesModel);
+//        consolidationModel.setSendingAgent(partiesModel);
+//        consolidationModel.setCarrierDetails(carrierDetailModel);
+//        partiesModel = new PartiesModel();
+//        partiesModel.setType("Notify Party 1");
+//        orgData = new HashMap<>();
+//        orgData.put(FULL_NAME, "123");
+//        partiesModel.setOrgData(orgData);
+//        partiesModel.setAddressData(orgData);
+//        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+//        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
+//        hblModel.setConsolidation(consolidationModel);
+//
+//        // Mock shipment settings with disableBlPartiesName
+//        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+//        shipmentSettingsDetails.setDisableBlPartiesName(false); // Set appropriate value for test
+//        hblModel.setShipmentSettingsDetails(shipmentSettingsDetails);
+//
+//        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());
+//
+//        V1DataResponse v1DataResponse = new V1DataResponse();
+//        v1DataResponse.entities = Arrays.asList(new MasterData());
+//        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(Arrays.asList(new MasterData()));
+//
+//        v1DataResponse = new V1DataResponse();
+//        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
+//        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
+//
+//        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+//        consoleShipmentMapping.setShipmentId(1L);
+//        consoleShipmentMapping.setConsolidationId(1L);
+//        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(Arrays.asList(consoleShipmentMapping));
+//        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+//        consolidationDetails.setId(123L);
+//        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+//        Map<String, Object> dataMap = new HashMap<>();
+//        dataMap.put("id", "123");
+//        Map<String, Object> dictionary = new HashMap<>();
+//        dictionary.put("id", "123");
+//        String blObjectJson = objectMapper.writeValueAsString(dataMap);
+//        when(jsonHelper.convertToJson(hbl)).thenReturn(blObjectJson);
+//        when(jsonHelper.convertJsonToMap(any())).thenReturn(dictionary);
+//        when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
+//        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+//        mockShipmentSettings();
+//        mockTenantSettings();
+//        when(cacheManager.getCache(any())).thenReturn(cache);
+//        when(cache.get(any())).thenReturn(null);
+//        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+//        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+//        additionalDetails.setPlaceOfIssue("mumbai");
+//        hblModel.shipment.setAdditionalDetails(additionalDetails);
+//        EntityTransferAddress entityAddress = new EntityTransferAddress();
+//        entityAddress.setCountry("India");
+//        when(commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode())).thenReturn(entityAddress);
+//        assertNotNull(hblReport.populateDictionary(hblModel));
+//    }
+
+
 }
