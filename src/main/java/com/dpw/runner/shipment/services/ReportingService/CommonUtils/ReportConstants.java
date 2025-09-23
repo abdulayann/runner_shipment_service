@@ -127,6 +127,8 @@ public class ReportConstants {
     public static final String BL_PLACE_OF_RECEIPT = "BL_PlaceOfReceipt";
     public static final String BL_PORT_OF_LOADING = "BL_PortOfLoading";
     public static final String BL_PORT_OF_DISCHARGE = "BL_PortOfDischarge";
+    public static final String BL_PLACE_OF_ISSUE = "BL_PlaceOfIssue";
+    public static final String BL_PAYABLE_AT = "BL_PayableAt";
     public static final String FINAL_DESTINATION = "FinalDestination";
     public static final String CARGO_GROSS_VOLUME = "CargoGrossVolume";
     public static final String CARGO_GROSS_VOLUME_UNIT = "CargoGrossVolumeUnit";

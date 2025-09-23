@@ -114,4 +114,6 @@ public class HblDataDto {
     private String deliveryAgentState;
     private String deliveryAgentZipCode;
     private String deliveryAgentCountry;
+    private String placeOfIssue;
+    private String payableAt;
 }

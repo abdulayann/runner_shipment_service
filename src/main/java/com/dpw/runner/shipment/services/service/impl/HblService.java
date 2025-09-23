@@ -1424,10 +1424,21 @@ public class HblService implements IHblService {
                 if (!Objects.isNull(additionalDetails))
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
                 break;
+
+            case "PlaceOfIssue":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
+                break;
+            case "PayableAt":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                break;
             case "All":
                 if (!Objects.isNull(carrierDetails)) {
                     hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
                     hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
                     setPlaceOfDeliveryInHbl(v1Data, hblDataDto, carrierDetails);
                 }
                 if (!Objects.isNull(additionalDetails)) {
@@ -1458,14 +1469,25 @@ public class HblService implements IHblService {
     }
 
     private String getUnLocationsNameV3(Map<String, EntityTransferUnLocations> v1Data, String key) {
-
         // Extract country code from UNLOC using initial 2 characters
         String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
-
         if (US.equalsIgnoreCase(countryCode)) {
-            return (countryCode + "," + v1Data.get(key).getNameWoDiacritics()).toUpperCase();
+            // For US locations with state code (more than 2 characters in locCode)
+            if (v1Data.get(key).getLocCode().length() > 2) {
+                String stateCode = v1Data.get(key).getLocCode().substring(2);
+                return String.format("%s, %s",
+                        v1Data.get(key).getNameWoDiacritics().toUpperCase(),
+                        stateCode.toUpperCase());
+            }
+            // For US locations without state code
+            return String.format("%s, %s",
+                    v1Data.get(key).getNameWoDiacritics().toUpperCase(),
+                    countryCode.toUpperCase());
         }
-        return v1Data.get(key).getNameWoDiacritics().toUpperCase();
+        // For non-US locations, use country code
+        return String.format("%s, %s",
+                v1Data.get(key).getNameWoDiacritics().toUpperCase(),
+                countryCode.toUpperCase());
     }
 
 }
