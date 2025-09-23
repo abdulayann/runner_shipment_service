@@ -50,6 +50,9 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private String carrier;
     private String truckReferenceNumber;
     private String carrierCountry;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
+    private Boolean inheritedFromConsolidation;
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;
