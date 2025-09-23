@@ -603,9 +603,11 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         for (CommonContainerResponse container : carrierBooking.getContainersList()) {
             BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            BigDecimal netWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(), container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
             BigDecimal volume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(), container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
             container.setVolume(volume);
             container.setGrossWeight(weight);
+            container.setNetWeight(netWeight);
         }
     }
 
