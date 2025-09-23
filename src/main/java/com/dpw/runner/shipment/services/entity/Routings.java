@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 
@@ -130,6 +131,9 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "inherited_from_consolidation", columnDefinition = "boolean default false")
     private Boolean inheritedFromConsolidation;
+
+    @Column(name = "consol_route_ref_guid")
+    private UUID consolRouteRefGuid;
 
     public boolean getIsDomestic() {
         return isDomestic;
