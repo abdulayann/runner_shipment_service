@@ -1244,22 +1244,17 @@ public class HblService implements IHblService {
         // Extract country code from UNLOC using initial 2 characters
         String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
         if (US.equalsIgnoreCase(countryCode)) {
-            // For US locations with state code (more than 2 characters in locCode)
-            if (v1Data.get(key).getLocCode().length() > 2) {
-                String stateCode = v1Data.get(key).getLocCode().substring(2);
-                return String.format("%s, %s",
-                        v1Data.get(key).getNameWoDiacritics().toUpperCase(),
-                        stateCode.toUpperCase());
+            String cityName = Optional.ofNullable(v1Data.get(key).getCityName()).orElse("").trim();
+            String stateCode = Optional.ofNullable(v1Data.get(key).getState()).orElse("").trim();
+            if (cityName.isEmpty() && stateCode.isEmpty()) {
+                return "";
+            } else if (!cityName.isEmpty() && !stateCode.isEmpty()) {
+                return (cityName + "," + stateCode).toUpperCase();
+            } else {
+                return (!cityName.isEmpty() ? cityName : stateCode).toUpperCase();
             }
-            // For US locations without state code
-            return String.format("%s, %s",
-                    v1Data.get(key).getNameWoDiacritics().toUpperCase(),
-                    countryCode.toUpperCase());
         }
-        // For non-US locations, use country code
-        return String.format("%s, %s",
-                v1Data.get(key).getNameWoDiacritics().toUpperCase(),
-                countryCode.toUpperCase());
+        return v1Data.get(key).getNameWoDiacritics().toUpperCase();
     }
 
 }
