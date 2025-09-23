@@ -573,24 +573,24 @@ public class HblService implements IHblService {
         return hblData;
     }
 
-    private String getCargoTerms(ShipmentDetails shipmentDetails) {
+    public String getCargoTerms(ShipmentDetails shipmentDetails) {
         if(Constants.CARGO_TYPE_FCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
-            return Constants.FCL_FCL;
+            return Constants.CARGO_TERMS_FCL_FCL;
         }
         if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
-            return Constants.LCL_LCL;
+            return Constants.CARGO_TERMS_LCL_LCL;
         }
         if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_BCN.equals(shipmentDetails.getJobType())) {
-            return Constants.LCL_FCL;
+            return Constants.CARGO_TERMS_LCL_FCL;
         }
         if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_SCN.equals(shipmentDetails.getJobType())) {
-            return Constants.FCL_LCL;
+            return Constants.CARGO_TERMS_FCL_LCL;
         }
         if(Constants.SHIPMENT_TYPE_BBK.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
-            return Constants.BREAKBULK;
+            return Constants.CARGO_TERMS_BREAKBULK;
         }
         if(Constants.SHIPMENT_TYPE_ROR.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
-            return Constants.RORO;
+            return Constants.CARGO_TERMS_RORO;
         }
         return null;
     }

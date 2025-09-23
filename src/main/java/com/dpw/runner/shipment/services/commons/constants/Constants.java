@@ -176,12 +176,12 @@ public class Constants {
 
     // Cargo Terms
 
-    public static final String FCL_FCL = "FCL/FCL";
-    public static final String LCL_LCL = "LCL/LCL";
-    public static final String LCL_FCL = "LCL/FCL";
-    public static final String FCL_LCL = "FCL/LCL";
-    public static final String BREAKBULK = "Breakbulk";
-    public static final String RORO = "RO-RO";
+    public static final String CARGO_TERMS_FCL_FCL = "FCL/FCL";
+    public static final String CARGO_TERMS_LCL_LCL = "LCL/LCL";
+    public static final String CARGO_TERMS_LCL_FCL = "LCL/FCL";
+    public static final String CARGO_TERMS_FCL_LCL = "FCL/LCL";
+    public static final String CARGO_TERMS_BREAKBULK = "Breakbulk";
+    public static final String CARGO_TERMS_RORO = "RO-RO";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";

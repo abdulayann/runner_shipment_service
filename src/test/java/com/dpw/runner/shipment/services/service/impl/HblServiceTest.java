@@ -1,12 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -15,7 +8,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.HblConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -24,7 +16,10 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
+import com.dpw.runner.shipment.services.dto.request.HblRequest;
+import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
@@ -48,10 +43,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.*;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +58,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -1610,5 +1608,71 @@ class HblServiceTest extends CommonMocks {
         assertNull(responseBody.getWarning());
     });
 }
+
+    @Test
+    void testGetCargoTerms() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.CARGO_TYPE_FCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_FCL_FCL, response);
+    }
+
+    @Test
+    void testGetCargoTerms1() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_LCL_LCL, response);
+    }
+
+    @Test
+    void testGetCargoTerms2() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.CARGO_TYPE_LCL)
+                .jobType(Constants.SHIPMENT_TYPE_BCN)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_LCL_FCL, response);
+    }
+
+    @Test
+    void testGetCargoTerms3() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.CARGO_TYPE_LCL)
+                .jobType(Constants.SHIPMENT_TYPE_SCN)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_FCL_LCL, response);
+    }
+
+    @Test
+    void testGetCargoTerms4() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.SHIPMENT_TYPE_BBK)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_BREAKBULK, response);
+    }
+
+    @Test
+    void testGetCargoTerms5() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("SHP001")
+                .shipmentType(Constants.SHIPMENT_TYPE_ROR)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .build();
+        String response = hblService.getCargoTerms(shipmentDetails);
+        assertEquals(Constants.CARGO_TERMS_RORO, response);
+    }
 
 }
