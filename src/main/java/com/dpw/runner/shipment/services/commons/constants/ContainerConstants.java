@@ -34,10 +34,16 @@ public class ContainerConstants {
     public static final String CHECK_CONTAINERS_DELETE = "/delete/checkMultipleShipment";
     public static final String SUCCESS = "API Successfully implemented";
     public static final String EMPTY_EXCEL_SHEET = "Empty excel sheet uploaded.";
+    public static final String EMPTY_EXCEL_SHEET_V3 = "Selected Excel Sheet is empty. Please upload a valid file.";
     public static final String INVALID_EXCEL_COLUMNS = "Excel Sheet is invalid. All column should have column name.";
     public static final String GUID_DUPLICATE = "GUID is duplicate at row: ";
     public static final String GUID_NOT_EXIST_FOR_CONSOLIDATION = "GUID at row: %d doesn't exist for this consolidation.";
     public static final String GUID_NOT_VALID = "GUID not valid at row: ";
+    public static final String GENERIC_INVALID_FIELD_MSG = "Row# %d: %s - %s is Invalid.";
+    public static final String GENERIC_DUPLICATE_FIELD_MSG = "Row# %d: %s - %s is Duplicate.";
+    public static final String GENERIC_INVALID_BOOLEAN_FIELD_MSG = "Row# %d: %s - Invalid value '%s'. Allowed: Yes/No, Y/N, True/False.";
+    public static final String GENERIC_LENGTH_VALIDATION_MSG = "Row# %d: %s exceeds %s characters.";
+    public static final String GENERIC_MANDATORY_FIELD_MSG = "Row# %d: %s is mandatory.";
     public static final String EXCEL_SHEET_NOT_VALID = "Excel sheet is not valid. {}";
     public static final String EXCEL_SHEET_INVALID = "Excel sheet is not valid.";
     public static final String CONTAINER_UPDATE_MSG = "ContainerUpdate";

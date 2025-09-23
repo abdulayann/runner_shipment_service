@@ -283,6 +283,7 @@ import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -297,6 +298,43 @@ import com.itextpdf.text.pdf.PdfImportedPage;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfWriter;
+import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
+import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.jetbrains.annotations.Nullable;
+import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
+import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -4817,5 +4855,13 @@ public class CommonUtils {
                         V1TenantResponse::getTenantId,
                         V1TenantResponse::getTenantName
                 ));
+    }
+
+    public <V> V getAppConfigValueByKey(String key,  TypeReference<V> typeRef) {
+        try {
+            return objectMapper.readValue(StringUtility.convertToString(applicationConfigService.getValue(key)), typeRef);
+        } catch (Exception e) {
+            throw new ValidationException("Invalid key");
+        }
     }
 }
