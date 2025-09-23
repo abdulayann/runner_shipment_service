@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassBridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
@@ -57,29 +56,6 @@ public class VerifiedGrossMassUtil {
         return String.join(";", requestorEmailsList);
     }
 
-    public VerifiedGrossMassBridgeRequest mapToBridgeRequest(VerifiedGrossMassInttraResponse response) {
-        VerifiedGrossMassBridgeRequest request = new VerifiedGrossMassBridgeRequest();
-
-        request.setMessageGuid(response.getMessageGuid());
-        request.setMessageDateTime(response.getMessageDateTime());
-        request.setTenantId(response.getTenantId());
-        request.setState(response.getState());
-        request.setContainer(response.getContainer());
-        request.setSubmitterReference(response.getSubmitterReference());
-        request.setRequestor(response.getRequestor());
-        request.setAuthorised(response.getAuthorised());
-        request.setResponsible(response.getResponsible());
-        request.setRequestorNotificationContact(response.getRequestorNotificationContact());
-        request.setCarrierBookingNo(response.getCarrierBookingNo());
-        request.setCarrierScacCode(response.getCarrierScacCode());
-        request.setCarrierDescription(response.getCarrierDescription());
-        request.setCarrierNotificationContact(response.getCarrierNotificationContact());
-        request.setDelegated(response.isDelegated());
-        request.setFileName(response.getFileName());
-
-        return request;
-    }
-
     public CommonContainerResponse buildContainerResponse(CommonContainers container) {
         return CommonContainerResponse.builder()
                 .containerNo(container.getContainerNo())
@@ -121,8 +97,9 @@ public class VerifiedGrossMassUtil {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> carrierList = new HashSet<>();
-            if (!Objects.isNull(verifiedGrossMass.getSailingInformation())) {
-                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest((IRunnerResponse) verifiedGrossMass.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+            if (Objects.nonNull(verifiedGrossMass.getSailingInformation())) {
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(mapSalingInfornationToSailingInformationResponse(verifiedGrossMass.getSailingInformation()),
+                        SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
             }
             if (CollectionUtils.isEmpty(carrierList)) {
                 return new HashMap<>();
@@ -134,6 +111,33 @@ public class VerifiedGrossMassUtil {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
         }
         return carrierDatav1Map;
+    }
+
+    public SailingInformationResponse mapSalingInfornationToSailingInformationResponse(SailingInformation sailingInformation) {
+        SailingInformationResponse response = new SailingInformationResponse();
+        response.setId(sailingInformation.getId());
+        response.setCarrierReceiptPlace(sailingInformation.getCarrierReceiptPlace());
+        response.setPol(sailingInformation.getPol());
+        response.setPod(sailingInformation.getPod());
+        response.setCarrierDeliveryPlace(sailingInformation.getCarrierDeliveryPlace());
+        response.setCarrier(sailingInformation.getCarrier());
+        response.setVesselName(sailingInformation.getVesselName());
+        response.setVoyageNo(sailingInformation.getVoyageNo());
+        response.setEta(sailingInformation.getEta());
+        response.setEtd(sailingInformation.getEtd());
+        response.setEarliestDepartureDate(sailingInformation.getEarliestDepartureDate());
+        response.setLatestDeliveryDate(sailingInformation.getLatestDeliveryDate());
+        response.setTerminalCutoff(sailingInformation.getTerminalCutoff());
+        response.setVerifiedGrossMassCutoff(sailingInformation.getVerifiedGrossMassCutoff());
+        response.setShipInstructionCutoff(sailingInformation.getShipInstructionCutoff());
+        response.setHazardousBookingCutoff(sailingInformation.getHazardousBookingCutoff());
+        response.setReeferCutoff(sailingInformation.getReeferCutoff());
+        response.setEmptyContainerPickupCutoff(sailingInformation.getEmptyContainerPickupCutoff());
+        response.setLoadedContainerGateInCutoff(sailingInformation.getLoadedContainerGateInCutoff());
+        response.setLatestDeliveryDate(sailingInformation.getLatestDeliveryDate());
+        response.setUnlocationData(sailingInformation.getSailingScheduleData());
+
+        return response;
     }
 
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {

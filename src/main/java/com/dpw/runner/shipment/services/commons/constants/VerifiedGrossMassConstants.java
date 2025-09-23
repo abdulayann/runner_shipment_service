@@ -22,6 +22,8 @@ public class VerifiedGrossMassConstants {
     public static final String INTTRA = "INTTRA";
     public static final String AMEND = "Amend";
     public static final String ORIGINAL = "Original";
+    public static final String VGM_CREATE = "VGM_CREATE";
+    public static final String VGM_AMEND = "VGM_AMEND";
     public static final String MAIN_CARRIAGE = "MainCarriage";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
