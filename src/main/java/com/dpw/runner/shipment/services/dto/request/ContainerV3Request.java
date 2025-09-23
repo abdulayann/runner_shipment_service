@@ -7,9 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,7 +24,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private Long id;
   private UUID guid;
   private Long consolidationId;
-  private Long shipmentsId;
+  private Long shipmentId;
   private Long bookingId;
   private Long loggingId;
   @NonNull
@@ -49,10 +47,14 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   @Max(value = 1, message = "Container count cannot be more than 1")
   @Min(value = 1, message = "Container count cannot be less than 1")
   private Long containerCount = 1L;
+  @Size(max = 100, message = "max size is 100 for carrier_seal_number")
   private String carrierSealNumber;
+  @Size(max = 100, message = "max size is 100 for shipper_seal_number")
   private String shipperSealNumber;
   private String terminalOperatorSealNumber;
+  @Size(max = 100, message = "max size is 100 for veterinary_seal_number")
   private String veterinarySealNumber;
+  @Size(max = 100, message = "max size is 100 for customs_seal_number")
   private String customsSealNumber;
   private String customsReleaseCode;
   private String containerStuffingLocation;
@@ -114,7 +116,6 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private String achievedVolumeUnit;
   private String weightUtilization;
   private String volumeUtilization;
-  @NonNull
   private String commodityGroup;
   private Boolean isContractEnforced;
   private Long contractEnforcedQuantityLimit;
@@ -140,4 +141,8 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private BigDecimal humidity;
   private BigDecimal vents;
   private BigDecimal teu;
+  private Long packagesPerContainer;
+  private String containerPackageType;
+  private BigDecimal cargoWeightPerContainer;
+  private String containerWeightUnit;
 }

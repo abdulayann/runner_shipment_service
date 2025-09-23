@@ -164,10 +164,10 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private String emergencyContactNumber;
     @Size(max=31, message = "max size is 31 for emergency contact number code")
     private String emergencyContactNumberCode;
-    @ExcludeTimeZone
     private LocalDateTime pickupDate;
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
     private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
     private LocalDateTime proofOfDeliveryDate;
@@ -178,4 +178,6 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
     private Integer fcrNumber = 0;
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
 }

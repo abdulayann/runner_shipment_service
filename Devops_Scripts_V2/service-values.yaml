@@ -20,6 +20,7 @@ bluegreen: True
 artifactAliasName: _config
 artifactVstsFeedPublish: 23a36ede-eaaf-42ed-b849-690d3430f272/fbd15528-c4b5-49c1-beea-5b436be8317c
 CONFIG_FOLDER_PATH: src/main/resources
+db_folder_path: src/main/resources/db/migration
 containerRegistrySC: ACR_Cargoes Runner
 artifactsFeeds: runner-artifactory
 jdkVersion: 1.17
@@ -198,11 +199,11 @@ prod:
   secretName: shipment-service-prod-SECRET
   deployment:
     replicaCount: 2
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx8192m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 3000m
     minMem: 2Gi
-    maxMem: 6Gi
+    maxMem: 10Gi
 
 dr:
   cicd: Full

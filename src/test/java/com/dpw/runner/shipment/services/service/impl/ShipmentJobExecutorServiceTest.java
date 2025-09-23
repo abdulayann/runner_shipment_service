@@ -148,7 +148,7 @@ class ShipmentJobExecutorServiceTest {
     }
 
     @Test
-    void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment() {
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment() throws RunnerException {
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -220,7 +220,7 @@ class ShipmentJobExecutorServiceTest {
     }
 
     @Test
-    void testExecuteJob_QuartzJobInfoExists_SendShipment_BadRequest() {
+    void testExecuteJob_QuartzJobInfoExists_SendShipment_BadRequest() throws RunnerException {
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -338,7 +338,7 @@ class ShipmentJobExecutorServiceTest {
     }
 
     @Test
-    void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation() {
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation() throws RunnerException {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -413,7 +413,7 @@ class ShipmentJobExecutorServiceTest {
     }
 
     @Test
-    void testExecuteJob_QuartzJobInfoExists_SendConsolidation_BadRequest() {
+    void testExecuteJob_QuartzJobInfoExists_SendConsolidation_BadRequest() throws RunnerException {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);

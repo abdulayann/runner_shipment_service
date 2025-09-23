@@ -31,5 +31,7 @@ public class DocumentConstants {
     // Doc-Types
     public static final String AWB = "AWB";
     public static final String HBL = "HBL";
+    public static final String CARGO_MANIFEST_DISPLAY_NAME = "Cargo Manifest";
+    public static final String SEA_WAYBILL = "SeaWaybill";
 
 }

@@ -17,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
@@ -37,6 +39,7 @@ import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
@@ -52,13 +55,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -77,6 +74,7 @@ import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
@@ -88,6 +86,7 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -127,12 +126,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -142,12 +136,10 @@ import org.springframework.transaction.TransactionSystemException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -231,19 +223,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -268,6 +248,7 @@ class CommonUtilsTest {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @InjectMocks
+    @Spy
     private CommonUtils commonUtils;
 
     @Mock
@@ -316,7 +297,18 @@ class CommonUtilsTest {
     private ConsolidationDao consolidationDetailsDao;
 
     @Mock
+    private QuoteContractsDao quoteContractsDao;
+
+    @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+    @Mock
+    private IV1Service v1Service;
+
+    @Mock
+    private TenantModel tenantModel;
+
+    @Mock
+    private EntityTransferAddress entityTransferAddress;
 
 
     private PdfContentByte dc;
@@ -348,7 +340,7 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-
+        MockitoAnnotations.openMocks(this);
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
@@ -2507,8 +2499,8 @@ class CommonUtilsTest {
         auditLogList.add(AuditLog.builder().changes(changes).build());
 
         when(iAuditLogDao.findByOperationAndParentId(
-                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
-        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
+        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, false);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
@@ -3169,6 +3161,19 @@ class CommonUtilsTest {
     void testGetCountryFromUnLocCode1() {
         String response = commonUtils.getCountryFromUnLocCode("IN");
         assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetTwoDigitCountryFromUnLocCode(String req) {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetTwoDigitCountryFromUnLocCode() {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode("CAN");
+        assertEquals("CA", response);
     }
 
     @ParameterizedTest
@@ -4681,6 +4686,12 @@ class CommonUtilsTest {
         String volumeUnit = commonUtils.getDefaultVolumeUnit();
         assertEquals("M3", volumeUnit);
     }
+    
+    @Test
+    void getTaskIdHyperLinkV2MDM_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2MDM("SH", "TA");
+        assertNotNull(result);
+    }
 
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();
@@ -4974,6 +4985,105 @@ class CommonUtilsTest {
         assertNotNull(result, "Request should not be null.");
         assertEquals(3, result.getCriteriaRequests().size(), "CriteriaRequests should contain 1 item.");
         assertTrue(result.getCriteriaRequests().get(0) instanceof List, "First item in criteriaRequests should be a List.");
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withMatchingCodes_setsIsQuotedTrue() {
+        String quoteId = "Q123";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("20GP")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertTrue(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withNoMatchingCodes_allIsQuotedFalse() {
+        String quoteId = "Q999";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("45HC")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertFalse(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenDefaultAddressIdIsNull_returnsNull() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(null);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNull(result);
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenNoAddressFound_returnsEmptyEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        CommonV1ListRequest expectedRequest = new CommonV1ListRequest();
+        expectedRequest.setCriteriaRequests(List.of(List.of("Id", "=", 123L)));
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = new ArrayList<>();
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(Collections.emptyList());
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(new EntityTransferAddress(), result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_whenAddressFound_returnsEntity() {
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(123L);
+        EntityTransferAddress expectedAddress = EntityTransferAddress.builder()
+                .id(123L)
+                .Address1("Test Address")
+                .build();
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = List.of(Map.of());
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class)))
+                .thenReturn(List.of(expectedAddress));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(tenantModel);
+        assertNotNull(result);
+        assertEquals(expectedAddress, result);
+        verify(v1Service).addressList(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList(mockResponse.entities, EntityTransferAddress.class);
+    }
+
+    private ContainerTypeMasterResponse buildResponse(String code, boolean isQuoted) {
+        ContainerTypeMasterResponse response = new ContainerTypeMasterResponse();
+        response.setCode(code);
+        response.setIsQuoted(isQuoted);
+        return response;
     }
 
     @Test
@@ -5280,5 +5390,453 @@ class CommonUtilsTest {
         packing.setMinimumFlashPointUnit("C");
         packing.setMarinePollutant(false);
         return packing;
+    }
+
+    @Test
+    void testIsRoadFTL_OrRailFCL_FCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(TRANSPORT_MODE_RAI, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFTL_FTLOrRailFCL() {
+        assertTrue(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    }
+
+    @Test
+    void testIsRoadFTL_OrRailFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFTL_OrRailFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFTLOrRailFCL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_Valid() {
+        assertTrue(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_AIR, "FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FCL() {
+        assertTrue(commonUtils.isFCLorFTL("FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FTL() {
+        assertTrue(commonUtils.isFCLorFTL("FTL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_Invalid() {
+        assertFalse(commonUtils.isFCLorFTL("LCL"));
+        assertFalse(commonUtils.isFCLorFTL(null));
+        assertFalse(commonUtils.isFCLorFTL(""));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenSeaFCL_ReturnsTrue() {
+        assertTrue(commonUtils.isSeaFCLOrRoadFTL("SEA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCLOrRoadFTL_WhenNeither_ReturnsFalse() {
+        assertFalse(commonUtils.isSeaFCLOrRoadFTL("AIR", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotRoad() {
+        assertFalse(commonUtils.isRoadLCLorLTL("SEA", "LCL"));  // transport mode is not ROAD
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenNotLCLorLTL() {
+        assertFalse(commonUtils.isRoadLCLorLTL("ROAD", "FCL")); // cargo type not LCL or LTL
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_ReturnsFalse_WhenTransportModeAndCargoTypeInvalid() {
+        assertFalse(commonUtils.isRoadLCLorLTL("AIR", "FCL"));
+    }
+
+    @Test
+    void testCapitalizeV3() {
+        String result = commonUtils.capitalizeV3("example");
+        assertEquals("Example", result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings() {
+        List<String> result = CommonUtils.splitAndTrimStrings(" a , b, c ");
+        assertEquals(List.of("a", "b", "c"), result);
+    }
+
+    @Test
+    void testSplitAndTrimStrings_EmptyInput() {
+        List<String> result = CommonUtils.splitAndTrimStrings("");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testIncludeRequiredColumns() {
+        Set<String> columns = new HashSet<>();
+        CommonUtils.includeRequiredColumns(columns);
+        assertTrue(columns.contains("id"));
+        assertTrue(columns.contains("guid"));
+    }
+
+    @Test
+    void testRoundBigDecimal() {
+        BigDecimal input = new BigDecimal("10.12345");
+        BigDecimal result = CommonUtils.roundBigDecimal(input, 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("10.12"), result);
+    }
+
+    @Test
+    void testDivide_NormalCase() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+        assertEquals(new BigDecimal("5.00"), result);
+    }
+
+    @Test
+    void testDivide_DivideByZero() {
+        BigDecimal result = CommonUtils.divide(new BigDecimal("10"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(BigDecimal.ZERO, result);
+    }
+
+    @Test
+    void testCalculatePercentage_Normal() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("2"), new BigDecimal("4"), 2, RoundingMode.HALF_UP);
+        assertEquals(50.0, result);
+    }
+
+    @Test
+    void testCalculatePercentage_DivideByZero() {
+        double result = CommonUtils.calculatePercentage(new BigDecimal("1"), BigDecimal.ZERO, 2, RoundingMode.HALF_UP);
+        assertEquals(0.0, result);
+    }
+
+    @Test
+    void shouldNotThrowException_WhenAirDGTrue_AndNotSecurity_AndHazardous_AndNotDgUser() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+        details.setContainsHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+            assertDoesNotThrow( () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenAirSecurityTrue_AndCheckAirSecurityFails() {
+        ShipmentDetails details = new ShipmentDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> mockedStatic = mockStatic(CommonUtils.class)) {
+            mockedStatic.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            mockedStatic.when(() -> CommonUtils.checkAirSecurityForShipment(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGShipmentPermissions(details));
+        }
+    }
+
+
+    @Test
+    void shouldThrowException_WhenConsolidationHazardousAndNotDgUser() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+        details.setHazardous(true);
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(true);
+        mockSettings.setCountryAirCargoSecurity(false);
+
+        // If getShipmentSettingFromContext is static:
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+                // Mock static method getShipmentSettingFromContext() returning Optional
+                commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+
+                userContextMock.when(UserContext::isAirDgUser).thenReturn(false);
+
+                assertDoesNotThrow(() ->
+                        commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+            }
+        }
+    }
+
+    @Test
+    void shouldThrowException_WhenConsolidationSecurityCheckFails() {
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setTransportMode("AIR");
+
+        ShipmentSettingsDetails mockSettings = new ShipmentSettingsDetails();
+        mockSettings.setAirDGFlag(false);
+        mockSettings.setCountryAirCargoSecurity(true);
+
+        try (MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+            commonUtilsMock.when(commonUtils::getShipmentSettingFromContext).thenReturn(Optional.of(mockSettings));
+            commonUtilsMock.when(() -> CommonUtils.checkAirSecurityForConsolidation(details)).thenReturn(false);
+
+            assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityAndDGConsolidationPermissions(details));
+        }
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> addressIds = List.of("1", "2");
+        CommonV1ListRequest expectedRequest = commonUtils.createCriteriaToFetchAddressList(addressIds);
+
+        // Mock response from v1Service.addressList
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities"); // Could be any object, your jsonHelper mock will handle conversion
+
+        // Mock list of AddressDataV1
+        AddressDataV1 addr1 = new AddressDataV1();
+        addr1.setId(1L);
+        AddressDataV1 addr2 = new AddressDataV1();
+        addr2.setId(2L);
+        List<AddressDataV1> addressDataList = List.of(addr1, addr2);
+
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), AddressDataV1.class))
+                .thenReturn(addressDataList);
+
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(addressIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(1L));
+        assertTrue(result.containsKey(2L));
+        verify(v1Service).addressList(any());
+        verify(jsonHelper).convertValueToList(any(), eq(AddressDataV1.class));
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, AddressDataV1> result = commonUtils.fetchAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnMap_whenListNotEmpty() {
+        List<String> orgIds = List.of("10", "20");
+
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.setEntities("dummyEntities");
+
+        OrgDataV1 org1 = new OrgDataV1();
+        org1.setId(10L);
+        OrgDataV1 org2 = new OrgDataV1();
+        org2.setId(20L);
+        List<OrgDataV1> orgDataList = List.of(org1, org2);
+
+        when(v1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(mockResponse.getEntities(), OrgDataV1.class))
+                .thenReturn(orgDataList);
+
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(orgIds);
+
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(10L));
+        assertTrue(result.containsKey(20L));
+        verify(v1Service).fetchOrganization(any());
+        verify(jsonHelper).convertValueToList(any(), eq(OrgDataV1.class));
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListEmpty() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(List.of());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void fetchOrgAddressData_shouldReturnEmptyMap_whenListNull() {
+        Map<Long, OrgDataV1> result = commonUtils.fetchOrgAddressData(null);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void getEntityTransferAddress_shouldReturnNullForAirTransport() {
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_AIR);
+        assertNull(result);
+    }
+
+    @Test
+    void getEntityTransferAddress_shouldReturnNullWhenExceptionOccurs() {
+        when(v1Service.retrieveTenant()).thenThrow(new RuntimeException("Test exception"));
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNull(result);
+    }
+
+    @Test
+    void testGetEntityTransferAddress_SeaMode_ReturnsAddress() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress(Constants.TRANSPORT_MODE_SEA);
+        assertNotNull(result);
+        assertEquals(entityTransferAddress, result);
+    }
+
+
+    @Test
+    void testGetEntityTransferAddress_InvalidMode_ReturnsNull() {
+        V1RetrieveResponse tenantResponse = mock(V1RetrieveResponse.class);
+        Object dummyEntity = new Object();
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+        when(tenantResponse.getEntity()).thenReturn(dummyEntity);
+        when(modelMapper.map(dummyEntity, TenantModel.class)).thenReturn(tenantModel);
+        doReturn(entityTransferAddress).when(commonUtils).getEntityTransferAddress(tenantModel);
+        EntityTransferAddress result = commonUtils.getEntityTransferAddress("AIR");
+        assertNull(result);
+    }
+
+    @Test
+    void getLongValue_shouldReturnNullForNullInput() {
+        assertNull(commonUtils.getLongValue(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("validNumberProviders")
+    void getLongValue_shouldReturnLongForNumberTypes(Number number, long expected) {
+        assertEquals(expected, commonUtils.getLongValue(number));
+    }
+
+    @Test
+    void getLongValue_shouldReturnLongForStringNumber() {
+        assertEquals(123L, commonUtils.getLongValue("123"));
+    }
+
+    @Test
+    void getLongValue_shouldThrowForUnsupportedType() {
+        Object invalidValue = new Object();
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> commonUtils.getLongValue(invalidValue));
+        assertTrue(exception.getMessage().contains("Unsupported Party ID type"));
+    }
+
+    private static Stream<Arguments> validNumberProviders() {
+        return Stream.of(
+                Arguments.of(123, 123L),
+                Arguments.of(123.45f, 123L),
+                Arguments.of(123.67d, 123L),
+                Arguments.of(123L, 123L),
+                Arguments.of((short)123, 123L),
+                Arguments.of((byte)123, 123L)
+        );
+    }
+    @Test
+    void testConvertSeconds_OnlySeconds() {
+        // Test cases where result should only show seconds (less than 60 seconds)
+        String result1 = commonUtils.convertSeconds(45L);
+        assertEquals("The export will be available in approximately 45 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(30L);
+        assertEquals("The export will be available in approximately 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(59L);
+        assertEquals("The export will be available in approximately 59 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(1L);
+        assertEquals("The export will be available in approximately 1 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_OnlyMinutes() {
+        // Test cases where result should only show minutes (exact minutes, no remaining seconds)
+        String result1 = commonUtils.convertSeconds(60L);
+        assertEquals("The export will be available in approximately 1 minutes. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(120L);
+        assertEquals("The export will be available in approximately 2 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(300L);
+        assertEquals("The export will be available in approximately 5 minutes. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(3600L);
+        assertEquals("The export will be available in approximately 60 minutes. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_MinutesAndSeconds() {
+        // Test cases where result should show both minutes and seconds
+        String result1 = commonUtils.convertSeconds(90L);
+        assertEquals("The export will be available in approximately 1 minutes and 30 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(150L);
+        assertEquals("The export will be available in approximately 2 minutes and 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(3661L);
+        assertEquals("The export will be available in approximately 61 minutes and 1 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(125L);
+        assertEquals("The export will be available in approximately 2 minutes and 5 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_EdgeCases() {
+        // Test edge cases
+        String result1 = commonUtils.convertSeconds(0L);
+        assertEquals("The export will be available in approximately 0 seconds. Please try again after that time.", result1);
+
+        // Test large values
+        String result2 = commonUtils.convertSeconds(7200L); // 2 hours = 120 minutes
+        assertEquals("The export will be available in approximately 120 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(7201L); // 2 hours and 1 second
+        assertEquals("The export will be available in approximately 120 minutes and 1 seconds. Please try again after that time.", result3);
+    }
+
+    @Test
+    void testConvertSeconds_LargeValues() {
+        // Test very large long values
+        String result1 = commonUtils.convertSeconds(100000L);
+        assertEquals("The export will be available in approximately 1666 minutes and 40 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(Long.MAX_VALUE);
+        long expectedMinutes = Long.MAX_VALUE / 60;
+        long expectedSeconds = Long.MAX_VALUE % 60;
+        String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
+        assertEquals(expected, result2);
     }
 }

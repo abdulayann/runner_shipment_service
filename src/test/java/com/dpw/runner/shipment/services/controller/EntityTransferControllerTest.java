@@ -32,7 +32,7 @@ class EntityTransferControllerTest {
     private EntityTransferController entityTransferController;
 
     @Test
-    void sendShipment() {
+    void sendShipment() throws RunnerException {
         // Mock
         when(entityTransferService.sendShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -42,7 +42,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void sendShipment2() {
+    void sendShipment2() throws RunnerException {
         // Mock
         when(entityTransferService.sendShipment(any())).thenThrow(new RuntimeException());
         // Test
@@ -52,7 +52,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void sendShipment3() {
+    void sendShipment3() throws RunnerException {
         // Mock
         when(entityTransferService.sendShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -62,7 +62,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void sendConsolidation() {
+    void sendConsolidation() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -72,7 +72,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void sendConsolidation2() {
+    void sendConsolidation2() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenThrow(new RuntimeException());
         // Test
@@ -82,7 +82,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void sendConsolidation3() {
+    void sendConsolidation3() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -241,7 +241,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkEntityExists() throws RunnerException {
+    void checkEntityExists() {
         // Mock
         when(entityTransferService.checkEntityExists(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -251,7 +251,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkEntityExists2() throws RunnerException {
+    void checkEntityExists2() {
         // Mock
         when(entityTransferService.checkEntityExists(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -260,7 +260,7 @@ class EntityTransferControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
     @Test
-    void checkEntityExists3() throws RunnerException {
+    void checkEntityExists3() {
         // Mock
         when(entityTransferService.checkEntityExists(any())).thenThrow(new RuntimeException());
         // Test
@@ -300,7 +300,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkAcceptedFiles() throws RunnerException {
+    void checkAcceptedFiles() {
         // Mock
         when(entityTransferService.checkAcceptedFiles(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -310,7 +310,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkAcceptedFiles2() throws RunnerException {
+    void checkAcceptedFiles2() {
         // Mock
         when(entityTransferService.checkAcceptedFiles(any())).thenThrow(new RuntimeException());
         // Test
@@ -320,7 +320,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkAcceptedFiles3() throws RunnerException {
+    void checkAcceptedFiles3() {
         // Mock
         when(entityTransferService.checkAcceptedFiles(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test

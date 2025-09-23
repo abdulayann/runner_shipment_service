@@ -204,7 +204,7 @@ public class Packing extends MultiTenancy {
     private Boolean isContractEnforced;
 
     @Column(name = "handling_info")
-    @Size(max=2500, message = "max size is 2500 for handling_info")
+    @Size(max=25000, message = "max size is 25000 for handling info")
     private String handlingInfo;
 
     @Column(name = "contract_enforced_quantity_limit")
@@ -253,5 +253,18 @@ public class Packing extends MultiTenancy {
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
 
+    @Column(name = "volume_per_pack")
+    private BigDecimal volumePerPack;
+
+    @Column(name = "volume_per_pack_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
+    private String volumePerPackUnit;
+
+    @Column(name = "cargo_weight_per_pack")
+    private BigDecimal cargoWeightPerPack;
+
+    @Column(name = "pack_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
+    private String packWeightUnit;
 }
 

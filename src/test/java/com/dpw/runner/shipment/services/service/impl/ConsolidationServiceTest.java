@@ -91,6 +91,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -182,6 +183,8 @@ import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -211,6 +214,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ApplicationConf
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_EXPIRE_TIME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
@@ -404,6 +408,13 @@ import static org.mockito.Mockito.when;
 
     @Mock
     private IEventService eventService;
+
+    @Mock
+    private RedisTemplate redisTemplate;
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+    @Mock
+    private CustomKeyGenerator customKeyGenerator;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -2409,8 +2420,6 @@ import static org.mockito.Mockito.when;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2458,8 +2467,6 @@ import static org.mockito.Mockito.when;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -2500,8 +2507,6 @@ import static org.mockito.Mockito.when;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -3988,7 +3993,13 @@ import static org.mockito.Mockito.when;
         when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
         when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
         when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
-        consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+        when(applicationConfigService.getValue(EXPORT_EXCEL_EXPIRE_TIME)).thenReturn("5");
+        when(customKeyGenerator.cacheBaseKey()).thenReturn(new StringBuilder());
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(redisTemplate.opsForValue().get(any())).thenReturn(null);
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest), exportExcelResponse);
 
         assertEquals(200,response.getStatus());
     }
@@ -5625,8 +5636,6 @@ import static org.mockito.Mockito.when;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), true));
     }
 
@@ -5636,8 +5645,6 @@ import static org.mockito.Mockito.when;
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5648,8 +5655,6 @@ import static org.mockito.Mockito.when;
         shipmentDetails.setTenantId(2);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5660,8 +5665,6 @@ import static org.mockito.Mockito.when;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertDoesNotThrow(() -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5672,8 +5675,6 @@ import static org.mockito.Mockito.when;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), false));
     }
 
@@ -5684,8 +5685,6 @@ import static org.mockito.Mockito.when;
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
         shipmentDetails.setContainsHazardous(false);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), true));
     }
 

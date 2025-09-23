@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
@@ -183,27 +186,26 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Long brokerageAtDestination;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime terminalCutoff;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime verifiedGrossMassCutoff;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime shippingInstructionCutoff;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime dgCutoff;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime reeferCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquipmentPickUp;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime latestArrivalTime;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
+
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
     private Integer dgPacksCount;
@@ -216,5 +218,13 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Boolean isFrob;
     private Long containerCount;
     private BigDecimal teuCount;
+
+    private List<EntityTransferServiceDetails> servicesList;
+    private Boolean isMigratedToV3 = false;
+    private TransportInfoStatus transportInfoStatus;
+    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
+
 
 }

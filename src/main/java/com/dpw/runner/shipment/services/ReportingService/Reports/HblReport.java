@@ -1,31 +1,16 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.concatGroupedContainerCount;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.concatGroupedFieldValues;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.concatGroupedFields;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -35,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
@@ -51,22 +37,21 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
 public class HblReport extends IReport {
@@ -79,6 +64,8 @@ public class HblReport extends IReport {
     private ShipmentService shipmentService;
     @Autowired
     private HblService hblService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -93,26 +80,34 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
-        V1TenantSettingsResponse tenantSettings;
-        tenantSettings = getCurrentTenantSettings();
-
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
-
-            if (shipment == null) {
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
-
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
-                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-                Hbl hblObject = getHbl(shipmentId);
-                shipmentService.validateHblContainerNumberCondition(shipment);
-                hblService.validateHblContainerNumberCondition(hblObject);
-            }
-            processMissingFields(tenantSettings, shipment);
+            validateOriginalPrintType(shipmentId, shipment, tenantSettings);
         }
+    }
+
+    private void validateOriginalPrintType(Long shipmentId, ShipmentDetails shipment, V1TenantSettingsResponse tenantSettings) {
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
+
+        if (isSeaFclExportOrCtsShipment(shipment)) {
+            Hbl hblObject = getHbl(shipmentId);
+            shipmentService.validateHblContainerNumberCondition(shipment);
+            hblService.validateHblContainerNumberCondition(hblObject);
+        }
+
+        processMissingFields(tenantSettings, shipment);
+    }
+
+    private boolean isSeaFclExportOrCtsShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
+                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
     }
 
     private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {
@@ -367,7 +362,7 @@ public class HblReport extends IReport {
         processAdditionalDetails(hblModel, dictionary);
         processReferenceNumber(hblModel, dictionary);
 
-        populateBillChargesFields(hblModel.shipment, dictionary);
+        populateBillChargesFields(hblModel.shipment, dictionary, true);
         processReferenceNumbersList(hblModel, dictionary);
         addCargoLocationTag(hblModel, dictionary);
         processNotifyParty(hblModel, dictionary);
@@ -399,8 +394,11 @@ public class HblReport extends IReport {
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal() == null ? 1 : hblModel.shipment.getAdditionalDetails().getOriginal()));
-        dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getName()) : "");
-        dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getCountry()) : "");
+        dictionary.put(ISSUE_PLACE_NAME_V2, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getName()) : "");
+        dictionary.put(ISSUE_PLACE_COUNTRY_V2, hblModel.placeOfIssue != null ? StringUtility.toUpperCase(hblModel.placeOfIssue.getCountry()) : "");
+        dictionary.put(ISSUE_PLACE_NAME, StringUtility.toUpperCase(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()));
+        EntityTransferAddress address = commonUtils.getEntityTransferAddress(hblModel.shipment.getTransportMode());
+        dictionary.put(ISSUE_PLACE_COUNTRY, address != null ? StringUtility.toUpperCase(address.getCountry()) : StringUtils.EMPTY);
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
         dictionary.put(BL_COMMENTS, hblModel.blObject.getHblData().getBlComments());
         dictionary.put(MARKS_AND_NUMBER, hblModel.blObject.getHblData().getMarksAndNumbers());
@@ -494,6 +492,10 @@ public class HblReport extends IReport {
 
         addDeliverToTag(hblModel, dictionary);
 
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            buildCargoSectionForV3FromShipment(dictionary, hblModel);
+        }
+
         if (hblModel.consolidation != null) {
             this.populateConsolidationReportData(dictionary, null, hblModel.consolidation.getId());
         }
@@ -503,8 +505,204 @@ public class HblReport extends IReport {
             this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
-
+        dictionary.put(BL_RELEASE_TYPE, ORIGINAL);
         return dictionary;
+    }
+
+    public String getContainerSummary(List<ContainerModel> containers) {
+        if (containers == null || containers.isEmpty()) return null;
+
+        // Sort
+        containers.sort(Comparator.comparing(ContainerModel::getContainerCode));
+
+        // Group by containerCode and sum counts
+        Map<String, Long> containerCodeCountMap = containers.stream()
+                .collect(Collectors.groupingBy(
+                        ContainerModel::getContainerCode,
+                        Collectors.summingLong(ContainerModel::getContainerCount)
+                ));
+
+        // Build summary
+        return  containerCodeCountMap.entrySet().stream()
+                .map(e -> e.getValue() + "X" + e.getKey())
+                .collect(Collectors.joining(", "));
+    }
+
+    public String getPackingSummary(List<PackingModel> packages, Map<String, MasterData> packTypeMap) {
+        if (packages == null || packages.isEmpty()) return null;
+
+        // Sort
+        packages.sort(Comparator.comparing(PackingModel::getPacksType));
+
+        // Group by packType and sum counts
+        Map<String, Long> packageTypeCountMap = packages.stream()
+                .collect(Collectors.groupingBy(
+                        PackingModel::getPacksType,
+                        Collectors.summingLong(p -> Long.parseLong(p.getPacks()))
+                ));
+
+        // Total count
+        long totalCount = packageTypeCountMap.values().stream().mapToLong(Long::longValue).sum();
+
+        // Build summary
+        return totalCount + " PACKAGE(S)" + " (" + packageTypeCountMap.entrySet().stream()
+                .map(e -> {
+                    if(packTypeMap.containsKey(e.getKey())) {
+                        return e.getValue() + " " + StringUtility.toUpperCase(packTypeMap.get(e.getKey()).getItemDescription()) + "(S)";
+                    }
+                    return e.getValue() + " " + StringUtility.toUpperCase(e.getKey()) + "(S)";
+
+                })
+                .collect(Collectors.joining(", ")) + ")";
+    }
+
+    private void buildCargoSectionForV3FromShipment(Map<String, Object> dictionary, HblModel hblModel) {
+
+        if(!Strings.isNullOrEmpty(hblModel.shipment.getGoodsDescription()))
+            dictionary.put(ReportConstants.SHIPMENT_DESCRIPTION, StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
+        else
+            dictionary.put(ReportConstants.SHIPMENT_DESCRIPTION, "AS MENTIONED IN THE CONTAINER/PACKAGE DESCRIPTION");
+        if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
+            dictionary.put(ReportConstants.SLACFCL, "SHIPPER’S LOAD, STOWAGE,COUNT AND SEAL");
+        }
+        List<Map<String, Object>> cargoSectionList = new ArrayList<>();
+        Map<Long, List<PackingModel>> cargoMap;
+        Set<String> packTypes = new HashSet<>();
+        if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
+            cargoMap = hblModel.shipment.getPackingList().stream().filter(pack -> pack.getContainerId() != null)
+                    .collect(Collectors.groupingBy(PackingModel::getContainerId));
+            packTypes = hblModel.shipment.getPackingList().stream().map(PackingModel::getPacksType)
+                    .filter(StringUtility::isNotEmpty).collect(Collectors.toSet());
+            long totalCount = hblModel.shipment.getPackingList().stream().filter(x->StringUtility.isNotEmpty(x.getPacksType())).map(x ->Long.parseLong(x.getPacks())).mapToLong(Long::longValue).sum();
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) ||
+                Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_ROR) ||
+                    Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_BBK))
+                dictionary.put(ReportConstants.TOTAL_TOTAL_CONTAINERS_OR_PACKS, totalCount + " " + ReportConstants.PACKAGE_STRING);
+
+        } else {
+            cargoMap = new HashMap<>();
+        }
+        List<ContainerModel> containerList = hblModel.shipment.getContainersList();
+        if(!CommonUtils.listIsNullOrEmpty(containerList)) {
+            packTypes.addAll(containerList.stream().map(ContainerModel::getPacksType)
+                    .filter(StringUtility::isNotEmpty).collect(Collectors.toSet()));
+
+            dictionary.put(ReportConstants.TOTAL_CONTAINERS_AND_TYPE, getContainerSummary(containerList));
+            long totalCount = containerList.stream().map(ContainerModel::getContainerCount).mapToLong(Long::longValue).sum();
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.CARGO_TYPE_FCL))
+                dictionary.put(ReportConstants.TOTAL_TOTAL_CONTAINERS_OR_PACKS, totalCount + " " + ReportConstants.CONTAINERS_STRING);
+
+        }
+
+        var packTypeMap = masterDataUtils.getMultipleMasterListData(MasterDataType.PACKS_UNIT, packTypes);
+
+        if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
+            dictionary.put(ReportConstants.TOTAL_PACKS_AND_TYPE, getPackingSummary(hblModel.shipment.getPackingList(), packTypeMap));
+        }
+        if(!CommonUtils.listIsNullOrEmpty(containerList)) {
+            cargoSectionList = prepareContainerListTags(containerList, hblModel, cargoMap, packTypeMap);
+        }
+
+        dictionary.put(ReportConstants.S_CONTAINERS, cargoSectionList);
+
+    }
+
+    private List<Map<String, Object>> prepareContainerListTags(List<ContainerModel> containerList, HblModel hblModel, Map<Long, List<PackingModel>> cargoMap, Map<String, MasterData> packTypeMap) {
+        List<Map<String, Object>> cargoSectionList = new ArrayList<>();
+        containerList.forEach(cont -> {
+            Map<String, Object> mp = new HashMap<>();
+            String info = buildContainerInfo(hblModel, cont);
+
+            mp.put(INFO, StringUtility.toUpperCase(info));
+            cargoSectionList.add(mp);
+
+            BigDecimal totalPacks = BigDecimal.ZERO;
+            BigDecimal totalWeight = BigDecimal.ZERO;
+            BigDecimal totalVolume = BigDecimal.ZERO;
+
+            if(cargoMap.containsKey(cont.getId())) {
+                List<PackingModel> assignedPackList = cargoMap.get(cont.getId());
+                if (!CommonUtils.listIsNullOrEmpty(assignedPackList)) {
+                    for (var pack: assignedPackList){
+                        Map<String, Object> packMp = buildPackingMap(pack, packTypeMap);
+
+                        totalPacks = totalPacks.add(safeBigDecimal(pack.getPacks()));
+                        totalWeight = totalWeight.add(convertToKg(pack.getWeight(), pack.getWeightUnit()));
+                        totalVolume = totalVolume.add(convertToM3(pack.getVolume(), pack.getVolumeUnit()));
+                        cargoSectionList.add(packMp);
+                    }
+                }
+            }
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)){
+                mp.put(WEIGHT, totalWeight + " " + Constants.WEIGHT_UNIT_KG);
+                mp.put(VOLUME, totalVolume + " " + Constants.VOLUME_UNIT_M3);
+                mp.put(PACKS, totalPacks + " " + ReportConstants.PACKAGE_STRING);
+            }
+            else {
+                prepareContainersField(cont, mp, packTypeMap);
+            }
+
+        });
+        return cargoSectionList;
+    }
+
+    private void prepareContainersField(ContainerModel cont, Map<String, Object> mp, Map<String, MasterData> packTypeMap) {
+        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(cont.getMarksNums()));
+        mp.put(DESCRIPTION, StringUtility.toUpperCase(cont.getDescriptionOfGoods()));
+        if (cont.getGrossWeight() != null)
+            mp.put(WEIGHT, cont.getGrossWeight() + " " + cont.getGrossWeightUnit());
+        if (cont.getGrossVolume() != null)
+            mp.put(VOLUME, cont.getGrossVolume() + " " + cont.getGrossVolumeUnit());
+        if (StringUtility.isNotEmpty(cont.getPacks())) {
+            if (packTypeMap.containsKey(cont.getPacksType())) {
+                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(cont.getPacksType()).getItemDescription()) + "(S)");
+            } else
+                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(cont.getPacksType()));
+        }
+
+    }
+
+    private Map<String, Object> buildPackingMap(PackingModel assignedPack, Map<String, MasterData> packTypeMap) {
+        Map<String, Object> mp = new HashMap<>();
+        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(assignedPack.getMarksnNums()));
+        mp.put(DESCRIPTION, StringUtility.toUpperCase(assignedPack.getGoodsDescription()));
+        if(assignedPack.getWeight() != null)
+            mp.put(WEIGHT, assignedPack.getWeight() + " " + assignedPack.getWeightUnit());
+        if(assignedPack.getVolume() != null)
+            mp.put(VOLUME, assignedPack.getVolume() + " " + assignedPack.getVolumeUnit());
+        if(StringUtility.isNotEmpty(assignedPack.getPacks())) {
+            if(packTypeMap.containsKey(assignedPack.getPacksType())) {
+                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(assignedPack.getPacksType()).getItemDescription()) + "(S)");
+            } else
+                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(assignedPack.getPacksType()));
+        }
+        return mp;
+    }
+
+    private String buildContainerInfo(HblModel hblModel, ContainerModel container) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\n";
+        if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+            sb.append("STOWED IN CONTAINER: ");
+        }
+        if(!Strings.isNullOrEmpty(container.getContainerCode())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getContainerCode());
+        }
+        if(!Strings.isNullOrEmpty(container.getContainerNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getContainerNumber());
+        }
+        if(!Strings.isNullOrEmpty(container.getCarrierSealNumber())) {
+            checkAndAppendDelimiter(sb, newLine);
+            sb.append(container.getCarrierSealNumber());
+        }
+        return sb.toString();
+    }
+
+    private static void checkAndAppendDelimiter(StringBuilder sb, String delimiter) {
+        if(!sb.isEmpty())
+            sb.append(delimiter);
     }
 
     private void processAdditionalDetails(HblModel hblModel, Map<String, Object> dictionary) {
@@ -1281,7 +1479,7 @@ public class HblReport extends IReport {
             return packageType;
 
         MasterData masterData = getMasterListData(MasterDataType.PACKS_UNIT, packageType);
-        return (masterData != null ? masterData.getItemDescription() : null);
+        return (masterData != null ? masterData.getItemDescription() : PackingConstants.PKG);
     }
 
     private String getLogoPath(UsersDto user) {

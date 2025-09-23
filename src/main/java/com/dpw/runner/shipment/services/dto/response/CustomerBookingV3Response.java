@@ -2,8 +2,11 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
@@ -89,6 +92,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String parentContractId;
     private String salesBranch;
     private Boolean isNotifyConsigneeEqual;
+    private Boolean isShipperClientEqual;
+    private Boolean isConsigneeClientEqual;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private Boolean isBillCreated;
@@ -123,16 +128,31 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime pickupAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime deliveryAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -152,10 +172,15 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
     private BigDecimal teuCount;
-    private long containers;
+    private Long containers;
     private String packageType;
-    private long packages;
+    private Long packages;
     private String description;
     private String marksnNumbers;
     private String additionalTerms;
+    private Boolean isVolumeEditable = Boolean.FALSE;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;
+    private Boolean isWeightEditable = Boolean.FALSE;
+    private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
+    private MigrationStatus migrationStatus;
 }

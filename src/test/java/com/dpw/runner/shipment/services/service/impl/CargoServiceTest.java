@@ -11,10 +11,15 @@ import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -28,8 +33,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +57,19 @@ class CargoServiceTest {
     private JsonHelper jsonHelper;
 
     @Mock
-    private IConsolidationService consolidationService;
+    private ConsolidationV3Service consolidationService;
+
+    @Mock
+    private CustomerBookingV3Service customerBookingV3Service;
+
+    @Mock
+    private ShipmentsV3Util shipmentsV3Util;
+
+    @Mock
+    private CommonUtils commonUtils;
+
+    @Mock
+    private CustomerBookingV3Util customerBookingV3Util;
 
     @InjectMocks
     private CargoService cargoService;
@@ -63,14 +79,19 @@ class CargoServiceTest {
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = new CustomerBooking();
         customerBooking.setContainers(3L);
+        customerBooking.setPackingList(new ArrayList<>());
         customerBooking.setTeuCount(new BigDecimal("6.0"));
         Containers container1 = new Containers();
         container1.setContainerCount(1L);
         container1.setContainerCode("20GP");
+        container1.setPackagesPerContainer(2L);
         Containers container2 = new Containers();
         container2.setContainerCount(2L);
+        container1.setPackagesPerContainer(2L);
         container2.setContainerCode("20GP");
         customerBooking.setContainersList(List.of(container1, container2));
+        when(customerBookingV3Util.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -85,6 +106,8 @@ class CargoServiceTest {
         // Prepare test data
         CargoDetailsRequest request = createRequest("BOOKING", "1");
         CustomerBooking customerBooking = mock(CustomerBooking.class);
+        when(customerBookingV3Util.getTotalCargoWeight(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
 
         // Test
@@ -113,14 +136,13 @@ class CargoServiceTest {
         packing.setVolume(BigDecimal.valueOf(2));
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
+        packing.setPacksType("PKG");
         booking.setPackingList(List.of(packing));
-        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
-        mdmContainerTypeResponse.setCode("20GP");
-        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -147,6 +169,7 @@ class CargoServiceTest {
         packing.setVolume(BigDecimal.valueOf(2));
         packing.setVolumeUnit("M3");
         packing.setPacks("10");
+        packing.setPacksType("PKG");
         booking.setPackingList(List.of(packing));
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("20GP");
@@ -155,6 +178,9 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
@@ -176,6 +202,8 @@ class CargoServiceTest {
         booking.setTransportType(null);
 
         Packing packing = new Packing();
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
         packing.setWeight(BigDecimal.valueOf(100));
         packing.setWeightUnit("KG");
         packing.setVolume(BigDecimal.valueOf(2));
@@ -188,6 +216,9 @@ class CargoServiceTest {
         DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
+        when(customerBookingV3Util.getTotalContainerPackages(List.of(container))).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -213,6 +244,8 @@ class CargoServiceTest {
 
         Packing packing = new Packing();
         packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
         packing.setWeightUnit("KG");
         packing.setVolume(BigDecimal.valueOf(3));
         packing.setVolumeUnit("M3");
@@ -226,10 +259,56 @@ class CargoServiceTest {
         dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(customerBookingV3Util.getTotalContainerPackages(anyList())).thenReturn(10L);
+        when(customerBookingV3Util.getTotalCargoWeight(anyList(), any())).thenReturn(BigDecimal.TEN);
+        when(customerBookingV3Util.getTotalCargoWeightFromPackages(anyList(), any())).thenReturn(BigDecimal.ONE);
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
 
         assertEquals(1, response.getContainers());
+    }
+
+    @Test
+    void testCargoSummaryEditableFieldsWithWeightMissing() {
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.valueOf(3));
+        packing.setVolumeUnit("M3");
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(null);
+        packing1.setPacks("2");
+        packing1.setPacksType("PKG");
+        packing1.setWeightUnit("KG");
+        packing1.setVolume(BigDecimal.valueOf(3));
+        packing1.setVolumeUnit("M3");
+        packing1.setPacks("5");
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoService.updateEditableFlags(cargoDetailsResponse, new ArrayList<>(), List.of(packing1, packing));
+        assertFalse(cargoDetailsResponse.getIsVolumeEditable());
+        assertTrue(cargoDetailsResponse.getIsWeightEditable());
+    }
+
+    @Test
+    void testCargoSummaryEditableFieldsVolumeMissing() {
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        packing.setPacks("2");
+        packing.setPacksType("PKG");
+        packing.setWeightUnit("KG");
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(null);
+        packing1.setPacks("2");
+        packing1.setPacksType("PKG");
+        packing1.setPacks("5");
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        cargoService.updateEditableFlags(cargoDetailsResponse, new ArrayList<>(), List.of(packing1, packing));
+        assertTrue(cargoDetailsResponse.getIsVolumeEditable());
+        assertTrue(cargoDetailsResponse.getIsWeightEditable());
     }
 
     @Test

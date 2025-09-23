@@ -79,6 +79,28 @@ class AuthFilterTest {
         assertFalse(actualShouldNotFilterResult);
     }
 
+
+    @Test
+    void testDoFilterInternal5() throws IOException, ServletException {
+        // Arrange
+        DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
+        when(servletRequest.getHeader(Mockito.<String>any())).thenReturn("https://example.org/v3/example");
+        when(servletRequest.getRequestURI()).thenReturn("https://example.org/v3/example");
+        when(servletRequest.getServletPath()).thenReturn("https://example.org/v3/example");
+        AddDefaultCharsetFilter.ResponseWrapper servletResponse = mock(AddDefaultCharsetFilter.ResponseWrapper.class);
+        doNothing().when(servletResponse).setStatus(anyInt());
+        doNothing().when(servletResponse).setContentType(Mockito.<String>any());
+        UserServiceV1 userServiceV1 = new UserServiceV1();
+        when(getUserServiceFactory.returnUserService()).thenReturn(userServiceV1);
+        authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));
+
+        verify(servletRequest).getHeader("Authorization");
+        verify(servletRequest).getRequestURI();
+        verify(servletRequest, atLeast(1)).getServletPath();
+        verify(servletResponse).setStatus(401);
+        verify(servletResponse).setContentType("application/json");
+    }
+
     @Test
     void testDoFilterInternal() throws IOException, ServletException {
         // Arrange

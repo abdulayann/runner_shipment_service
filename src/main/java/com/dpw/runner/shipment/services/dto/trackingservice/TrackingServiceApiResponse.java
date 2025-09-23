@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.trackingservice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -31,10 +32,12 @@ public class TrackingServiceApiResponse {
         private String identifierValue;
         @JsonProperty("container")
         private ContainerBase containerBase;
+        private String shipmentReference; // when containerBase is null
         private Journey journey;
         private List<Place> places;
         private List<Transport> transports;
         private List<Event> events;
+        private List<LocationHistory> locationHistory;
     }
 
     @Data
@@ -235,6 +238,21 @@ public class TrackingServiceApiResponse {
         private Integer transport;
         private Boolean hasContainer;
         private Boolean hasCargo;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LocationHistory {
+
+        private String source;
+        private BigDecimal latitude;
+        private BigDecimal longitude;
+        private LocalDateTime locationUpdateTime;
+        private String locationName;
+        private String locationType;
+        private String locationLabel;
     }
 
 }

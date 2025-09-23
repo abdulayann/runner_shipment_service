@@ -1,0 +1,1 @@
+Delete from network_transfer where entity_id=50282 and tenant_id=583;

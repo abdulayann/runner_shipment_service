@@ -1,11 +1,15 @@
 package com.dpw.runner.shipment.services.controller;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.response.ReportResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -42,7 +46,7 @@ class ReportControllerTest {
     void createReport()
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
-        when(reportService.getDocumentData(any())).thenReturn(StringUtility.getRandomString(100).getBytes());
+        when(reportService.getDocumentData(any())).thenReturn(ReportResponse.builder().content(StringUtility.getRandomString(100).getBytes()).build());
         // Test
         var responseEntity = reportController.createReport(new ReportRequest());
         // Assert
@@ -80,6 +84,20 @@ class ReportControllerTest {
         var responseEntity = reportController.createReport(new ReportRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createReport5() throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        // Arrange
+        when(reportService.getDocumentData(any()))
+                .thenThrow(new ReportExceptionWarning("ReportExceptionWarning"));
+
+        // Act & Assert
+        assertThrows(ReportExceptionWarning.class, this::invokeCreateReport);
+    }
+
+    private void invokeCreateReport() {
+        reportController.createReport(new ReportRequest());
     }
 
     @Test
@@ -145,6 +163,16 @@ class ReportControllerTest {
         when(reportService.getPreAlertEmailTemplateData(any(), any())).thenThrow(new RunnerException());
         var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void validateHouseBill_success() throws Exception {
+        // No exception from service means success
+        doNothing().when(reportService).validateHouseBill(any());
+
+        var response = reportController.validateHouseBill(new ReportRequest());
+
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 

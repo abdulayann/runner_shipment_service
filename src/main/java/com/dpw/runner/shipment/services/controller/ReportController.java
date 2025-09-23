@@ -13,12 +13,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -51,13 +53,23 @@ public class ReportController {
         String responseMsg;
         HttpStatus httpStatus = null;
         try {
-            return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf");
+            var response = reportService.getDocumentData(CommonRequestModel.buildRequest(request));
+            Map<String, Object> documentMap = response.getDocumentServiceMap();
+            String fileName = request.getReportInfo() + ".pdf"; // Default filename
+            if (documentMap != null && documentMap.get("fileName") != null) {
+                fileName = documentMap.get("fileName").toString();   // Override if custom name present in documentMap
+            }
+            byte[] pdfBytes = response.getContent();
+            return ResponseHelper.buildFileResponse(pdfBytes, MediaType.APPLICATION_OCTET_STREAM, fileName, documentMap, "DocMaster");
         } catch (TranslationException e) {
             responseMsg = e.getMessage();
             httpStatus = HttpStatus.PRECONDITION_REQUIRED;
         } catch (UnexpectedRollbackException e) {
             responseMsg = "An error occurred while printing the report. Please contact the support team.";
             log.error(responseMsg, e);
+        } catch (ReportExceptionWarning e) {
+            log.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -65,7 +77,6 @@ public class ReportController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
-
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_CREATE_TAGS_SHIPMENT)
     public ResponseEntity<IRunnerResponse> createDocumentTagsForShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
@@ -100,4 +111,10 @@ public class ReportController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = FETCH_SUCCESSFUL)})
+    @PostMapping(ReportConstants.VALIDATE_HOUSE_BILL)
+    public ResponseEntity<IRunnerResponse> validateHouseBill(@RequestBody @Valid ReportRequest request) {
+        reportService.validateHouseBill(request);
+        return ResponseHelper.buildSuccessResponse();
+    }
 }

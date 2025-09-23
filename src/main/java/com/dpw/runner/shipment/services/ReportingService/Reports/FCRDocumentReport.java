@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_PLACE_OF_ISSUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PLACE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CARGO_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIP_CONSIGNEE_IN_CAPS;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -106,6 +108,12 @@ public class FCRDocumentReport extends IReport{
         populateFcrPlaceOfIssue(dictionary, unLocationsMap);
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
+
+        populateShippedOnboardFields(fcrDocumentModel.getShipmentModel(), dictionary);
+        populateDGFields(fcrDocumentModel.getShipmentModel(), dictionary);
+        populateReeferFields(fcrDocumentModel.getShipmentModel(), dictionary);
+        if (Objects.nonNull(fcrDocumentModel.getShipmentModel()))
+            dictionary.put(SHIPMENT_CARGO_TYPE, fcrDocumentModel.getShipmentModel().getShipmentType());
 
         if (fcrDocumentModel.getShipmentModel() != null && ObjectUtils.isNotEmpty(fcrDocumentModel.getShipmentModel().getConsolidationList())) {
             ConsolidationModel consolidationModel = fcrDocumentModel.getShipmentModel().getConsolidationList().get(0);

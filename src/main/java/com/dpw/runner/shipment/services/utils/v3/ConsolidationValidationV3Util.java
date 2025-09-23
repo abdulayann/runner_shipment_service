@@ -165,7 +165,7 @@ public class ConsolidationValidationV3Util {
                 throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() + " Cargo Delivery Date is lesser than LAT Date.");
             }
 
-            if(checkForAirDGFlag(consolidationDetails)) {
+            if(checkForAirTransportMode(consolidationDetails)) {
 
                 if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))
                     anyDGShipment = true;
@@ -222,7 +222,7 @@ public class ConsolidationValidationV3Util {
             boolean anyInterBranchShipment, boolean anyDGShipment) throws RunnerException {
 
         // Check if the consolidation is Air DG
-        if (checkForAirDGFlag(consolidationDetails) &&
+        if (checkForAirTransportMode(consolidationDetails) &&
                 (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment)) {
 
             // Rule 1: Air DG consolidation cannot have more than one shipment
@@ -256,11 +256,6 @@ public class ConsolidationValidationV3Util {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity())) {
             if(!CommonUtils.checkAirSecurityForConsolidation(consolidationDetails))
                 throw new ValidationException("You don't have Air Security permission to attach/detach AIR EXP Shipment.");
-        } else {
-            if(checkForAirDGFlag(consolidationDetails) && !UserContext.isAirDgUser() &&
-                    (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment)) {
-                throw new ValidationException("You don't have permission to attach/detach DG Shipment");
-            }
         }
     }
 
@@ -271,12 +266,7 @@ public class ConsolidationValidationV3Util {
      * @param consolidationDetails The consolidation object containing transport mode info
      * @return true if Air DG checks should be applied, false otherwise
      */
-    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        // First, check if Air DG processing is globally enabled via tenant settings
-        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag())) {
-            return false;
-        }
-
+    private boolean checkForAirTransportMode(ConsolidationDetails consolidationDetails) {
         // Return true only if the transport mode is AIR
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }

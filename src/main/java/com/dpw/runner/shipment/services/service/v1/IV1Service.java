@@ -210,4 +210,5 @@ public interface IV1Service {
     V1DataResponse fetchActiveUnlocation(Object request);
 
     V1RetrieveResponse retrieveTenantByTenantId(Object request);
+    Long retrieveSearchEntityDpsId(Object request);
 }

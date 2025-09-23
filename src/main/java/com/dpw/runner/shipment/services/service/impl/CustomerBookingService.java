@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -157,6 +159,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private INotesDao notesDao;
 
+    @Autowired
+    private IDocumentManagerService documentManagerService;
+
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -228,9 +233,18 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         populateTotalRevenueDetails(customerBooking, request);
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
+
+        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()) && request.getExternalDocuments() != null) {
+            List<ExternalDocumentRequest> externalDocumentRequests = request.getExternalDocuments();
+            for(ExternalDocumentRequest documentRequest: externalDocumentRequests) {
+                DocumentStoreDto documentStoreDto = DocumentStoreDto.builder().fileName(documentRequest.getFileName()).entityId(customerBooking.getGuid()).entityType("[Bookings]").source("Third Party System").documentMasterId(documentRequest.getDocumentMasterId()).encodedFile(addContentTypePrefix(documentRequest.getFileType()).concat(",").concat(documentRequest.getDocContent())).build();
+                documentManagerService.storeDocument(CommonRequestModel.buildDependentDataRequest(documentStoreDto));
+            }
+        }
 
         saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
@@ -264,6 +278,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private String addContentTypePrefix(String fileType) {
+        if(fileType.equalsIgnoreCase("pdf")) {
+            return "data:application/pdf;base64";
+        }
+        return "data:text/csv;base64";
     }
 
     private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException {
@@ -380,7 +401,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
-
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -488,11 +509,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!CommonUtils.checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
-        } else {
-            boolean hasAirDGPermission = UserContext.isAirDgUser();
-            if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
-                throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
-            }
         }
     }
 

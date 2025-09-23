@@ -38,13 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -548,5 +543,43 @@ class CustomerBookingDaoTest {
         doNothing().when(customValidationsV3).onSave(any(),any());
         customerBookingDao.save(customerBooking);
         verify(customValidationsV3, times(1)).onSave(any(), any());
+    }
+
+    @Test
+    void testFindAllByMigratedStatuses() {
+        List<String> statuses = List.of("MIGRATED", "PARTIAL");
+        Integer tenantId = 1;
+        List<Long> expected = List.of(23L);
+        when(customerBookingRepository.findAllByMigratedStatuses(statuses, tenantId)).thenReturn(expected);
+        List<Long> result = customerBookingDao.findAllByMigratedStatuses(statuses, tenantId);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findAllByMigratedStatuses(statuses, tenantId);
+    }
+
+    @Test
+    void testFindCustomerBookingByIds() {
+        Set<Long> ids = Set.of(201L, 202L);
+        List<CustomerBooking> expected = List.of(new CustomerBooking(), new CustomerBooking());
+        when(customerBookingRepository.findCustomerBookingByIds(ids)).thenReturn(expected);
+        List<CustomerBooking> result = customerBookingDao.findCustomerBookingByIds(ids);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findCustomerBookingByIds(ids);
+    }
+
+    @Test
+    void testDeleteCustomerBookingIds() {
+        Set<Long> ids = Set.of(301L, 302L);
+        customerBookingDao.deleteCustomerBookingIds(ids);
+        verify(customerBookingRepository, times(1)).deleteCustomerBookingIds(ids);
+    }
+
+    @Test
+    void testFindAllCustomerBookingIdsByTenantId() {
+        Integer tenantId = 3;
+        Set<Long> expected = Set.of(401L, 402L);
+        when(customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId)).thenReturn(expected);
+        Set<Long> result = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
+        assertEquals(expected, result);
+        verify(customerBookingRepository, times(1)).findAllCustomerBookingIdsByTenantId(tenantId);
     }
 }

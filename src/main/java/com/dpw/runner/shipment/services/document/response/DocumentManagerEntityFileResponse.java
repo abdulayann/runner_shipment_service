@@ -27,14 +27,16 @@ public class DocumentManagerEntityFileResponse {
     private String childType;
 
     private String childId;
+    private String docCode;
 
     private String secureDownloadLink;
 
     private String createdAt;
 
-    private String postingStatus;
+    private Object postingStatus;
 
     private Boolean isTransferEnabled;
 
     private String entityDetails;
+    private Integer count;
 }

@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKAGES;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
@@ -1179,17 +1180,20 @@ public class MasterDataUtils{
 
     public Map<String, EntityTransferVessels> fetchInBulkVessels(Set<String> requests) {
         Map<String, EntityTransferVessels> keyMasterDataMap = new HashMap<>();
-        if(!requests.isEmpty()) {
-            log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
-            String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchVesselData(request);
+        if (requests != null) {
+            requests = requests.stream().filter(req -> req != null && !req.trim().isEmpty()).collect(Collectors.toSet());
+            if(!requests.isEmpty()) {
+                log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+                CommonV1ListRequest request = new CommonV1ListRequest();
+                List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
+                String operator = Operators.IN.getValue();
+                List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+                request.setCriteriaRequests(criteria);
+                V1DataResponse response = v1Service.fetchVesselData(request);
 
-            List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
-            vesselsList.forEach(vessel -> keyMasterDataMap.put(vessel.getGuid().toString(), vessel));
+                List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
+                vesselsList.forEach(vessel -> keyMasterDataMap.put(vessel.getGuid().toString(), vessel));
+            }
         }
         return keyMasterDataMap;
     }
@@ -2255,6 +2259,27 @@ public class MasterDataUtils{
         return masterData.get(0);
     }
 
+    public Map<String, com.dpw.runner.shipment.services.masterdata.dto.MasterData> getMultipleMasterListData(MasterDataType type, Set<String> itemValue)
+    {
+        if (CommonUtils.setIsNullOrEmpty(itemValue)) return null;
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        itemValue.forEach(item -> {
+            MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(item).build();
+            masterListRequests.getMasterListRequests().add(masterListRequest);
+        });
+        Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();
+        List<com.dpw.runner.shipment.services.masterdata.dto.MasterData> masterData = new ArrayList<>();
+        Map<String, com.dpw.runner.shipment.services.masterdata.dto.MasterData> itemValueMap = new HashMap<>();
+        if (masterDataList != null) {
+            masterData = jsonHelper.convertValueToList(masterDataList, com.dpw.runner.shipment.services.masterdata.dto.MasterData.class);
+            itemValueMap = masterData.stream().collect(Collectors.toMap(com.dpw.runner.shipment.services.masterdata.dto.MasterData::getItemValue, Function.identity()));
+        }
+        if (masterData.isEmpty())
+            return null;
+
+        return itemValueMap;
+    }
+
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
@@ -2342,5 +2367,11 @@ public class MasterDataUtils{
             }
         }
         return teu;
+    }
+
+    public String getPackTypeDesc(String packType) {
+        var packTypeMaster = getMasterListData(MasterDataType.PACKS_UNIT, packType);
+        var packUnitDescription = packTypeMaster != null && StringUtility.isNotEmpty(packTypeMaster.getItemDescription()) ? packTypeMaster.getItemDescription() : packType;
+        return PackingConstants.PKG.equalsIgnoreCase(packType) ?  StringUtility.toUpperCase(PACKAGES) : StringUtility.toUpperCase(packUnitDescription);
     }
 }

@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
@@ -58,6 +59,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -131,6 +133,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     private OrderManagementAdapter orderManagementAdapter;
     @Mock
     private IQuoteContractsService quoteContractsService;
+    @Mock
+    private IDocumentManagerService documentManagerService;
 
     @Mock
     private INotesDao notesDao;
@@ -319,6 +323,48 @@ class CustomerBookingServiceTest extends CommonMocks {
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
                 .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBLC-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(quoteContracts);
+        when(npmService.updateContracts(any())).thenReturn(new ResponseEntity<>(HttpStatus.OK));
+        mockShipmentSettings();
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateGeneratesBookingNumberTeslaLCLCargo() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        request.setExternalDocuments(List.of(ExternalDocumentRequest.builder().fileName("abc").fileType("pdf").documentMasterId(183).docContent("gdsjhsgj").build()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
+        List<Containers> containers = List.of(Containers.builder().containerCode("20GP").build());
+        QuoteContracts quoteContracts = QuoteContracts.builder().contractId("contract 2").containerTypes(List.of("20GP", "40GP")).build();
+
+        CustomerBooking inputCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("LCL")
+                .contractId("contract 2")
+                .containersList(containers)
+                .build();
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("LCL")
+                .source(BookingSource.B2B)
+                .integrationSource(Constants.TESLA)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
                 .build();
@@ -639,6 +685,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
         customerBookingRequest.setIntegrationSource(Constants.TESLA);
         customerBookingRequest.setNotesList(notesList);
+        customerBookingRequest.setExternalDocuments(List.of(ExternalDocumentRequest.builder().fileName("abc").fileType("pdf").documentMasterId(183).docContent("gdsjhsgj").build()));
 
         CustomerBooking customerBooking = new CustomerBooking();
         customerBooking.setId(1L);
@@ -1422,38 +1469,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
-    }
-
-    @Test
-    void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AirShipment_AIRDGPermission_AirDgTrue_AirPermissionFalse_throwsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
-        request.setIsDg(true);
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
-//        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-//        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
     }
 
     @Test

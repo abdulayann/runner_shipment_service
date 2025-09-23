@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -67,6 +68,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -173,6 +176,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IContainerV3Service containerV3Service;
 
     @Autowired
+    private ContainerV3Util containerV3Util;
+
+    @Autowired
     private IContainerService containerService;
 
     @Autowired
@@ -248,6 +254,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     @Transactional
     public ConsolidationDetailsV3Response create(ConsolidationDetailsV3Request request) {
@@ -317,6 +326,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
+        throwErrorForAirDRTConsolidation(consolidationDetails.getTransportMode(), consolidationDetails.getConsolidationType());
+
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
@@ -341,6 +353,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consolidationDetailsV3Response;
     }
 
+    private void throwErrorForAirDRTConsolidation(String transportMode, String consolidationType) {
+        String consolType =  consolidationType == null ? "" : consolidationType.trim();
+        String transpMode = transportMode == null ? "" : transportMode.trim();
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transpMode) && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolType)){
+            throw new ValidationException(ConsolidationConstants.AIR_DRT_CONSOLIDATION_CREATION_ERROR);
+        }
+    }
+
     @Transactional
     @Override
     public Pair<ConsolidationDetails, Long> createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request){
@@ -355,6 +375,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
+
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+                /* Future to populate unloc code in consoliation child entities*/
+                var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(consolidationDetails, null);
+                populateUnlocCodeFuture.join();
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getDestinationPortLocCode()!=null && !commonUtils.checkIfPartyExists(consolidationDetails.getReceivingAgent())) {
+                    consolidationDetails.setReceivingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
+                }
+                if (consolidationDetails.getCarrierDetails()!=null && consolidationDetails.getCarrierDetails().getOriginPortLocCode()!=null && !commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
+                    consolidationDetails.setSendingAgentCountry(commonUtils.getTwoDigitCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
+                }
+            }
+
             populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
             beforeSave(consolidationDetails, null, true);
 
@@ -387,7 +420,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-
+        throwErrorForAirDRTConsolidation(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getConsolidationType());
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
@@ -714,14 +747,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 && !Boolean.TRUE.equals(shipmentSettingsDetails.getIsShipmentLevelContainer())) {
             List<ContainerV3Request> splittedContainers = splitContainerIntoLineItems(containerRequestList);
             List<Containers> containers = commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate);
-            containerAssignedToShipmentCargo = shipmentV3Service.assignFirstBookingContainerToShipmentCargo(containers, customerBookingV3Request);
             List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(containers, id, (Long) null, true);
             if(!listIsNullOrEmpty(updatedContainers))
                 containerAssignedToShipmentCargo = updatedContainers.get(0).getId();
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
+            List<Packing> packingList = commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate);
+            for(Packing packing : packingList) {
+                packing.setId(null);
+                packing.setGuid(null);
+                packing.setBookingId(null);
+            }
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(packingList, id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         return containerAssignedToShipmentCargo;
@@ -738,6 +776,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     newContainer.setGuid(null);
                     newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
+                    newContainer.setNetWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setNetWeightUnit(newContainer.getContainerWeightUnit());
+                    newContainer.setGrossWeight(newContainer.getCargoWeightPerContainer());
+                    newContainer.setGrossWeightUnit(newContainer.getContainerWeightUnit());
+                    if(!Objects.isNull(newContainer.getPackagesPerContainer())) {
+                        newContainer.setPacks(String.valueOf(newContainer.getPackagesPerContainer()));
+                    }
+                    newContainer.setPacksType(newContainer.getContainerPackageType());
                     expandedContainers.add(newContainer);
                 }
             }
@@ -827,8 +873,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             if (Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
-                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get("TenantId") != null)
-                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get("TenantId").toString()));
+                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getAddressData() != null) {
+                    Long originBranchId = commonUtils.getReceivingBranch(consolidationDetails.getSendingAgent().getOrgId(), consolidationDetails.getSendingAgent().getAddressId());
+                    consolidationDetails.setOriginBranch(originBranchId);
+                }
             } else if (Constants.DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
                 consolidationDetails.setReceivingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
             }
@@ -1241,17 +1289,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             factor = BigDecimal.valueOf(ROAD_FACTOR_FOR_VOL_WT);
                         }
                         BigDecimal wvInKG = vlInM3.multiply(factor);
-                        BigDecimal tempValue;
-                        if (wtInKG.compareTo(wvInKG) < 0) {
-                            tempValue = wvInKG;
-                        } else
-                            tempValue = wtInKG;
-                        tempValue = CommonUtils.roundBigDecimal(tempValue.multiply(BigDecimal.valueOf(100)), 0, RoundingMode.CEILING);
 
-                        vwOb.setChargeable(tempValue.divide(BigDecimal.valueOf(100)));
+                        vwOb.setChargeable(wtInKG.max(wvInKG));
                         vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
                         vwOb.setVolumeWeight(wvInKG);
                         vwOb.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+
+                        vwOb.setChargeable(vwOb.getChargeable()
+                                .multiply(BigDecimal.valueOf(2))
+                                .setScale(0, RoundingMode.CEILING)
+                                .divide(BigDecimal.valueOf(2)));
                         break;
                     default:
                 }
@@ -1623,9 +1670,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Boolean.TRUE.equals(fromConsolidation))
             setContextIfNeededForHub(shipmentRequestedType, consolidationDetails);
 
-        // Validate messaging logic for air consoles
-        awbDao.validateAirMessaging(consolidationId);
-        log.info("Air messaging validated for consolidationId: {}", consolidationId);
 
         ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
 
@@ -2036,16 +2080,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if (!checkForAirDGFlag(consolidationDetails)) {
-            return false;
-        }
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
     public boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
-        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag())) {
-            return false;
-        }
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
     }
 
@@ -2308,7 +2346,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Basic carrier detail updates from consolidation to shipment
             shipmentDetails.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
             shipmentDetails.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
-            shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
             if(StringUtility.isNotEmpty(console.getCarrierDetails().getShippingLine())) {
                 shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
@@ -2317,7 +2354,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-                shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             }
         }
     }
@@ -2346,19 +2382,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setBookingAgent(console.getBookingAgent());
         serviceTypeAutoPopulation(console, shipmentDetails);
 
-        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
-            //Non-Editable Fields
-            shipmentDetails.setPartner(console.getPartner());
-
-            shipmentDetails.setMasterBill(console.getBol());
-            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
-            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-            //Editable Fields
-            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
-            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-
-        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+        if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
@@ -2369,6 +2393,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+        } else{
+            // SEA, Rail , Road behaviour will be same
+            //Non-Editable Fields
+            shipmentDetails.setPartner(console.getPartner());
+
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
+
+            //Editable Fields
+            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
         if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
@@ -2470,6 +2506,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     !CommonUtils.checkSameParties(console.getSendingAgent(), sd.getAdditionalDetails().getExportBroker())) {
                 // If export broker doesn't match, update it from sending agent
                 sd.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+                sd.getAdditionalDetails().setExportBrokerCountry(null);
             } else if (sd.getAdditionalDetails() == null) {
                 // If no AdditionalDetails exist, initialize and set export broker
                 sd.setAdditionalDetails(new AdditionalDetails());
@@ -2481,6 +2518,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     !CommonUtils.checkSameParties(console.getReceivingAgent(), sd.getAdditionalDetails().getImportBroker())) {
                 // If import broker doesn't match, update it from receiving agent
                 sd.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+                sd.getAdditionalDetails().setImportBrokerCountry(null);
             } else if (sd.getAdditionalDetails() == null) {
                 // If still null (shouldn't happen here), initialize and set import broker
                 sd.setAdditionalDetails(new AdditionalDetails());
@@ -2518,9 +2556,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .forEach(consolRoute -> {
                     // Deep copy of the routing object
                     var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
+                    if(Constants.TRANSPORT_MODE_AIR.equals(syncedRoute.getMode()))
+                        syncedRoute.setVoyage(syncedRoute.getFlightNumber());
                     syncedRoute.setConsolidationId(null);
                     syncedRoute.setShipmentId(shipmentDetails.getId());
                     syncedRoute.setBookingId(null);
+                    syncedRoute.setTenantId(shipmentDetails.getTenantId());
                     syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
@@ -2812,7 +2853,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationDetailsV3Response retrieveById(CommonGetRequest request, String source) throws RunnerException, AuthenticationException {
         if (request.getId() == null && request.getGuid() == null) {
             log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
         }
         Long id = request.getId();
         Optional<ConsolidationDetails> consolidationDetails;
@@ -2889,14 +2930,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
+    public String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
         if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
         return weightChargeableUnit;
     }
 
-    private String determineVolumeChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
+    public String determineVolumeChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
         String volumeChargeableUnit = Constants.VOLUME_UNIT_M3;
         if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
             volumeChargeableUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
@@ -2916,6 +2957,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         consolidationDetailsV3Response.setShipmentWtVolResponse(shipmentWtVolResponse);
         consolidationDetailsV3Response.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
+    }
+
+    protected void calculateShipmentWtVolForExternal(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3ExternalResponse consolidationDetailsV3ExternalResponse) throws RunnerException{
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        consolidationDetailsV3ExternalResponse.setShipmentWtVolResponse(shipmentWtVolResponse);
+        consolidationDetailsV3ExternalResponse.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
     }
 
     @Override
@@ -2945,9 +2992,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Integer consoleDgContCount = 0;
         BigDecimal consoleTeus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
+        Boolean isNonFtlOrFclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
+            isNonFtlOrFclAttached = shipmentDetailsList.stream().anyMatch(this::isNonFtlOrFclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
@@ -2986,7 +3035,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
+                .isNonFtlOrFclAttached(isNonFtlOrFclAttached)
                 .build();
+    }
+    private boolean isNonFtlOrFclAttached(ShipmentDetails shipmentDetails) {
+        return   (!CARGO_TYPE_FCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) && !CARGO_TYPE_FTL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")));
     }
 
     public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
@@ -3344,13 +3397,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map<String, Object> response = new HashMap<>();
         var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationPendingNotificationResponse, response)), executorService);
         tenantDataFuture.join();
-        if(response.get("Tenants") != null)
-            consolidationPendingNotificationResponse.setTenantMasterData((Map<String, Object>) response.get("Tenants"));
+        if(response.get(Constants.TENANTS) != null)
+            consolidationPendingNotificationResponse.setTenantMasterData((Map<String, Object>) response.get(Constants.TENANTS));
         return consolidationPendingNotificationResponse;
     }
 
     @Override
-    public ConsolidationListV3Response list(ListCommonRequest request, boolean getMasterData) {
+    public ConsolidationListV3Response list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
@@ -3367,6 +3421,40 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
         response.setConsolidationListResponses(consolidationListResponses);
+        return response;
+    }
+
+    @Override
+    public ConsolidationListV3Response listExternal(ListCommonRequest request) {
+        if (request == null) {
+            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
+        }
+
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+
+        List<IRunnerResponse> consoleResponse;
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            // sending overall consolidation response
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), null);
+        }
+        else {
+            // sending specified column response
+            Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+            CommonUtils.includeRequiredColumns(includeColumns);
+            consoleResponse = convertEntityToDtoList(consolidationDetailsPage.getContent(), includeColumns);
+        }
+
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response response = new ConsolidationListV3Response();
+        response.setTotalPages(consolidationDetailsPage.getTotalPages());
+        response.setNumberOfRecords(consolidationDetailsPage.getTotalElements());
+
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
+        response.setConsolidationListResponses(consolidationListResponses);
+
         return response;
     }
 
@@ -3405,6 +3493,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 checkForBookingIdFilter(filterCriteria.getInnerFilter());
             }
         }
+    }
+
+    private List<IRunnerResponse> convertEntityToDtoList(List<ConsolidationDetails> lst, @Nullable Set<String> includeColumns){
+        if (CollectionUtils.isEmpty(lst)) {
+            return new ArrayList<>();
+        }
+
+        boolean hasFilters = includeColumns != null && !includeColumns.isEmpty();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+
+        for (ConsolidationDetails details : lst) {
+            final ConsolidationListResponse dto;
+
+            if (hasFilters) {
+                // send included columns only
+                dto = (ConsolidationListResponse) commonUtils.setIncludedFieldsToResponse(
+                        details, includeColumns, new ConsolidationListResponse());
+            }
+            else{
+                // send whole consolidation data
+                dto = ConsolidationMapper.INSTANCE
+                        .toConsolidationListResponse(details);
+            }
+
+            responseList.add(dto);
+        }
+
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst, boolean getMasterData) {
@@ -3576,7 +3692,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
-        return this.list(consolListRequest, true);
+        return this.list(CommonRequestModel.builder().data(consolListRequest).build(), true);
     }
 
     @Override
@@ -3646,7 +3762,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
-
+        if(remarks != null)
+            sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
         if(remarks != null && !shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
@@ -3685,8 +3802,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
-        if(!checkForAirDGFlag(consolidationDetails))
-            return false;
         if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
         Boolean isDgShipmentAttached = shipmentDetailsList.stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
@@ -3764,14 +3879,21 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Containers containers  = containersMap.get(packing.getContainerId());
                 String containerNumber = packing.getPacksType();
                 if(containers != null) {
-                    containerNumber = containers.getContainerNumber() != null ? containers.getContainerNumber() : containers.getContainerCode();
+                    containerNumber = containerV3Util.getContainerNumberOrType(containers);
                 }
-                String errorMsg = String.format(
-                    "Selected Shipment - %s - %s packs is assigned to the container(s): %s. Please unassign to detach.",
-                    shipmentDetail.getShipmentId(),
-                    packing.getPacks(),
-                    containerNumber
-                );
+                String errorMsg;
+                if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
+                    errorMsg = String.format("Selected %s Shipment - %s is available with Container and Packages, please unassign packages/ remove containers to detach the shipment.",
+                            shipmentDetail.getShipmentType(),
+                            shipmentDetail.getShipmentId());
+                } else {
+                    errorMsg = String.format(
+                            "Selected Shipment - %s - %s packs is assigned to the container(s): %s. Please unassign to detach.",
+                            shipmentDetail.getShipmentId(),
+                            packing.getPacks(),
+                            containerNumber
+                    );
+                }
                 throw new ValidationException(errorMsg);
             }
         }
@@ -3780,12 +3902,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) {
         for (Containers container : containersList) {
             if (container.getId() != null) {
-                String containerNumber = container.getContainerNumber() != null ? container.getContainerNumber() : container.getContainerCode();
-                String errorMsg = String.format(
-                    "Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
-                    shipmentDetail.getShipmentId(),
-                    containerNumber
-                );
+                String containerNumber = containerV3Util.getContainerNumberOrType(container);
+                String errorMsg;
+                if(commonUtils.isFCLorFTL(shipmentDetail.getShipmentType())) {
+                    errorMsg = String.format("Selected %s Shipment - %s is available with Container : %s, please remove the same to detach.",
+                            shipmentDetail.getShipmentType(),
+                            shipmentDetail.getShipmentId(),
+                            containerNumber);
+                } else {
+                    errorMsg = String.format(
+                            "Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
+                            shipmentDetail.getShipmentId(),
+                            containerNumber
+                    );
+                }
                 throw new ValidationException(errorMsg);
             }
         }
@@ -3813,8 +3943,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) throws RunnerException{
         consolidationValidationV3Util.validateAirDGPermissionsInDetach(shipmentDetails, consolidationDetails);
-        // Validate messaging logic for air consolidations
-        awbDao.validateAirMessaging(consolidationDetails.getId());
         log.info("{} | validateShipmentDetachment | Air messaging validated for consolidationId: {}", LoggerHelper.getRequestIdFromMDC(), consolidationDetails.getId());
         return validateOutstandingDuesForShipments(shipmentDetails);
     }
@@ -3880,6 +4008,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .shipmentId(shipmentDetails1.getId())
                             .shipmentNumber(shipmentDetails1.getShipmentId())
                             .hbl(shipmentDetails1.getHouseBill())
+                            .tenantId(shipmentDetails1.getTenantId())
                             .build());
                     }
                     return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);
@@ -4608,6 +4737,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return achievedQuantitiesResponse;
     }
 
+    @Override
+    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException {
+        AchievedQuantities achievedQuantities = consolidationDetails.getAchievedQuantities();
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        achievedQuantities.setWeightVolume(shipmentWtVolResponse.getWeightVolume());
+        achievedQuantities.setWeightVolumeUnit(shipmentWtVolResponse.getWeightVolumeUnit());
+        achievedQuantities.setPacks(shipmentWtVolResponse.getPacks());
+        achievedQuantities.setPacksType(shipmentWtVolResponse.getPacksType());
+        achievedQuantities.setDgPacks(shipmentWtVolResponse.getDgPacks());
+        achievedQuantities.setDgPacksType(shipmentWtVolResponse.getDgPacksType());
+        achievedQuantities.setSlacCount(shipmentWtVolResponse.getSlacCount());
+        achievedQuantities.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
+        achievedQuantities.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
+        achievedQuantities.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
+        achievedQuantities.setConsolidatedVolumeUnit(shipmentWtVolResponse.getVolumeUnit());
+        achievedQuantities.setConsolidationChargeQuantity(shipmentWtVolResponse.getChargable());
+        achievedQuantities.setConsolidationChargeQuantityUnit(shipmentWtVolResponse.getChargeableUnit());
+        achievedQuantities.setContainerCount(shipmentWtVolResponse.getConsoleContainerCount());
+        achievedQuantities.setTeuCount(shipmentWtVolResponse.getConsoleTeuCount());
+        achievedQuantities.setDgContainerCount(shipmentWtVolResponse.getConsoleDgContainerCount());
+        return achievedQuantities;
+    }
+
     private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {
 
         if (Objects.isNull(consolidationDetails) || Objects.isNull(consolidationDetails.getShipmentsList()))
@@ -4760,4 +4912,201 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments != null && shipments.stream()
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
+
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternal(CommonGetRequest request) throws RunnerException, AuthenticationException {
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        Long id = request.getId();
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // logging data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        ConsolidationDetailsV3ExternalResponse response = jsonHelper.convertValue(consolDetails, ConsolidationDetailsV3ExternalResponse.class);
+
+        // calc shipment weight and volume
+        calculateShipmentWtVolDetail(consolDetails, response);
+
+        return response;
+
+    }
+    
+    private  ConsolidationDetails getConsolDetailsByIdorGuid(Long id, CommonGetRequest request) throws RunnerException, AuthenticationException{
+        Optional<ConsolidationDetails> consolidationDetails;
+
+        // retrieve data based on id/guid
+        if (id != null) {
+            consolidationDetails = consolidationDetailsDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        return consolidationDetails.get();
+    }
+
+    private void calculateShipmentWtVolDetail(ConsolidationDetails consolDetails, ConsolidationDetailsV3ExternalResponse response){
+        try {
+            // calculate Shipment Weight and Volume
+            this.calculateShipmentWtVolForExternal(consolDetails, response);
+        } catch (Exception e) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, e.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public ConsolidationDetailsV3ExternalResponse retrieveByIdExternalPartial(CommonGetRequest request) throws RunnerException, AuthenticationException{
+
+        // validate id's and non empty includedColumns in request
+        validateRequest(request);
+        Long id = request.getId();
+
+        // get consolidation details acc to source
+        ConsolidationDetails consolDetails = getConsolDetailsByIdorGuid(id, request);
+        // log data retrieval
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+
+        // building response based on filtered Columns
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        return (ConsolidationDetailsV3ExternalResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, includeColumns, new ConsolidationDetailsV3ExternalResponse());
+    }
+
+    private void validateRequest(CommonGetRequest request) throws RunnerException{
+        if (request.getId() == null && request.getGuid() == null) {
+            log.error("Received null Request Id and Guid for Consolidation external partial retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ConsolidationConstants.CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR);
+        }
+
+        if (listIsNullOrEmpty(request.getIncludeColumns())) {
+            throw new RunnerException("IncludeColumns can't be null or empty");
+        }
+    }
+
+    private void sendEmailForDetachShipments(ConsolidationDetails consoleDetails, List<ShipmentDetails> shipment,
+                                            Set<ShipmentRequestedType> requestedTypes, String remarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplates =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        List<Long> interbranchShipIds = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails1 : shipment) {
+            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+            userNames.add(shipmentDetails1.getCreatedBy());
+            userNames.add(shipmentDetails1.getAssignedTo());
+            tenantIds.add(shipmentDetails1.getTenantId());
+            if(!Objects.equals(shipmentDetails1.getTenantId(), consoleDetails.getTenantId()))
+                interbranchShipIds.add(shipmentDetails1.getId());
+        }
+        userNames.add(consoleDetails.getCreatedBy());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        for(Long shipmentId : interbranchShipIds) {
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consoleDetails, SHIPMENT_DETACH, remarks, emailTemplates, requestedTypes, null, null, usernameEmailsMap, tenantSettingsMap, null, null);
+            } catch (Exception e) {
+                log.error("Error while sending email");
+            }
+        }
+    }
+
+    @Override
+    public ConsolidationDetailsV3Response getDefaultConsolidation(){
+        try{
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+            // Populate the shipment details data on the basis of tenant settings
+            ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+            response.setCarrierDetails(new CarrierDetailResponse());
+            response.setTransportMode(tenantSettings.getDefaultTransportMode());
+            response.setContainerCategory(tenantSettings.getDefaultContainerType());
+            response.setShipmentType(tenantSettings.getDefaultShipmentType());
+            response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
+                response.setModeOfBooking(Constants.INTTRA);
+            }
+
+            // for AIR transportMode, setting default STD consolidationType
+            if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode())){
+                response.setConsolidationType(Constants.CONSOLIDATION_TYPE_STD);
+            }
+            response.setCreatedAt(LocalDateTime.now());
+            response.setCreatedBy(UserContext.getUser().getUsername());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+            // Populate default department
+            response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+            ));
+
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(response);
+            response.setMasterDataMap(masterDataResponse);
+            setTenantAndDefaultAgent(response);
+            if(Objects.isNull(response.getAllocations())) {
+                response.setAllocations(new AllocationsResponse());
+            }
+            if(Objects.isNull(response.getAchievedQuantities())) {
+                response.setAchievedQuantities(new AchievedQuantitiesResponse());
+            }
+            response.getAllocations().setWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAllocations().setVolumeUnit(VOLUME_UNIT_M3);
+            response.getAllocations().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAllocations().setDgPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setConsolidatedWeightUnit(tenantSettings.getWeightChargeableUnit());
+            response.getAchievedQuantities().setConsolidatedVolumeUnit(VOLUME_UNIT_M3);
+            response.getAchievedQuantities().setPacksType(tenantSettings.getDefaultPackUnit());
+            response.getAchievedQuantities().setDgPacksType(tenantSettings.getDefaultPackUnit());
+            return response;
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            throw new GenericException(e.getMessage());
+        }
+    }
+
+    public void setTenantAndDefaultAgent(ConsolidationDetailsV3Response response) {
+        try {
+            log.info("Fetching Tenant Model using V1");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                            EntityTransferConstants.ID,
+                            StringUtility.convertToString(tenantModel.getUnloco())
+                    ))
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0).getLocationsReferenceGUID())
+                    .ifPresent(response::setPlaceOfIssue);
+
+            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
+                response.setSendingAgent(partiesResponse);
+                Long originBranchId = commonUtils.getReceivingBranch(partiesResponse.getOrgId(), partiesResponse.getAddressId());
+                response.setOriginBranch(originBranchId);
+            } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
+                response.setReceivingAgent(partiesResponse);
+            }
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+        }
+    }
+
+    private boolean shouldGenerateBol(String transportMode) {
+        return !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode);
+    }
+
 }

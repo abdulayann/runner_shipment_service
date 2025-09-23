@@ -177,4 +177,30 @@ class ShipmentSettingsDaoTest {
         assertEquals(Optional.of(testShipmentSettingsDetails), shipmentSettingsDetails);
     }
 
+    @Test
+    void checkMigrationRunningTest() {
+        when(shipmentSettingsRepository.checkMigrationRunning()).thenReturn(Optional.of(testShipmentSettingsDetails));
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkMigrationRunning();
+        assertEquals(Optional.of(testShipmentSettingsDetails), shipmentSettingsDetails);
+    }
+
+    @Test
+    void updateMigrationRunningFlagTest() {
+        doNothing().when(shipmentSettingsRepository).updateIsMigrationRunningFlag(true, 1);
+        assertDoesNotThrow(() -> shipmentSettingsDao.updateMigrationRunningFlag(true, 1));
+    }
+
+    @Test
+    void updateIsRestoreRunningFlagTest() {
+        doNothing().when(shipmentSettingsRepository).updateIsRestoreRunningFlag(true, 1);
+        assertDoesNotThrow(() -> shipmentSettingsDao.updateIsRestoreRunningFlag(true, 1));
+    }
+
+    @Test
+    void checkRestoreRunningTest() {
+        when(shipmentSettingsRepository.checkRestoreRunning()).thenReturn(Optional.of(testShipmentSettingsDetails));
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.checkRestoreRunning();
+        assertEquals(Optional.of(testShipmentSettingsDetails), shipmentSettingsDetails);
+    }
+
 }

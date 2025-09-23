@@ -11,5 +11,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentManagerMultipleEntityFileRequest {
+    private Boolean needCount;
     private List<DocumentManagerEntityFileRequest> entities;
 }

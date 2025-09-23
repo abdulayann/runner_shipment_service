@@ -399,4 +399,40 @@ class ContainerDaoTest {
 
         assertEquals(containersList, containerDao.updateEntityFromConsolidationV1(containersList, 1L, oldList));
     }
+
+    @Test
+    void testDeleteAdditionalDataByContainersIdsConsolidationId() {
+        List<Long> containersIds = List.of(1L, 2L);
+        Long consolidationId = 10L;
+        containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
+        verify(containerRepository, times(1))
+                .deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByContainersIdsAndConsolidationId() {
+        List<Long> containersIds = List.of(3L, 4L);
+        Long consolidationId = 20L;
+        containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+        verify(containerRepository, times(1))
+                .revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+    }
+
+    @Test
+    void testDeleteAdditionalDataByContainersIdsBookingId() {
+        List<Long> containersIds = List.of(5L, 6L);
+        Long bookingId = 30L;
+        containerDao.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+        verify(containerRepository, times(1))
+                .deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+    }
+
+    @Test
+    void testRevertSoftDeleteByContainersIdsAndBookingId() {
+        List<Long> containersIds = List.of(7L, 8L);
+        Long bookingId = 40L;
+        containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
+        verify(containerRepository, times(1))
+                .revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
+    }
 }
