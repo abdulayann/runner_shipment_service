@@ -25,6 +25,7 @@ public class SailingInformationResponse implements IRunnerResponse {
     private String voyageNo;
     private LocalDateTime eta;
     private LocalDateTime etd;
+    private String scacCode;
     private LocalDateTime earliestDepartureDate;
     private LocalDateTime latestDeliveryDate;
     private LocalDateTime terminalCutoff;
@@ -34,5 +35,8 @@ public class SailingInformationResponse implements IRunnerResponse {
     private LocalDateTime reeferCutoff;
     private LocalDateTime emptyContainerPickupCutoff;
     private LocalDateTime loadedContainerGateInCutoff;
-    private Map<String, Object> unlocationData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> carrierMasterData;
+    private Map<String, String> vesselsMasterData;
 }

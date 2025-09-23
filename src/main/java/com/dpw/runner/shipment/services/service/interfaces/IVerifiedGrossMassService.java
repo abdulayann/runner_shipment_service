@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
@@ -57,9 +57,9 @@ public interface IVerifiedGrossMassService {
     /**
      * Submit/Amend Verified Gross mass.
      *
-     * @param verifiedGrossMassInttraRequest request
+     * @param submitAmendInttraRequest request
      *
      */
-    void submitOrAmendVerifiedGrossMass(VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest) throws RunnerException;
+    void submitOrAmendVerifiedGrossMass(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
 }
 

@@ -135,7 +135,6 @@ public class VerifiedGrossMassUtil {
         response.setEmptyContainerPickupCutoff(sailingInformation.getEmptyContainerPickupCutoff());
         response.setLoadedContainerGateInCutoff(sailingInformation.getLoadedContainerGateInCutoff());
         response.setLatestDeliveryDate(sailingInformation.getLatestDeliveryDate());
-        response.setUnlocationData(sailingInformation.getSailingScheduleData());
 
         return response;
     }

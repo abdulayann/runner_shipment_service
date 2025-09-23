@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
@@ -110,7 +110,7 @@ class VerifiedGrossMassControllerTest {
 
     @Test
     void submitOrAmend_Success() throws Exception {
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setOperationType(OperationType.SUBMIT);
 
         // Mock service to do nothing (success)
@@ -129,7 +129,7 @@ class VerifiedGrossMassControllerTest {
 
     @Test
     void submitOrAmend_Failure_WithMessage() throws Exception {
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setOperationType(OperationType.AMEND);
 
         doThrow(new RuntimeException("Simulated failure"))
@@ -143,7 +143,7 @@ class VerifiedGrossMassControllerTest {
 
     @Test
     void submitOrAmend_Failure_NullMessage() throws Exception {
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setOperationType(OperationType.SUBMIT);
 
         doThrow(new RuntimeException())

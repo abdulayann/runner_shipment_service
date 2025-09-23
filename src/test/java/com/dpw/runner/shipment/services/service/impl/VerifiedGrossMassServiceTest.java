@@ -10,7 +10,7 @@ import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -137,7 +137,7 @@ class VerifiedGrossMassServiceTest {
     private VerifiedGrossMassResponse testResponse;
     private CarrierBooking testCarrierBooking;
     private ConsolidationDetails testConsolidationDetails;
-    private VerifiedGrossMassInttraRequest request;
+    private SubmitAmendInttraRequest request;
 
     @BeforeEach
     void setUp() {
@@ -834,7 +834,7 @@ class VerifiedGrossMassServiceTest {
     @Test
     void testSubmitOrAmendVerifiedGrossMass_VgmNotFound_ShouldThrowException() {
         // Arrange
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(99L);
         when(verifiedGrossMassDao.findById(99L)).thenReturn(Optional.empty());
 
@@ -848,7 +848,7 @@ class VerifiedGrossMassServiceTest {
 
     @Test
     void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Submit() throws RunnerException {
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(1L);
         request.setContainerIds(List.of(101L, 102L));
         request.setOperationType(OperationType.SUBMIT);
@@ -883,7 +883,7 @@ class VerifiedGrossMassServiceTest {
 
     @Test
     void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Amend() throws RunnerException {
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(1L);
         request.setContainerIds(List.of(101L, 102L));
         request.setOperationType(OperationType.AMEND);
@@ -918,7 +918,7 @@ class VerifiedGrossMassServiceTest {
 
     @Test
     void testSubmitOrAmendVerifiedGrossMass_WithNullCarrierDetails() throws RunnerException {
-        VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
         verifiedGrossMassInttraRequest.setId(1L);
         verifiedGrossMassInttraRequest.setContainerIds(List.of(101L));
         verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
@@ -950,7 +950,7 @@ class VerifiedGrossMassServiceTest {
 
     @Test
     void testSubmitOrAmendVerifiedGrossMass_EmptyContainerList() throws RunnerException {
-        VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
         verifiedGrossMassInttraRequest.setId(1L);
         verifiedGrossMassInttraRequest.setContainerIds(Collections.emptyList());
         verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
