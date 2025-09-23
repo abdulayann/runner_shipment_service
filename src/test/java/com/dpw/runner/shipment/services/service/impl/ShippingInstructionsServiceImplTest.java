@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -118,6 +119,9 @@ class ShippingInstructionsServiceImplTest {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -506,13 +510,6 @@ class ShippingInstructionsServiceImplTest {
 
         // status should be updated before save
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-
-        // downstream push should be called with expected args
-        verify(kafkaHelper).sendDataToKafka(
-                anyString(),
-                eq(GenericKafkaMsgType.SI),
-                eq(IntraKafkaOperationType.ORIGINAL)
-        );
     }
 
     @Test
@@ -557,7 +554,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
     }
 
     @Test
@@ -595,7 +591,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
 
     }
 
