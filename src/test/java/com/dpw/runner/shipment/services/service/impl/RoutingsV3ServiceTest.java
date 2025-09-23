@@ -60,7 +60,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -343,6 +342,70 @@ class RoutingsV3ServiceTest extends CommonMocks {
         assertEquals(1, result.getRoutingsResponseList().size());
         verify(auditLogService, atLeastOnce()).addAuditLog(any());
     }
+    @Test
+    void testUpdateBulkConsol_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vessel");
+        routings.setVoyage("0123");
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setIsSelectedForDocument(Boolean.TRUE);
+        RoutingsRequest routingsRequest1 = new RoutingsRequest();
+        routingsRequest1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest1.setIsSelectedForDocument(Boolean.TRUE);
+        UUID consolGuid = UUID.randomUUID();
+        Routings routings1 = new Routings();
+        routings1.setGuid(consolGuid);
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setVesselName("vessel");
+        routings1.setVoyage("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+
+        Routings routings2 = new Routings();
+        routings2.setIsSelectedForDocument(Boolean.TRUE);
+        routings2.setId(2l);
+        routings2.setVesselName("vessel");
+        routings2.setVoyage("0123");
+        routings2.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings2.setPod("DEIMETA");
+        routings2.setDestinationPortLocCode("destportLoc");
+        routings2.setConsolRouteRefGuid(consolGuid);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(new CarrierDetails())
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
+        consolidationDetails.setRoutingsList(List.of(routings1));
+        shipmentDetails.setRoutingsList(List.of(routings2));
+        List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setEntityId(1L);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
+
+        when(consolidationV3Service.getConsolidationById(anyLong())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.bulkUpdateWithValidateWrapper(bulkUpdateRoutingsRequest, Constants.CONSOLIDATION);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+
     @Test
     void testUpdateTransportInfoStatus_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
