@@ -583,9 +583,9 @@ public class CarrierBookingService implements ICarrierBookingService {
         convertWeightVolumeToRequiredUnit(bridgeRequest);
         String integrationCode;
         if(isOperationTypeSubmit) {
-            integrationCode = bridgeServiceConfig.getCbInttraCreateIntegrationRequestCode();
+            integrationCode = Constants.CARRIER_BOOKING_INTTRA_CREATE;
         } else {
-            integrationCode = bridgeServiceConfig.getCbInttraAmendIntegrationRequestCode();
+            integrationCode = Constants.CARRIER_BOOKING_INTTRA_AMEND;
         }
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(bridgeRequest, integrationCode, null, null);
         if (carrierBookingInttraUtil.isBridgeServiceResponseNotValid(bridgeServiceResponse)) {

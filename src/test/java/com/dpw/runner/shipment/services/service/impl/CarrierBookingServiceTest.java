@@ -1048,7 +1048,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
-        when(bridgeServiceConfig.getCbInttraCreateIntegrationRequestCode()).thenReturn("12");
         when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
         when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(false);
 
@@ -1089,7 +1088,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(carrierBookingBridgeRequest);
-        when(bridgeServiceConfig.getCbInttraAmendIntegrationRequestCode()).thenReturn("12");
         when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
         when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(true);
 
