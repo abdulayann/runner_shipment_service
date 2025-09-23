@@ -109,6 +109,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
     private List<TriangulationPartnerRequest> triangulationPartnerList;
@@ -144,6 +145,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     @Size(max=3, message = "max size is 3 for efreight_status")
     private String efreightStatus;
     private Boolean hazardous;

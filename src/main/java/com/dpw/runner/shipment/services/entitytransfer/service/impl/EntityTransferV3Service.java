@@ -956,13 +956,12 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
         removeFlightNumberInRoutings(entityTransferConsolidationDetails.getRoutingsList());
 
-        if(consolidationDetailsRequest.getParentGuid() == null)
-            consolidationDetailsRequest.setParentGuid(entityTransferConsolidationDetails.getGuid());
-
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+            if(consolidationDetailsRequest.getParentGuid() == null)
+                consolidationDetailsRequest.setParentGuid(entityTransferConsolidationDetails.getGuid());
 
             consolidationDetailsResponse = consolidationService.createConsolidationFromEntityTransfer(consolidationDetailsRequest);
             isCreateConsole.setTrue();
@@ -977,6 +976,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             consolidationDetailsRequest.setGuid(guid);
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+            if(consolidationDetailsRequest.getParentGuid() == null)
+                consolidationDetailsRequest.setParentGuid(entityTransferConsolidationDetails.getGuid());
 
             consolidationDetailsResponse = consolidationService.completeUpdateConsolidationFromEntityTransfer(consolidationDetailsRequest);
             oldConsolidationDetailsList.get(0).setContainersList(jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class));
@@ -1333,6 +1334,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         setFlightNumberInRoutings(payload.getRoutingsList());
 
         setAdditionalParametersInPayload(consolidationDetails, payload);
+
+        if(consolidationDetails.getTenantId() != null)
+            payload.setSourceTenantId(Long.valueOf(consolidationDetails.getTenantId()));
 
         // Map container guid vs List<shipmentGuid>
         Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();

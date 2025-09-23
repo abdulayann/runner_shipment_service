@@ -163,6 +163,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;

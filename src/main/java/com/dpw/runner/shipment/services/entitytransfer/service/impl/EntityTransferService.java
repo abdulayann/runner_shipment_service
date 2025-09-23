@@ -1897,6 +1897,7 @@ public class EntityTransferService implements IEntityTransferService {
     private SendConsoleValidationResponse networkTransferValidationsForSeaConsolidation (ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
 
         boolean isPrintHblError = false;
+        boolean isHblNumberError = false;
         List<String> errorShipments = new ArrayList<>();
         List<Long> errorShipIds = new ArrayList<>();
 
@@ -1904,11 +1905,20 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.seaConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-                List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
-                if (hbls.isEmpty()) {
-                    isPrintHblError = true;
-                    errorShipments.add(shipment.getShipmentId());
-                    errorShipIds.add(shipment.getId());
+                if(Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP)){
+                    List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
+                    if (hbls.isEmpty()) {
+                        isPrintHblError = true;
+                        errorShipments.add(shipment.getShipmentId());
+                        errorShipIds.add(shipment.getId());
+                    }
+                }
+                else{
+                    if(Strings.isNullOrEmpty(shipment.getHouseBill())){
+                        isHblNumberError = true;
+                        errorShipments.add(shipment.getShipmentId());
+                        errorShipIds.add(shipment.getId());
+                    }
                 }
             }
         }
@@ -1926,6 +1936,14 @@ public class EntityTransferService implements IEntityTransferService {
                 errorMsg = "Please generate HBL for the shipment/s " + String.join(", " ,errorShipments);
             }
             shipErrorMsg = "Please generate HBL to retrigger the transfer.";
+        }
+        if(isHblNumberError){
+            if(!errorMsg.isEmpty()) {
+                errorMsg = errorMsg + " and enter the HBL number for the shipment/s " + String.join(", ", errorShipments);
+            } else {
+                errorMsg = "Please enter the HBL number for the shipment/s " + String.join(", ", errorShipments);
+            }
+            shipErrorMsg = "Please enter the HBL number to retrigger the transfer.";
         }
         if(!errorMsg.isEmpty()){
             errorMsg = errorMsg + msgSuffix;
