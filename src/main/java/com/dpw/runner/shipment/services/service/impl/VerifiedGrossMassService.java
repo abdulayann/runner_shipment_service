@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
@@ -10,12 +9,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassBridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
@@ -35,6 +32,7 @@ import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
@@ -98,12 +96,11 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final ICommonContainersRepository commonContainersRepository;
     private final VerifiedGrossMassUtil verifiedGrossMassUtil;
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
-    private final BridgeServiceAdapter bridgeServiceAdapter;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
-                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, BridgeServiceAdapter bridgeServiceAdapter,
+                                    ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil,
                                     VerifiedGrossMassUtil verifiedGrossMassUtil, CarrierBookingInttraUtil carrierBookingInttraUtil) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
@@ -115,7 +112,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.verifiedGrossMassMasterDataHelper = verifiedGrossMassMasterDataHelper;
         this.commonContainersRepository = commonContainersRepository;
         this.verifiedGrossMassValidationUtil = verifiedGrossMassValidationUtil;
-        this.bridgeServiceAdapter = bridgeServiceAdapter;
         this.verifiedGrossMassUtil = verifiedGrossMassUtil;
         this.carrierBookingInttraUtil = carrierBookingInttraUtil;
     }
@@ -536,18 +532,20 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             String fileName = "VGMRequest_" + verifiedGrossMassInttraRequest.getId() + "_" + rnd + ".xml";
             verifiedGrossMassInttraResponse.setFileName(fileName);
 
-            verifiedGrossMassInttraResponse.setDelegated(verifiedGrossMass.getIsDelegated());
-
+            verifiedGrossMassInttraResponse.setIsDelegated(verifiedGrossMass.getIsDelegated());
 
             // Set Response State
             if (OperationType.SUBMIT.equals(verifiedGrossMassInttraRequest.getOperationType())) {
                 verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.ORIGINAL);
+                // Sending Payload To Bridge
+                carrierBookingInttraUtil.sendPayloadToBridge(verifiedGrossMassInttraResponse, verifiedGrossMass.getId(),
+                        VerifiedGrossMassConstants.VGM_CREATE, UUID.randomUUID().toString(), UUID.randomUUID().toString(), IntegrationType.BRIDGE_VGM_SUBMIT, EntityTypeTransactionHistory.VGM.name());
             } else if (OperationType.AMEND.equals(verifiedGrossMassInttraRequest.getOperationType())) {
                 verifiedGrossMassInttraResponse.setState(VerifiedGrossMassConstants.AMEND);
+                // Sending Payload To Bridge
+                carrierBookingInttraUtil.sendPayloadToBridge(verifiedGrossMassInttraResponse, verifiedGrossMass.getId(),
+                        VerifiedGrossMassConstants.VGM_AMEND, UUID.randomUUID().toString(), UUID.randomUUID().toString(), IntegrationType.BRIDGE_VGM_AMEND, EntityTypeTransactionHistory.VGM.name());
             }
-
-            // Sending Payload To Bridge
-            sendPayloadToBridge(verifiedGrossMassInttraResponse);
 
             // Building Submit Containers
             submittedContainersList.add(verifiedGrossMassUtil.buildSubmittedContainer(container));
@@ -556,22 +554,12 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
 
         // Storing in VGM
-        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.AcceptedByINTTRA);
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Requested);
         verifiedGrossMass.setSubmittedContainersList(submittedContainersList);
         verifiedGrossMassDao.save(verifiedGrossMass);
 
         // Create single Transaction history for single operation
         saveTransactionHistory(verifiedGrossMassInttraRequest, verifiedGrossMass);
-    }
-
-    private void sendPayloadToBridge(VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) throws RunnerException {
-        log.info("Bridge payload {}", jsonHelper.convertToJson(verifiedGrossMassInttraResponse));
-        VerifiedGrossMassBridgeRequest bridgeRequest = verifiedGrossMassUtil.mapToBridgeRequest(verifiedGrossMassInttraResponse);
-        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestTactResponse(CommonRequestModel.buildRequest(bridgeRequest));
-        if (carrierBookingInttraUtil.isBridgeServiceResponseNotValid(bridgeServiceResponse)) {
-            log.error("Getting error from Bridge while uploading template to: " + jsonHelper.convertToJson(bridgeServiceResponse));
-            throw new RunnerException("Getting error from Bridge");
-        }
     }
 
     private void saveTransactionHistory(VerifiedGrossMassInttraRequest verifiedGrossMassInttraRequest, VerifiedGrossMass verifiedGrossMass) {

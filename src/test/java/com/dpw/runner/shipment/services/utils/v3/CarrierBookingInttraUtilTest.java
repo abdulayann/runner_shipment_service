@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
@@ -8,7 +8,12 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
+import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
@@ -27,53 +32,18 @@ class CarrierBookingInttraUtilTest {
     @Mock
     private ITransactionHistoryDao transactionHistoryDao;
 
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
+
+    @Mock
+    private MigrationUtil migrationUtil;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
-
-    // ============ isBridgeServiceResponseNotValid ============
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeIs200() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "200");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
-    }
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeIs400() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "400");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
-    }
-
-    @Test
-    void shouldReturnTrue_whenStatusCodeIsNot200Or400() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "500");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertTrue(result);
-    }
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeMissing() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        response.setExtraResponseParams(new HashMap<>()); // Empty map
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
     }
 
     // ============ createTransactionHistory ============
@@ -151,5 +121,64 @@ class CarrierBookingInttraUtilTest {
         assertTrue(response.getIsAddressFreeText());
         assertEquals("IN", response.getCountryCode());
     }
+
+    @Test
+    void shouldSendPayloadToBridgeSuccessfully() throws RunnerException {
+        // Given
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", "123");
+        payload.put("type", "test");
+
+        Long id = 1L;
+        String integrationCode = "INTTRA_BOOKING";
+        String transactionId = "txn-123";
+        String referenceId = "ref-456";
+        IntegrationType integrationType = IntegrationType.BRIDGE_VGM_AMEND;
+        String entityType = "VGM";
+
+        BridgeServiceResponse mockResponse = mock(BridgeServiceResponse.class);
+        when(jsonHelper.convertToJson(payload)).thenReturn("{\"id\":\"123\",\"type\":\"test\"}");
+        when(mockResponse.toString()).thenReturn("Bridge response OK");
+
+        when(bridgeServiceAdapter.bridgeApiIntegration(payload, integrationCode, transactionId, referenceId))
+                .thenReturn(mockResponse);
+
+        // When
+        carrierBookingInttraUtil.sendPayloadToBridge(payload, id, integrationCode, transactionId, referenceId, integrationType, entityType);
+
+        // Then
+        verify(jsonHelper).convertToJson(payload);
+        verify(bridgeServiceAdapter).bridgeApiIntegration(payload, integrationCode, transactionId, referenceId);
+        verify(migrationUtil).saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, "Bridge response OK");
+    }
+
+    @Test
+    void shouldHandleExceptionFromBridgeApiIntegration() throws RunnerException {
+        // Given
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", "123");
+        payload.put("type", "test");
+
+        Long id = 1L;
+        String integrationCode = "INTTRA_BOOKING";
+        String transactionId = "txn-123";
+        String referenceId = "ref-456";
+        IntegrationType integrationType = IntegrationType.BRIDGE_VGM_SUBMIT;
+        String entityType = "VGM";
+
+        RuntimeException bridgeException = new RuntimeException("Bridge failed");
+        when(jsonHelper.convertToJson(payload)).thenReturn("{\"id\":\"123\",\"type\":\"test\"}");
+        when(bridgeServiceAdapter.bridgeApiIntegration(payload, integrationCode, transactionId, referenceId))
+                .thenThrow(bridgeException);
+
+        // When + Then
+        RunnerException thrown = assertThrows(RunnerException.class, () ->
+                carrierBookingInttraUtil.sendPayloadToBridge(payload, id, integrationCode, transactionId, referenceId, integrationType, entityType)
+        );
+
+        assertEquals("Getting error from Bridge", thrown.getMessage());
+        verify(migrationUtil).saveErrorResponse(id, entityType, integrationType, Status.FAILED, "Bridge failed");
+    }
+
 
 }
