@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -13,11 +15,15 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -32,9 +38,11 @@ import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -57,6 +65,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
 import org.junit.Assert;
@@ -77,6 +86,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,8 +100,10 @@ import java.util.concurrent.ExecutorService;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
-import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -146,6 +158,12 @@ class CarrierBookingServiceTest extends CommonMocks {
     private IntraCommonKafkaHelper kafkaHelper;
     @Mock
     private IRoutingsV3Service routingsV3Service;
+    @Mock
+    private CarrierBookingInttraUtil carrierBookingInttraUtil;
+    @Mock
+    private BridgeServiceConfig bridgeServiceConfig;
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
 
     @Spy
     @InjectMocks
@@ -699,7 +717,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.findByBookingNo("VALID_NO")).thenReturn(carrierBooking);
         lenient().when(commonUtils.convertToLocalDateTimeFromInttra(anyString(), anyString()))
                 .thenReturn(LocalDateTime.now());
-
+        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
         carrierBookingService.updateCarrierDataToBooking(dto);
 
         assertEquals("CARR_REF_123", carrierBooking.getCarrierBookingNo());
@@ -757,7 +775,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
         emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
         lenient().when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
-
+        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
         carrierBookingService.cancel(1L);
         verify(carrierBookingDao, times(1)).findById(any());
     }
@@ -771,7 +789,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
         emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
         lenient().when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
-
+        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
         carrierBookingService.cancel(1L);
         verify(carrierBookingDao, times(1)).findById(any());
     }
@@ -1015,69 +1033,65 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_submit_success() {
-        carrierBooking.setStatus(Requested);
-        // Arrange
-        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
-        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
-        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
-
-        // Do nothing for these methods
-        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
-
-        // Act
-        carrierBookingService.submit(1L);
-
-        // Assert
-        assertEquals(Requested, carrierBooking.getStatus());
-        assertEquals("test@abc.com", carrierBooking.getSubmitByUserEmail());
-
-        // Verify interactions
-        verify(carrierBookingDao).findById(1L);
-        verify(carrierBookingDao).save(carrierBooking);
-        verify(transactionHistoryDao).save(any());
+    void submitAmend_Exception(){
+        when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("EX"));
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        assertThrows(ValidationException.class, () -> carrierBookingService.submitOrAmend(submitAmendInttraRequest));
     }
 
     @Test
-    void test_submit_invalidId_throwsException() {
-        // Arrange
-        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
+    void submitAmend_Submit() throws RunnerException {
 
-        // Act & Assert
-        assertThrows(ValidationException.class, () -> carrierBookingService.submit(99L));
+        when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        submitAmendInttraRequest.setOperationType(OperationType.SUBMIT);
 
-        verify(carrierBookingDao).findById(99L);
+        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
+
+        when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
+        when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = carrierBooking;
+        when(iv1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
+
+        EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
+        emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
+
+        List<EmailTemplatesRequest> emailTemplatesRequests = List.of(emailTemplatesRequest);
+        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(emailTemplatesRequests);
+
+        carrierBookingService.submitOrAmend(submitAmendInttraRequest);
+
+        verify(carrierBookingDao).findById(any());
     }
 
     @Test
-    void test_amend_success() {
-        carrierBooking.setStatus(Changed);
-        // Arrange
-        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
-        when(carrierBookingDao.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
-        when(jsonHelper.convertValue(any(), eq(CarrierBookingResponse.class))).thenReturn(new CarrierBookingResponse());
+    void submitAmend_Amend() throws RunnerException {
 
-        // Do nothing for these methods
-        doNothing().when(carrierBookingService).sendNotification(carrierBooking);
+        CommonContainerResponse commonContainerResponse = new CommonContainerResponse();
+        commonContainerResponse.setGrossWeight(BigDecimal.valueOf(1));
+        commonContainerResponse.setVolume(BigDecimal.valueOf(1));
+        commonContainerResponse.setGrossWeightUnit(WEIGHT_UNIT_KG);
+        commonContainerResponse.setVolumeUnit(VOLUME_UNIT_M3);
 
-        // Act
-        carrierBookingService.amend(1L);
+        List<CommonContainerResponse> commonContainerResponses = List.of(commonContainerResponse);
 
-        assertEquals(Changed, carrierBooking.getStatus());
-        // Verify interactions
-        verify(carrierBookingDao).findById(1L);
-        verify(carrierBookingDao).save(carrierBooking);
-        verify(transactionHistoryDao).save(any());
-    }
+        CarrierBookingBridgeRequest carrierBookingBridgeRequest = new CarrierBookingBridgeRequest();
+        carrierBookingBridgeRequest.setContainersList(commonContainerResponses);
 
-    @Test
-    void test_amend_invalidId_throwsException() {
-        // Arrange
-        when(carrierBookingDao.findById(99L)).thenReturn(Optional.empty());
+        when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        submitAmendInttraRequest.setOperationType(OperationType.AMEND);
 
-        // Act & Assert
-        assertThrows(ValidationException.class, () -> carrierBookingService.amend(99L));
+        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
-        verify(carrierBookingDao).findById(99L);
+        when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(carrierBookingBridgeRequest);
+        when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
+
+        carrierBookingService.submitOrAmend(submitAmendInttraRequest);
+
+        verify(carrierBookingDao, times(1)).save(any());
     }
 }

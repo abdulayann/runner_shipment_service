@@ -12,6 +12,9 @@ public class Constants {
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LOCAL_REFERENCE_NUMBER = "LocalReferenceNumber";
 
+    public static final String AMEND = "Amend";
+    public static final String ORIGINAL = "Original";
+
     public static final String GLOBALFF = "GLOBALFF";
     public static final String GLOBAL = "GLOBAL";
     public static final String SUBMITTED = "Submitted";
@@ -170,6 +173,15 @@ public class Constants {
     public static final String DIRECTION_IMP = "IMP";
     public static final String DIRECTION_CTS = "CTS";
     public static final String DIRECTION_DOM = "DOM";
+
+    // Cargo Terms
+
+    public static final String CARGO_TERMS_FCL_FCL = "FCL/FCL";
+    public static final String CARGO_TERMS_LCL_LCL = "LCL/LCL";
+    public static final String CARGO_TERMS_LCL_FCL = "LCL/FCL";
+    public static final String CARGO_TERMS_FCL_LCL = "FCL/LCL";
+    public static final String CARGO_TERMS_BREAKBULK = "Breakbulk";
+    public static final String CARGO_TERMS_RORO = "RO-RO";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
@@ -748,6 +760,8 @@ public class Constants {
     public static final String CONTRACT_TYPE = "CONTRACT";
     public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     public static final String EXPORT_EXCEL_MESSAGE = "The export will be available in approximately ";
+    public static final String CARRIER_BOOKING_INTTRA_AMEND = "CARRIER_BOOKING_INTTRA_AMEND";
+    public static final String CARRIER_BOOKING_INTTRA_CREATE = "CARRIER_BOOKING_INTTRA_CREATE";
 
     private Constants() {
     }
