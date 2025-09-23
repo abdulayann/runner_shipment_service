@@ -129,9 +129,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     private INPMServiceAdapter npmService;
 
     @Autowired
-    private PushToDownstreamPublisher pushToDownstreamPublisher;
-
-    @Autowired
     UserContext userContext;
 
     @Autowired
@@ -153,8 +150,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IShipmentDao shipmentDao;
     @Autowired
     private IOrderManagementAdapter orderManagementAdapter;
-    @Autowired
-    private InternalEventRepository internalEventRepository;
     @Autowired
     private KafkaProducer producer;
     @Autowired
@@ -245,10 +240,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
-
-        //It executes only AFTER TRANSACTION COMMITS
-        String transactionId = bookingId.toString();
-        pushToDownstreamPublisher.publish(PushToDownstreamEventDto.builder().parentEntityId(bookingId).parentEntityName(Constants.CUSTOMER_BOOKING).build(), transactionId, bookingId, Constants.CUSTOMER_BOOKING);
 
         if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()) && request.getExternalDocuments() != null) {
             List<ExternalDocumentRequest> externalDocumentRequests = request.getExternalDocuments();
