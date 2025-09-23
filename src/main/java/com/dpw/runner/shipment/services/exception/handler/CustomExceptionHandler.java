@@ -37,6 +37,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -156,5 +157,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({BackupFailureException.class, RestoreFailureException.class})
     public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    @ExceptionHandler({MaxUploadSizeExceededException.class})
+    private ResponseEntity<IRunnerResponse> handleMaxUploadSizeExceededException(final MaxUploadSizeExceededException ex) {
+        return ResponseHelper.buildFailedResponse(
+                "File size exceeds the allowed limit. Please upload a smaller file.", HttpStatus.PAYLOAD_TOO_LARGE
+        );
     }
 }

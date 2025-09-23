@@ -142,6 +142,7 @@ import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -163,6 +164,7 @@ import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
@@ -4709,6 +4711,14 @@ public class CommonUtils {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes. Please try again after that time.";
         } else {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
+        }
+    }
+
+    public <V> V getAppConfigValueByKey(String key,  TypeReference<V> typeRef) {
+        try {
+            return objectMapper.readValue(StringUtility.convertToString(applicationConfigService.getValue(key)), typeRef);
+        } catch (Exception e) {
+            throw new ValidationException("Invalid key");
         }
     }
 }
