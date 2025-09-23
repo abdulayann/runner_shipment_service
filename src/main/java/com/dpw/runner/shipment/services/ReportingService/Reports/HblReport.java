@@ -1059,6 +1059,8 @@ public class HblReport extends IReport {
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
+            dictionary.put(BL_PLACE_OF_ISSUE, hblModel.blObject.getHblData().getPlaceOfIssue() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfIssue()));
+            dictionary.put(BL_PAYABLE_AT, hblModel.blObject.getHblData().getPayableAt() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPayableAt()));
         }
     }
 
