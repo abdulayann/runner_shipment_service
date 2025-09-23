@@ -1,25 +1,24 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
-import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,55 +33,17 @@ class CarrierBookingInttraUtilTest {
     private ITransactionHistoryDao transactionHistoryDao;
 
     @Mock
-    private MasterDataUtils masterDataUtils;
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
+
+    @Mock
+    private MigrationUtil migrationUtil;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
-
-    // ============ isBridgeServiceResponseNotValid ============
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeIs200() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "200");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
-    }
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeIs400() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "400");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
-    }
-
-    @Test
-    void shouldReturnTrue_whenStatusCodeIsNot200Or400() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        Map<String, Object> params = new HashMap<>();
-        params.put(AwbConstants.SERVICE_HTTP_STATUS_CODE, "500");
-        response.setExtraResponseParams(params);
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertTrue(result);
-    }
-
-    @Test
-    void shouldReturnFalse_whenStatusCodeMissing() {
-        BridgeServiceResponse response = new BridgeServiceResponse();
-        response.setExtraResponseParams(new HashMap<>()); // Empty map
-
-        boolean result = carrierBookingInttraUtil.isBridgeServiceResponseNotValid(response);
-        assertFalse(result);
     }
 
     // ============ createTransactionHistory ============
@@ -162,77 +123,62 @@ class CarrierBookingInttraUtilTest {
     }
 
     @Test
-    void testFetchCarrierDetailsForBridgePayload() {
-        // Step 1: Setup
-        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
-        SailingInformation sailingInformation = mock(SailingInformation.class);
-        verifiedGrossMass.setSailingInformation(sailingInformation);
+    void shouldSendPayloadToBridgeSuccessfully() throws RunnerException {
+        // Given
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", "123");
+        payload.put("type", "test");
 
-        List<String> carrierList = new ArrayList<>();
-        carrierList.add("CARRIER1");
+        Long id = 1L;
+        String integrationCode = "INTTRA_BOOKING";
+        String transactionId = "txn-123";
+        String referenceId = "ref-456";
+        IntegrationType integrationType = IntegrationType.BRIDGE_VGM_AMEND;
+        String entityType = "VGM";
 
-        // Mock the methods to return the expected data
-        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
-                .thenReturn(carrierList);
-        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());
+        BridgeServiceResponse mockResponse = mock(BridgeServiceResponse.class);
+        when(jsonHelper.convertToJson(payload)).thenReturn("{\"id\":\"123\",\"type\":\"test\"}");
+        when(mockResponse.toString()).thenReturn("Bridge response OK");
 
-        // Step 2: Call the method under test
-        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
+        when(bridgeServiceAdapter.bridgeApiIntegration(payload, integrationCode, transactionId, referenceId))
+                .thenReturn(mockResponse);
 
-        // Step 3: Assertions
-        assertNotNull(result);
+        // When
+        carrierBookingInttraUtil.sendPayloadToBridge(payload, id, integrationCode, transactionId, referenceId, integrationType, entityType);
+
+        // Then
+        verify(jsonHelper).convertToJson(payload);
+        verify(bridgeServiceAdapter).bridgeApiIntegration(payload, integrationCode, transactionId, referenceId);
+        verify(migrationUtil).saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, "Bridge response OK");
     }
 
     @Test
-    void testFetchCarrierDetailsForBridgePayload_WithNullSailingInformation() {
+    void shouldHandleExceptionFromBridgeApiIntegration() throws RunnerException {
+        // Given
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", "123");
+        payload.put("type", "test");
 
-        // Step 1: Call the method under test
-        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(null);
+        Long id = 1L;
+        String integrationCode = "INTTRA_BOOKING";
+        String transactionId = "txn-123";
+        String referenceId = "ref-456";
+        IntegrationType integrationType = IntegrationType.BRIDGE_VGM_SUBMIT;
+        String entityType = "VGM";
 
-        // Step 2: Assertions
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        RuntimeException bridgeException = new RuntimeException("Bridge failed");
+        when(jsonHelper.convertToJson(payload)).thenReturn("{\"id\":\"123\",\"type\":\"test\"}");
+        when(bridgeServiceAdapter.bridgeApiIntegration(payload, integrationCode, transactionId, referenceId))
+                .thenThrow(bridgeException);
+
+        // When + Then
+        RunnerException thrown = assertThrows(RunnerException.class, () ->
+                carrierBookingInttraUtil.sendPayloadToBridge(payload, id, integrationCode, transactionId, referenceId, integrationType, entityType)
+        );
+
+        assertEquals("Getting error from Bridge", thrown.getMessage());
+        verify(migrationUtil).saveErrorResponse(id, entityType, integrationType, Status.FAILED, "Bridge failed");
     }
 
-    @Test
-    void testFetchCarrierDetailsForBridgePayload_WithEmptyCarrierList() {
-        // Setup
-        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
-        SailingInformation sailingInformation = mock(SailingInformation.class);
-        verifiedGrossMass.setSailingInformation(sailingInformation);
 
-        // Create an empty carrier list to simulate no carriers
-        List<String> carrierList = new ArrayList<>();
-
-        // Mock the methods to return the expected data
-        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
-                .thenReturn(carrierList);  // Empty carrier list
-        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());  // No data from the service
-
-        // Step 1: Call the method under test
-        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
-
-        // Step 2: Assertions
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testFetchCarrierDetailsForBridgePayload_HandlesExceptionGracefully() {
-        // Setup
-        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
-        SailingInformation sailingInformation = mock(SailingInformation.class);
-        verifiedGrossMass.setSailingInformation(sailingInformation);
-
-        // Mock an exception in fetchInBulkCarriers
-        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
-                .thenThrow(new RuntimeException("Test Exception"));
-
-        // Step 1: Call the method under test (expecting an exception to be handled)
-        Map<String, EntityTransferCarrier> result = carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass.getSailingInformation());
-
-        // Step 2: Assertions
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
 }

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -8,18 +8,22 @@ import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeService
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
-import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
+import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,14 +37,34 @@ import java.util.Set;
 public class CarrierBookingInttraUtil {
 
     @Autowired
-    private MasterDataUtils masterDataUtils;
+    MasterDataUtils masterDataUtils;
 
     @Autowired
     private ITransactionHistoryDao transactionHistoryDao;
 
-    public boolean isBridgeServiceResponseNotValid(BridgeServiceResponse bridgeServiceResponse) {
-        return bridgeServiceResponse.getExtraResponseParams().containsKey(AwbConstants.SERVICE_HTTP_STATUS_CODE) && !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "200") &&
-                !Objects.equals(bridgeServiceResponse.getExtraResponseParams().get(AwbConstants.SERVICE_HTTP_STATUS_CODE).toString(), "400");
+    @Autowired
+    BridgeServiceAdapter bridgeServiceAdapter;
+
+    @Autowired
+    MigrationUtil migrationUtil;
+
+    @Autowired
+    JsonHelper jsonHelper;
+
+    public <T> void sendPayloadToBridge(T inttraResponse, Long id,
+                                         String integrationCode, String transactionId, String referenceId,
+                                         IntegrationType integrationType, String entityType) throws RunnerException {
+        String bridgePayload = jsonHelper.convertToJson(inttraResponse);
+        log.info("Bridge payload {}", bridgePayload);
+        BridgeServiceResponse bridgeServiceResponse;
+        try {
+            bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(inttraResponse, integrationCode, transactionId, referenceId);
+        } catch (Exception exception) {
+            log.error("Getting error from Bridge while uploading template to: " + exception);
+            migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.FAILED, exception.getMessage());
+            throw new RunnerException("Getting error from Bridge");
+        }
+        migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, bridgeServiceResponse.toString());
     }
 
     public void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id, EntityTypeTransactionHistory entityType) {

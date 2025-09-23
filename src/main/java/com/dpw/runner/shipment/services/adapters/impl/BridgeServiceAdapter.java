@@ -124,6 +124,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword(),null);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER + authToken);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
 
         BridgeRequest request = BridgeRequest.builder().requestCode(integrationCode).transactionId(transactionId).referenceId(referenceId)

@@ -588,10 +588,6 @@ public class CarrierBookingService implements ICarrierBookingService {
             integrationCode = Constants.CARRIER_BOOKING_INTTRA_AMEND;
         }
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(bridgeRequest, integrationCode, null, null);
-        if (carrierBookingInttraUtil.isBridgeServiceResponseNotValid(bridgeServiceResponse)) {
-            log.error("Getting error from Bridge while uploading template to: " + jsonHelper.convertToJson(bridgeServiceResponse));
-            throw new GenericException("Getting error from Bridge");
-        }
     }
 
     private void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {

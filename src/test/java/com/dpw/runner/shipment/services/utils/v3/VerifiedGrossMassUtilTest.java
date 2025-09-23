@@ -2,11 +2,9 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassBridgeRequest;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
@@ -155,35 +153,6 @@ class VerifiedGrossMassUtilTest {
     }
 
     @Test
-    void testMapToBridgeRequest_mapsAllFieldsCorrectly() {
-        VerifiedGrossMassInttraResponse response = new VerifiedGrossMassInttraResponse();
-        response.setMessageGuid(UUID.randomUUID());
-        response.setMessageDateTime(LocalDateTime.now());
-        response.setTenantId("testTenant");
-        response.setState("ORIGINAL");
-        response.setSubmitterReference("REF123");
-        response.setContainer(CommonContainerResponse.builder().containerNo("CONT123").build());
-        response.setRequestor(new PartiesResponse());
-        response.setAuthorised(new PartiesResponse());
-        response.setResponsible(new PartiesResponse());
-        response.setRequestorNotificationContact(new NotificationContactResponse());
-        response.setCarrierBookingNo("CB123");
-        response.setCarrierScacCode("SCAC123");
-        response.setCarrierDescription("Carrier Description");
-        response.setCarrierNotificationContact(new NotificationContactResponse());
-        response.setDelegated(true);
-        response.setFileName("file.xml");
-
-        VerifiedGrossMassBridgeRequest request = util.mapToBridgeRequest(response);
-
-        assertEquals(response.getMessageGuid(), request.getMessageGuid());
-        assertEquals(response.getCarrierScacCode(), request.getCarrierScacCode());
-        assertEquals(response.getContainer().getContainerNo(), request.getContainer().getContainerNo());
-        assertTrue(request.isDelegated());
-        assertEquals("file.xml", request.getFileName());
-    }
-
-    @Test
     void testBuildContainerResponse_shouldBuildProperly() {
         CommonContainers container = new CommonContainers();
         container.setContainerNo("CONT-999");
@@ -211,6 +180,84 @@ class VerifiedGrossMassUtilTest {
         assertEquals("John Doe", response.getApprovalSignature());
         assertEquals(WeightDeterminationMethodType.METHOD1, response.getWeightDeterminationMethod());
         assertEquals(new BigDecimal("300"), response.getTareWeight());
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload() {
+        // Step 1: Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        List<String> carrierList = new ArrayList<>();
+        carrierList.add("CARRIER1");
+
+        // Mock the methods to return the expected data
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenReturn(carrierList);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());
+
+        // Step 2: Call the method under test
+        Map<String, EntityTransferCarrier> result = util.fetchCarrierDetailsForBridgePayload(verifiedGrossMass);
+
+        // Step 3: Assertions
+        assertNotNull(result);
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_WithNullSailingInformation() {
+        // Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        verifiedGrossMass.setSailingInformation(null);
+
+        // Step 1: Call the method under test
+        Map<String, EntityTransferCarrier> result = util.fetchCarrierDetailsForBridgePayload(verifiedGrossMass);
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_WithEmptyCarrierList() {
+        // Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        // Create an empty carrier list to simulate no carriers
+        List<String> carrierList = new ArrayList<>();
+
+        // Mock the methods to return the expected data
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenReturn(carrierList);  // Empty carrier list
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(new HashMap<>());  // No data from the service
+
+        // Step 1: Call the method under test
+        Map<String, EntityTransferCarrier> result = util.fetchCarrierDetailsForBridgePayload(verifiedGrossMass);
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchCarrierDetailsForBridgePayload_HandlesExceptionGracefully() {
+        // Setup
+        VerifiedGrossMass verifiedGrossMass = new VerifiedGrossMass();
+        SailingInformation sailingInformation = mock(SailingInformation.class);
+        verifiedGrossMass.setSailingInformation(sailingInformation);
+
+        // Mock an exception in fetchInBulkCarriers
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(SailingInformation.class), any(), any(), any()))
+                .thenThrow(new RuntimeException("Test Exception"));
+
+        // Step 1: Call the method under test (expecting an exception to be handled)
+        Map<String, EntityTransferCarrier> result = util.fetchCarrierDetailsForBridgePayload(verifiedGrossMass);
+
+        // Step 2: Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 
     @Test

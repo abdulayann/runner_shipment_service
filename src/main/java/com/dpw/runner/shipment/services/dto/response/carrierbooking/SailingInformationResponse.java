@@ -35,7 +35,6 @@ public class SailingInformationResponse implements IRunnerResponse {
     private LocalDateTime reeferCutoff;
     private LocalDateTime emptyContainerPickupCutoff;
     private LocalDateTime loadedContainerGateInCutoff;
-
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;

@@ -103,6 +103,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRI
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1049,7 +1050,6 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
         when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
-        when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(false);
 
 
         V1DataResponse v1DataResponse = new V1DataResponse();
@@ -1089,9 +1089,9 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(carrierBookingBridgeRequest);
         when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
-        when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(true);
 
-        assertThrows(GenericException.class, () -> carrierBookingService.submitOrAmend(submitAmendInttraRequest));
+        carrierBookingService.submitOrAmend(submitAmendInttraRequest);
+
+        verify(carrierBookingDao, times(1)).save(any());
     }
-
 }
