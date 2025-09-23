@@ -26,10 +26,9 @@ public class PostCommitActionExecutor {
             @Override
             public void afterCommit() {
                     try {
-                        String key = transactionId.toString();
                         // On success update status
                         internalEventRepository.updatePublishedStatus(eventId, "Published", LocalDateTime.now());
-                        kafkaTemplate.send(topic, key, jsonHelper.convertToJson(payload));
+                        kafkaTemplate.send(topic, transactionId, jsonHelper.convertToJson(payload));
                     } catch (Exception e) {
                         // On failed update status
                         internalEventRepository.updatePublishedStatus(eventId, "Publish_Failed", LocalDateTime.now());
