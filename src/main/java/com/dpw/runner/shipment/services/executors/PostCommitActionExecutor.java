@@ -26,13 +26,17 @@ public class PostCommitActionExecutor {
             @Override
             public void afterCommit() {
                     try {
+                        String messageJson = jsonHelper.convertToJson(payload);
+                        kafkaTemplate.send(topic, transactionId, jsonHelper.convertToJson(payload));
                         // On success update status
                         internalEventRepository.updatePublishedStatus(eventId, "Published", LocalDateTime.now());
-                        kafkaTemplate.send(topic, transactionId, jsonHelper.convertToJson(payload));
+                        log.info("✅ Kafka event published successfully. EventId={}, TransactionId={}, Topic={}, PayloadSize={} bytes",
+                                eventId, transactionId, topic, messageJson.length());
                     } catch (Exception e) {
                         // On failed update status
                         internalEventRepository.updatePublishedStatus(eventId, "Publish_Failed", LocalDateTime.now());
-                        log.error("Kafka event cannot published successfully");
+                        log.error("Failed to publish Kafka event. EventId={}, TransactionId={}, Topic={}, Error={}",
+                                eventId, transactionId, topic, e.getMessage(), e);
                     }
             }
         });
