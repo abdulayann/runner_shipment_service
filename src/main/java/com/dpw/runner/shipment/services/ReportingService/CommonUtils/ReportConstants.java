@@ -635,9 +635,6 @@ public class ReportConstants {
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
     public static final String BL_REMARKS = "BLRemarks";
-    public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
-    public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
-    public static final String BL_CHARGES = "BLCharges";
 
     //HAWB
     public static final String AGENT = "Agent";
