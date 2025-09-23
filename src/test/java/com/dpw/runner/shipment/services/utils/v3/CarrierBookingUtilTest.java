@@ -1,12 +1,18 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.junit.jupiter.api.Test;
@@ -18,7 +24,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -265,4 +274,169 @@ class CarrierBookingUtilTest {
             verify(carrierBookingDao, never()).getTotalCarrierBookings();
         }
     }
+
+    @Test
+    void test_populateCarrierDetails_NullMap() {
+        // Arrange
+        CarrierBookingBridgeRequest request = new CarrierBookingBridgeRequest();
+
+        // Act
+        carrierBookingUtil.populateCarrierDetails(null, request);
+
+        // Assert
+        assertNull(request.getCarrierScacCode());
+        assertNull(request.getCarrierDescription());
+    }
+
+    @Test
+    void test_populateCarrierDetails_WithValidMap() {
+        // Arrange
+        CarrierBookingBridgeRequest request = new CarrierBookingBridgeRequest();
+        Map<String, EntityTransferCarrier> carrierMap = new HashMap<>();
+
+        EntityTransferCarrier carrier1 = new EntityTransferCarrier();
+        carrier1.ItemValue = "SCAC1";
+        carrier1.ItemDescription = "Carrier One";
+
+        EntityTransferCarrier carrier2 = new EntityTransferCarrier();
+        carrier2.ItemValue = "SCAC2";
+        carrier2.ItemDescription = "Carrier Two";
+
+        carrierMap.put("1", carrier1);
+        carrierMap.put("2", carrier2);
+
+        // Act
+        carrierBookingUtil.populateCarrierDetails(carrierMap, request);
+
+        // Assert → last entry should be set (carrier2)
+        assertEquals("SCAC2", request.getCarrierScacCode());
+        assertEquals("Carrier Two", request.getCarrierDescription());
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_CreateAndSubmitUserSame() {
+        // Arrange
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails("internal@test.com");
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("creator@test.com");
+
+        EmailTemplatesRequest template = new EmailTemplatesRequest();
+        template.setSubject("Test Subject");
+        template.setName("TestTemplate");
+        template.setBody("<p>Body</p>");
+
+        // Act
+        SendEmailBaseRequest result = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, template);
+
+        // Assert
+        assertEquals("internal@test.com,creator@test.com", result.getTo());
+        assertEquals("Test Subject", result.getSubject());
+        assertEquals("TestTemplate", result.getTemplateName());
+        assertEquals("<p>Body</p>", result.getHtmlBody());
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_CreateAndSubmitUserDifferent() {
+        // Arrange
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails(null);
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("submitter@test.com");
+
+        EmailTemplatesRequest template = new EmailTemplatesRequest();
+        template.setSubject("Another Subject");
+        template.setName("AnotherTemplate");
+        template.setBody("Another body");
+
+        // Act
+        SendEmailBaseRequest result = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, template);
+
+        // Assert
+        assertEquals("creator@test.com,submitter@test.com", result.getTo());
+        assertEquals("Another Subject", result.getSubject());
+        assertEquals("AnotherTemplate", result.getTemplateName());
+        assertEquals("Another body", result.getHtmlBody());
+    }
+
+    @Test
+    void test_mapSailingToConsolidation_AllFieldsMapped() {
+        // Arrange
+        SailingInformation sailing = new SailingInformation();
+        sailing.setVerifiedGrossMassCutoff(LocalDateTime.of(2025, 9, 22, 10, 0));
+        sailing.setReeferCutoff(LocalDateTime.of(2025, 9, 22, 11, 0));
+        sailing.setShipInstructionCutoff(LocalDateTime.of(2025, 9, 22, 12, 0));
+        sailing.setHazardousBookingCutoff(LocalDateTime.of(2025, 9, 22, 13, 0));
+        sailing.setEmptyContainerPickupCutoff(LocalDateTime.of(2025, 9, 22, 14, 0));
+        sailing.setLoadedContainerGateInCutoff(LocalDateTime.of(2025, 9, 22, 15, 0));
+
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+
+        // Act
+        carrierBookingUtil.mapSailingToConsolidation(sailing, consolidation);
+
+        // Assert
+        assertEquals(LocalDateTime.of(2025, 9, 22, 10, 0), consolidation.getVerifiedGrossMassCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 11, 0), consolidation.getReeferCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 12, 0), consolidation.getShipInstructionCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 13, 0), consolidation.getHazardousBookingCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 14, 0), consolidation.getEarliestEmptyEquPickUp());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 15, 0), consolidation.getTerminalCutoff());
+    }
+
+    @Test
+    void test_mapSailingToConsolidation_NullValuesSkipped() {
+        // Arrange
+        SailingInformation sailing = new SailingInformation(); // all null
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setVerifiedGrossMassCutoff(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+        // Act
+        carrierBookingUtil.mapSailingToConsolidation(sailing, consolidation);
+
+        // Assert → unchanged because source values are null
+        assertEquals(LocalDateTime.of(2025, 9, 22, 10, 0), consolidation.getVerifiedGrossMassCutoff());
+    }
+
+    @Test
+    void test_mapConsolidationToSailing_AllFieldsMapped() {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setVerifiedGrossMassCutoff(LocalDateTime.of(2025, 9, 22, 10, 0));
+        consolidation.setReeferCutoff(LocalDateTime.of(2025, 9, 22, 11, 0));
+        consolidation.setShipInstructionCutoff(LocalDateTime.of(2025, 9, 22, 12, 0));
+        consolidation.setHazardousBookingCutoff(LocalDateTime.of(2025, 9, 22, 13, 0));
+        consolidation.setEarliestEmptyEquPickUp(LocalDateTime.of(2025, 9, 22, 14, 0));
+        consolidation.setTerminalCutoff(LocalDateTime.of(2025, 9, 22, 15, 0));
+
+        SailingInformation sailing = new SailingInformation();
+
+        // Act
+        carrierBookingUtil.mapConsolidationToSailing(consolidation, sailing);
+
+        // Assert
+        assertEquals(LocalDateTime.of(2025, 9, 22, 10, 0), sailing.getVerifiedGrossMassCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 11, 0), sailing.getReeferCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 12, 0), sailing.getShipInstructionCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 13, 0), sailing.getHazardousBookingCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 14, 0), sailing.getEmptyContainerPickupCutoff());
+        assertEquals(LocalDateTime.of(2025, 9, 22, 15, 0), sailing.getLoadedContainerGateInCutoff());
+    }
+
+    @Test
+    void test_mapConsolidationToSailing_NullValuesSkipped() {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails(); // all null
+        SailingInformation sailing = new SailingInformation();
+        sailing.setVerifiedGrossMassCutoff(LocalDateTime.of(2025, 9, 22, 10, 0));
+
+        // Act
+        carrierBookingUtil.mapConsolidationToSailing(consolidation, sailing);
+
+        // Assert → unchanged because source values are null
+        assertEquals(LocalDateTime.of(2025, 9, 22, 10, 0), sailing.getVerifiedGrossMassCutoff());
+    }
+
+
+
 }

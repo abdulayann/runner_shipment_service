@@ -41,6 +41,8 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String carrierComment;
     private String internalEmails;
     private String externalEmails;
+    private String createByUserEmail;
+    private String submitByUserEmail;
     private Map<String, Object> loadedContainerDropOffDetails;
     private Map<String, Object> emptyContainerPickupDetails;
     private PartiesResponse requester;

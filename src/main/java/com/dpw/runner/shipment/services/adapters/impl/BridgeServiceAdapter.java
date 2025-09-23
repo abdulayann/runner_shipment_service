@@ -120,7 +120,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
     }
 
     @Override
-    public IRunnerResponse bridgeApiIntegration(String payload, String integrationCode, String transactionId, String referenceId) throws RunnerException {
+    public IRunnerResponse bridgeApiIntegration(Object payload, String integrationCode, String transactionId, String referenceId) throws RunnerException {
         String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword(),null);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER + authToken);

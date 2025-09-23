@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VerifiedGrossMassInttraRequest implements Serializable {
+public class SubmitAmendInttraRequest implements Serializable {
     private Long id;
     private List<Long> containerIds;
     private OperationType operationType;
