@@ -990,22 +990,6 @@ public class HblReport extends IReport {
         return consignee;
     }
 
-    private List<String> getShipmentConsigner(HblModel hblModel, List<String> consigner, Map<String, Object> dictionary) {
-        PartiesModel shipmentConsigner = hblModel.shipment.getConsigner();
-        if (shipmentConsigner != null) {
-            Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
-            if (consignerAddress != null) {
-                consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
-                        getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                        getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                        getValueFromMap(consignerAddress, ZIP_POSTCODE));
-                dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
-                dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON));
-            }
-        }
-        return consigner;
-    }
-
     private void addDeliverToTag(HblModel hblModel, Map<String, Object> dictionary) {
         PartiesModel deliveryTo = null;
 
