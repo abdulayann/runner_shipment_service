@@ -30,7 +30,7 @@ public class PostCommitActionExecutor {
                         kafkaTemplate.send(topic, transactionId, jsonHelper.convertToJson(payload));
                         // On success update status
                         internalEventRepository.updatePublishedStatus(eventId, "Published", LocalDateTime.now());
-                        log.info("✅ Kafka event published successfully. EventId={}, TransactionId={}, Topic={}, PayloadSize={} bytes",
+                        log.info("Kafka event published successfully. EventId={}, TransactionId={}, Topic={}, PayloadSize={} bytes",
                                 eventId, transactionId, topic, messageJson.length());
                     } catch (Exception e) {
                         // On failed update status
