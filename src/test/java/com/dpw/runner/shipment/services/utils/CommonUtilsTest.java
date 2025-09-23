@@ -162,6 +162,7 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("java:S5778")
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
 class CommonUtilsTest {
