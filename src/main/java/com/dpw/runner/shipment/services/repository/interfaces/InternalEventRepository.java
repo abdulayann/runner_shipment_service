@@ -16,8 +16,8 @@ public interface InternalEventRepository extends JpaRepository<InternalEvent, Lo
 
     @Modifying
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @Query(value = "UPDATE internal_events SET published_status = :status, published_timestamp = :timestamp WHERE id = :Id", nativeQuery = true)
-    int updatePublishedStatus(@Param("Id") Long id, @Param("status") String status, @Param("timestamp") LocalDateTime timestamp);
+    @Query(value = "UPDATE internal_events SET published_status = :status, published_timestamp = :timestamp WHERE id = :id", nativeQuery = true)
+    int updatePublishedStatus(@Param("id") Long id, @Param("status") String status, @Param("timestamp") LocalDateTime timestamp);
 
     @Modifying
     @Transactional(propagation = Propagation.REQUIRES_NEW)
