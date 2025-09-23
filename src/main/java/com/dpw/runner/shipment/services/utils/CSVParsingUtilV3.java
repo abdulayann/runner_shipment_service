@@ -90,7 +90,7 @@ public class CSVParsingUtilV3<T> {
     }
 
     @SuppressWarnings("java:S1874")
-    private T createEntityInstance(Class<T> entityType) throws InstantiationException, IllegalAccessException {
+    public T createEntityInstance(Class<T> entityType) throws InstantiationException, IllegalAccessException {
         return entityType.newInstance();
     }
 
@@ -162,7 +162,7 @@ public class CSVParsingUtilV3<T> {
         return entityList;
     }
 
-    private void validateParseExcelFile(Set<String> mandatoryColumns, Set<String> headerSet, Row headerRow) {
+    public void validateParseExcelFile(Set<String> mandatoryColumns, Set<String> headerSet, Row headerRow) {
         if (!mandatoryColumns.isEmpty()) {
             throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
         }
@@ -210,7 +210,7 @@ public class CSVParsingUtilV3<T> {
     }
 
     @SuppressWarnings("java:S1130") // Suppressing NoSuchFieldException sonar issue
-    private void processLastRowNumForExcelFilePacking(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, int shipmentNumberPos, Map<String, Long> dicShipmentId, String[] header, Map<String, Set<String>> masterListsMap, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
+    public void processLastRowNumForExcelFilePacking(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, int shipmentNumberPos, Map<String, Long> dicShipmentId, String[] header, Map<String, Set<String>> masterListsMap, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             validateGuidPos(mapOfEntity, guidPos, row, i, errorList);
@@ -239,7 +239,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateGuidPos(Map<UUID, T> mapOfEntity, int guidPos, Row row, int i, List<String> errorList) {
+    public void validateGuidPos(Map<UUID, T> mapOfEntity, int guidPos, Row row, int i, List<String> errorList) {
         if (guidPos != -1) {
             String guidVal = getCellValueAsString(row.getCell(guidPos));
             try {
@@ -271,7 +271,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private Map<String, Long> getShipmentIds(Long consolidationId) {
+    public Map<String, Long> getShipmentIds(Long consolidationId) {
         var consoleShipmentMap = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
         List<Long> lstShipmentId = new ArrayList<>();
         for (var temp : consoleShipmentMap) {
@@ -336,7 +336,7 @@ public class CSVParsingUtilV3<T> {
         return entityList;
     }
 
-    private String[] extractHeader(Row headerRow, Class<?> modelClass, List<String> excelHeaders) {
+    public String[] extractHeader(Row headerRow, Class<?> modelClass, List<String> excelHeaders) {
         Field[] fields = modelClass.getDeclaredFields();
         Map<String, String> renameFieldMap = Arrays.stream(fields)
                 .filter(x -> x.isAnnotationPresent(ExcelCell.class))
@@ -390,7 +390,7 @@ public class CSVParsingUtilV3<T> {
         errorList.addAll(mandatoryFields.stream().filter(field -> !headerSet.contains(field)).map(field -> "Row# 1 : " + field + " is mandatory").toList());
     }
 
-    private int findColumnIndex(String[] header, String columnName) {
+    public int findColumnIndex(String[] header, String columnName) {
         for (int i = 0; i < header.length; i++) {
             if (header[i].equalsIgnoreCase(columnName)) {
                 return i;
@@ -399,44 +399,47 @@ public class CSVParsingUtilV3<T> {
         return -1;
     }
 
-    private void validateHeaderUniqueness(Set<String> headerSet, int totalColumns) {
+    public void validateHeaderUniqueness(Set<String> headerSet, int totalColumns) {
         if (headerSet.size() < totalColumns) {
             throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
         }
     }
 
 
-    private void validateExcelColumn(Row headerRow, int i) {
+    public void validateExcelColumn(Row headerRow, int i) {
         if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
             throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
         }
     }
 
-    private void addGuidInList(Sheet sheet, int commodityCodePos, List<String> commodityCodesList, int containerStuffingLocationPos, List<String> unlocationsList, int guidPos, List<String> errorList) {
+    public void addGuidInList(Sheet sheet, int commodityCodePos, List<String> commodityCodesList, int containerStuffingLocationPos, List<String> unlocationsList, int guidPos, List<String> errorList) {
         Set<String> guidSet = new HashSet<>();
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (commodityCodePos != -1) {
-                if (Objects.isNull(row.getCell(commodityCodePos))) {
-                    throw new ValidationException("Please enter at least One container line in the upload file.");
-                }
-                String commodityCode = getCellValueAsString(row.getCell(commodityCodePos));
-                if (!StringUtils.isEmpty(commodityCode))
-                    commodityCodesList.add(commodityCode);
+            setGuid(sheet, commodityCodePos, commodityCodesList, containerStuffingLocationPos, unlocationsList, guidPos, errorList, i, guidSet);
+        }
+    }
+    private void setGuid(Sheet sheet, int commodityCodePos, List<String> commodityCodesList, int containerStuffingLocationPos, List<String> unlocationsList, int guidPos, List<String> errorList, int i, Set<String> guidSet) {
+        Row row = sheet.getRow(i);
+        if (commodityCodePos != -1) {
+            if (Objects.isNull(row.getCell(commodityCodePos))) {
+                throw new ValidationException("Please enter at least One container line in the upload file.");
             }
-            if (containerStuffingLocationPos != -1) {
-                String unloc = getCellValueAsString(row.getCell(containerStuffingLocationPos));
-                if (!StringUtils.isEmpty(unloc))
-                    unlocationsList.add(unloc);
-            }
-            if (guidPos != -1) {
-                validateDuplicateGuid(guidPos, row, guidSet, i, errorList);
-                guidSet.add(getCellValueAsString(row.getCell(guidPos)));
-            }
+            String commodityCode = getCellValueAsString(row.getCell(commodityCodePos));
+            if (!StringUtils.isEmpty(commodityCode))
+                commodityCodesList.add(commodityCode);
+        }
+        if (containerStuffingLocationPos != -1) {
+            String unloc = getCellValueAsString(row.getCell(containerStuffingLocationPos));
+            if (!StringUtils.isEmpty(unloc))
+                unlocationsList.add(unloc);
+        }
+        if (guidPos != -1) {
+            validateDuplicateGuid(guidPos, row, guidSet, i, errorList);
+            guidSet.add(getCellValueAsString(row.getCell(guidPos)));
         }
     }
 
-    private void validateDuplicateGuid(int guidPos, Row row, Set<String> guidSet, int i, List<String> errorList) {
+    public void validateDuplicateGuid(int guidPos, Row row, Set<String> guidSet, int i, List<String> errorList) {
         String guidCell = getCellValueAsString(row.getCell(guidPos));
         if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
             errorList.add(String.format(ContainerConstants.GENERIC_DUPLICATE_FIELD_MSG, i+1, "Guid", guidCell));
@@ -444,7 +447,7 @@ public class CSVParsingUtilV3<T> {
     }
 
     @SuppressWarnings("java:S1130") // Suppressing NoSuchFieldException sonar issue
-    private void processSheetLastRowNum(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, String[] header, Map<String, Set<String>> masterListsMap, Map<String, String> existingContainerNumbers, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
+    public void processSheetLastRowNum(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, String[] header, Map<String, Set<String>> masterListsMap, Map<String, String> existingContainerNumbers, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             int rowNum = i+1;
@@ -465,7 +468,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private boolean validateSheetLastRowNum(Map<UUID, T> mapOfEntity, String guidVal, int rowNum, List<String> errorList) {
+    public boolean validateSheetLastRowNum(Map<UUID, T> mapOfEntity, String guidVal, int rowNum, List<String> errorList) {
         try {
             if (!StringUtils.isEmpty(guidVal)) {
                 var containerGuid = UUID.fromString(guidVal);
@@ -481,7 +484,7 @@ public class CSVParsingUtilV3<T> {
         return false;
     }
 
-    private void processHeaderForExcel(BulkUploadRequest request, String[] header, Row row, Map<String, Set<String>> masterListsMap, int rowNum, int guidPos, boolean isUpdate, Map<String, String> existingContainerNumbers, T entity, List<String> errorList) {
+    public void processHeaderForExcel(BulkUploadRequest request, String[] header, Row row, Map<String, Set<String>> masterListsMap, int rowNum, int guidPos, boolean isUpdate, Map<String, String> existingContainerNumbers, T entity, List<String> errorList) {
         String prevCellValue = "";
         boolean isDgContainer;
         for (int j = 0; j < header.length; j++) {//
@@ -500,7 +503,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private boolean parseBooleanField(String header, String headerName, String msgField, String cellValue, int rowNum, List<String> errorList) {
+    public boolean parseBooleanField(String header, String headerName, String msgField, String cellValue, int rowNum, List<String> errorList) {
         if (header.equalsIgnoreCase(headerName)) {
             if (cellValue == null || cellValue.trim().isEmpty()) {
                 errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, msgField, cellValue));
@@ -529,16 +532,16 @@ public class CSVParsingUtilV3<T> {
             prevColumn = StringUtility.convertToString(header[j - 1]);
         }
         if (Boolean.TRUE.equals(isDgContainer)) {
-            masterdataValidation(cellValue, currentColumn, "dgClass", masterListsMap, "DGClass", rowNum, "DG Class", errorList);
-            validateMandatoryField(currentColumn, "dgClass", rowNum, cellValue, "DG Class", errorList);
+            masterdataValidation(cellValue, currentColumn, ContainerConstants.KEY_DG_CLASS, masterListsMap, "DGClass", rowNum, "DG Class", errorList);
+            validateMandatoryField(currentColumn, ContainerConstants.KEY_DG_CLASS, rowNum, cellValue, "DG Class", errorList);
             validateMandatoryField(currentColumn, Constants.GROSS_WEIGHT, rowNum, cellValue, "Cargo Wt.", errorList);
-            if (currentColumn.equalsIgnoreCase("unNumber") && cellValue != null && !cellValue.trim().matches("\\d+")) {
-                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "UN Number", cellValue));
+            if (currentColumn.equalsIgnoreCase(ContainerConstants.KEY_UN_NUMBER) && cellValue != null && !cellValue.trim().matches("\\d+")) {
+                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, ContainerConstants.UN_NUMBER, cellValue));
             }
-            validateMandatoryField(currentColumn, "unNumber", rowNum, cellValue, "UN Number", errorList);
-            fieldLengthValidation(currentColumn, "unNumber", cellValue, 31, rowNum, "UN Number", errorList);
+            validateMandatoryField(currentColumn, ContainerConstants.KEY_UN_NUMBER, rowNum, cellValue, ContainerConstants.UN_NUMBER, errorList);
+            fieldLengthValidation(currentColumn, ContainerConstants.KEY_UN_NUMBER, cellValue, 31, rowNum, ContainerConstants.UN_NUMBER, errorList);
             validateMandatoryField(currentColumn, "ProperShippingName", rowNum, cellValue, "Proper Shipping Name", errorList);
-            masterdataValidation(cellValue, currentColumn, "packingGroup", masterListsMap, "PackingGroup", rowNum, "Packing Group", errorList);
+            masterdataValidation(cellValue, currentColumn, ContainerConstants.KEY_PACKING_GROUP, masterListsMap, "PackingGroup", rowNum, "Packing Group", errorList);
             validateDependentMandatoryFields(currentColumn, "minimumFlashPointUnit", cellValue, prevColumn, "minimumFlashPoint", prevCellValue, rowNum, "Min. Flash Point Unit", errorList);
             masterdataValidation(cellValue, currentColumn, "minimumFlashPointUnit", masterListsMap, "TemperatureUnit", rowNum, "Min. Flash Point Unit", errorList);
         }
@@ -561,26 +564,26 @@ public class CSVParsingUtilV3<T> {
         masterdataValidation(cellValue, currentColumn, "netWeightUnit", masterListsMap, MasterDataType.WEIGHT_UNIT.getDescription(), rowNum, "Gr. Wt. Unit", errorList);
     }
 
-    private void masterdataValidation(String cellValue, String currentColumn, String actualColumn, Map<String, Set<String>> masterListsMap, String masterKey, int rowNum, String validationMsg, List<String> errorList) {
+    public void masterdataValidation(String cellValue, String currentColumn, String actualColumn, Map<String, Set<String>> masterListsMap, String masterKey, int rowNum, String validationMsg, List<String> errorList) {
         if (StringUtils.isNotEmpty(cellValue) && currentColumn.equalsIgnoreCase(actualColumn) && masterListsMap.containsKey(masterKey)
                 && !masterListsMap.get(masterKey).contains(cellValue)) {
             errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, validationMsg, cellValue));
         }
     }
 
-    private void fieldLengthValidation(String currentColumn, String actualColumn, String cellValue, int allowedLength, int rowNum, String lengthValidationMsg, List<String> errorList) {
+    public void fieldLengthValidation(String currentColumn, String actualColumn, String cellValue, int allowedLength, int rowNum, String lengthValidationMsg, List<String> errorList) {
         if (currentColumn.equalsIgnoreCase(actualColumn) && cellValue != null && cellValue.length() > allowedLength) {
             errorList.add(String.format(ContainerConstants.GENERIC_LENGTH_VALIDATION_MSG, rowNum, lengthValidationMsg, StringUtility.convertToString(allowedLength)));
         }
     }
 
-    private void validateDependentMandatoryFields(String currentColumn, String actualColumn, String cellValue, String prevColumn, String actualPreviousColumn, String prevCellValue, int rowNum, String mandatoryColumn, List<String> errorList) {
+    public void validateDependentMandatoryFields(String currentColumn, String actualColumn, String cellValue, String prevColumn, String actualPreviousColumn, String prevCellValue, int rowNum, String mandatoryColumn, List<String> errorList) {
         if (currentColumn.equalsIgnoreCase(actualColumn) && StringUtils.isEmpty(cellValue) && prevColumn.equalsIgnoreCase(actualPreviousColumn) && StringUtils.isNotEmpty(prevCellValue)) {
             errorList.add(String.format(ContainerConstants.GENERIC_MANDATORY_FIELD_MSG, rowNum, mandatoryColumn));
         }
     }
 
-    private void validateMandatoryField(String currentColumn, String actualColumn, int rowNum, String cellValue, String mandatoryColumn, List<String> errorList) {
+    public void validateMandatoryField(String currentColumn, String actualColumn, int rowNum, String cellValue, String mandatoryColumn, List<String> errorList) {
         if (currentColumn.equalsIgnoreCase(actualColumn) && StringUtils.isEmpty(cellValue)) {
             errorList.add(String.format(ContainerConstants.GENERIC_MANDATORY_FIELD_MSG, rowNum, mandatoryColumn));
         }
@@ -655,7 +658,7 @@ public class CSVParsingUtilV3<T> {
         return entityList;
     }
 
-    private void processHeader(String[] header, Row row, int i, Set<String> existingContainerNumberSet, List<String> containerNumberList, Set<String> orderEventsDictionary, T entity) throws NoSuchFieldException, IllegalAccessException {
+    public void processHeader(String[] header, Row row, int i, Set<String> existingContainerNumberSet, List<String> containerNumberList, Set<String> orderEventsDictionary, T entity) throws NoSuchFieldException, IllegalAccessException {
         for (int j = 0; j < header.length; j++) {
             Cell cell = row.getCell(j);
             if (cell != null) {
@@ -674,7 +677,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateContainerNumber(String[] header, int i, Set<String> existingContainerNumberSet, List<String> containerNumberList, int j, String cellValue) {
+    public void validateContainerNumber(String[] header, int i, Set<String> existingContainerNumberSet, List<String> containerNumberList, int j, String cellValue) {
         if (header[j].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
             if (StringUtils.isEmpty(cellValue)) {
                 throw new ValidationException("Container Number is missing in Line: " + i + ", Please enter and re-upload.");
@@ -735,7 +738,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void checkPacksValidations(String column, String cellValue, int rowNum, String transportMode, List<String> errorList) {
+    public void checkPacksValidations(String column, String cellValue, int rowNum, String transportMode, List<String> errorList) {
         if (!column.equalsIgnoreCase(Constants.PACKS)) {
             return; // not relevant column
         }
@@ -749,21 +752,21 @@ public class CSVParsingUtilV3<T> {
             // Check for Air transport mode with invalid packs
             if (Constants.TRANSPORT_MODE_AIR.equals(transportMode) &&
                     (cellValue == null || Integer.parseInt(cellValue) < 1)) {
-                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "Packages", cellValue));
+                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, Constants.PACKAGES, cellValue));
             }
 
             // General numeric validation
             int t = Integer.parseInt(StringUtility.convertToString(cellValue));
             if (t < 1) {
-                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "Packages", cellValue));
+                errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, Constants.PACKAGES, cellValue));
             }
 
         } catch (NumberFormatException e) {
-            errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "Packages", cellValue));
+            errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, Constants.PACKAGES, cellValue));
         }
     }
 
-    private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode, List<String> errorList)
+    public void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode, List<String> errorList)
             throws ValidationException {
         if (column.toLowerCase().contains("dgsubstanceid") && !StringUtils.isEmpty(cellValue) &&
                 masterListsMap.containsKey("DGSubstanceUNDGContact") && !masterListsMap.get("DGSubstanceUNDGContact").contains(cellValue)) {
@@ -788,7 +791,7 @@ public class CSVParsingUtilV3<T> {
         validateCountryCode(masterListsMap, column, cellValue, rowNum, errorList);
     }
 
-    private void validateContainers(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode, List<String> errorList) {
+    public void validateContainers(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode, List<String> errorList) {
         if (column.equalsIgnoreCase("containercode") && cellValue.isEmpty() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
             errorList.add(String.format(ContainerConstants.GENERIC_MANDATORY_FIELD_MSG, rowNum, "Type"));
         }
@@ -798,14 +801,14 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateCountryCode(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
+    public void validateCountryCode(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
         if (column.toLowerCase().contains("countrycode") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
                 !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
             errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "Country Code", cellValue));
         }
     }
 
-    private void validateLengthWidhtHeightUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
+    public void validateLengthWidhtHeightUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
         if (column.toLowerCase().contains("volumetricweightunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
             errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "Volumetric weight unit", cellValue));
         }
@@ -824,7 +827,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateMeasurementUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
+    public void validateMeasurementUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, List<String> errorList) {
         if (column.toLowerCase().contains("measurementunit")) {
             if (column.equalsIgnoreCase("innerpackagemeasurementunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
                     !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
@@ -837,7 +840,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateVolumeUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum) {
+    public void validateVolumeUnit(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum) {
         switch (column.toLowerCase()) {
             case "allocatedvolumeunit": {
                 if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getDescription()) &&
@@ -866,7 +869,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private String getCellValueAsString(Cell cell) {
+    public String getCellValueAsString(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
             case STRING:
@@ -890,7 +893,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void validateExcel(Sheet sheet) {
+    public void validateExcel(Sheet sheet) {
 
         if (sheet == null || sheet.getPhysicalNumberOfRows() <= 0) {
             throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET_V3);
@@ -955,7 +958,7 @@ public class CSVParsingUtilV3<T> {
         }
     }
 
-    private void raiseException(String attributeName, int rowNum, Class<?> fieldType) {
+    public void raiseException(String attributeName, int rowNum, Class<?> fieldType) {
         if (fieldType == Long.class || fieldType == long.class) {
             throw new ValidationException(attributeName.toUpperCase() + " is invalid at row: " + rowNum + ". Please provide integer value and within the range of integer");
         }
@@ -1031,7 +1034,7 @@ public class CSVParsingUtilV3<T> {
         return masterDataMap;
     }
 
-    private Map<String, Set<String>> getAllMasterDataEvents(Map<String, Set<String>> masterDataMap) {
+    public Map<String, Set<String>> getAllMasterDataEvents(Map<String, Set<String>> masterDataMap) {
         this.fetchMasterLists(MasterDataType.ORDER_EVENTS, masterDataMap);
         return masterDataMap;
     }
