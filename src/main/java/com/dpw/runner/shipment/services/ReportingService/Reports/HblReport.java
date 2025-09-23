@@ -350,7 +350,6 @@ public class HblReport extends IReport {
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
-        populateFreightsAndCharges(dictionary, hblModel.blObject);
 
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
         if(hblModel.shipment.getAdditionalDetails() != null)
@@ -508,6 +507,8 @@ public class HblReport extends IReport {
             this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
+        populateTotalCountFromCargoSummary(hblModel.blObject, dictionary);
+
         dictionary.put(BL_RELEASE_TYPE, ORIGINAL);
         return dictionary;
     }

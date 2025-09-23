@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -294,9 +296,9 @@ public class HblService implements IHblService {
         validateContainerNumberForContainers(shipmentDetails);
         if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                 || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
-                || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
+                || (!shipmentDetails.getShipmentType().equals(CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
                 || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))
-                || (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT))){
+                || (shipmentDetails.getShipmentType().equals(CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT))){
             return;
         }
         validateContainerNumberForPacks(shipmentDetails);
@@ -322,7 +324,7 @@ public class HblService implements IHblService {
 
     private void validateContainerNumberForContainers(ShipmentDetails shipmentDetails) {
         if(!Objects.isNull(shipmentDetails.getContainersList())
-            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)))) {
+            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || (Objects.equals(shipmentDetails.getShipmentType(), CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)))) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
@@ -548,6 +550,7 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        populateTotalUnitsReceivedByCarrier(shipmentDetail, hblData);
         boolean syncShipment = getSyncShipment(shipmentDetail);
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         mapVoyageVesselFromRouting(routing, hblData, carrierDetails);
@@ -591,6 +594,17 @@ public class HblService implements IHblService {
         }
 
         return hblData;
+    }
+
+    private void populateTotalUnitsReceivedByCarrier(ShipmentDetails shipmentDetail, HblDataDto hblData) {
+        if (Objects.isNull(shipmentDetail) || Objects.isNull(shipmentDetail.getShipmentType())) return;
+        if (CARGO_TYPE_FCL.equals(shipmentDetail.getShipmentType())) {
+            hblData.setTotalUnitsReceivedByCarrier(String.valueOf(shipmentDetail.getContainersList().stream()
+                    .mapToLong(container -> Objects.nonNull(container.getContainerCount()) ? container.getContainerCount() : 0L)
+                    .sum()) + " CONTAINER(S)");
+        } else if (CARGO_TYPE_LCL.equals(shipmentDetail.getShipmentType())) {
+            hblData.setTotalUnitsReceivedByCarrier(String.valueOf(hblData.getPackageCount()) + " PACKAGE(S)");
+        }
     }
 
     private void mapVoyageVesselFromRouting(Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
