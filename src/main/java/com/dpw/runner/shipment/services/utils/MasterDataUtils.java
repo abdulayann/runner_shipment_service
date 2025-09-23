@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerRespons
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -206,6 +207,8 @@ public class MasterDataUtils{
             setUnlocationMasterDataInCarrierDetails(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         } else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             setUnlocationMasterDataInCarrierDetails(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        } else if (response instanceof ShippingInstructionResponse shippingInstructionResponse) {
+            setUnlocationMasterDataInSailing(shippingInstructionResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         } else if(response instanceof CarrierBookingListResponse carrierBookingListResponse){
             setUnlocationMasterDataInSailing(carrierBookingListResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         }
@@ -237,6 +240,9 @@ public class MasterDataUtils{
         else if(response instanceof CarrierBookingListResponse carrierBookingListResponse) {
             addLocCodesFromCarrierBookingResponse(carrierBookingListResponse, locCodes, fieldNameKeyMap, cacheMap);
         }
+        else if(response instanceof ShippingInstructionResponse shippingInstructionListResponse) {
+            addLocCodesFromSiResponse(shippingInstructionListResponse, locCodes, fieldNameKeyMap, cacheMap);
+        }
     }
 
     private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -245,6 +251,13 @@ public class MasterDataUtils{
        }
 
         locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));
+
+    }
+
+    private void addLocCodesFromSiResponse(ShippingInstructionResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(Objects.nonNull(response.getSailingInformation())) {
+            locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
+        }
 
     }
 
