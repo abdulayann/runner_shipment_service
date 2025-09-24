@@ -921,35 +921,12 @@ public class CSVParsingUtilV3<T> {
                 }
             }
         }
-        Field field = getField(attributeName, fieldMap);
+        Field field = fieldMap.get(attributeName);
         if (field == null) return;
-
         field.setAccessible(true);
-
         setParsedValueInField(entity, attributeName, attributeValue, rowNum, field);
     }
 
-    @Nullable
-    private static Field getField(String attributeName, Map<String, Field> fieldMap) {
-        Field field = fieldMap.get(attributeName);
-        if(attributeName.equalsIgnoreCase(Constants.GROSS_WEIGHT)){
-            field = fieldMap.get(Constants.NET_WEIGHT);
-        }else  if(attributeName.equalsIgnoreCase(Constants.GROSS_VOLUME_UNIT)){
-            field = fieldMap.get(Constants.NET_WEIGHT_UNIT);
-        }
-
-        if (field == null ) {
-            if(attributeName.equalsIgnoreCase("cargoWeight")){
-                field = fieldMap.get("grossWeight");
-            }else if(attributeName.equalsIgnoreCase("cargoWeightUnit")){
-                field = fieldMap.get(Constants.GROSS_VOLUME_UNIT);
-            }
-            else{
-                return null;
-            }
-        }
-        return field;
-    }
 
     private void setParsedValueInField(T entity, String attributeName, String attributeValue, int rowNum, Field field) {
         Class<?> fieldType = field.getType();
