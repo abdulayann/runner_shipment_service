@@ -615,6 +615,10 @@ public class HblReport extends IReport {
             String info = buildContainerInfo(hblModel, cont);
 
             mp.put(INFO, StringUtility.toUpperCase(info));
+            mp.put(VETERINARY_SEAL, cont.getVeterinarySealNumber());
+            mp.put(CUSTOMS_SEAL, cont.getCustomsSealNumber());
+            mp.put(SHIPPER_SEAL, cont.getShipperSealNumber());
+            mp.put(CARRIER_SEAL, cont.getCarrierSealNumber());
             cargoSectionList.add(mp);
 
             BigDecimal totalPacks = BigDecimal.ZERO;
@@ -693,10 +697,6 @@ public class HblReport extends IReport {
         if(!Strings.isNullOrEmpty(container.getContainerNumber())) {
             checkAndAppendDelimiter(sb, newLine);
             sb.append(container.getContainerNumber());
-        }
-        if(!Strings.isNullOrEmpty(container.getCarrierSealNumber())) {
-            checkAndAppendDelimiter(sb, newLine);
-            sb.append(container.getCarrierSealNumber());
         }
         return sb.toString();
     }
