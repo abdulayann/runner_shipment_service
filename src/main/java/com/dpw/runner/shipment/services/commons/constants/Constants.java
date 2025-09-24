@@ -429,6 +429,7 @@ public class Constants {
     public static final String BOOKING_STATUS_FIELD = "bookingStatus";
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
+    public static final String NET_WEIGHT_UNIT = "netWeightUnit";
     public static final String GROSS_WEIGHT = "grossWeight";
     public static final String CARGO_WEIGHT = "cargoWeight";
     public static final String CARGO_WEIGHT_UNIT = "cargoWeightUnit";
