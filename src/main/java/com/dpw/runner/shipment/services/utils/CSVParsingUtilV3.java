@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -916,23 +917,34 @@ public class CSVParsingUtilV3<T> {
                 }
             }
         }
+        Field field = getField(attributeName, fieldMap);
+        if (field == null) return;
+
+        field.setAccessible(true);
+
+        setParsedValueInField(entity, attributeName, attributeValue, rowNum, field);
+    }
+
+    @Nullable
+    private static Field getField(String attributeName, Map<String, Field> fieldMap) {
         Field field = fieldMap.get(attributeName);
         if(attributeName.equalsIgnoreCase("grossWeight")){
             field = fieldMap.get("netWeight");
+        }else  if(attributeName.equalsIgnoreCase("grossWeightUnit")){
+            field = fieldMap.get("netWeightUnit");
         }
 
         if (field == null ) {
             if(attributeName.equalsIgnoreCase("cargoWeight")){
                 field = fieldMap.get("grossWeight");
+            }else if(attributeName.equalsIgnoreCase("cargoWeightUnit")){
+                field = fieldMap.get("grossWeightUnit");
             }
             else{
-                return;
+                return null;
             }
         }
-
-        field.setAccessible(true);
-
-        setParsedValueInField(entity, attributeName, attributeValue, rowNum, field);
+        return field;
     }
 
     private void setParsedValueInField(T entity, String attributeName, String attributeValue, int rowNum, Field field) {
