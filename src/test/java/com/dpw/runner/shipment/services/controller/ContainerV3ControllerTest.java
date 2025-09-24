@@ -36,6 +36,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -265,7 +266,7 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException {
+  void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
     MultipartFile file = new MockMultipartFile(
             "file",
             "test.xlsx",
@@ -284,7 +285,7 @@ class ContainerV3ControllerTest {
 
 
   @Test
-  void uploadCSV3() throws IOException, RunnerException {
+  void uploadCSV3() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
     MultipartFile file = new MockMultipartFile(
             "file",
             "test.xlsx",
@@ -353,7 +354,7 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void uploadCSV_shouldReturnExpectationFailed_onMultiValidationException() throws IOException, RunnerException {
+  void uploadCSV_shouldReturnExpectationFailed_onMultiValidationException() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
     MultipartFile file = new MockMultipartFile(
             "file",
             "test.xlsx",

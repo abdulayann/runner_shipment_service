@@ -46,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -292,7 +293,7 @@ public class CSVParsingUtilV3<T> {
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
                                   Map<String, Set<String>> masterDataMap, Class<T> entityType, Class<?> modelClass,
                                   Map<Long, Long> undg, Map<Long, String> flashpoint,
-                                  Map<String, String> locCodeToLocationReferenceGuidMap, List<String> errorList, List<String> excelHeaders) throws IOException {
+                                  Map<String, String> locCodeToLocationReferenceGuidMap, List<String> errorList, List<String> excelHeaders) throws IOException, InvocationTargetException, NoSuchMethodException {
         if (entityType.equals(Packing.class)) {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap, errorList);
         }
@@ -304,7 +305,7 @@ public class CSVParsingUtilV3<T> {
 
     private List<T> parseExcelGeneric(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
                                       Map<String, Set<String>> masterDataMap, Class<T> entityType, Class<?> modelClass,
-                                      Map<String, String> locCodeToLocationReferenceGuidMap, List<String> errorList, List<String> excelHeaders) throws IOException {
+                                      Map<String, String> locCodeToLocationReferenceGuidMap, List<String> errorList, List<String> excelHeaders) throws IOException, InvocationTargetException, NoSuchMethodException {
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -349,6 +350,9 @@ public class CSVParsingUtilV3<T> {
         List<String> mappedHeaders = new ArrayList<>();
         List<String> headers = new ArrayList<>();
         int lastUsedIndex = -1;
+        if (Objects.isNull(headerRow)) {
+            throw new ValidationException("No column headers found. Please upload a valid file.");
+        }
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
             Cell cell = headerRow.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
             String value = getCellValueAsString(cell);
@@ -356,11 +360,9 @@ public class CSVParsingUtilV3<T> {
                 lastUsedIndex = i; // keep updating until the rightmost filled cell
             }
         }
-
         if (lastUsedIndex == -1) {
             throw new ValidationException("No column headers found. Please upload a valid file.");
         }
-
         // iterate only until the last used index
         for (int i = 0; i <= lastUsedIndex; i++) {
             Cell cell = headerRow.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
@@ -420,11 +422,11 @@ public class CSVParsingUtilV3<T> {
         }
     }
     private void setGuid(Sheet sheet, int commodityCodePos, List<String> commodityCodesList, int containerStuffingLocationPos, List<String> unlocationsList, int guidPos, List<String> errorList, int i, Set<String> guidSet) {
+        if (Objects.isNull(sheet.getRow(i))) {
+            throw new ValidationException("Please enter at least One container line in the upload file.");
+        }
         Row row = sheet.getRow(i);
         if (commodityCodePos != -1) {
-            if (Objects.isNull(row.getCell(commodityCodePos))) {
-                throw new ValidationException("Please enter at least One container line in the upload file.");
-            }
             String commodityCode = getCellValueAsString(row.getCell(commodityCodePos));
             if (!StringUtils.isEmpty(commodityCode))
                 commodityCodesList.add(commodityCode);
@@ -448,7 +450,7 @@ public class CSVParsingUtilV3<T> {
     }
 
     @SuppressWarnings("java:S1130") // Suppressing NoSuchFieldException sonar issue
-    public void processSheetLastRowNum(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, String[] header, Map<String, Set<String>> masterListsMap, Map<String, String> existingContainerNumbers, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
+    public void processSheetLastRowNum(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, String[] header, Map<String, Set<String>> masterListsMap, Map<String, String> existingContainerNumbers, List<T> entityList, List<String> errorList) throws InstantiationException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             int rowNum = i+1;
@@ -456,6 +458,7 @@ public class CSVParsingUtilV3<T> {
             if (guidPos != -1) { // means that guid column is present.
                 String guidVal = getCellValueAsString(row.getCell(guidPos));
                 if (validateSheetLastRowNum(mapOfEntity, guidVal, rowNum, errorList)){
+                    entityList.add(entityType.getDeclaredConstructor().newInstance());
                     continue;
                 }
             }

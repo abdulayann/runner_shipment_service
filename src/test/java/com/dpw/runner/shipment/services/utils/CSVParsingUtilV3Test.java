@@ -786,7 +786,7 @@ class CSVParsingUtilV3Test {
     }
 
     @Test
-    void testParseExcelFile_WhenEntityTypeIsEvents_CallsParseExcelFileEvents() throws IOException {
+    void testParseExcelFile_WhenEntityTypeIsEvents_CallsParseExcelFileEvents() throws IOException, InvocationTargetException, NoSuchMethodException {
         CSVParsingUtilV3<?> spyService = Mockito.spy(csvParsingUtilV3);
 
         MultipartFile mockFile = Mockito.mock(MultipartFile.class);
@@ -1223,29 +1223,6 @@ class CSVParsingUtilV3Test {
         assertEquals(List.of("C001", "C002"), commodityCodesList);
         assertEquals(List.of("LOC1", "LOC2"), unlocationsList);
         assertTrue(errorList.isEmpty());
-    }
-
-    @Test
-    void testAddGuidInList_ThrowsValidationException_WhenCommodityCodeCellNull() {
-        CSVParsingUtilV3<?> spyService = Mockito.spy(csvParsingUtilV3);
-
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet();
-        // Row 0 is header
-        Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("CommodityCode");
-
-        // Row 1 with null commodity code
-        sheet.createRow(1); // no cell 0
-
-        List<String> commodityCodesList = new ArrayList<>();
-        List<String> unlocationsList = new ArrayList<>();
-        List<String> errorList = new ArrayList<>();
-
-        ValidationException ex = assertThrows(ValidationException.class,
-                () -> spyService.addGuidInList(sheet, 0, commodityCodesList, -1, unlocationsList, -1, errorList));
-
-        assertEquals("Please enter at least One container line in the upload file.", ex.getMessage());
     }
 
     @Test
