@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -28,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -36,6 +38,9 @@ import java.util.Optional;
 @RequestMapping(value = NetworkTransferConstants.NETWORK_TRANSFER_API_HANDLE)
 public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private static class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
     private static class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
@@ -138,4 +143,24 @@ public class NetworkTransferController {
         }
         return ResponseHelper.buildFailedResponse(responseMessage);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> getAllMasterDataForNT(@RequestBody Map<String, Object> requestPayload) {
+        String responseMessage;
+        try {
+            //Map which contains master data for consol and each shipment
+            return networkTransferService.getAllMasterDataForNT(requestPayload);
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+
+        return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
 }

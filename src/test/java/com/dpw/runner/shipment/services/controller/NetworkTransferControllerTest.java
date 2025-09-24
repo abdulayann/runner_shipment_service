@@ -6,8 +6,6 @@ import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendFileToExternalRequest;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,10 +18,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -156,6 +155,36 @@ class NetworkTransferControllerTest {
         when(networkTransferService.createExternal(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = networkTransferController.createExternalViaBridge(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataForNT() {
+        // Mock
+        when(networkTransferService.getAllMasterDataForNT(anyMap())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = networkTransferController.getAllMasterDataForNT(Map.of("abc", "def"));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataForNT2() {
+        // Mock
+        when(networkTransferService.getAllMasterDataForNT(anyMap())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = networkTransferController.getAllMasterDataForNT(Map.of("abc", "def"));
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataForNT3() {
+        // Mock
+        when(networkTransferService.getAllMasterDataForNT(anyMap())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = networkTransferController.getAllMasterDataForNT(Map.of("abc", "def"));
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
