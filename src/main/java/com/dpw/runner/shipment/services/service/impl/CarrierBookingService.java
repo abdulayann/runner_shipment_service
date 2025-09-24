@@ -584,17 +584,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         return carrierBookingDao.findById(entityId);
     }
 
-    private void sendPayloadToBridge(CarrierBookingBridgeRequest bridgeRequest, boolean isOperationTypeSubmit) throws RunnerException {
-        log.info("Bridge payload {}", jsonHelper.convertToJson(bridgeRequest));
-        convertWeightVolumeToRequiredUnit(bridgeRequest);
-        String integrationCode;
-        if(isOperationTypeSubmit) {
-            integrationCode = CARRIER_BOOKING_INTTRA_CREATE;
-        } else {
-            integrationCode = CARRIER_BOOKING_INTTRA_AMEND;
-        }
-        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(bridgeRequest, integrationCode, null, null);
-    }
 
     private void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
         if (carrierBooking == null || carrierBooking.getContainersList() == null || carrierBooking.getContainersList().isEmpty()) {
@@ -636,7 +625,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
 
         carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
-        sendPayloadToBridge(carrierBookingBridgeRequest, OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType()));
 
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         sendNotification(savedCarrierBooking);
