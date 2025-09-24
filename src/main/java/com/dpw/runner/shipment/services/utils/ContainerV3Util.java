@@ -628,8 +628,8 @@ public class ContainerV3Util {
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList, errorList);
-        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         processErrorList(excelHeaders, errorList, containersList);
+        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
         setShipmentOrConsoleId(request, module, requests);
         containerUtilV3.setContainerNetWeight(containersList);
@@ -646,21 +646,22 @@ public class ContainerV3Util {
             Set<Integer> errorRows = filteredErrors.stream().map(this::extractRowNum).filter(rowNum -> rowNum > 1).collect(Collectors.toSet());
             int errorRowCount = errorRows.size();
             int totalContainers = containersList != null ? containersList.size() : 0;
-            String summary = String.format("%d out of %d Container Details contains errors, Please rectify and upload.", errorRowCount, totalContainers);
+            String summary = String.format("%d out of %d Container Details %s errors, Please rectify and upload.", errorRowCount, totalContainers, errorRowCount > 1 ? "contain" : "contains");
             throw new MultiValidationException(summary, filteredErrors);
         }
     }
 
-
-
-    private int extractRowNum(String msg) {
+    private int extractRowNum(String errorMsg) {
         try {
-            int start = msg.indexOf("Row#") + 4;
-            int end = msg.indexOf(":");
-            return Integer.parseInt(msg.substring(start, end).trim());
+            int start = errorMsg.indexOf("Row#") + 4;
+            int end = errorMsg.indexOf(":", start);
+            if (start >= 0 && end > start) {
+                return Integer.parseInt(errorMsg.substring(start, end).trim());
+            }
         } catch (Exception e) {
-            return Integer.MAX_VALUE; // fallback
+            return Integer.MAX_VALUE;
         }
+        return -1;
     }
 
     private int extractHeaderOrder(String msg, Map<String, Integer> headerOrder) {
@@ -714,7 +715,7 @@ public class ContainerV3Util {
                         Map<String, Object> containersTo = to.get(containerId);
                         Map<String, Object> containersFrom = from.get(containerId);
                         int rowNumber = containerToRowMap.get(containerId);
-                        validateBeforeAndAfterValues(containerId, containersTo, containersFrom, rowNumber, errorList);
+                        validateBeforeAndAfterValues(containersTo, containersFrom, rowNumber, errorList);
                     }
                 });
     }
@@ -759,8 +760,7 @@ public class ContainerV3Util {
         return containerToRowMap;
     }
 
-    public static void validateBeforeAndAfterValues(UUID containerId,
-                                                    Map<String, Object> containersTo,
+    public static void validateBeforeAndAfterValues(Map<String, Object> containersTo,
                                                     Map<String, Object> containersFrom, int rowNum, List<String> errorList) {
             containersTo.keySet().forEach(fieldName -> {
             Object toValue = containersTo.get(fieldName);

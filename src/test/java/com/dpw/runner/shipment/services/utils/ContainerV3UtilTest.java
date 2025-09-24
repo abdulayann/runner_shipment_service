@@ -850,108 +850,98 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Test
     void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual() {
-        UUID containerId = UUID.randomUUID();
         Map<String, Object> from = new HashMap<>();
         from.put("grossWeight", new BigDecimal("10.0"));
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", new BigDecimal("10.0"));
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1,new ArrayList<>()));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(to, from, 1,new ArrayList<>()));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual2() {
-        UUID containerId = UUID.randomUUID();
         Map<String, Object> from = new HashMap<>();
         from.put("grossWeight", null);
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", null);
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1,new ArrayList<>()));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(to, from, 1,new ArrayList<>()));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenGrossWtIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
         List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("grossWeight", new BigDecimal("10.0"));
         Map<String, Object> to = Map.of("grossWeight", new BigDecimal("20.0"));
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenGrossWtUnitIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
         List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("grossWeightUnit", "KG");
         Map<String, Object> to = Map.of("grossWeightUnit", "Tonn");
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenCargoWtIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
         List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("cargoWeight", new BigDecimal("10.0"));
         Map<String, Object> to = Map.of("cargoWeight", new BigDecimal("20.0"));
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenCargoWtUnitIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
         List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("cargoWeightUnit", "KG");
         Map<String, Object> to = Map.of("cargoWeightUnit", "Tonn");
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenPackageIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Packages update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Packages update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("packs", "ABC");
         Map<String, Object> to = Map.of("packs", "XYZ");
         List<String> errorList = new ArrayList<>();
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
     @Test
     void validateBeforeAndAfterValues_shouldThrow_WhenPackageUnitIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Packages update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Packages update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("packsType", "AMM");
         Map<String, Object> to = Map.of("packsType", "BAG");
         List<String> errorList = new ArrayList<>();
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
     @Test
     void validateBeforeAndAfterValues_WhenVolIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Vol. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Vol. update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("grossVolume", "10.2");
         Map<String, Object> to = Map.of("grossVolume", "11.0");
         List<String> errorList = new ArrayList<>();
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
     @Test
     void validateBeforeAndAfterValues_WhenVolUnitIsChanged() {
-        UUID containerId = UUID.randomUUID();
-        String errorLog = "Row# 3 - Vol. update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 3: Vol. update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("grossVolumeUnit", "M3");
         Map<String, Object> to = Map.of("grossVolumeUnit", "CC");
         List<String> errorList = new ArrayList<>();
-        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
         assertTrue(errorList.contains(errorLog));
     }
 
@@ -1005,7 +995,7 @@ class ContainerV3UtilTest extends CommonMocks {
     void validateIfPacksOrVolume_shouldThrowWhenChangedValueDetectedInShipment() {
         BulkUploadRequest request = new BulkUploadRequest();
         request.setShipmentId(1L);
-        String errorLog = "Row# 2 - Packages update is not allowed as Container is already assigned to package/ shipment.";
+        String errorLog = "Row# 2: Packages update is not allowed as Container is already assigned to package/ shipment.";
         UUID containerId = UUID.randomUUID();
         ShipmentDetails details = new ShipmentDetails();
         details.setShipmentType("FCL");
@@ -1235,7 +1225,7 @@ class ContainerV3UtilTest extends CommonMocks {
         Throwable cause = wrappedException.getCause();
         assertTrue(cause instanceof MultiValidationException);
         MultiValidationException mvException = (MultiValidationException) cause;
-        assertEquals("2 out of 3 Container Details contains errors, Please rectify and upload.", mvException.getMessage());
+        assertEquals("2 out of 3 Container Details contain errors, Please rectify and upload.", mvException.getMessage());
         assertEquals(2, mvException.getErrors().size()); // distinct and sorted
         assertTrue(mvException.getErrors().contains("Row 2: ContainerNumber is invalid"));
         assertTrue(mvException.getErrors().contains("Row 3: Type is invalid"));
@@ -1276,11 +1266,11 @@ class ContainerV3UtilTest extends CommonMocks {
         Method method = ContainerV3Util.class.getDeclaredMethod("extractRowNum", String.class);
         method.setAccessible(true);
         int result1 = (int) method.invoke(containerV3Util, "Some invalid message without row info");
-        assertEquals(Integer.MAX_VALUE, result1);
+        assertEquals(-1, result1);
         int result2 = (int) method.invoke(containerV3Util, "Row#ABC: ContainerNumber invalid");
         assertEquals(Integer.MAX_VALUE, result2);
         int result3 = (int) method.invoke(containerV3Util, "Row#5 ContainerNumber invalid");
-        assertEquals(Integer.MAX_VALUE, result3);
+        assertEquals(-1, result3);
     }
 
 }

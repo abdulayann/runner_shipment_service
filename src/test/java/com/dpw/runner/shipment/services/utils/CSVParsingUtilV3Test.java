@@ -1110,7 +1110,7 @@ class CSVParsingUtilV3Test {
         service.validateHeaders(headers, errorList);
 
         assertEquals(1, errorList.size());
-        assertEquals("Row# 1 : field2 is mandatory", errorList.get(0));
+        assertEquals("Row# 1: field2 is mandatory", errorList.get(0));
     }
 
     @Test

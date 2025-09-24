@@ -391,7 +391,7 @@ public class CSVParsingUtilV3<T> {
         TypeReference<List<String>> typeRef = new TypeReference<>() {};
         List<String> mandatoryFields = commonUtils.getAppConfigValueByKey("MANDATORY_FIELD_FOR_CONTAINER_UPLOAD", typeRef);
         Set<String> headerSet = new HashSet<>(headers);
-        errorList.addAll(mandatoryFields.stream().filter(field -> !headerSet.contains(field)).map(field -> "Row# 1 : " + field + " is mandatory").toList());
+        errorList.addAll(mandatoryFields.stream().filter(field -> !headerSet.contains(field)).map(field -> "Row# 1: " + field + " is mandatory").toList());
     }
 
     public int findColumnIndex(String[] header, String columnName) {
