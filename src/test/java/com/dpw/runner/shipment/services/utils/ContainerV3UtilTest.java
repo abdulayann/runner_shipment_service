@@ -885,7 +885,7 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", new BigDecimal("10.0"));
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1,new ArrayList<>()));
     }
 
     @Test
@@ -897,29 +897,29 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", null);
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1,new ArrayList<>()));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldThrow_whenBigDecimalIncreased() {
         UUID containerId = UUID.randomUUID();
+        String errorLog = "Row# 3 - Gross Weight update is not allowed as Container is already assigned to package/ shipment.";
+        List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("grossWeight", new BigDecimal("10.0"));
         Map<String, Object> to = Map.of("grossWeight", new BigDecimal("20.0"));
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
-        );
-        assertTrue(ex.getMessage().contains("grossWeight"));
+        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldThrow_whenNonBigDecimalDiffers() {
         UUID containerId = UUID.randomUUID();
+        String errorLog = "Row# 3 - Package update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("packs", "ABC");
         Map<String, Object> to = Map.of("packs", "XYZ");
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
-        );
-        assertTrue(ex.getMessage().contains("packs"));
+        List<String> errorList = new ArrayList<>();
+        ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     @Test
@@ -931,22 +931,27 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<UUID, Map<String, Object>> from = Map.of(guid, Map.of("packs", "A"));
         Map<UUID, Map<String, Object>> to = Map.of(guid, Map.of("packs", "A"));
         List<Containers> containersList = List.of(container);
-        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(from, to, request, "CONSOLIDATION", containersList));
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(guid, 1L);
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(from, to, request, "CONSOLIDATION", containersList, new ArrayList<>(), guidToIdMap ));
     }
 
     @Test
     void validateIfPacksOrVolume_shouldThrowWhenShipmentNotFound() {
         BulkUploadRequest request = new BulkUploadRequest();
         request.setShipmentId(1L);
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        UUID guid = UUID.randomUUID();
+        guidToIdMap.put(guid, 1L);
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
         ValidationException ex = assertThrows(
                 ValidationException.class,
-                () -> callValidateIfPacksOrVolume(request)
+                () -> callValidateIfPacksOrVolume(request, guidToIdMap)
         );
         assertEquals("Shipment Id not exists", ex.getMessage());
     }
-    private void callValidateIfPacksOrVolume(BulkUploadRequest request) {
-        containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of());
+    private void callValidateIfPacksOrVolume(BulkUploadRequest request, Map<UUID, Long> guidToIdMap) {
+        containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(), new ArrayList<>(),guidToIdMap );
     }
 
     @Test
@@ -955,39 +960,44 @@ class ContainerV3UtilTest extends CommonMocks {
         request.setShipmentId(1L);
         ShipmentDetails details = new ShipmentDetails();
         details.setShipmentType("FCL");
+        UUID guid = UUID.randomUUID();
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(guid, 1L);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
         when(packingDao.findByContainerIdIn(anyList())).thenReturn(Collections.emptyList());
-        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(new Containers())));
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(new Containers()), new ArrayList<>(), guidToIdMap));
     }
 
     @Test
     void validateIfPacksOrVolume_shouldThrowWhenChangedValueDetectedInShipment() {
         BulkUploadRequest request = new BulkUploadRequest();
         request.setShipmentId(1L);
+        String errorLog = "Row# 2 - Package update is not allowed as Container is already assigned to package/ shipment.";
         UUID containerId = UUID.randomUUID();
         ShipmentDetails details = new ShipmentDetails();
         details.setShipmentType("FCL");
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
         when(packingDao.findByContainerIdIn(anyList())).thenReturn(List.of(new Packing()));
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(containerId, 1L);
         Map<UUID, Map<String, Object>> from = Map.of(containerId, Map.of("packs", "ABC"));
         Map<UUID, Map<String, Object>> to = Map.of(containerId, Map.of("packs", "XYZ"));
         List<Containers> containersList = List.of(new Containers() {{
             setId(100L);
+            setGuid(containerId);
         }});
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> callValidateIfPacksOrVolume(from, to, request, containersList)
-        );
-        assertTrue(ex.getMessage().contains("packs"));
+        List<String> errorList = new ArrayList<>();
+        callValidateIfPacksOrVolume(from, to, request, containersList, guidToIdMap, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     private void callValidateIfPacksOrVolume(
             Map<UUID, Map<String, Object>> from,
             Map<UUID, Map<String, Object>> to,
             BulkUploadRequest request,
-            List<Containers> containersList
+            List<Containers> containersList, Map<UUID, Long> guidToIdMap, List<String> errorList
     ) {
-        containerV3Util.validateIfPacksOrVolume(from, to, request, "SHIPMENT", containersList);
+        containerV3Util.validateIfPacksOrVolume(from, to, request, "SHIPMENT", containersList, errorList, guidToIdMap);
     }
 
     @Test

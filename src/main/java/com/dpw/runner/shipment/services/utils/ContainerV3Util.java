@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.HS_CODE_BATCH_PROCESS_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -625,7 +626,7 @@ public class ContainerV3Util {
         List<Containers> containersList = parserV3.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModelV3.class, null, null, locCodeToLocationReferenceGuidMap, errorList, excelHeaders);
         parserV3.validateHeaders(excelHeaders, errorList);
         Map<UUID, Map<String, Object>> postData = validationContainerUploadInShipment(containersList);
-        this.validateIfPacksOrVolume(prevData, postData, request, module, containersList);
+        this.validateIfPacksOrVolume(prevData, postData, request, module, containersList, errorList, guidToIdMap);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
@@ -692,47 +693,128 @@ public class ContainerV3Util {
         }
         throw new ValidationException(String.format("Module: %s; not found", module));
     }
-    public void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
-        boolean isValidationRequired = module.equalsIgnoreCase(CONSOLIDATION);
+    public void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList, List<String> errorList, Map<UUID, Long> guidToIdMap) {
+        boolean isValidationRequired = false;
         if (module.equalsIgnoreCase(SHIPMENT)) {
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).orElseThrow(() -> new ValidationException("Shipment Id not exists"));
             if (CARGO_TYPE_FCL.equals(shipmentDetails.getShipmentType())) {
                 isValidationRequired = !packingDao.findByContainerIdIn(containersList.stream().map(Containers::getId).toList()).isEmpty();
             }
         }
-        if (isValidationRequired) {
-            for (UUID containerId : to.keySet()) {
-                if (from.containsKey(containerId)) {
-                    Map<String, Object> containersTo = to.get(containerId);
-                    Map<String, Object> containersFrom = from.get(containerId);
-                    validateBeforeAndAfterValues(containerId, containersTo, containersFrom);
-                }
-            }
-        }
+        final boolean validationRequired = isValidationRequired;
+        Set<UUID> containerIdsWithPacking = getContainerIdsWithPacking(containersList, guidToIdMap);
+        Set<UUID> containerIdsWithShipmentMapping = getContainerIdsWithShipmentMapping(containersList, guidToIdMap);
+        Map<UUID, Integer> containerToRowMap = createContainerToRowMap(containersList);
+        // Process each container that needs validation
+        containersList.stream()
+                .filter(container ->
+                        containerIdsWithPacking.contains(container.getGuid()) ||
+                        containerIdsWithShipmentMapping.contains(container.getGuid()) || validationRequired)
+                .forEach(container -> {
+                    UUID containerId = container.getGuid();
+                    if (to.containsKey(containerId) && from.containsKey(containerId)) {
+                        Map<String, Object> containersTo = to.get(containerId);
+                        Map<String, Object> containersFrom = from.get(containerId);
+                        int rowNumber = containerToRowMap.get(containerId);
+                        validateBeforeAndAfterValues(containerId, containersTo, containersFrom, rowNumber, errorList);
+                    }
+                });
     }
+
+    // Batch query for containers with packing
+    private Set<UUID> getContainerIdsWithPacking(List<Containers> containersList, Map<UUID, Long> guidToIdMap) {
+
+        // Single batch query instead of multiple individual queries
+        List<Long> packingContainerIds = packingDao.findByContainerIdIn(containersList.stream().map(Containers::getId).toList())
+                        .stream()
+                        .map(Packing::getContainerId) // Adjust based on your Packing entity structure
+                        .toList();
+        return guidToIdMap.entrySet().stream()
+                .filter(entry -> packingContainerIds.contains(entry.getValue())) // entry.getValue() is Long
+                .map(Map.Entry::getKey) // entry.getKey() is UUID
+                .collect(Collectors.toSet());
+    }
+
+    // Batch query for containers with shipment mapping
+    private Set<UUID> getContainerIdsWithShipmentMapping(List<Containers> containersList, Map<UUID, Long> guidToIdMap) {
+        List<Long> containerIds = containersList.stream()
+                .map(Containers::getId)
+                .toList();
+
+        // Single batch query instead of individual queries per container
+       List<Long> containerIdsFromShipContMapping = shipmentsContainersMappingDao.findByContainerIdIn(containerIds)
+                .stream()
+                .map(ShipmentsContainersMapping::getContainerId) // Adjust based on your mapping entity structure
+                .toList();
+        return guidToIdMap.entrySet().stream()
+                .filter(entry -> containerIdsFromShipContMapping.contains(entry.getValue())) // entry.getValue() is Long
+                .map(Map.Entry::getKey) // entry.getKey() is UUID
+                .collect(Collectors.toSet());
+    }
+
+    // Create efficient lookup map for row numbers
+    private Map<UUID, Integer> createContainerToRowMap(List<Containers> containersList) {
+        Map<UUID, Integer> containerToRowMap = new HashMap<>();
+        for (int i = 0; i < containersList.size(); i++) {
+            containerToRowMap.put(containersList.get(i).getGuid(), i);
+        }
+        return containerToRowMap;
+    }
+
     public static void validateBeforeAndAfterValues(UUID containerId,
                                                     Map<String, Object> containersTo,
-                                                    Map<String, Object> containersFrom) {
-        String log = "%s, cannot be edited for assigned containers. GUID: %s";
+                                                    Map<String, Object> containersFrom, int rowNum, List<String> errorList) {
+            containersTo.keySet().forEach(fieldName -> {
+            Object toValue = containersTo.get(fieldName);
+            Object fromValue = containersFrom.get(fieldName);
 
-        List<String> invalidKeys = new ArrayList<>();
-        for (String key : containersTo.keySet()) {
-            Object toValue = containersTo.get(key);
-            Object fromValue = containersFrom.get(key);
-
+            // Skip if both values are null
             if (toValue == null && fromValue == null) {
-                continue;
+                return;
             }
-            if (isNullMismatch(toValue, fromValue)
-                    || isBigDecimalChangeInvalid(toValue, fromValue)
-                    || (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal)
-                    && !Objects.equals(toValue, fromValue))) {
-                invalidKeys.add(key);
+
+            // Check if values have changed
+            boolean hasChanged = isNullMismatch(toValue, fromValue) ||
+                    isBigDecimalChangeInvalid(toValue, fromValue) ||
+                    (!(toValue instanceof BigDecimal || fromValue instanceof BigDecimal) &&
+                            !Objects.equals(toValue, fromValue));
+
+            if (hasChanged) {
+                switch (fieldName) {
+                    case Constants.GROSS_VOLUME:
+                        errorList.add(String.format(VOLUME_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.GROSS_VOLUME_UNIT:
+                        errorList.add(String.format(VOLUME_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.CARGO_WEIGHT:
+                        errorList.add(String.format(CARGO_WT_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.CARGO_WEIGHT_UNIT:
+                        errorList.add(String.format(CARGO_WT_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.GROSS_WEIGHT:
+                        errorList.add(String.format(GROSS_WT_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.GROSS_WEIGHT_UNIT:
+                        errorList.add(String.format(GROSS_WT_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.PACKS:
+                        errorList.add(String.format(PACKAGE_ERROR_LOG, rowNum + 2));
+                        break;
+
+                    case Constants.PACKS_TYPE:
+                        errorList.add(String.format(PACKAGE_ERROR_LOG, rowNum + 2));
+                        break;
+                }
             }
-        }
-        if (!invalidKeys.isEmpty()) {
-            throw new ValidationException(String.format(log, String.join(", ", invalidKeys), containerId));
-        }
+        });
     }
 
     private static boolean isNullMismatch(Object toValue, Object fromValue) {

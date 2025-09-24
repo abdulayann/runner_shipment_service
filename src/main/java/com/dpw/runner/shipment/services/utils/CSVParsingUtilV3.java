@@ -916,11 +916,20 @@ public class CSVParsingUtilV3<T> {
                 }
             }
         }
-
         Field field = fieldMap.get(attributeName);
-        if (field == null) {
-            return;
+        if(attributeName.equalsIgnoreCase("grossWeight")){
+            field = fieldMap.get("netWeight");
         }
+
+        if (field == null ) {
+            if(attributeName.equalsIgnoreCase("cargoWeight")){
+                field = fieldMap.get("grossWeight");
+            }
+            else{
+                return;
+            }
+        }
+
         field.setAccessible(true);
 
         setParsedValueInField(entity, attributeName, attributeValue, rowNum, field);
