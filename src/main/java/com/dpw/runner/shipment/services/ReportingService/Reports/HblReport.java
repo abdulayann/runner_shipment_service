@@ -346,6 +346,7 @@ public class HblReport extends IReport {
         setBlObject(hblModel);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
+        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
@@ -430,7 +431,6 @@ public class HblReport extends IReport {
 
         processShipmentPickupDetails(hblModel, dictionary, tsDateTimeFormat);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
-        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         getPartiesModel(hblModel, dictionary);
 
         dictionary.put(USER_FULLNAME, hblModel.user.getDisplayName());
