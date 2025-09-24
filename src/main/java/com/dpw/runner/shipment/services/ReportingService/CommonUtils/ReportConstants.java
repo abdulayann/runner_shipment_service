@@ -443,6 +443,8 @@ public class ReportConstants {
     public static final String EXCHANGE_RATE_OVERSEA = "ExchangeRateOversea";
     public static final String TOTAL_REVENUE_AMOUNT = "TotalRevenueAmount";
     public static final String TOTAL_LOCAL_SELL_AMOUNT = "TotalLocalSellAmount";
+    public static final String BL_PLACE_OF_ISSUE = "BL_PlaceOfIssue";
+    public static final String BL_PAYABLE_AT = "BL_PayableAt";
 
         /*
             Consolidation Fields
