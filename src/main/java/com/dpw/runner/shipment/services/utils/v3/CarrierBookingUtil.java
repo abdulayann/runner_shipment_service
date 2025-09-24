@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
@@ -14,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -153,6 +155,19 @@ public class CarrierBookingUtil {
             // Set the fetched details in the VerifiedGrossMassInttraResponse
             carrierBookingBridgeRequest.setCarrierScacCode(carrierScacCode);
             carrierBookingBridgeRequest.setCarrierDescription(carrierDescription);
+        }
+    }
+
+    public void populateIntegrationCode(Map<String, EntityTransferContainerType> containerTypeMap, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
+
+        if (Objects.isNull(containerTypeMap) || carrierBookingBridgeRequest.getContainersList() == null) return;
+
+        for(CommonContainerResponse commonContainerResponse : carrierBookingBridgeRequest.getContainersList()){
+            String containerCode = commonContainerResponse.getContainerCode();
+            EntityTransferContainerType entityTransferContainerType = containerTypeMap.getOrDefault(containerCode, null);
+            if(entityTransferContainerType != null){
+                commonContainerResponse.setIntegrationCode(entityTransferContainerType.getIntegrationCode());
+            }
         }
     }
 
