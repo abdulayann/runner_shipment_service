@@ -4,22 +4,33 @@ import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
 import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -40,6 +51,9 @@ class CarrierBookingInttraUtilTest {
 
     @Mock
     private MigrationUtil migrationUtil;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @BeforeEach
     void setUp() {
@@ -180,5 +194,126 @@ class CarrierBookingInttraUtilTest {
         verify(migrationUtil).saveErrorResponse(id, entityType, integrationType, Status.FAILED, "Bridge failed");
     }
 
+
+    @Test
+    void shouldFetchCarrierDetailsForBridgePayloadSuccessfully() {
+        // Given
+        SailingInformationResponse sailingInfo = mock(SailingInformationResponse.class);
+        Set<String> carrierCodes = Set.of("MAEU", "HLCU");
+
+        Map<String, EntityTransferCarrier> expectedMap = new HashMap<>();
+        expectedMap.put("MAEU", new EntityTransferCarrier());
+        expectedMap.put("HLCU", new EntityTransferCarrier());
+
+        when(masterDataUtils.createInBulkCarriersRequest(
+                eq(sailingInfo),
+                eq(SailingInformation.class),
+                anyMap(),
+                eq(SailingInformation.class.getSimpleName()),
+                anyMap()))
+                .thenReturn(new ArrayList<>(carrierCodes));
+
+        when(masterDataUtils.fetchInBulkCarriers(carrierCodes))
+                .thenReturn(expectedMap);
+
+        // When
+        Map<String, EntityTransferCarrier> result =
+                carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(sailingInfo);
+
+        // Then
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey("MAEU"));
+        assertTrue(result.containsKey("HLCU"));
+
+        verify(masterDataUtils).createInBulkCarriersRequest(
+                eq(sailingInfo),
+                eq(SailingInformation.class),
+                anyMap(),
+                eq(SailingInformation.class.getSimpleName()),
+                anyMap());
+
+        verify(masterDataUtils).fetchInBulkCarriers(any());
+    }
+
+    @Test
+    void shouldReturnEmptyCarrierMapWhenNoCarriersFound() {
+        // Given
+        SailingInformationResponse sailingInfo = new SailingInformationResponse();
+
+        when(masterDataUtils.createInBulkCarriersRequest(
+                eq(sailingInfo),
+                eq(SailingInformation.class),
+                anyMap(),
+                eq(SailingInformation.class.getSimpleName()),
+                anyMap()))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        Map<String, EntityTransferCarrier> result =
+                carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(sailingInfo);
+
+        // Then
+        assertTrue(result.isEmpty());
+        verify(masterDataUtils).createInBulkCarriersRequest(
+                eq(sailingInfo),
+                eq(SailingInformation.class),
+                anyMap(),
+                eq(SailingInformation.class.getSimpleName()),
+                anyMap());
+        verify(masterDataUtils, never()).fetchInBulkCarriers(anySet());
+    }
+
+    @Test
+    void shouldAddAllContainerTypesInSingleCallSuccessfully() {
+        // Given
+        CommonContainerResponse containerResponse = mock(CommonContainerResponse.class);
+        List<CommonContainerResponse> responses = List.of(containerResponse);
+
+        List<String> containerTypes = List.of("20GP", "40HC");
+
+        Map<String, EntityTransferContainerType> expectedMap = new HashMap<>();
+        expectedMap.put("20GP", new EntityTransferContainerType());
+        expectedMap.put("40HC", new EntityTransferContainerType());
+
+        when(masterDataUtils.createInBulkContainerTypeRequest(
+                eq(containerResponse),
+                eq(CommonContainers.class),
+                anyMap(),
+                eq(CommonContainers.class.getSimpleName()),
+                anyMap()))
+                .thenReturn(containerTypes);
+
+        when(masterDataUtils.fetchInBulkContainerTypes(any()))
+                .thenReturn(expectedMap);
+
+        // When
+        Map<String, EntityTransferContainerType> result =
+                carrierBookingInttraUtil.addAllContainerTypesInSingleCall(responses);
+
+        // Then
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey("20GP"));
+        assertTrue(result.containsKey("40HC"));
+
+        verify(masterDataUtils).createInBulkContainerTypeRequest(
+                eq(containerResponse),
+                eq(CommonContainers.class),
+                anyMap(),
+                eq(CommonContainers.class.getSimpleName()),
+                anyMap());
+
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenContainerResponsesIsNull() {
+        // When
+        Map<String, EntityTransferContainerType> result =
+                carrierBookingInttraUtil.addAllContainerTypesInSingleCall(null);
+
+        // Then
+        assertTrue(result.isEmpty());
+        verify(masterDataUtils, never()).createInBulkContainerTypeRequest(any(), any(), anyMap(), any(), anyMap());
+        verify(masterDataUtils, never()).fetchInBulkContainerTypes(anySet());
+    }
 
 }

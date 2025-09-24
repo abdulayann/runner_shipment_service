@@ -23,7 +23,6 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendIn
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -49,7 +48,6 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;

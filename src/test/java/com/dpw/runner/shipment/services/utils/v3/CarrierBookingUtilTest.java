@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
@@ -12,9 +13,11 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -437,6 +440,61 @@ class CarrierBookingUtilTest {
         assertEquals(LocalDateTime.of(2025, 9, 22, 10, 0), sailing.getVerifiedGrossMassCutoff());
     }
 
+    @Test
+    void test_populateIntegrationCode_SuccessfullySetsIntegrationCode() {
+        // Mock container type with integration code
+        EntityTransferContainerType entityTransferContainerType = new EntityTransferContainerType();
+        entityTransferContainerType.setIntegrationCode("INT_CODE_20GP");
 
+        Map<String, EntityTransferContainerType> containerTypeMap = new HashMap<>();
+        containerTypeMap.put("20GP", entityTransferContainerType);
+
+        // Mock container response
+        CommonContainerResponse containerResponse = new CommonContainerResponse();
+        containerResponse.setContainerCode("20GP");
+
+        CarrierBookingBridgeRequest bridgeRequest = new CarrierBookingBridgeRequest();
+        bridgeRequest.setContainersList(List.of(containerResponse));
+
+        // Test
+        carrierBookingUtil.populateIntegrationCode(containerTypeMap, bridgeRequest);
+
+        // Verify
+        assertEquals("INT_CODE_20GP", containerResponse.getIntegrationCode());
+    }
+
+    @Test
+    void test_populateIntegrationCode_ContainerCodeNotFound_NoIntegrationCodeSet() {
+        // Mock container type map with no matching code
+        Map<String, EntityTransferContainerType> containerTypeMap = new HashMap<>();
+        containerTypeMap.put("40HC", new EntityTransferContainerType());
+
+        // Mock container response with different code
+        CommonContainerResponse containerResponse = new CommonContainerResponse();
+        containerResponse.setContainerCode("20GP");
+
+        CarrierBookingBridgeRequest bridgeRequest = new CarrierBookingBridgeRequest();
+        bridgeRequest.setContainersList(List.of(containerResponse));
+
+        // Test
+        carrierBookingUtil.populateIntegrationCode(containerTypeMap, bridgeRequest);
+
+        // Verify → integration code should remain null
+        assertNull(containerResponse.getIntegrationCode());
+    }
+
+    @Test
+    void test_populateIntegrationCode_NullInputs_NoExceptionThrown() {
+        // Case 1: null containerTypeMap
+        carrierBookingUtil.populateIntegrationCode(null, new CarrierBookingBridgeRequest());
+
+        // Case 2: null containers list
+        CarrierBookingBridgeRequest bridgeRequest = new CarrierBookingBridgeRequest();
+        bridgeRequest.setContainersList(null);
+
+        carrierBookingUtil.populateIntegrationCode(new HashMap<>(), bridgeRequest);
+
+        Assertions.assertNotNull(bridgeRequest);
+    }
 
 }
