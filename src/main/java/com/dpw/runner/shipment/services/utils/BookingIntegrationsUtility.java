@@ -189,7 +189,7 @@ public class BookingIntegrationsUtility {
         var request = createPlatformUpdateRequest(customerBooking);
         try {
             if(!Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_RAI))
-                platformServiceAdapter.updateAtPlaform(request);
+                platformServiceAdapter.updateAtPlatform(request);
         } catch (Exception e) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
             log.error("Booking Update error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
@@ -213,7 +213,7 @@ public class BookingIntegrationsUtility {
             var request = createPlatformContainerRequest(shipmentDetails.getBookingReference());
             try {
                 if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
-                    platformServiceAdapter.updateAtPlaform(request);
+                    platformServiceAdapter.updateAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
@@ -971,7 +971,7 @@ public class BookingIntegrationsUtility {
         String payloadAction = payload.getAction();
         var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
         var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
-        if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
+        if ((Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) || Constants.KAFKA_EVENT_DELETE.equalsIgnoreCase(payloadAction))
                 && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
                 && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
 
@@ -1093,19 +1093,22 @@ public class BookingIntegrationsUtility {
     }
 
     private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
-        var request = createPlatformDocumentRequest(shipmentDetails.getBookingReference(), payload.getData());
+        var request = createPlatformDocumentRequest(shipmentDetails.getBookingReference(), payload);
         try {
-            platformServiceAdapter.updateAtPlaform(request);
+            platformServiceAdapter.updateAtPlatform(request);
         } catch (Exception ex) {
             log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), ex.getMessage());
             sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
         }
     }
 
-    private CommonRequestModel createPlatformDocumentRequest(String bookingReference, DocumentDto.Document document) {
+    private CommonRequestModel createPlatformDocumentRequest(String bookingReference, DocumentDto documentDto) {
+        Document document = documentDto.getData();
+        String action = documentDto.getAction();
         PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
                 .booking_reference_code(bookingReference)
                 .source(CustomerBookingConstants.RUNNER)
+                .action(action)
                 .document_meta(List.of(
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())
