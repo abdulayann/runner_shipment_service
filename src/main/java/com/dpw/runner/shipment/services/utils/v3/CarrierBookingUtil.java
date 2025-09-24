@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
@@ -159,16 +160,14 @@ public class CarrierBookingUtil {
 
     public void populateIntegrationCode(Map<String, EntityTransferContainerType> containerTypeMap, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
 
-        if (Objects.isNull(containerTypeMap)) return;
+        if (Objects.isNull(containerTypeMap) || carrierBookingBridgeRequest.getContainersList() == null) return;
 
-        // Process each carrier and fetch the required details
-        for (Map.Entry<String, EntityTransferContainerType> entry : containerTypeMap.entrySet()) {
-            EntityTransferContainerType carrier = entry.getValue();
-
-            String integrationCode = carrier.IntegrationCode;
-
-            // Set the fetched details in the VerifiedGrossMassInttraResponse
-            carrierBookingBridgeRequest.setIntegrationCode(integrationCode);
+        for(CommonContainerResponse commonContainerResponse : carrierBookingBridgeRequest.getContainersList()){
+            String containerCode = commonContainerResponse.getContainerCode();
+            EntityTransferContainerType entityTransferContainerType = containerTypeMap.getOrDefault(containerCode, null);
+            if(entityTransferContainerType != null){
+                commonContainerResponse.setIntegrationCode(entityTransferContainerType.getIntegrationCode());
+            }
         }
     }
 

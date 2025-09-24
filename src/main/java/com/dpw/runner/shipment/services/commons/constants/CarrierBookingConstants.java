@@ -47,6 +47,10 @@ public class CarrierBookingConstants {
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String CARRIER_BOOKING = "CARRIER_BOOKING";
     public static final String CARRIER_BOOKING_TABLE = "CarrierBooking";
+    public static final String SHIPPING_INSTRUCTION = "shippingInstruction";
+    public static final String VERIFIED_GROSS_MASS = "verifiedGrossMass";
+    public static final String SAILING_INFORMATION = "sailingInformation";
+    public static final String STATUS = "status";
 
     public static final String CARRIER_BOOKING_RETRIEVE_ERROR = "Carrier Booking is null for Id {} with Request Id {}";
     public static final String CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
@@ -57,10 +61,10 @@ public class CarrierBookingConstants {
 
     public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("status", RunnerEntityMapping.builder()
+            Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(String.class)   // CarrierBookingStatus is an enum stored as string
-                    .fieldName("status")
+                    .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
 
@@ -210,6 +214,61 @@ public class CarrierBookingConstants {
                     .dataType(LocalDateTime.class)
                     .fieldName("updatedAt")
                     .isContainsText(false)
+                    .build()),
+            Map.entry("siStatus", RunnerEntityMapping.builder()
+                    .tableName(SHIPPING_INSTRUCTION)
+                    .dataType(String.class)
+                    .fieldName(STATUS)
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("vgmStatus", RunnerEntityMapping.builder()
+                    .tableName(VERIFIED_GROSS_MASS)
+                    .dataType(String.class)
+                    .fieldName(STATUS)
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("carrier", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("carrier")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("siCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("shipInstructionCutoff")
+                    .isContainsText(false)
+                    .build()),
+
+            Map.entry("vgmCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("verifiedGrossMassCutoff")
+                    .isContainsText(false)
+                    .build()),
+
+            Map.entry("updatedBy", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING_TABLE)
+                    .dataType(String.class)
+                    .fieldName("updatedBy")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("pol", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("pol")
+                    .isContainsText(true)
+                    .build()),
+
+            Map.entry("pod", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("pod")
+                    .isContainsText(true)
                     .build()),
             Map.entry("createdAt", RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
