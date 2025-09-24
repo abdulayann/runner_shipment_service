@@ -613,30 +613,6 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void validateHsCode_shouldThrowValidationException_whenHsCodeInvalid() {
-        Containers container = createTestContainer();
-        container.setHsCode("847040");
-        List<Containers> containers = List.of(container);
-        doAnswer(invocation -> {
-            Runnable task = invocation.getArgument(0);
-            task.run();
-            return null;
-        }).when(hsCodeValidationExecutor).execute(any(Runnable.class));
-        CommodityResponse invalidCommodity = new CommodityResponse();
-        invalidCommodity.setCode("232");
-        V1DataResponse response = new V1DataResponse();
-        response.setEntities(List.of(invalidCommodity));
-        when(parser.getCommodityDataResponse(any()))
-                .thenReturn(response);
-        when(jsonHelper.convertValueToList(any(), eq(CommodityResponse.class)))
-                .thenReturn(List.of(invalidCommodity));
-        assertThrows(ValidationException.class,
-                () -> containerV3Util.validateHsCode(containers));
-        verify(hsCodeValidationExecutor).execute(any(Runnable.class));
-        verify(parser).getCommodityDataResponse(any());
-    }
-
-    @Test
     void syncCommodityAndHsCode_shouldSyncCodes() {
         Containers container1 = new Containers();
         container1.setHsCode("847040");
@@ -645,7 +621,7 @@ class ContainerV3UtilTest extends CommonMocks {
         container2.setHsCode(null);
         container2.setCommodityCode("COMM456");
         List<Containers> containers = List.of(container1, container2);
-        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers);
+        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers, new ArrayList<>(), new ArrayList<>());
         assertEquals("847040", container1.getCommodityCode());
         assertEquals("COMM456", container2.getHsCode());
         assertEquals(2, result.size());
@@ -1083,16 +1059,6 @@ class ContainerV3UtilTest extends CommonMocks {
             assertEquals(202L, r.getConsolidationId());
             assertNull(r.getShipmentId());
         }
-    }
-
-    private Containers createTestContainer() {
-        Containers container = new Containers();
-        container.setGuid(UUID.randomUUID());
-        container.setContainerCode("TEST");
-        container.setHsCode("847040");
-        container.setCommodityCode("VALID_COMMODITY");
-        container.setContainerNumber("CONT123");
-        return container;
     }
 
     @Test

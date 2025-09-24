@@ -57,6 +57,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -614,7 +615,7 @@ public class ContainerV3Util {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void uploadContainers(BulkUploadRequest request, String module) throws IOException, RunnerException, MultiValidationException {
+    public void uploadContainers(BulkUploadRequest request, String module) throws IOException, RunnerException, MultiValidationException, InvocationTargetException, NoSuchMethodException {
         List<Containers> consolContainers = this.getContainerByModule(request, module);
         Map<UUID, Map<String, Object>> prevData = validationContainerUploadInShipment(consolContainers);
         Map<UUID, Containers> containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
@@ -629,7 +630,7 @@ public class ContainerV3Util {
         this.validateIfPacksOrVolume(prevData, postData, request, module, containersList, errorList, guidToIdMap);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
-        validateHsCode(containersList);
+        validateHsCode(containersList, errorList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         processErrorList(excelHeaders, errorList, containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
@@ -879,42 +880,59 @@ public class ContainerV3Util {
         }
     }
 
-    public void validateHsCode(List<Containers> containersList) {
+    public void validateHsCode(List<Containers> containersList, List<String> errorList) {
         if (!containersList.isEmpty()) {
-            Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList));
+            List<Map<Boolean, Boolean>> validationHelperList = new ArrayList<>();
+            Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList, errorList, validationHelperList));
             for (int i = 0; i < containersList.size(); i++) {
                 String hsCode = containersList.get(i).getHsCode();
                 if (StringUtils.isNotBlank(hsCode) && !hsCode.contains(",") && !validHsCode.contains(hsCode)) {
-                    throw new ValidationException(String.format(ContainerConstants.HS_CODE_OR_COMMODITY_IS_INVALID, i + 1));
+                    validateHsCodeAndCommodityCode(errorList, i, hsCode, validationHelperList.get(i));
                 }
             }
         }
     }
 
-    public static Set<String> syncCommodityAndHsCode(List<Containers> containersList) {
+    private void validateHsCodeAndCommodityCode(List<String> errorList, int i, String hsCode, Map<Boolean, Boolean> validationHelperMap) {
+        Map.Entry<Boolean, Boolean> entry = validationHelperMap.entrySet().iterator().next();
+        if (Boolean.TRUE.equals(entry.getKey())){
+            errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, i + 2, "HS Code", hsCode));
+        } else if (Boolean.TRUE.equals(entry.getValue())) {
+            errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, i + 2, "Commodity", hsCode));
+        }
+    }
+
+    public static Set<String> syncCommodityAndHsCode(List<Containers> containersList, List<String> errorList, List<Map<Boolean, Boolean>> validationHelperList) {
         Set<String> hsCodeList = new HashSet<>();
-        for (Containers container : containersList) {
+        for (int i = 0; i < containersList.size(); i++) {
+            Map<Boolean, Boolean> validationHelperMap = new HashMap<>();
+            boolean isHsCode = false;
+            boolean isCommodity = false;
+            Containers container = containersList.get(i);
             String hsCode = container.getHsCode();
             String commodityCode = container.getCommodityCode();
-
             if (StringUtils.isBlank(commodityCode) && StringUtils.isNotBlank(hsCode)) {
-                container.setCommodityCode(
-                        Arrays.stream(hsCode.split(","))
-                                .findFirst()
-                                .orElseThrow(() -> new ValidationException("Invalid HsCode"))
-                );
-                /*errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, rowNum, "HsCode", cellValue))*/
+                String firstHsCode = Arrays.stream(hsCode.split(","))
+                        .findFirst()
+                        .orElse(null);
+                if (StringUtils.isBlank(firstHsCode)) {
+                    errorList.add(String.format(ContainerConstants.GENERIC_INVALID_FIELD_MSG, i + 2, "HS Code", hsCode));
+                } else {
+                    isHsCode = true;
+                    container.setCommodityCode(firstHsCode);
+                }
             } else if (StringUtils.isBlank(hsCode) && StringUtils.isNotBlank(commodityCode)) {
+                isCommodity = true;
                 container.setHsCode(commodityCode);
             }
-
+            validationHelperMap.put(isHsCode, isCommodity);
             if (StringUtils.isNotBlank(container.getHsCode()) && !container.getHsCode().contains(",")) {
                 hsCodeList.add(container.getHsCode());
             }
+            validationHelperList.add(validationHelperMap);
         }
         return hsCodeList;
     }
-
 
     public Integer getHsCodeBatchProcessLimit() {
         String configuredLimitValue = applicationConfigService.getValue(HS_CODE_BATCH_PROCESS_LIMIT);
