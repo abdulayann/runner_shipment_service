@@ -215,6 +215,10 @@ public class ReportConstants {
     public static final String DELIVERY_AGENT = "DeliveryAgent";
     public static final String MARKS_N_NUMS = "MarksnNums";
     public static final String INFO = "INFO";
+    public static final String VETERINARY_SEAL = "VeterinarySeal";
+    public static final String CUSTOMS_SEAL= "CustomsSeal";
+    public static final String SHIPPER_SEAL = "ShipperSeal";
+    public static final String CARRIER_SEAL = "CarrierSeal";
     public static final String TOTAL_PACKS_AND_TYPE = "S_TotalPacksAndType";
     public static final String TOTAL_CONTAINERS_AND_TYPE = "S_TotalContainersAndType";
     public static final String TOTAL_TOTAL_CONTAINERS_OR_PACKS = "S_TotalContainersOrPacks";
