@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -188,14 +189,19 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
     private void pushTransportInstructionDataToTIQueue(PushToDownstreamEventDto message, String transactionId) {
         Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsService.findById(message.getParentEntityId());
-        if (pickupDeliveryDetails.isPresent()) {
-            PickupDeliveryDetails pickupDeliveryDetailsEntity = pickupDeliveryDetails.get();
-            if (pickupDeliveryDetailsEntity.getShipmentId() != null) {
-                List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsService.findByShipmentId(pickupDeliveryDetailsEntity.getShipmentId());
-                if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
-                    log.info("Processing TI down stream data for shipment id: {}", pickupDeliveryDetailsEntity.getShipmentId());
-                    pickupDeliveryDetailsService.processDownStreamConsumerData(pickupDeliveryDetailsList, pickupDeliveryDetailsEntity.getShipmentId(), message, transactionId);
-                }
+
+        if (pickupDeliveryDetails.isEmpty()) {
+            String errMsg = "[InternalKafkaConsume] TI: " + message.getParentEntityId() + " | transactionId=" + transactionId + " not found.";
+            log.error(errMsg);
+            throw new ValidationException(errMsg);
+        }
+
+        PickupDeliveryDetails pickupDeliveryDetailsEntity = pickupDeliveryDetails.get();
+        if (pickupDeliveryDetailsEntity.getShipmentId() != null) {
+            List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsService.findByShipmentId(pickupDeliveryDetailsEntity.getShipmentId());
+            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                log.info("Processing TI down stream data for shipment id: {}", pickupDeliveryDetailsEntity.getShipmentId());
+                pickupDeliveryDetailsService.processDownStreamConsumerData(pickupDeliveryDetailsList, pickupDeliveryDetailsEntity.getShipmentId(), message, transactionId);
             }
         }
     }
@@ -221,19 +227,19 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         TenantContext.setCurrentTenant(tenantId);
         List<Containers> containersList = containerV3Service.findByIdIn(List.of(parentEntityId));
         if (containersList.isEmpty()) {
-            log.warn("[InternalKafkaConsume] No containers found for parentEntityId={} | transactionId={}",
-                    parentEntityId, transactionId);
-            return;
+            String errMsg = "[InternalKafkaConsume] No containers found for parentEntityId={} | transactionId={}";
+            log.warn(errMsg, parentEntityId, transactionId);
+            throw new ValidationException(errMsg);
         }
 
         Containers container = containersList.get(0);
-        log.debug("[InternalKafkaConsume] Container details: {} | transactionId={}",
+        log.info("[InternalKafkaConsume] Container details: {} | transactionId={}",
                 container, transactionId);
 
         // Prepare Kafka message
         KafkaResponse kafkaResponse = producer.getKafkaResponse(container, isCreate);
         String message = jsonHelper.convertToJson(kafkaResponse);
-        log.debug("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
+        log.info("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
                 message, transactionId);
 
         if(container.getConsolidationId() != null) {
@@ -258,41 +264,45 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
-        if (consolidationDetailsOpt.isPresent()) {
-            ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
+        if (consolidationDetailsOpt.isEmpty()) {
+            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + " | transactionId=" + transactionId + " not found.";
+            log.error(errMsg);
+            throw new ValidationException(errMsg);
+        }
 
-            if (consolidationDetails.getTenantId() == null) {
-                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
-            }
+        ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
 
-            // block 1
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
-            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
-            log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), consolidationKafkaQueue, StringUtility.convertToString(consolidationDetails.getGuid()));
+        if (consolidationDetails.getTenantId() == null) {
+            consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+        }
 
-            // block 2
-            if (consolidationDetails.getShipmentsList() != null) {
-                List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-                if (!shipmentIds.isEmpty()) {
-                    List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-                    for (ShipmentDetails shipment : shipments) {
-                        dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
-                    }
+        // block 1
+        KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+        kafkaResponse.setTransactionId(UUID.randomUUID().toString());
+        log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+        producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), consolidationKafkaQueue, StringUtility.convertToString(consolidationDetails.getGuid()));
+
+        // block 2
+        if (consolidationDetails.getShipmentsList() != null) {
+            List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+            if (!shipmentIds.isEmpty()) {
+                List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                for (ShipmentDetails shipment : shipments) {
+                    dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
                 }
             }
+        }
 
-            // block 3
-            List<Events> events = trackingServiceAdapter.getAllEvents(null, consolidationDetails, consolidationDetails.getReferenceNumber());
-            UniversalEventsPayload universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(consolidationDetails.getReferenceNumber(), Constants.CONSOLIDATION,
-                    consolidationDetails.getConsolidationNumber(), events);
-            List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads = new ArrayList<>();
-            if (universalEventsPayload != null) {
-                trackingPayloads.add(universalEventsPayload);
-                String jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonBody);
-                trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
-            }
+        // block 3
+        List<Events> events = trackingServiceAdapter.getAllEvents(null, consolidationDetails, consolidationDetails.getReferenceNumber());
+        UniversalEventsPayload universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(consolidationDetails.getReferenceNumber(), Constants.CONSOLIDATION,
+                consolidationDetails.getConsolidationNumber(), events);
+        List<UniversalEventsPayload> trackingPayloads = new ArrayList<>();
+        if (universalEventsPayload != null) {
+            trackingPayloads.add(universalEventsPayload);
+            String jsonBody = jsonHelper.convertToJson(trackingPayloads);
+            log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonBody);
+            trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
         }
         TenantContext.removeTenant();
     }
@@ -306,37 +316,40 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
-        if (consolidationDetailsOpt.isPresent()) {
-            ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
+        if (consolidationDetailsOpt.isEmpty()) {
+            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + " | transactionId=" + transactionId + " not found.";
+            log.error(errMsg);
+            throw new ValidationException(errMsg);
+        }
 
-            if (consolidationDetails.getTenantId() == null) {
-                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
-            }
+        ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
 
-            if (trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
+        if (consolidationDetails.getTenantId() == null) {
+            consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+        }
 
-                List<Triggers> triggers = eventDto.getTriggers();
-                Set<Long> shipmentIds = triggers.stream().map(Triggers::getEntityId).collect(Collectors.toSet());
-                List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(shipmentIds);
+        if (trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
 
-                for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                    UniversalTrackingPayload payload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
-                            consolidationDetails, shipmentDetails);
-                    List<UniversalTrackingPayload> payloadList = new ArrayList<>();
-                    if (payload != null) {
-                        payloadList.add(payload);
-                        var jsonBody = jsonHelper.convertToJson(payloadList);
-                        log.info(
-                                "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",
-                                LoggerHelper.getRequestIdFromMDC(), jsonBody);
-                        trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,
-                                false);
-                    }
+            List<Triggers> triggers = eventDto.getTriggers();
+            Set<Long> shipmentIds = triggers.stream().map(Triggers::getEntityId).collect(Collectors.toSet());
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(shipmentIds);
+
+            for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                UniversalTrackingPayload payload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
+                        consolidationDetails, shipmentDetails);
+                List<UniversalTrackingPayload> payloadList = new ArrayList<>();
+                if (payload != null) {
+                    payloadList.add(payload);
+                    var jsonBody = jsonHelper.convertToJson(payloadList);
+                    log.info(
+                            "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",
+                            LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,
+                            false);
                 }
             }
-
-
         }
+
         TenantContext.removeTenant();
     }
 
@@ -346,8 +359,9 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         TenantContext.setCurrentTenant(tenantId);
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
         if (customerBooking.isEmpty()) {
-            log.info("[InternalKafkaConsume] Customer Booking: {} | transactionId={} not found.", downstreamEventDto.getParentEntityId(), transactionId);
-            return;
+            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + " | transactionId=" + transactionId + " not found.";
+            log.error(errMsg);
+            throw new ValidationException(errMsg);
         }
         log.info("[InternalKafkaConsume] Initiating booking creation in platform with payload: {} | transactionId={}", jsonHelper.convertToJson(customerBooking.get()), transactionId);
         // Create at platform
@@ -360,7 +374,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
         if (shipmentDetails.isEmpty()) {
             log.info("Shipment {} not found.", entityId);
-            return;
+            String errorMsg = "Shipment " + entityId + " not found.";
+            throw new ValidationException(errorMsg);
         }
         // Setting tenant id of shipment to context for V1TenantSettings
         TenantContext.setCurrentTenant(shipmentDetails.get().getTenantId());
