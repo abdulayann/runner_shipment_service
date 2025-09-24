@@ -813,6 +813,10 @@ public class ContainerV3Util {
                     case Constants.PACKS_TYPE:
                         errorList.add(String.format(PACKAGE_ERROR_LOG, rowNum + 2));
                         break;
+                    default:
+                        errorList.add(String.format("Unknown field: %s at row %d", fieldName, rowNum + 2));
+                        break;
+
                 }
             }
         });

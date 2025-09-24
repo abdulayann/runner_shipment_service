@@ -55,6 +55,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -931,17 +932,17 @@ public class CSVParsingUtilV3<T> {
     @Nullable
     private static Field getField(String attributeName, Map<String, Field> fieldMap) {
         Field field = fieldMap.get(attributeName);
-        if(attributeName.equalsIgnoreCase("grossWeight")){
-            field = fieldMap.get("netWeight");
-        }else  if(attributeName.equalsIgnoreCase("grossWeightUnit")){
-            field = fieldMap.get("netWeightUnit");
+        if(attributeName.equalsIgnoreCase(Constants.GROSS_WEIGHT)){
+            field = fieldMap.get(Constants.NET_WEIGHT);
+        }else  if(attributeName.equalsIgnoreCase(Constants.GROSS_VOLUME_UNIT)){
+            field = fieldMap.get(Constants.NET_WEIGHT_UNIT);
         }
 
         if (field == null ) {
             if(attributeName.equalsIgnoreCase("cargoWeight")){
                 field = fieldMap.get("grossWeight");
             }else if(attributeName.equalsIgnoreCase("cargoWeightUnit")){
-                field = fieldMap.get("grossWeightUnit");
+                field = fieldMap.get(Constants.GROSS_VOLUME_UNIT);
             }
             else{
                 return null;
