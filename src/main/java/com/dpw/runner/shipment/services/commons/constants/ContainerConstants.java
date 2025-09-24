@@ -80,11 +80,10 @@ public class ContainerConstants {
     public static final String KEY_UPDATED_AT = "updatedAt";
     public static final String KEY_CONTAINER_CODE = "containerCode";
     public static final String CONTAINER_ALREADY_ASSIGNED_MSG = "Shipment already Assigned to Container - ";
-    public static final String HS_CODE_OR_COMMODITY_IS_INVALID = "HsCode/Commodity is invalid at row: %d";
-    public static final String PACKAGE_ERROR_LOG = "Row# %d - Packages update is not allowed as Container is already assigned to package/ shipment.";
-    public static final String CARGO_WT_ERROR_LOG = "Row# %d - Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
-    public static final String GROSS_WT_ERROR_LOG = "Row# %d - Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
-    public static final String VOLUME_ERROR_LOG = "Row# %d - Vol. update is not allowed as Container is already assigned to package/ shipment.";
+    public static final String PACKAGE_ERROR_LOG = "Row# %d: Packages update is not allowed as Container is already assigned to package/ shipment.";
+    public static final String CARGO_WT_ERROR_LOG = "Row# %d: Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
+    public static final String GROSS_WT_ERROR_LOG = "Row# %d: Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
+    public static final String VOLUME_ERROR_LOG = "Row# %d: Vol. update is not allowed as Container is already assigned to package/ shipment.";
     public static final String UN_NUMBER = "UN Number";
 
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
