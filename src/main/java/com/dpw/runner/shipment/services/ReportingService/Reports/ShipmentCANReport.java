@@ -176,7 +176,7 @@ public class ShipmentCANReport extends IReport {
         List<BillingResponse> billingsList = getBillingData(shipmentCANModel.shipmentDetails.getGuid());
         if (processBillingList(billingsList)) {
             for (BillingResponse bill : billingsList) {
-                List<BillChargesResponse> billChargesList = getBillChargesData(bill);
+                List<BillChargesResponse> billChargesList = getBillChargesData(bill, false);
                 if (billChargesList == null || billChargesList.isEmpty()) {
                     continue;
                 }

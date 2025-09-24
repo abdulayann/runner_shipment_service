@@ -116,7 +116,7 @@ public class ShipmentValidationV3Util {
             if (Objects.isNull(actualTimeOfDeparture)) {
                 throw new ValidationException("Shipped On Board cannot be set without Actual Time of Departure(ATD).");
             }
-            if (shippedOnboard.isAfter(actualTimeOfDeparture)) {
+            if (shippedOnboard.isAfter(actualTimeOfDeparture.plusDays(1))) {
                 throw new ValidationException("Shipped On Board must be before or same as ATD.");
             }
         }

@@ -220,5 +220,4 @@ public class ConsolidationV3Util {
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
     }
-
 }

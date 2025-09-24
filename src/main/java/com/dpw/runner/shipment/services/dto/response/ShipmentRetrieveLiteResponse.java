@@ -83,7 +83,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadyDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
@@ -278,4 +277,11 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private List<RoutingsLiteResponse> routingsLiteResponses;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

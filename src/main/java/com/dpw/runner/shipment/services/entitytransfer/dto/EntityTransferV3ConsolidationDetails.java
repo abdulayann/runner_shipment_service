@@ -49,16 +49,10 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private String dgClass;
     private String dgSubstance;
     private Boolean override;
-    private LocalDateTime estimatedTerminalCutoff;
-    private LocalDateTime terminalCutoff;
-    private LocalDateTime verifiedGrossMassCutoff;
-    private LocalDateTime reeferCutoff;
-    private LocalDateTime bookingCutoff;
-    private LocalDateTime shipInstructionCutoff;
-    private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
-    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
@@ -149,8 +143,6 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private EntityTransferParties consigner;
     private EntityTransferParties consignee;
     private String sci;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)

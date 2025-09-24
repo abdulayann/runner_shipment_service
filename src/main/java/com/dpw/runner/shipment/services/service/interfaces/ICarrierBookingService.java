@@ -1,0 +1,67 @@
+package com.dpw.runner.shipment.services.service.interfaces;
+
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraCarrierBookingEventDto;
+import org.springframework.http.ResponseEntity;
+
+import java.util.Optional;
+
+public interface ICarrierBookingService {
+
+    /**
+     * Create a new Carrier Booking.
+     *
+     * @param request CarrierBookingRequest
+     * @return CarrierBookingResponse
+     */
+    CarrierBookingResponse create(CarrierBookingRequest request) throws RunnerException;
+
+    /**
+     * Retrieve a Carrier Booking by its ID.
+     *
+     * @param id booking id
+     * @return CarrierBookingResponse
+     */
+    CarrierBookingResponse retrieveById(Long id);
+
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
+
+    /**
+     * Update an existing Carrier Booking.
+     *
+     *
+     * @param request CarrierBookingRequest
+     * @return CarrierBookingResponse
+     */
+    CarrierBookingResponse update(CarrierBookingRequest request) throws RunnerException;
+
+    /**
+     * Delete a Carrier Booking by its ID.
+     *
+     * @param id booking id
+     */
+    void delete(Long id);
+
+    void cancel(Long id); // cancel status
+
+    void syncCarrierBookingToService(SyncBookingToService syncBookingToService) throws RunnerException;
+
+    void updateCarrierDataToBooking(InttraCarrierBookingEventDto inttraCarrierBookingEventDto);
+
+    ResponseEntity<IRunnerResponse> getAllMasterData(Long shipmentId);
+
+    CarrierBookingResponse getDefaultCarrierBookingValues(EntityType type, Long entityId);
+
+    Optional<CarrierBooking> findById(Long entityId);
+
+    void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
+}
+

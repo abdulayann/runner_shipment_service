@@ -13,13 +13,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -62,6 +61,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
@@ -110,6 +111,9 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "restTemplateForNPM")
     private RestTemplate restTemplate3;
+
+    @MockBean(name = "executorService")
+    private ExecutorService executorService;
 
     /**
      * Method under test:
@@ -1441,6 +1445,163 @@ class NPMServiceAdapterTest {
         assertEquals("Origin1", contracts.get(0).getOrigin());
         assertEquals("Destination1", contracts.get(0).getDestination());
         assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    @Test
+    void testGetContractCountForParties_NullResponseBody() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        // Mock response with null body
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(null))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        ListContractRequest listContractRequest = new ListContractRequest();
+
+        GetContractsCountForPartiesRequest request = new GetContractsCountForPartiesRequest();
+        request.setContractsCountRequest(listContractRequest);
+        request.setCustomerOrgIds(List.of("FRC0000678"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(request)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(1, actualData.getPartyContractsCount().size());
+        assertEquals(0, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties_DuplicateCustomerOrgIds() {
+        // Mock executor to run synchronously
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest = new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000123", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(getContractsCountForPartiesRequest)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(2, actualData.getPartyContractsCount().size());
+        assertEquals(4, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest =
+                new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setDestination("destination");
+        getContractsCountForPartiesRequest.setOrigin("origin");
+        getContractsCountForPartiesRequest.setCargoType("FCL");
+        getContractsCountForPartiesRequest.setIsDgEnabled(Boolean.TRUE);
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000678", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel =
+                CommonRequestModel.builder().data(getContractsCountForPartiesRequest).build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        assertNotNull(responseEntity.getBody());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        assertNotNull(actualResponse.getData());
+
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(3, actualData.getPartyContractsCount().size());
+
+        assertEquals(9, actualData.getTotalContractCount());
+
+        List<PartyContractsCountResponse> partyResponses = actualData.getPartyContractsCount();
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000123".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000456".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000678".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
     }
 
     private static Stream<Arguments> provideDgContractTestData() {

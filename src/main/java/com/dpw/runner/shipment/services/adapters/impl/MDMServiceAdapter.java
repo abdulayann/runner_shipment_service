@@ -10,7 +10,8 @@ import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MDMTaskRetrieveResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.listTaskUrl}")
     String listTaskUrl;
+
+    @Value("${mdm.getTaskUrl}")
+    String getTaskUrl;
 
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -263,6 +268,30 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
             log.error("MDM approveOrReject Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            throw new RunnerException(errorMessage);
+        }
+    }
+
+    @Override
+    public MDMTaskRetrieveResponse getTask(String taskUuid, Long id) throws RunnerException {
+        String url = baseUrl + getTaskUrl + "?uuid=" + taskUuid;
+        if(StringUtility.isEmpty(taskUuid)){
+            url = baseUrl + getTaskUrl + "?id=" + id;
+        }
+        try {
+            log.info("Calling MDM Get Task api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC());
+            ResponseEntity<DependentServiceResponse> response =  restTemplate.getForEntity(url, DependentServiceResponse.class);
+            log.info("MDM getTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            Object data = Objects.requireNonNull(response.getBody()).getData();
+
+            if (data instanceof List<?> dataList && !dataList.isEmpty()) {
+                Object firstElement = dataList.get(0);
+                return jsonHelper.convertValue(firstElement, MDMTaskRetrieveResponse.class);
+            }
+            return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MDMTaskRetrieveResponse.class);
+        } catch (Exception ex) {
+            String errorMessage = ex.getMessage();
+            log.error("MDM getTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
             throw new RunnerException(errorMessage);
         }
     }

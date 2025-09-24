@@ -501,6 +501,103 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(ValidationException.class, () -> consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request));
   }
 
+    @Test
+    void testCreateFromBooking_Success3() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
+        consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success6() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
+        consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
+        when(commonUtils.checkIfPartyExists((Parties) any())).thenReturn(true);
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success4() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateFromBooking_Success5() {
+        // Setup
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+        ConsolidationDetails consoleDetails = testConsol;
+        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        customerBookingV3Request.setContainersList(List.of(containerV3Request));
+        customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+        consoleDetails.setCarrierDetails(null);
+        when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+        when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        mockShipmentSettings();
+        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+        assertNotNull(response);
+    }
+
 
   @Test
   void testCreateFromBooking_ThrowsValidationException() {
@@ -1915,6 +2012,7 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void canProcesscutOffFields_shouldReturnFalse_whenAllFieldsAreEqual() {
     LocalDateTime cutoffTime = LocalDateTime.now();
+    Integer freeDays = 2;
 
     ConsolidationDetails newEntity = new ConsolidationDetails();
     ConsolidationDetails oldEntity = new ConsolidationDetails();
@@ -1928,6 +2026,10 @@ if (unitConversionUtilityMockedStatic != null) {
     newEntity.setLatestFullEquDeliveredToCarrier(cutoffTime);
     newEntity.setEarliestDropOffFullEquToCarrier(cutoffTime);
     newEntity.setLatDate(cutoffTime);
+    newEntity.setCarrierDocCutOff(cutoffTime);
+    newEntity.setCargoReceiptWHCutOff(cutoffTime);
+    newEntity.setLastFreeDateCutOff(cutoffTime);
+    newEntity.setNumberOfFreeDaysCutOff(freeDays);
 
     oldEntity.setTerminalCutoff(cutoffTime);
     oldEntity.setVerifiedGrossMassCutoff(cutoffTime);
@@ -1938,6 +2040,10 @@ if (unitConversionUtilityMockedStatic != null) {
     oldEntity.setLatestFullEquDeliveredToCarrier(cutoffTime);
     oldEntity.setEarliestDropOffFullEquToCarrier(cutoffTime);
     oldEntity.setLatDate(cutoffTime);
+    oldEntity.setCarrierDocCutOff(cutoffTime);
+    oldEntity.setCargoReceiptWHCutOff(cutoffTime);
+    oldEntity.setLastFreeDateCutOff(cutoffTime);
+    oldEntity.setNumberOfFreeDaysCutOff(freeDays);
 
     boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
 
@@ -2667,56 +2773,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
         ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
         assertNotNull(response);
-    }
-    @Test
-    void detachShipments_Success2() throws RunnerException {
-        ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
-        request.setShipmentIds(Set.of(1L,2L));
-        request.setConsolidationId(1L);
-        request.setIsFCLDelete(Boolean.FALSE);
-        request.setIsForcedDetach(Boolean.TRUE);
-
-
-        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
-        shipmentDetails.setEventsList(List.of(Events.builder().build()));
-        shipmentDetails.setContainersList(new HashSet<>());
-        shipmentDetails.setContainsHazardous(Boolean.TRUE);
-
-        ShipmentDetails shipmentDetails1 = shipmentDetails;
-        shipmentDetails1.setId(1L);
-        shipmentDetails1.setContainsHazardous(Boolean.TRUE);
-        Containers container = new Containers();
-        container.setId(1L);
-
-        ShipmentDetails shipmentDetails2 = shipmentDetails;
-        shipmentDetails2.setId(2L);
-        shipmentDetails2.setContainsHazardous(Boolean.TRUE);
-        consolidationDetails.setInterBranchConsole(true);
-        consolidationDetails.setShipmentsList(new HashSet<>());
-        consolidationDetails.setOverride(true);
-        consolidationDetails.setId(1L);
-        consolidationDetails.setHazardous(Boolean.TRUE);
-        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
-        consolidationDetails.setAchievedQuantities(new AchievedQuantities());
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
-        lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
-        when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
-
-        var spyService = Mockito.spy(consolidationV3Service);
-
-        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
-        v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
-        mockShipmentSettings();
-        lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
-        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(RunnerException.class, () -> {
-            spyService.detachShipments(request);
-        });
     }
 
     @Test
@@ -4790,7 +4846,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // other essential mocks
     doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
-    doNothing().when(awbDao).validateAirMessaging(anyLong());
     HashSet<Long> hashSet = new HashSet<>();
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
@@ -4857,7 +4912,6 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // other essential mocks
     doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
-    doNothing().when(awbDao).validateAirMessaging(anyLong());
     HashSet<Long> hashSet = new HashSet<>();
     hashSet.add(1L);
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
@@ -5646,13 +5700,22 @@ if (unitConversionUtilityMockedStatic != null) {
     newConsolidation.setEarliestEmptyEquPickUp(LocalDateTime.of(2025, 1, 6, 10, 0));
     newConsolidation.setLatestFullEquDeliveredToCarrier(LocalDateTime.of(2025, 1, 7, 10, 0));
     newConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.of(2025, 1, 8, 10, 0));
+    newConsolidation.setCarrierDocCutOff(LocalDateTime.of(2025, 1, 9, 10, 0));
+    newConsolidation.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 1, 10, 10, 0));
+    newConsolidation.setLastFreeDateCutOff(LocalDateTime.of(2025, 1, 11, 10, 0));
+    newConsolidation.setNumberOfFreeDaysCutOff(3);
 
     shipment.setTransportMode(TRANSPORT_MODE_SEA);
+    shipment.setDirection(DIRECTION_EXP);
 
     consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(null, newConsolidation,
         List.of(shipment), true);
 
     assertThat(shipment.getTerminalCutoff()).isEqualTo(LocalDateTime.of(2025, 1, 1, 10, 0));
+    assertThat(shipment.getCarrierDocCutOff()).isEqualTo(LocalDateTime.of(2025, 1, 9, 10, 0));
+    assertThat(shipment.getCargoReceiptWHCutOff()).isEqualTo(LocalDateTime.of(2025, 1, 10, 10, 0));
+    assertThat(shipment.getLastFreeDateCutOff()).isEqualTo(LocalDateTime.of(2025, 1, 11, 10, 0));
+    assertThat(shipment.getNumberOfFreeDaysCutOff()).isEqualTo(3);
   }
 
   @Test
@@ -5660,11 +5723,19 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails newConsolidation = new ConsolidationDetails();
     ShipmentDetails shipment = new ShipmentDetails();
     newConsolidation.setLatDate(LocalDateTime.of(2025, 2, 1, 10, 0));
+    newConsolidation.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 2, 2, 10, 0));
+    newConsolidation.setLastFreeDateCutOff(LocalDateTime.of(2025, 2, 3, 10, 0));
+    newConsolidation.setNumberOfFreeDaysCutOff(5);
     shipment.setTransportMode(TRANSPORT_MODE_AIR);
+    shipment.setDirection(DIRECTION_EXP); // Set direction for conditional fields
 
     consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(null, newConsolidation, List.of(shipment), true);
 
     assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 2, 1, 10, 0));
+    assertThat(shipment.getCargoReceiptWHCutOff()).isEqualTo(LocalDateTime.of(2025, 2, 2, 10, 0));
+    assertThat(shipment.getLastFreeDateCutOff()).isEqualTo(LocalDateTime.of(2025, 2, 3, 10, 0));
+    assertThat(shipment.getNumberOfFreeDaysCutOff()).isEqualTo(5);
+    assertThat(shipment.getCarrierDocCutOff()).isNull(); // Should not be set for AIR
   }
 
   @Test
@@ -5673,13 +5744,25 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails newCon = new ConsolidationDetails();
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setTransportMode(TRANSPORT_MODE_SEA);
+    shipment.setDirection(DIRECTION_EXP);
 
     oldCon.setTerminalCutoff(LocalDateTime.of(2025, 1, 1, 10, 0));
     newCon.setTerminalCutoff(LocalDateTime.of(2025, 1, 2, 10, 0)); // different, should update
-
+    oldCon.setCarrierDocCutOff(LocalDateTime.of(2025, 1, 9, 10, 0));
+    newCon.setCarrierDocCutOff(LocalDateTime.of(2025, 1, 9, 11, 0)); // Changed
+    oldCon.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 1, 10, 10, 0));
+    newCon.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 1, 10, 10, 0)); // Unchanged
+    oldCon.setLastFreeDateCutOff(LocalDateTime.of(2025, 1, 11, 10, 0));
+    newCon.setLastFreeDateCutOff(LocalDateTime.of(2025, 1, 11, 12, 0)); // Changed
+    oldCon.setNumberOfFreeDaysCutOff(3);
+    newCon.setNumberOfFreeDaysCutOff(5); // Changed
     consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldCon, newCon, List.of(shipment), false);
 
     assertThat(shipment.getTerminalCutoff()).isEqualTo(LocalDateTime.of(2025, 1, 2, 10, 0));
+    assertThat(shipment.getCarrierDocCutOff()).isEqualTo(LocalDateTime.of(2025, 1, 9, 11, 0));
+    assertThat(shipment.getCargoReceiptWHCutOff()).isNull(); // Should not be updated as it's unchanged
+    assertThat(shipment.getLastFreeDateCutOff()).isEqualTo(LocalDateTime.of(2025, 1, 11, 12, 0));
+    assertThat(shipment.getNumberOfFreeDaysCutOff()).isEqualTo(5);
   }
 
   @Test
@@ -5688,13 +5771,24 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails newCon = new ConsolidationDetails();
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setTransportMode(TRANSPORT_MODE_AIR);
+    shipment.setDirection(DIRECTION_EXP);
 
     oldCon.setLatDate(LocalDateTime.of(2025, 1, 1, 10, 0));
     newCon.setLatDate(LocalDateTime.of(2025, 1, 3, 10, 0)); // changed
+    oldCon.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 2, 2, 10, 0));
+    newCon.setCargoReceiptWHCutOff(LocalDateTime.of(2025, 2, 2, 11, 0)); // Changed
+    oldCon.setLastFreeDateCutOff(LocalDateTime.of(2025, 2, 3, 10, 0));
+    newCon.setLastFreeDateCutOff(LocalDateTime.of(2025, 2, 3, 10, 0)); // Unchanged
+    oldCon.setNumberOfFreeDaysCutOff(5);
+    newCon.setNumberOfFreeDaysCutOff(7); // Changed
 
     consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldCon, newCon, List.of(shipment), false);
 
     assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 1, 3, 10, 0));
+    assertThat(shipment.getCargoReceiptWHCutOff()).isEqualTo(LocalDateTime.of(2025, 2, 2, 11, 0));
+    assertThat(shipment.getLastFreeDateCutOff()).isNull(); // Unchanged, so setter not called, remains null
+    assertThat(shipment.getNumberOfFreeDaysCutOff()).isEqualTo(7);
+    assertThat(shipment.getCarrierDocCutOff()).isNull(); // Should not be set for AIR
   }
 
   @Test
@@ -6698,8 +6792,11 @@ if (unitConversionUtilityMockedStatic != null) {
 
         PartiesResponse defaultAgent = new PartiesResponse();
         defaultAgent.setOrgCode("AGENT001");
+        defaultAgent.setOrgId("AGENT001");
+        defaultAgent.setAddressId("AGENT001");
         defaultAgent.setOrgData(Map.of("TenantId", 5));
         when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(defaultAgent);
+        when(commonUtils.getReceivingBranch(any(), any())).thenReturn(5L);
 
         // Act
         consolidationV3Service.setTenantAndDefaultAgent(response);
@@ -6954,6 +7051,46 @@ if (unitConversionUtilityMockedStatic != null) {
         verify(criteriaQuery).where(predicate);
         verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
         verify(typedQuery).getResultList();
+    }
+
+    @Test
+    void canProcesscutOffFields_shouldReturnTrue_whenCarrierDocDiffers() {
+        ConsolidationDetails newEntity = new ConsolidationDetails();
+        ConsolidationDetails oldEntity = new ConsolidationDetails();
+        newEntity.setCarrierDocCutOff(LocalDateTime.now());
+        oldEntity.setCarrierDocCutOff(LocalDateTime.now().minusDays(1));
+        boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+        assertTrue(result);
+    }
+
+    @Test
+    void canProcesscutOffFields_shouldReturnTrue_whenCargoReceiptWHDiffers() {
+        ConsolidationDetails newEntity = new ConsolidationDetails();
+        ConsolidationDetails oldEntity = new ConsolidationDetails();
+        newEntity.setCargoReceiptWHCutOff(LocalDateTime.now());
+        oldEntity.setCargoReceiptWHCutOff(LocalDateTime.now().minusDays(1));
+        boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+        assertTrue(result);
+    }
+
+    @Test
+    void canProcesscutOffFields_shouldReturnTrue_whenLastFreeDateDiffers() {
+        ConsolidationDetails newEntity = new ConsolidationDetails();
+        ConsolidationDetails oldEntity = new ConsolidationDetails();
+        newEntity.setLastFreeDateCutOff(LocalDateTime.now());
+        oldEntity.setLastFreeDateCutOff(LocalDateTime.now().minusDays(1));
+        boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+        assertTrue(result);
+    }
+
+    @Test
+    void canProcesscutOffFields_shouldReturnTrue_whenNumberOfFreeDaysDiffers() {
+        ConsolidationDetails newEntity = new ConsolidationDetails();
+        ConsolidationDetails oldEntity = new ConsolidationDetails();
+        newEntity.setNumberOfFreeDaysCutOff(5);
+        oldEntity.setNumberOfFreeDaysCutOff(3);
+        boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+        assertTrue(result);
     }
 
 }
