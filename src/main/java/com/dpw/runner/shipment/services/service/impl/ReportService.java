@@ -1419,17 +1419,21 @@ public class ReportService implements IReportService {
         return null;
     }
 
+
+    private Long fetchReportIdFromReportRequest(ReportRequest reportRequest) throws IllegalArgumentException {
+        try {
+            return Long.parseLong(reportRequest.getReportId());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid report ID format.", ex);
+        }
+    }
+
     private void createEvent(ReportRequest reportRequest, String eventCode) {
         if (reportRequest == null || reportRequest.getReportId() == null) {
             throw new IllegalArgumentException("Invalid report request or report ID.");
         }
 
-        Long reportId;
-        try {
-            reportId = Long.parseLong(reportRequest.getReportId());
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Invalid report ID format.", ex);
-        }
+        Long reportId = fetchReportIdFromReportRequest(reportRequest);
 
         // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
@@ -2896,6 +2900,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setFileName(filename);
                 var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
                 log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                saveDocDetailsAfterPushToDocumentMaster(reportRequest, response);
                 return response;
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
@@ -2905,6 +2910,48 @@ public class ReportService implements IReportService {
             log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
         }
         return null;
+    }
+
+    public void saveDocDetailsAfterPushToDocumentMaster(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        switch (reportRequest.getReportInfo()) {
+            case HOUSE_BILL, SEAWAY_BILL:
+                saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
+                break;
+            default:
+        }
+    }
+
+    private void saveDocDetailsIfHblOrSeawayBill(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        if (documentServiceResponse.get("fileId") == null) {
+            return;
+        }
+        Long reportId = fetchReportIdFromReportRequest(reportRequest);
+        saveDocDetailsWithFileIdAndShipmentBLCheck(reportId, documentServiceResponse.get("fileId").toString(), reportRequest.getReportInfo());
+    }
+
+    private void saveDocDetailsWithFileIdAndShipmentBLCheck(Long reportId, String fileId, String reportInfo) {
+        Optional<ShipmentDetails> shipmentDetailsOpt = shipmentDao.findById(reportId);
+        if (shipmentDetailsOpt.isEmpty()) {
+            return;
+        }
+        ShipmentDetails shipmentDetails = shipmentDetailsOpt.get();
+        boolean isShipmentBLRated = shipmentDetails.getAdditionalDetails() != null &&
+                                    Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsRatedBL());
+        DocDetailsTypes docDetailsType = fetchDocDetailsTypeFor(reportInfo, isShipmentBLRated);
+        DocDetails docDetail = DocDetails.builder()
+                .type(docDetailsType)
+                .entityId(reportId)
+                .fileId(fileId)
+                .build();
+        docDetailsDao.save(docDetail);
+    }
+
+    private DocDetailsTypes fetchDocDetailsTypeFor(String reportInfo, boolean isShipmentBLRated) {
+        return switch (reportInfo) {
+            case HOUSE_BILL -> isShipmentBLRated ? DocDetailsTypes.RATED_HOUSE_BILL : DocDetailsTypes.NOT_RATED_HOUSE_BILL;
+            case SEAWAY_BILL -> isShipmentBLRated ? DocDetailsTypes.RATED_SEAWAY_BILL : DocDetailsTypes.NOT_RATED_SEAWAY_BILL;
+            default -> null;
+        };
     }
 
     String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String entityGuid, String identifier) {

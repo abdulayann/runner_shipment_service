@@ -9,4 +9,5 @@ public interface IDocDetailsDao {
 
     DocDetails save(DocDetails docDetails);
     List<DocDetails> findByEntityIdAndType(Long entityId, DocDetailsTypes type);
+    DocDetails findByFileId(String fileId);
 }

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.EventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
@@ -23,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -112,6 +114,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IOrderManagementAdapter orderManagementAdapter;
+
+    @Mock
+    private IDocDetailsDao docDetailsDao;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -861,5 +866,71 @@ class BookingIntegrationsUtilityTest {
         shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
         bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
         verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
+
+    @Test
+    void testDocumentUploadEvent_whenRatedBL() throws RunnerException {
+        var entityId = UUID.randomUUID();
+        String fakeFileId = "fake-file-id";
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).fileId(fakeFileId).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+
+        when(docDetailsDao.findByFileId(anyString())).thenReturn(DocDetails.builder()
+                        .fileId(fakeFileId)
+                        .type(DocDetailsTypes.RATED_BL)
+                        .versionNumber("v-1")
+                        .entityId(1L)
+                    .build());
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any());
+    }
+
+    @Test
+    void testDocumentUploadEvent_whenNotRatedBL() throws RunnerException {
+        var entityId = UUID.randomUUID();
+        String fakeFileId = "fake-file-id";
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).fileId(fakeFileId).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        when(docDetailsDao.findByFileId(anyString())).thenReturn(DocDetails.builder()
+                .fileId(fakeFileId)
+                .type(DocDetailsTypes.PRE_ALERT)
+                .versionNumber("v-1")
+                .entityId(1L)
+                .build());
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+        verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
+    }
+
+    @Test
+    void testDocumentUploadEvent_whenDocDetailsNull() throws RunnerException {
+        var entityId = UUID.randomUUID();
+        String fakeFileId = "fake-file-id";
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).fileId(fakeFileId).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        when(docDetailsDao.findByFileId(anyString())).thenReturn(null);
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+        verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
     }
 }

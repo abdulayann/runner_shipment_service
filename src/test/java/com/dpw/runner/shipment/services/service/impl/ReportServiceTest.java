@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -100,6 +101,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -5034,6 +5036,170 @@ class ReportServiceTest extends CommonMocks {
         String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
 
         assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_RatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_BL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NotRatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(false);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.NOT_RATED_BL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_ShipmentDetailsEmpty() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NotAdditionalDetails() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.NOT_RATED_BL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_SeawayBill_RatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(SEAWAY_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_BL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NoFileIdInDocumentServiceResponse() {
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_NotHblAndNotSeawayBill() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HAWB);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_ReportIdNotLong() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("wrongValue");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        });
     }
 
 }

@@ -25,10 +25,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.request.platform.ReferenceNumbersRequest;
@@ -38,15 +35,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.IntegrationResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
@@ -136,6 +125,8 @@ public class BookingIntegrationsUtility {
     private IAuditLogService auditLogService;
     @Autowired
     private IOrderManagementAdapter orderManagementAdapter;
+    @Autowired
+    private IDocDetailsDao docDetailsDao;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -971,8 +962,10 @@ public class BookingIntegrationsUtility {
         String payloadAction = payload.getAction();
         var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
         var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
+        var isDocumentBLRated = isDocumentWithFileIdBLRated(payloadData.getFileId());
         if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
                 && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
+                && !isDocumentBLRated
                 && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
 
             // Sending document to Logistics Platform in case of online booking
@@ -983,6 +976,15 @@ public class BookingIntegrationsUtility {
 
         handleEventCreation(payloadAction, payloadData);
 
+    }
+
+    private boolean isDocumentWithFileIdBLRated(String fileId) {
+        if (fileId == null) {
+            return false;
+        }
+        DocDetails docDetails = docDetailsDao.findByFileId(fileId);
+        return docDetails != null &&
+                (Objects.equals(docDetails.getType(), DocDetailsTypes.RATED_HOUSE_BILL) || Objects.equals(docDetails.getType(), DocDetailsTypes.RATED_SEAWAY_BILL));
     }
 
     /**
