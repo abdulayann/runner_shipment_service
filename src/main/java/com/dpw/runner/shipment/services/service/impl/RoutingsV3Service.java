@@ -222,20 +222,59 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                             (existing, replacement) -> existing
                     ));
         }
-        updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-
+        List<Integer> inheritedIndexes = new ArrayList<>();
+        getMainCarriageInheritedIndex(updatedRoutings, inheritedIndexes);
+        // Step 2: Remove those inherited MAIN_CARRIAGE entries
+        removeMainCarriageFromShipmentRouting(mainCarriageList, updatedRoutings);
+        // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
+        List<Routings> consolidatedMainCarriages = new ArrayList<>();
         // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
         for (Routings routings : mainCarriageList) {
             Routings mainRoutings = shipmentMainCarriageMap.get(routings.getGuid());
             if (Objects.nonNull(mainRoutings)) {
                 updateRoutingValues(mainRoutings, routings);
-                updatedRoutings.add(mainRoutings);
+                consolidatedMainCarriages.add(mainRoutings);
             } else {
-                updatedRoutings.add(cloneRoutingForShipment(routings, shipmentDetails));
+                consolidatedMainCarriages.add(cloneRoutingForShipment(routings, shipmentDetails));
+            }
+        }
+        // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
+        int offset = 0;
+        insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
+
+    }
+    private static void insertNewConsolMainCarriageAtInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes, List<Routings> consolidatedMainCarriages, int offset) {
+        for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
+            int insertAt = i < inheritedIndexes.size()
+                    ? inheritedIndexes.get(i)
+                    : offset; // append to end if more than removed
+            if (insertAt >= updatedRoutings.size()) {
+                updatedRoutings.add(consolidatedMainCarriages.get(i));
+            } else {
+                updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+            }
+            offset = insertAt + 1;
+        }
+    }
+    private static void removeMainCarriageFromShipmentRouting(List<Routings> mainCarriageList, List<Routings> updatedRoutings) {
+        boolean isMainCarriagePresent = updatedRoutings.stream()
+                .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+        if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
+            updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+        }
+        updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+    }
+    private static void getMainCarriageInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes) {
+        for (int i = 0; i < updatedRoutings.size(); i++) {
+            Routings routing = updatedRoutings.get(i);
+            if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                    Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
+                inheritedIndexes.add(i);
             }
         }
     }
-
     private static void populateVoyageFromFlightNumberInAir(List<Routings> updatedRoutings) {
         updatedRoutings.forEach(routings -> {
             if (Constants.TRANSPORT_MODE_AIR.equals(routings.getMode())) {
