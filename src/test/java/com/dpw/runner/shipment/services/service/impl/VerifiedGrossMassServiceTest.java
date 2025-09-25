@@ -971,6 +971,82 @@ class VerifiedGrossMassServiceTest {
         verify(verifiedGrossMassDao).save(any());
     }
 
+    @Test
+    void retrieveById_ShouldReturnResponse_WhenCarrierBookingExistsWithProjection() {
+        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
+        testEntity.setEntityId(100L);
+
+        CarrierBookingInfoProjection projection = new CarrierBookingInfoProjection() {
+            public String getBookingStatus() { return "Draft"; }
+            public String getBookingNo() { return "BK001"; }
+            public String getSiStatus() { return "Draft"; }
+        };
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingDao.findCarrierBookingInfoById(100L)).thenReturn(projection);
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(verifiedGrossMassDao).findById(1L);
+        verify(jsonHelper).convertValue(testEntity, VerifiedGrossMassResponse.class);
+        verify(carrierBookingDao).findCarrierBookingInfoById(100L);
+    }
+
+    @Test
+    void retrieveById_ShouldHandleCarrierBookingLinkedToConsolidation() {
+        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
+        testEntity.setEntityId(100L);
+        testEntity.setContainersList(List.of(new CommonContainers()));
+        testEntity.setSubmittedContainersList(List.of(new CommonContainers()));
+
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setEntityType(EntityType.CONSOLIDATION.name());
+        carrierBooking.setEntityId(200L);
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setContainersList(List.of(new Containers()));
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingDao.findCarrierBookingInfoById(100L)).thenReturn(null); // projection null
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(carrierBooking));
+        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(details);
+        when(verifiedGrossMassUtil.compareVGMContainers(any(), any(), any())).thenReturn(List.of());
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(verifiedGrossMassDao).findById(1L);
+        verify(carrierBookingDao).findById(100L);
+        verify(verifiedGrossMassUtil, times(2)).compareVGMContainers(any(), any(), any());
+    }
+
+    @Test
+    void retrieveById_ShouldHandleConsolidationEntityType() {
+        testEntity.setEntityType(EntityType.CONSOLIDATION);
+        testEntity.setEntityId(300L);
+        testEntity.setContainersList(List.of(new CommonContainers()));
+        testEntity.setSubmittedContainersList(List.of(new CommonContainers()));
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setContainersList(List.of(new Containers()));
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingInttraUtil.getConsolidationDetail(300L)).thenReturn(details);
+        when(verifiedGrossMassUtil.compareVGMContainers(any(), any(), any())).thenReturn(List.of());
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(carrierBookingInttraUtil).getConsolidationDetail(300L);
+        verify(verifiedGrossMassUtil, times(2)).compareVGMContainers(any(), any(), any());
+    }
+
+
+
     private VerifiedGrossMass createMockVGM() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
         vgm.setId(1L);

@@ -148,13 +148,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             }
             populateHeaderSection(shippingInstruction, carrierBooking.get());
             populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
-            consolidationDetails = getConsolidationDetail(carrierBooking.get().getEntityId());
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(carrierBooking.get().getEntityId());
             setReferenceNumber(shippingInstruction, carrierBooking.get());
             response.setBookingStatus(carrierBooking.get().getStatus().name());
             setPartiesNumber(shippingInstruction, carrierBooking.get());
 
         } else if (EntityType.CONSOLIDATION == type) {
-            consolidationDetails = getConsolidationDetail(entityId);
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(entityId);
             response.setBookingStatus(consolidationDetails.getBookingStatus());
             shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
         } else {
@@ -321,14 +321,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
     }
 
-    private ConsolidationDetails getConsolidationDetail(Long id) {
-        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(id);
-        if (consolidationDetails.isEmpty()) {
-            throw new ValidationException("Consolidation details does not exist " + id);
-        }
-        return consolidationDetails.get();
-    }
-
     public ShippingInstructionResponse getShippingInstructionsById(Long id) {
         Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
         if (shippingInstruction.isEmpty()) {
@@ -344,7 +336,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 instruction.setEntityNumber(projection.getBookingStatus());
             }
         } else {
-            ConsolidationDetails consolidationDetails = getConsolidationDetail(instruction.getEntityId());
+            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(instruction.getEntityId());
             shippingInstruction.get().setEntityNumber(consolidationDetails.getConsolidationNumber());
             populateFreightDetails(instruction, consolidationDetails);
             instruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
@@ -656,7 +648,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             mapper.setBookingStatus(carrierBooking.get().getStatus().name());
             shippingInstruction.setEntityNumber(carrierBooking.get().getBookingNo());
         } else if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
-            consolidationDetails = getConsolidationDetail(shippingInstruction.getEntityId());
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
             shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
             setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         } else {
