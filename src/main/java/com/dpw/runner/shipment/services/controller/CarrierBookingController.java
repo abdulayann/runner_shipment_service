@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -175,5 +176,16 @@ public class CarrierBookingController {
                 LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType(), jsonHelper.convertToJson(submitAmendInttraRequest));
         return ResponseHelper.buildSuccessResponse();
     }
-
+    @GetMapping
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.CLONE_CARRIER_BOOKING_SUCCESS)})
+    public ResponseEntity<IRunnerResponse> cloneCarrierBooking(@RequestParam Long entityId) {
+        try {
+            CarrierBookingCloneResponse response = carrierBookingService.cloneBooking(entityId);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : "Error retrieving clone carrier booking data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

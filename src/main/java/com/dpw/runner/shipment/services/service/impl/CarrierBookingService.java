@@ -23,6 +23,8 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendIn
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -622,6 +624,15 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         sendNotification(savedCarrierBooking);
+    }
+
+    @Override
+    public CarrierBookingCloneResponse cloneBooking(Long carrierBookingId) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(carrierBookingId)
+                .orElseThrow(() -> new ValidationException("Invalid carrier booking Id: " + carrierBookingId));
+        CarrierBookingCloneResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class);
+        carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
+        return carrierBookingResponse;
     }
 
     private void saveTransactionHistory(CarrierBooking carrierBooking, FlowType flowType, SourceSystem sourceSystem) {
