@@ -5058,7 +5058,7 @@ class ReportServiceTest extends CommonMocks {
         reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
 
         DocDetails docDetail = DocDetails.builder()
-                .type(DocDetailsTypes.RATED_BL)
+                .type(DocDetailsTypes.RATED_HOUSE_BILL)
                 .entityId(1L)
                 .fileId(fakeFieldId)
                 .build();
@@ -5085,7 +5085,7 @@ class ReportServiceTest extends CommonMocks {
         reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
 
         DocDetails docDetail = DocDetails.builder()
-                .type(DocDetailsTypes.NOT_RATED_BL)
+                .type(DocDetailsTypes.NOT_RATED_HOUSE_BILL)
                 .entityId(1L)
                 .fileId(fakeFieldId)
                 .build();
@@ -5126,7 +5126,7 @@ class ReportServiceTest extends CommonMocks {
         reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
 
         DocDetails docDetail = DocDetails.builder()
-                .type(DocDetailsTypes.NOT_RATED_BL)
+                .type(DocDetailsTypes.NOT_RATED_HOUSE_BILL)
                 .entityId(1L)
                 .fileId(fakeFieldId)
                 .build();
@@ -5153,7 +5153,7 @@ class ReportServiceTest extends CommonMocks {
         reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
 
         DocDetails docDetail = DocDetails.builder()
-                .type(DocDetailsTypes.RATED_BL)
+                .type(DocDetailsTypes.RATED_SEAWAY_BILL)
                 .entityId(1L)
                 .fileId(fakeFieldId)
                 .build();

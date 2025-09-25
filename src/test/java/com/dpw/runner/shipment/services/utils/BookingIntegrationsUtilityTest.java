@@ -882,7 +882,7 @@ class BookingIntegrationsUtilityTest {
 
         when(docDetailsDao.findByFileId(anyString())).thenReturn(DocDetails.builder()
                         .fileId(fakeFileId)
-                        .type(DocDetailsTypes.RATED_BL)
+                        .type(DocDetailsTypes.RATED_HOUSE_BILL)
                         .versionNumber("v-1")
                         .entityId(1L)
                     .build());
@@ -906,7 +906,7 @@ class BookingIntegrationsUtilityTest {
 
         when(docDetailsDao.findByFileId(anyString())).thenReturn(DocDetails.builder()
                 .fileId(fakeFileId)
-                .type(DocDetailsTypes.PRE_ALERT)
+                .type(DocDetailsTypes.NOT_RATED_HOUSE_BILL)
                 .versionNumber("v-1")
                 .entityId(1L)
                 .build());
