@@ -10,4 +10,5 @@ import java.io.Serializable;
 public class InttraEventDto implements Serializable {
     private String entityType;
     private InttraCarrierBookingEventDto carrierBooking;
+    private VgmEventDto vgm;
 }

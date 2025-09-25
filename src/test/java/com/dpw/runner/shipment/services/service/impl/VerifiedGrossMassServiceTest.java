@@ -2,16 +2,18 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -25,6 +27,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -37,6 +40,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -76,6 +80,7 @@ import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMa
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,6 +93,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -136,6 +142,8 @@ class VerifiedGrossMassServiceTest {
 
     @Mock
     private INotificationService notificationService;
+    @Mock
+    private ITransactionHistoryDao transactionHistoryDao;
 
     @InjectMocks
     private VerifiedGrossMassService verifiedGrossMassService;
@@ -867,8 +875,10 @@ class VerifiedGrossMassServiceTest {
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
 
-        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
-        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        CommonContainers container1 = new CommonContainers();
+        container1.setId(101L);
+        CommonContainers container2 = new CommonContainers();
+        container2.setId(102L);
         when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
 
         when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
@@ -902,8 +912,10 @@ class VerifiedGrossMassServiceTest {
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
 
-        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
-        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        CommonContainers container1 = new CommonContainers();
+        container1.setId(101L);
+        CommonContainers container2 = new CommonContainers();
+        container2.setId(102L);
         when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
 
         when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
@@ -934,7 +946,8 @@ class VerifiedGrossMassServiceTest {
         verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
 
         VerifiedGrossMass vgm = createMockVGM();
-        CommonContainers container = new CommonContainers(); container.setId(101L);
+        CommonContainers container = new CommonContainers();
+        container.setId(101L);
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
         when(commonContainersRepository.findAllByIdIn(List.of(101L))).thenReturn(List.of(container));
@@ -987,9 +1000,17 @@ class VerifiedGrossMassServiceTest {
         testEntity.setEntityId(100L);
 
         CarrierBookingInfoProjection projection = new CarrierBookingInfoProjection() {
-            public String getBookingStatus() { return "Draft"; }
-            public String getBookingNo() { return "BK001"; }
-            public String getSiStatus() { return "Draft"; }
+            public String getBookingStatus() {
+                return "Draft";
+            }
+
+            public String getBookingNo() {
+                return "BK001";
+            }
+
+            public String getSiStatus() {
+                return "Draft";
+            }
         };
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
@@ -1054,7 +1075,6 @@ class VerifiedGrossMassServiceTest {
         verify(carrierBookingInttraUtil).getConsolidationDetail(300L);
         verify(verifiedGrossMassUtil, times(2)).compareVGMContainers(any(), any(), any());
     }
-
 
 
     private VerifiedGrossMass createMockVGM() {
@@ -1167,5 +1187,137 @@ class VerifiedGrossMassServiceTest {
             // Verify that email sending did not occur
             verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
         }
+    }
+
+    @Test
+    void updateVgmStatus_shouldUpdateContainerStatus_andSave_whenStatusIsAccepted() {
+        CommonContainers container = new CommonContainers();
+        container.setContainerNo("CONT123");
+
+        VerifiedGrossMass vgmEntity = new VerifiedGrossMass();
+        vgmEntity.setId(10L);
+        vgmEntity.setContainersList(List.of(container));
+
+        VgmEventDto event = new VgmEventDto();
+        event.setBookingNumber("BOOK123");
+        event.setContainerNumber("CONT123");
+        event.setStatus("Accepted");
+
+        when(verifiedGrossMassDao.findByCarrierBookingNo("BOOK123")).thenReturn(vgmEntity);
+
+        verifiedGrossMassService.updateVgmStatus(event);
+
+        assertEquals(VerifiedGrossMassStatus.AcceptedByINTTRA.name(), container.getVgmStatus());
+        verify(commonContainersRepository).save(container);
+        verify(transactionHistoryDao, never()).save(any());
+    }
+
+    @Test
+    void updateVgmStatus_shouldSaveTransactionHistory_whenStatusIsRejected() {
+        CommonContainers container = new CommonContainers();
+        container.setContainerNo("CONT123");
+
+        VerifiedGrossMass vgmEntity = new VerifiedGrossMass();
+        vgmEntity.setId(10L);
+        vgmEntity.setContainersList(List.of(container));
+
+        VgmEventDto event = new VgmEventDto();
+        event.setBookingNumber("BOOK123");
+        event.setContainerNumber("CONT123");
+        event.setStatus("Rejected");
+
+        com.dpw.runner.shipment.services.kafka.dto.inttra.Error error1 = new com.dpw.runner.shipment.services.kafka.dto.inttra.Error();
+        error1.setErrorDetails("Missing weight");
+        com.dpw.runner.shipment.services.kafka.dto.inttra.Error error2 = new com.dpw.runner.shipment.services.kafka.dto.inttra.Error();
+        error2.setErrorDetails("Invalid unit");
+
+        event.setErrors(List.of(error1, error2));
+
+        when(verifiedGrossMassDao.findByCarrierBookingNo("BOOK123")).thenReturn(vgmEntity);
+
+        verifiedGrossMassService.updateVgmStatus(event);
+
+        assertEquals(VerifiedGrossMassStatus.RejectedByINTTRA.name(), container.getVgmStatus());
+        verify(transactionHistoryDao).save(any(TransactionHistory.class));
+        verify(commonContainersRepository).save(container);
+    }
+
+    @Test
+    void updateVgmStatus_shouldDoNothing_whenContainerNumberDoesNotMatch() {
+        CommonContainers container = new CommonContainers();
+        container.setContainerNo("CONT123");
+
+        VerifiedGrossMass vgmEntity = new VerifiedGrossMass();
+        vgmEntity.setId(10L);
+        vgmEntity.setContainersList(List.of(container));
+
+        VgmEventDto event = new VgmEventDto();
+        event.setBookingNumber("BOOK123");
+        event.setContainerNumber("DIFF999");
+        event.setStatus("Accepted");
+
+        when(verifiedGrossMassDao.findByCarrierBookingNo("BOOK123")).thenReturn(vgmEntity);
+
+        verifiedGrossMassService.updateVgmStatus(event);
+
+        assertNull(container.getVgmStatus());
+        verify(commonContainersRepository, never()).save(any());
+        verify(transactionHistoryDao, never()).save(any());
+    }
+
+    // ----------- generateErrorMessage() Tests -----------
+
+    @Test
+    void generateErrorMessage_shouldReturnEmptyString_whenErrorsIsNullOrEmpty() {
+        assertEquals(Constants.EMPTY_STRING, verifiedGrossMassService.generateErrorMessage(null));
+        assertEquals(Constants.EMPTY_STRING, verifiedGrossMassService.generateErrorMessage(Collections.emptyList()));
+    }
+
+    @Test
+    void generateErrorMessage_shouldJoinErrorMessages_withSeparator() {
+        com.dpw.runner.shipment.services.kafka.dto.inttra.Error e1 = new com.dpw.runner.shipment.services.kafka.dto.inttra.Error();
+        e1.setErrorDetails("Error A");
+        com.dpw.runner.shipment.services.kafka.dto.inttra.Error e2 = new com.dpw.runner.shipment.services.kafka.dto.inttra.Error();
+        e2.setErrorDetails("Error B");
+
+        String result = verifiedGrossMassService.generateErrorMessage(List.of(e1, e2));
+
+        assertEquals("Error A| Error B", result);
+    }
+
+    // ----------- parseIntraStatus() Tests -----------
+
+    @Test
+    void parseIntraStatus_shouldReturnCorrectEnum_forAllKnownValues() {
+        assertEquals(VerifiedGrossMassStatus.ConditionallyAccepted,
+                callParse("ConditionallyAccepted"));
+        assertEquals(VerifiedGrossMassStatus.AcceptedByINTTRA,
+                callParse("Accepted"));
+        assertEquals(VerifiedGrossMassStatus.RejectedByINTTRA,
+                callParse("Rejected"));
+        assertEquals(VerifiedGrossMassStatus.ReplacedByCarrier,
+                callParse("Replaced"));
+        assertEquals(VerifiedGrossMassStatus.Changed,
+                callParse("Changed"));
+        assertEquals(VerifiedGrossMassStatus.Acknowledged,
+                callParse("Acknowledged"));
+        assertEquals(VerifiedGrossMassStatus.PendingFromCarrier,
+                callParse("SomethingElse"));
+    }
+
+    // helper to invoke private static method parseIntraStatus
+    private VerifiedGrossMassStatus callParse(String status) {
+        return Arrays.stream(VerifiedGrossMassService.class.getDeclaredMethods())
+                .filter(m -> m.getName().equals("parseIntraStatus"))
+                .findFirst()
+                .map(m -> {
+                    m.setAccessible(true);
+                    try {
+                        return (VerifiedGrossMassStatus) m.invoke(null, status);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .orElseThrow();
     }
 }

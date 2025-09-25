@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -8,9 +9,10 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -28,6 +30,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -44,12 +47,13 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.Error;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
-import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -82,6 +86,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -102,12 +107,13 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final VerifiedGrossMassUtil verifiedGrossMassUtil;
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
     private final INotificationService notificationService;
+    private final ITransactionHistoryDao transactionHistoryDao;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
                                     ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, INotificationService notificationService,
-                                    VerifiedGrossMassUtil verifiedGrossMassUtil, CarrierBookingInttraUtil carrierBookingInttraUtil) {
+                                    VerifiedGrossMassUtil verifiedGrossMassUtil, CarrierBookingInttraUtil carrierBookingInttraUtil, ITransactionHistoryDao transactionHistoryDao) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -121,6 +127,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.notificationService = notificationService;
         this.verifiedGrossMassUtil = verifiedGrossMassUtil;
         this.carrierBookingInttraUtil = carrierBookingInttraUtil;
+        this.transactionHistoryDao = transactionHistoryDao;
     }
 
     @Override
@@ -193,7 +200,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         log.info(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
 
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(verifiedGrossMassPage.getContent());
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(verifiedGrossMassPage.getContent(), getMasterData);
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
@@ -201,15 +208,17 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 verifiedGrossMassPage.getTotalElements());
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList, boolean getMasterData) {
         List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
             VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
+        List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
+        verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
 
-        return new ArrayList<>(verifiedGrossMassListResponses);
+        return responseList;
     }
 
     @Override
@@ -595,6 +604,61 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
     }
 
+    @Override
+    public void updateVgmStatus(VgmEventDto vgm) {
+        String carrierBookingNo = vgm.getBookingNumber();
+        String containerNumber = vgm.getContainerNumber();
+        VerifiedGrossMass verifiedGrossMass = verifiedGrossMassDao.findByCarrierBookingNo(carrierBookingNo);
+        List<CommonContainers> containersList = verifiedGrossMass.getContainersList();
+        for (CommonContainers container : containersList) {
+            if (container.getContainerNo() != null && container.getContainerNo().equals(containerNumber)) {
+                String status = vgm.getStatus();
+                VerifiedGrossMassStatus verifiedGrossMassStatus = parseIntraStatus(status);
+                container.setVgmStatus(verifiedGrossMassStatus.name());
+                if (VerifiedGrossMassStatus.RejectedByINTTRA.equals(verifiedGrossMassStatus)) {
+                    List<Error> errors = vgm.getErrors();
+                    TransactionHistory transactionHistory = TransactionHistory.builder()
+                            .entityType(EntityTypeTransactionHistory.VGM)
+                            .entityId(verifiedGrossMass.getId())
+                            .errorMessage(generateErrorMessage(errors))
+                            .actualDateTime(LocalDateTime.now())
+                            .actionStatusDescription(verifiedGrossMassStatus.getDescription())
+                            .sourceSystem(SourceSystem.INTTRA)
+                            .flowType(FlowType.Outbound)
+                            .build();
+                    transactionHistoryDao.save(transactionHistory);
+
+                }
+                commonContainersRepository.save(container);
+                break;
+            }
+        }
+    }
+
+    public String generateErrorMessage(List<Error> errors) {
+        if (errors == null || errors.isEmpty()) {
+            return Constants.EMPTY_STRING;
+        }
+
+        return errors.stream()
+                .map(Error::getErrorDetails)
+                .collect(Collectors.joining("| "));
+    }
+
+    private static VerifiedGrossMassStatus parseIntraStatus(String type) {
+
+        return switch (type) {
+            case "ConditionallyAccepted" -> VerifiedGrossMassStatus.ConditionallyAccepted;
+            case "Accepted" -> VerifiedGrossMassStatus.AcceptedByINTTRA;
+            case "Rejected" -> VerifiedGrossMassStatus.RejectedByINTTRA;
+            case "Replaced" -> VerifiedGrossMassStatus.ReplacedByCarrier;
+            case "Changed" -> VerifiedGrossMassStatus.Changed;
+            case "Acknowledged" -> VerifiedGrossMassStatus.Acknowledged;
+            default -> VerifiedGrossMassStatus.PendingFromCarrier;
+        };
+
+    }
+
     private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, VerifiedGrossMass verifiedGrossMass) {
         String description = "";
         if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
@@ -617,7 +681,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                     .findFirst()
                     .orElse(null);
             if (Objects.nonNull(verifiedGrossMassEmailTemplate)) {
-                SendEmailBaseRequest request =  verifiedGrossMassUtil.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassEmailTemplate);
+                SendEmailBaseRequest request = verifiedGrossMassUtil.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassEmailTemplate);
                 notificationService.sendEmail(request);
                 log.info("Email Notification sent successfully for State Change of VGM Id: {}", verifiedGrossMass.getId());
             }

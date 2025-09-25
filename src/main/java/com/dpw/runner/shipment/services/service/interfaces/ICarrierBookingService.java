@@ -65,5 +65,7 @@ public interface ICarrierBookingService {
 
     void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
     CarrierBookingCloneResponse cloneBooking(Long carrierBookingId);
+
+    ResponseEntity<IRunnerResponse> consolidatedList(CommonRequestModel commonRequestModel, boolean getMasterData);
 }
 

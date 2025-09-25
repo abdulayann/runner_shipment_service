@@ -8,8 +8,8 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -57,8 +57,8 @@ public class CarrierBookingController {
             @ApiResponse(code = 200, response = MyResponseClass.class, message = CarrierBookingConstants.CARRIER_BOOKING_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(ApiConstants.API_CREATE)
-   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
+    @PostMapping(value = ApiConstants.API_CREATE)
+    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) throws RunnerException {
         log.info("Received Carrier Booking CREATE request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.create(request);
@@ -71,7 +71,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
+    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long id) {
         log.info("Received Carrier Booking GET BY ID request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
         CarrierBookingResponse response = carrierBookingService.retrieveById(id);
@@ -79,7 +79,7 @@ public class CarrierBookingController {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @PostMapping(ApiConstants.API_LIST)
+    @PostMapping(value = ApiConstants.API_LIST)
 //    @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Carrier Booking LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
@@ -91,7 +91,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PutMapping(ApiConstants.API_UPDATE)
-   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
+    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) throws RunnerException {
         log.info("Received Carrier Booking UPDATE request with RequestId: {}, and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         CarrierBookingResponse response = carrierBookingService.update(request);
@@ -116,7 +116,7 @@ public class CarrierBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PutMapping(ApiConstants.CANCEL)
-   // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
+    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
     public ResponseEntity<IRunnerResponse> cancel(@RequestParam Long id) {
         log.info("Received Carrier Booking Cancel request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
         carrierBookingService.cancel(id);
@@ -176,7 +176,8 @@ public class CarrierBookingController {
                 LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType(), jsonHelper.convertToJson(submitAmendInttraRequest));
         return ResponseHelper.buildSuccessResponse();
     }
-    @GetMapping
+
+    @GetMapping(value = ApiConstants.API_CLONE)
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.CLONE_CARRIER_BOOKING_SUCCESS)})
     public ResponseEntity<IRunnerResponse> cloneCarrierBooking(@RequestParam Long entityId) {
         try {
@@ -187,5 +188,11 @@ public class CarrierBookingController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @PostMapping(value = ApiConstants.CONSOLIDATED_API_LIST)
+    public ResponseEntity<IRunnerResponse> consolidatedList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        log.info("Received Carrier Booking Consolidated LIST request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        return carrierBookingService.consolidatedList(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
     }
 }

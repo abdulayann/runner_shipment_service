@@ -20,6 +20,8 @@ public interface IVerifiedGrossMassDao {
     VerifiedGrossMass save(VerifiedGrossMass verifiedGrossMass);
 
     boolean existsById(Long id);
+
+    VerifiedGrossMass findByCarrierBookingNo(String carrierBookingNo);
 }
 
 
