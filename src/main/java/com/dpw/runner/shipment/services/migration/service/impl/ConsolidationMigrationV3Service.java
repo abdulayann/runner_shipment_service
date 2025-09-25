@@ -115,7 +115,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Transactional
     @Override
-    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal, boolean isUnLocationLocCodeRequired) {
 
         log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
@@ -132,7 +132,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Step 3: Convert V2 console + its attached shipments into V3 structure
-        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap, weightDecimal, volumeDecimal);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid, true, codeTeuMap, weightDecimal, volumeDecimal, isUnLocationLocCodeRequired);
         log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
         // Step 4: Removed linkage of containers with booking as new Containers are created in booking
@@ -150,6 +150,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
+            if (isUnLocationLocCodeRequired) {
+                commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(consolShipment, null);
+            }
             List<Packing> packingList = consolShipment.getPackingList();
             List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
@@ -202,7 +205,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
      * @param packingVsContainerGuid map to record packing-to-container association during transformation
      * @return transformed V3-compatible consolidation
      */
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal, boolean isUnLocationLocCodeRequired) {
 
         if(codeTeuMap.isEmpty()){
             codeTeuMap = migrationUtil.initCodeTeuMap();
@@ -220,6 +223,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new IllegalStateException("Failed to clone Consolidation object");
         }
 
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, clonedConsole);
+        }
+
         setConsolidationFields(clonedConsole);
 
         // Extract shipments from the cloned clonedConsole object
@@ -232,6 +239,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>(); // shipmentGuid → shipment
 
         for (ShipmentDetails shipment : shipmentDetailsList) {
+
+            if (isUnLocationLocCodeRequired) {
+                commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+            }
+
             UUID shipmentGuid = shipment.getGuid();
             guidToShipment.put(shipmentGuid, shipment);
 

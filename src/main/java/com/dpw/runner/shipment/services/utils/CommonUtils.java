@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.itextpdf.text.*;
@@ -165,6 +166,8 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -3142,4 +3145,97 @@ public class CommonUtils {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
         }
     }
+
+    public void validateAndSetOriginAndDestinationPortIfNotExist(ShipmentDetails shipment, ConsolidationDetails console) {
+
+        CarrierDetails carrierDetails;
+        List<Routings> routings;
+        if (null != shipment) {
+            carrierDetails = shipment.getCarrierDetails();
+            routings = shipment.getRoutingsList();
+        } else {
+            carrierDetails = console.getCarrierDetails();
+            routings = console.getRoutingsList();
+        }
+
+        Set<String> plcData = new HashSet<>();
+        boolean isCarrierLocCodeAdded = false;
+        boolean isRoutingLocCodeAdded = false;
+        isCarrierLocCodeAdded = validateCarrierDetail(carrierDetails, isCarrierLocCodeAdded, plcData);
+        isRoutingLocCodeAdded = validateRoute(routings, isRoutingLocCodeAdded, plcData);
+        setIfLocCodeExist(plcData, isCarrierLocCodeAdded, carrierDetails, isRoutingLocCodeAdded, routings);
+    }
+
+    private static boolean validateCarrierDetail(CarrierDetails carrierDetails, boolean isCarrierLocCodeAdded, Set<String> plcData) {
+        if (null != carrierDetails) {
+            if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getOriginPort());
+            }
+            if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getDestinationPort());
+            }
+        }
+        return isCarrierLocCodeAdded;
+    }
+
+    private static boolean validateRoute(List<Routings> routings, boolean isRoutingLocCodeAdded, Set<String> plcData) {
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPol());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPod());
+            }
+        }
+        return isRoutingLocCodeAdded;
+    }
+
+    private void setIfLocCodeExist(Set<String> plcData, boolean isCarrierLocCodeAdded, CarrierDetails carrierDetails, boolean isRoutingLocCodeAdded, List<Routings> routings) {
+        if (!CollectionUtils.isEmpty(plcData)) {
+            Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(plcData);
+            if (isCarrierLocCodeAdded) {
+                setCarrierData(carrierDetails, unlocationsMap);
+            }
+            if (isRoutingLocCodeAdded) {
+                setRoutingData(routings, unlocationsMap);
+            }
+        }
+    }
+
+    private static void setCarrierData(CarrierDetails carrierDetails, Map<String, UnlocationsResponse> unlocationsMap) {
+        if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort() && unlocationsMap.containsKey(carrierDetails.getOriginPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getOriginPort());
+            carrierDetails.setOriginPortLocCode(unLocResp.getLocCode());
+        }
+        if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort() && unlocationsMap.containsKey(carrierDetails.getDestinationPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getDestinationPort());
+            carrierDetails.setDestinationPortLocCode(unLocResp.getLocCode());
+        }
+    }
+
+    private static void setRoutingData(List<Routings> routings, Map<String, UnlocationsResponse> unlocationsMap) {
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol() && unlocationsMap.containsKey(route.getPol())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPol());
+                route.setOriginPortLocCode(unLocResp.getLocCode());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod() && unlocationsMap.containsKey(route.getPod())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPod());
+                route.setDestinationPortLocCode(unLocResp.getLocCode());
+            }
+        }
+    }
+
+    public boolean getBooleanConfigFromAppConfig(String appConfigKey) {
+        String configuredValue = applicationConfigService.getValue(appConfigKey);
+        if (null == configuredValue) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(configuredValue);
+    }
+
 }
