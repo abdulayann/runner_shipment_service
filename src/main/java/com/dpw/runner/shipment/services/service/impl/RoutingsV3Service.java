@@ -728,6 +728,20 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         List<Routings> oldConvertedRouting = null;
         if (!CollectionUtils.isEmpty(incomingIds)) {
             existingRoutings = routingsDao.findByIdIn(incomingIds);
+            if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+                Map<Long, UUID> routingMap = existingRoutings.stream()
+                        .filter(r -> r.getId() != null && r.getConsolRouteRefGuid() != null) // filter nulls
+                        .collect(Collectors.toMap(
+                                Routings::getId,
+                                Routings::getConsolRouteRefGuid
+                        ));
+                if (!CollectionUtils.isEmpty(routingMap)) {
+                    incomingRoutings.forEach(req -> {
+                        UUID consolrefGuid = routingMap.get(req.getId());
+                        req.setConsolRouteRefGuid(consolrefGuid);
+                    });
+                }
+            }
             // Validate incoming request
             routingValidationUtil.validateUpdateBulkRequest(incomingRoutings, existingRoutings);
             oldConvertedRouting = jsonHelper.convertValueToList(existingRoutings, Routings.class);
