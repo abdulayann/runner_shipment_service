@@ -1788,6 +1788,11 @@ public class ContainerV3Service implements IContainerV3Service {
                 executorService
         ));
 
+        futures.add(CompletableFuture.runAsync(
+                () -> shippingInstructionUtil.syncCommonContainers(List.of(container)),
+                executorService
+        ));
+
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
@@ -1817,6 +1822,11 @@ public class ContainerV3Service implements IContainerV3Service {
               false
           ));
     }
+
+      futures.add(CompletableFuture.runAsync(
+              () -> shippingInstructionUtil.syncCommonContainers(containers),
+              executorService
+      ));
 
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }
@@ -2603,8 +2613,9 @@ public class ContainerV3Service implements IContainerV3Service {
         log.info("Starting pushContainersToDependentServices with containersList size: {}", size);
 
         if (CommonUtils.listIsNullOrEmpty(containersList)) {
-            log.warn("Container list is null or empty. Exiting.");
-            return;
+            String errMsg = "Container list is null or empty. Exiting.";
+            log.info(errMsg);
+            throw new ValidationException(errMsg);
         }
         V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
@@ -2626,7 +2637,7 @@ public class ContainerV3Service implements IContainerV3Service {
         updateRequest.setTenantCode(UserContext.getUser().getCode());
         eventMessage.setContainerUpdateRequest(updateRequest);
         String jsonBody = jsonHelper.convertToJson(eventMessage);
-        log.debug("JSON body created for event message: {}", jsonBody);
+        log.info("JSON body created for event message: {}", jsonBody);
         if (Boolean.TRUE.equals(tenantSettings.getTransportOrchestratorEnabled())) {
             log.info("Producing message to Kafka for transport orchestrator.");
             producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());

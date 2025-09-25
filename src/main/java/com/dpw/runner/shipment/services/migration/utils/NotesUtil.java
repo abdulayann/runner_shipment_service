@@ -69,9 +69,12 @@ public class NotesUtil {
         List<Packing> packingList = shipmentDetails.getPackingList();
         StringBuilder text = new StringBuilder();
 
-        text.append("Please note that the Cargo details have been amended since it is a V2 shipment opened in V3.").append("\n");
-        text.append(nullSafe(shipmentDetails.getShipmentId())).append("\n");
-
+        text.append("Please note that below is the Historic Cargo Details which were Entered/available in CR2:").append("\n");
+        text.append("\n");
+        text.append("Shipment Number: ").append(nullSafe(shipmentDetails.getShipmentId())).append("\n");
+        text.append("\n");
+        text.append("Shipment Cargo Summary:").append("\n");
+        text.append(commodity).append(nullSafe(shipmentDetails.getCommodity())).append("\n");
         text.append("Total Gross Weight: ").append(nullSafe(shipmentDetails.getWeight())).append(" ").append(nullSafe(shipmentDetails.getWeightUnit())).append("\n");
         text.append(netWeight).append(nullSafe(shipmentDetails.getNetWeight())).append(" ").append(nullSafe(shipmentDetails.getNetWeightUnit())).append("\n");
         text.append("Total Gross Volume: ").append(nullSafe(shipmentDetails.getVolume())).append(" ").append(nullSafe(shipmentDetails.getVolumeUnit())).append("\n");
@@ -106,6 +109,7 @@ public class NotesUtil {
         }
         Integer i =1;
         log.info("containerList: {}", containersList);
+        text.append("Container Details:").append("\n");
         for (Containers container : containersList) {
             text.append("Container Details #").append(i).append("\n");
             text.append(nullSafe(container.getContainerNumber())).append("\n");
@@ -136,10 +140,9 @@ public class NotesUtil {
             }
         }
 
-        text.append("Packages# ").append("\n");
+        text.append("Package Details: ").append("\n");
         for(Packing packing: packingList){
             text.append("No Of Package: ").append(nullSafe(packing.getPacks())).append(" ").append(nullSafe(packing.getPacksType())).append("\n");
-            text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
             String containerNumber = "";
             if (packing.getContainerId() != null) {
                 Containers matchedContainer = containerIdMap.get(packing.getContainerId());
@@ -148,6 +151,8 @@ public class NotesUtil {
                 }
             }
             text.append("Container Number: ").append(nullSafe(containerNumber)).append("\n");
+            text.append("Length: ").append(nullSafe(packing.getLength())).append(" ").append(nullSafe(packing.getLengthUnit())).append("\n");
+            text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
             text.append("Height: ").append(nullSafe(packing.getHeight())).append(" ").append(nullSafe(packing.getHeightUnit())).append("\n");
             text.append("Gross Weight: ").append(nullSafe(packing.getWeight())).append(" ").append(nullSafe(packing.getWeightUnit())).append("\n");
             text.append(netWeight).append(nullSafe(packing.getNetWeight())).append(" ").append(nullSafe(packing.getNetWeightUnit())).append("\n");
@@ -170,11 +175,13 @@ public class NotesUtil {
         Set<Containers> containersSet = new HashSet<>(containersList);
         StringBuilder text = new StringBuilder();
         Set<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList();
-        for(ShipmentDetails shipmentDetails: shipmentDetailsList){
-            addNotesForShipment(shipmentDetails);
+        if (shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
+            for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                addNotesForShipment(shipmentDetails);
+            }
         }
 
-        text.append("Please note that the Cargo details have been amended since it is a V2 consolidation opened in V3.");
+        text.append("Please note that below is the Historic Cargo Details which were Entered/available in CR2:");
         text.append(nullSafe(consolidationDetails.getConsolidationNumber())).append("\n");
 
         appendContainerDataInText(containersSet, text);

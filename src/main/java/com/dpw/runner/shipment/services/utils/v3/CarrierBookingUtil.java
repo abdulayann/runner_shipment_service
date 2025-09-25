@@ -1,7 +1,12 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -9,6 +14,9 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +31,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Component
@@ -84,7 +94,7 @@ public class CarrierBookingUtil {
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     public void generateBookingNumber(CarrierBooking carrierBookingEntity) {
@@ -129,5 +139,49 @@ public class CarrierBookingUtil {
         if (value != null) {
             setter.accept(value);
         }
+    }
+
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
+
+        if (Objects.isNull(carrierDatav1Map)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
+            EntityTransferCarrier carrier = entry.getValue();
+
+            String carrierScacCode = carrier.ItemValue;
+            String carrierDescription = carrier.ItemDescription;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            carrierBookingBridgeRequest.setCarrierScacCode(carrierScacCode);
+            carrierBookingBridgeRequest.setCarrierDescription(carrierDescription);
+        }
+    }
+
+    public void populateIntegrationCode(Map<String, EntityTransferContainerType> containerTypeMap, CarrierBookingBridgeRequest carrierBookingBridgeRequest) {
+
+        if (Objects.isNull(containerTypeMap) || carrierBookingBridgeRequest.getContainersList() == null) return;
+
+        for(CommonContainerResponse commonContainerResponse : carrierBookingBridgeRequest.getContainersList()){
+            String containerCode = commonContainerResponse.getContainerCode();
+            EntityTransferContainerType entityTransferContainerType = containerTypeMap.getOrDefault(containerCode, null);
+            if(entityTransferContainerType != null){
+                commonContainerResponse.setIntegrationCode(entityTransferContainerType.getIntegrationCode());
+            }
+        }
+    }
+
+    public SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
+        String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
+        toEmails += carrierBooking.getCreateByUserEmail();
+        if (!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())) {
+            toEmails += "," + carrierBooking.getSubmitByUserEmail();
+        }
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(carrierBookingTemplate.getSubject());
+        request.setTemplateName(carrierBookingTemplate.getName());
+        request.setHtmlBody(carrierBookingTemplate.getBody());
+        return request;
     }
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +44,7 @@ public class CommonContainerResponse implements IRunnerResponse {
     private LocalDateTime approvalDate;
     private BigDecimal vgmWeight;
     private String vgmWeightUnit;
+    private LocalDateTime weightDeterminationDateTime;
     private WeightDeterminationMethodType weightDeterminationMethod;
     private String weightDeterminationLocation;
     private String vgmStatus;
@@ -52,5 +53,6 @@ public class CommonContainerResponse implements IRunnerResponse {
     private Long verifiedGrossMassId;
     private String commodityGroup;
     private String marksNums;
-    private Parties weighingParty;
+    private String integrationCode;
+    private PartiesResponse weighingParty;
 }

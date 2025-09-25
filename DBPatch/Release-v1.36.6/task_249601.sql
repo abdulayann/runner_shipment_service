@@ -1,0 +1,92 @@
+UPDATE parties
+SET
+    org_code = 'FRC00036259',
+    address_code = 'FRO00037745',
+    org_id = '159878',
+    address_id = '269898',
+    updated_at = NOW(),
+    org_data = '{
+                    "Id": 159878,
+                    "City": "Jeddah",
+                    "Guid": "3a33ac3b-1a42-46ef-a0ae-c3a6a994a843",
+                    "Email": "NRMARKNBL@GMAIL.COM",
+                    "IsGSA": false,
+                    "Phone": "555677666",
+                    "label": "NABEEL A RAJAB & BROTHERS CO. LTD",
+                    "value": "FRC00036259",
+                    "Broker": false,
+                    "Source": "CRP",
+                    "Carrier": false,
+                    "Country": "SAU",
+                    "Address1": "Al Khaleej Kaaki Center,  5th Floor, Office  514, 7947 Abu Bakr Siddique Rd, Ash Sharafiyyah,",
+                    "FullName": "NABEEL A RAJAB & BROTHERS CO. LTD",
+                    "IsActive": 1,
+                    "Payables": false,
+                    "Services": false,
+                    "TenantId": 442,
+                    "CompanyId": 372,
+                    "Consignee": true,
+                    "Consigner": true,
+                    "IsParnter": false,
+                    "PANNumber": "FRC00036259",
+                    "TaxVendor": false,
+                    "WareHouse": false,
+                    "AirCarrier": false,
+                    "ExtraParam": "",
+                    "InsertDate": "2025-07-31T13:44:06.000",
+                    "SeaCarrier": false,
+                    "UpdateDate": "2025-07-31T13:44:06.000",
+                    "IsSuspended": false,
+                    "RailCarrier": false,
+                    "Receivables": false,
+                    "RoadCarrier": false,
+                    "ZipPostCode": "23216",
+                    "ActiveClient": true,
+                    "CurrencyCode": "SAR",
+                    "EmailInvoice": false,
+                    "InsertUserId": 1712,
+                    "UpdateUserId": 1712,
+                    "ForworderAgent": false,
+                    "IsCreditEnabled": false,
+                    "IsV2PaymentTerm": false,
+                    "TransportClient": false,
+                    "IsWalkInCustomer": false,
+                    "OrganizationCode": "FRC00036259",
+                    "EnableBulkInvoice": false,
+                    "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "IsClientEInvoiceEnabled": false,
+                    "ImportExportClearanceLock": false,
+                    "FusionCreditlimitOverrideApproved": false
+                }',
+    address_data = '{
+                        "Id": 269898,
+                        "City": "Jeddah",
+                        "Email": "NRMARKNBL@GMAIL.COM",
+                        "label": "FRO00037745",
+                        "value": "FRO00037745",
+                        "Country": "SAU",
+                        "OrgGuid": "3a33ac3b-1a42-46ef-a0ae-c3a6a994a843",
+                        "Address1": "Al Khaleej Kaaki Center,  5th Floor, Office  514, 7947 Abu Bakr Siddique Rd, Ash Sharafiyyah,",
+                        "OrgSource": "CRP",
+                        "AddressType": 2,
+                        "CompanyName": "NABEEL A RAJAB & BROTHERS CO. LTD",
+                        "OrgFullName": "NABEEL A RAJAB & BROTHERS CO. LTD",
+                        "OrgPayables": false,
+                        "ZipPostCode": "23216",
+                        "OrgReceivables": false,
+                        "OrgActiveClient": true,
+                        "AddressShortCode": "FRO00037745",
+                        "OrgOrganizationCode": "FRC00036259"
+                    }'
+    where
+        id in (select client_id from shipment_details where shipment_id='PRGS25080306' and tenant_id = 473);
+
+    update
+        shipment_details
+    set
+        client_dps_address_id = 108041,
+        updated_at = NOW()
+    where
+        shipment_id='PRGS25080306' and tenant_id = 473;
+

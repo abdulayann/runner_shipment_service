@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConsta
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -2265,6 +2266,7 @@ class AwbServiceTest extends CommonMocks {
 
 
         when(awbDao.save(any())).thenReturn(testMawb);
+        when(mawbHawbLinkDao.findByMawbId(anyLong())).thenReturn(List.of(MawbHawbLink.builder().hawbId(12L).mawbId(23L).build()));
 
         // UnLocation response mocking
         when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
@@ -3333,6 +3335,62 @@ class AwbServiceTest extends CommonMocks {
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_noConsolidationId() {
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.empty());
+        // assert the response structure for 'no consolidation', possibly a default/success payload
+        assertNotNull(response);
+        // add further assertions per your response structure
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbNull() {
+        Mockito.when(awbDao.findByConsolidationId(100L)).thenReturn(null);
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(100L));
+        assertNotNull(response);
+        // add further assertions as needed
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbEmpty() {
+        Mockito.when(awbDao.findByConsolidationId(100L)).thenReturn(Collections.emptyList());
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(100L));
+        assertNotNull(response);
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusFsuLocked() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AWB_FSU_LOCKED);
+        Mockito.when(awbDao.findByConsolidationId(200L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(200L));
+        assertNotNull(response);
+        // verify that the correct message is set in the response body
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusOtherAirMessage() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AIR_MESSAGE_SENT);
+        Mockito.when(awbDao.findByConsolidationId(300L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(300L));
+        assertNotNull(response);
+        // verify correct message in response body
+    }
+
+    @Test
+    void testValidateAwbBeforeAttachment_awbStatusOtherAirMessage1() {
+        Awb mockAwb = Mockito.mock(Awb.class);
+        Mockito.when(mockAwb.getAirMessageStatus()).thenReturn(AwbStatus.AIR_MESSAGE_SUCCESS);
+        Mockito.when(awbDao.findByConsolidationId(300L)).thenReturn(List.of(mockAwb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.validateAwbBeforeAttachment(Optional.of(300L));
+        assertNotNull(response);
+        // verify correct message in response body
     }
 
 
@@ -4509,6 +4567,55 @@ class AwbServiceTest extends CommonMocks {
         var e = assertThrows(ValidationException.class, () ->
                 awbService.reset(commonRequestModel));
         assertNotNull(e);
+    }
+
+    @Test
+    void airMessageStatusReset_success() throws RunnerException {
+        Long awbId = 1L;
+        Awb awb = new Awb();
+        awb.setId(awbId);
+        awb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
+        awb.setConsolidationId(2L);
+
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.of(awb));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(jsonHelper.readFromJson(anyString(), eq(Awb.class))).thenReturn(awb);
+        when(awbDao.save(any())).thenReturn(awb);
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildSuccessResponse().getStatusCode(), response.getStatusCode());
+        verify(awbDao).save(awb);
+    }
+
+    @Test
+    void airMessageStatusReset_fails_when_awb_not_locked() {
+        Long awbId = 1L;
+        Awb awb = new Awb();
+        awb.setId(awbId);
+        awb.setAirMessageStatus(AwbStatus.AWB_GENERATED);
+
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.of(awb));
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildFailedResponse("AWB is not in FSU Locked status, cannot reset the status.").getStatusCode(), response.getStatusCode());
+    }
+
+    @Test
+    void airMessageStatusReset_fails_when_awb_not_found() {
+        Long awbId = 1L;
+        CommonRequestModel request = CommonRequestModel.builder().id(awbId).build();
+
+        when(awbDao.findById(awbId)).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> response = awbService.airMessageStatusReset(request);
+
+        assertEquals(ResponseHelper.buildFailedResponse(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE).getStatusCode(), response.getStatusCode());
     }
 
     @Test

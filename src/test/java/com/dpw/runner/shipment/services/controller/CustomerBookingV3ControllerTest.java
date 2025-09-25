@@ -295,4 +295,11 @@ class CustomerBookingV3ControllerTest {
         var response = customerBookingV3Controller.cloneById(123L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+
+    @Test
+    void resetBookingQuoteRules_successResponse() {
+        when(customerBookingV3Service.resetBookingQuoteRules(any())).thenReturn(new QuoteResetRulesResponse());
+        var response = customerBookingV3Controller.resetBookingQuoteRules(1L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 }

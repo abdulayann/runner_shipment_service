@@ -2493,8 +2493,8 @@ class CommonUtilsTest {
         auditLogList.add(AuditLog.builder().changes(changes).build());
 
         when(iAuditLogDao.findByOperationAndParentId(
-                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
-        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId())).thenReturn(auditLogList);
+        commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, false);
 
         assertEquals("Remarks", dictionary.get(REQUESTER_REMARKS));
     }
@@ -3155,6 +3155,19 @@ class CommonUtilsTest {
     void testGetCountryFromUnLocCode1() {
         String response = commonUtils.getCountryFromUnLocCode("IN");
         assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetTwoDigitCountryFromUnLocCode(String req) {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetTwoDigitCountryFromUnLocCode() {
+        String response = commonUtils.getTwoDigitCountryFromUnLocCode("CAN");
+        assertEquals("CA", response);
     }
 
     @ParameterizedTest
@@ -4725,6 +4738,12 @@ class CommonUtilsTest {
         when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
         String volumeUnit = commonUtils.getDefaultVolumeUnit();
         assertEquals("M3", volumeUnit);
+    }
+    
+    @Test
+    void getTaskIdHyperLinkV2_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2("SH", "TA");
+        assertNotNull(result);
     }
 
     private ShipmentDetails getMockShipmentDetails() {
@@ -7163,5 +7182,79 @@ class CommonUtilsTest {
 
     private static Stream<String> transportModesProvider() {
         return Stream.of("SEA", "RAI", "ROA","AIR");
+    }
+    @Test
+    void testConvertSeconds_OnlySeconds() {
+        // Test cases where result should only show seconds (less than 60 seconds)
+        String result1 = commonUtils.convertSeconds(45L);
+        assertEquals("The export will be available in approximately 45 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(30L);
+        assertEquals("The export will be available in approximately 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(59L);
+        assertEquals("The export will be available in approximately 59 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(1L);
+        assertEquals("The export will be available in approximately 1 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_OnlyMinutes() {
+        // Test cases where result should only show minutes (exact minutes, no remaining seconds)
+        String result1 = commonUtils.convertSeconds(60L);
+        assertEquals("The export will be available in approximately 1 minutes. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(120L);
+        assertEquals("The export will be available in approximately 2 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(300L);
+        assertEquals("The export will be available in approximately 5 minutes. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(3600L);
+        assertEquals("The export will be available in approximately 60 minutes. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_MinutesAndSeconds() {
+        // Test cases where result should show both minutes and seconds
+        String result1 = commonUtils.convertSeconds(90L);
+        assertEquals("The export will be available in approximately 1 minutes and 30 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(150L);
+        assertEquals("The export will be available in approximately 2 minutes and 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(3661L);
+        assertEquals("The export will be available in approximately 61 minutes and 1 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(125L);
+        assertEquals("The export will be available in approximately 2 minutes and 5 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_EdgeCases() {
+        // Test edge cases
+        String result1 = commonUtils.convertSeconds(0L);
+        assertEquals("The export will be available in approximately 0 seconds. Please try again after that time.", result1);
+
+        // Test large values
+        String result2 = commonUtils.convertSeconds(7200L); // 2 hours = 120 minutes
+        assertEquals("The export will be available in approximately 120 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(7201L); // 2 hours and 1 second
+        assertEquals("The export will be available in approximately 120 minutes and 1 seconds. Please try again after that time.", result3);
+    }
+
+    @Test
+    void testConvertSeconds_LargeValues() {
+        // Test very large long values
+        String result1 = commonUtils.convertSeconds(100000L);
+        assertEquals("The export will be available in approximately 1666 minutes and 40 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(Long.MAX_VALUE);
+        long expectedMinutes = Long.MAX_VALUE / 60;
+        long expectedSeconds = Long.MAX_VALUE % 60;
+        String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
+        assertEquals(expected, result2);
     }
 }

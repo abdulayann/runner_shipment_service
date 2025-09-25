@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingLegWarning;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -205,7 +206,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
                     List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
                             .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                            .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
+                            .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails))
                             .toList();
 
                     // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
@@ -602,8 +603,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             List<RoutingsResponse> response = convertEntityListToDtoList(routingsPage.getContent());
+            List<RoutingsResponse> mainCarriageList = response.stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                    .toList();
+            Map<String, RoutingLegWarning> legsWarning = new HashMap<>();
+            String validationMessage = routingValidationUtil.getWarningMessage(mainCarriageList, legsWarning);
             Map<String, Object> masterData = this.getMasterDataForList(response);
-            return RoutingListResponse.builder().routings(response).totalCount(routingsPage.getTotalElements())
+            return RoutingListResponse.builder().routings(response).warningMessage(validationMessage).legsWarning(legsWarning).totalCount(routingsPage.getTotalElements())
                     .totalPages(routingsPage.getTotalPages()).masterData(masterData).build();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -694,12 +700,25 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     @Transactional
     public BulkRoutingResponse bulkUpdateWithValidateWrapper(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
+        routingValidationUtil.validateVoyageLengthRequest(request);
         if (module.equalsIgnoreCase(Constants.SHIPMENT)) {
-            for (RoutingsRequest routingsRequest : request.getRoutings()) {
-                routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest);
+            List<RoutingsRequest> mainCarriageList = request.getRoutings().stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getId() == null)
+                    .toList();
+            if (!CollectionUtils.isEmpty(mainCarriageList)) {
+                routingValidationUtil.checkIfMainCarriageAllowed(mainCarriageList.get(0));
             }
         }
-        return this.updateBulk(request, module);
+        BulkRoutingResponse bulkRoutingResponse = this.updateBulk(request, module);
+        List<RoutingsResponse> mainCarriageList = bulkRoutingResponse.getRoutingsResponseList().stream()
+                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+        Map<String, RoutingLegWarning> legsWarning = new HashMap<>();
+
+        String validationMessage = routingValidationUtil.getWarningMessage(mainCarriageList, legsWarning);
+        bulkRoutingResponse.setWarningMessage(validationMessage);
+        bulkRoutingResponse.setLegsWarning(legsWarning);
+        return bulkRoutingResponse;
     }
 
     @Override
@@ -1017,7 +1036,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         });
         if (!CollectionUtils.isEmpty(routingsRequests)) {
             for (RoutingsRequest routingsRequest : routingsRequests) {
-                if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode()) && StringUtility.isNotEmpty(routingsRequest.getFlightNumber())) {
+                if (Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode()) && StringUtility.isNotEmpty(routingsRequest.getFlightNumber())) {
                     routingsRequest.setVoyage(routingsRequest.getFlightNumber());
                 }
             }
@@ -1245,9 +1264,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         });
     }
 
-    private Routings cloneRoutingForShipment(Routings source, Long shipmentId) {
+    private Routings cloneRoutingForShipment(Routings source, ShipmentDetails shipmentDetails) {
         Routings cloned = new Routings();
-        cloned.setShipmentId(shipmentId);
+        cloned.setShipmentId(shipmentDetails.getId());
         cloned.setBookingId(null);
         cloned.setCarriage(source.getCarriage());
         cloned.setLeg(source.getLeg());
@@ -1277,6 +1296,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         cloned.setCarrierCountry(source.getCarrierCountry());
         cloned.setOriginPortLocCode(source.getOriginPortLocCode());
         cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
+        cloned.setTenantId(shipmentDetails.getTenantId());
         cloned.setInheritedFromConsolidation(true); // Mark as inherited
         return cloned;
     }

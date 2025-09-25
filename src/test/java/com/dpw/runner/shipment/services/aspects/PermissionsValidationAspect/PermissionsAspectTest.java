@@ -303,4 +303,55 @@ class PermissionsAspectTest {
         permissionsAspect = new PermissionsAspect();
         assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
     }
+    @Test
+    void testExportShipmentListAspectWithPermission() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:List:Air Shipment:ImportAirShipmentList", "Shipments:List:Air Shipment:ExportAirShipmentList")));
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        mockShipment.setTransportMode("SEA");
+        mockShipment.setIsDomestic(false);
+        mockShipment.setDirection("EXP");
+        mockShipment.setShipmentType("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
+        permissionsAspect = new PermissionsAspect();
+        assertDoesNotThrow(() ->permissionsAspect.beforeExportExcel(commonRequestModel));
+        assert (true);
+    }
+    @Test
+    void testExportConsolListAspectWithPermission() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:List:Rail Consolidation:ImportRailConsolidationList", "Consolidations:List:Air Consolidation:ImportAirConsolidationList")));
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        mockShipment.setTransportMode("SEA");
+        mockShipment.setIsDomestic(false);
+        mockShipment.setDirection("EXP");
+        mockShipment.setShipmentType("FCL");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
+        permissionsAspect = new PermissionsAspect();
+        assertDoesNotThrow(() ->permissionsAspect.beforeExportExcelConsol(commonRequestModel));
+        assert (true);
+    }
+
 }

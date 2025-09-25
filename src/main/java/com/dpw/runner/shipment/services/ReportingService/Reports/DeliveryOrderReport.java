@@ -172,7 +172,7 @@ public class DeliveryOrderReport extends IReport{
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateTenantFields(dictionary, deliveryOrderModel.getTenantModel());
         populateBlFields(deliveryOrderModel.hbl, dictionary);
-        populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary);
+        populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary, false);
         populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary, orgWithoutTranslation);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);

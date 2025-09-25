@@ -7,14 +7,8 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.TILegType;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
@@ -26,23 +20,22 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -62,6 +55,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -83,6 +77,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     IContainerRepository containerRepository;
     @Autowired
+    IPartiesRepository partiesRepository;
+    @Autowired
     IReferenceNumbersRepository referenceNumbersRepository;
     @Autowired
     private HelperExecutor trxExecutor;
@@ -99,6 +95,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     @Autowired
     private MigrationUtil migrationUtil;
+    @Autowired
+    private ContractIdMapUtil contractIdMapUtil;
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
     public static final Map<String, String> airMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
@@ -147,6 +147,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             referenceNumbersRepository.saveAll(shipment.getReferenceNumbersList());
             log.info("Saved updated references list for Shipment [id={}]", shipment.getId());
         }
+        if(shipment.getShipmentAddresses()!=null && !shipment.getShipmentAddresses().isEmpty()) {
+            partiesRepository.saveAll(shipment.getShipmentAddresses());
+            log.info("Updating shipment Addresses for Shipment [id={}]", shipment.getId());
+        }
 
         // save shipment
         shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
@@ -166,9 +170,27 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             updateTransportInstruction(shipmentDetails);
 
         // Migrated shipment fields
+        updateParentContractIdInShipment(shipmentDetails);
         updateShipmentFields(shipmentDetails);
 
         return shipmentDetails;
+    }
+
+    private void updateParentContractIdInShipment(ShipmentDetails shipmentDetails) {
+        if(!Objects.isNull(shipmentDetails.getContractId())) {
+            String parentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getContractId(), CONTRACT_TYPE, currentEnvironment);
+            if(!Objects.isNull(parentContactId)) {
+                log.info("Updating parentContractId in Shipment id {} with parentContractId {}", shipmentDetails.getId(), parentContactId);
+                shipmentDetails.setParentContractId(parentContactId);
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getDestinationContractId())) {
+            String destinationParentContactId = contractIdMapUtil.getParentContractId(shipmentDetails.getDestinationContractId(), DESTINATION_CONTRACT_TYPE, currentEnvironment);
+            if(!Objects.isNull(destinationParentContactId)) {
+                log.info("Updating destinationParentContractId in Shipment id {} with destinationParentContractId {}", shipmentDetails.getId(), destinationParentContactId);
+                shipmentDetails.setDestinationParentContractId(destinationParentContactId);
+            }
+        }
     }
 
     private void updateShipmentFields(ShipmentDetails shipmentDetails) {
@@ -176,6 +198,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.setIsLocked(false);
         migrateServiceTypes(shipmentDetails);
 
+        setCountryFilterInParties(shipmentDetails);
+
+        setDeliveryPartiesInGeneral(shipmentDetails);
 
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails())) {
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
@@ -194,6 +219,53 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         // migrated deprecated shipment status
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+        }
+    }
+
+    private void setDeliveryPartiesInGeneral(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getDeliveryDetails()!=null){
+            if(shipmentDetails.getDeliveryDetails().getBrokerDetail()!=null && shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()!=null)
+                shipmentDetails.setBrokerageAtDestination(Long.valueOf(shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()));
+            if(shipmentDetails.getDeliveryDetails().getAgentDetail()!=null  && shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgId()!=null)
+                shipmentDetails.setDeliveryAtDestination(Long.valueOf(shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgId()));
+        }
+    }
+
+    private void setCountryFilterInParties(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getClient() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getClientCountry());
+            shipmentDetails.getClient().setCountryCode(country);
+        }
+        if(shipmentDetails.getConsigner() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsignorCountry());
+            shipmentDetails.getConsigner().setCountryCode(country);
+        }
+        if(shipmentDetails.getConsignee() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getConsigneeCountry());
+            shipmentDetails.getConsignee().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getNotifyPartyCountry());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setImportBrokerCountry(country);
+        }
+        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
+            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(country);
+            shipmentDetails.getAdditionalDetails().setExportBrokerCountry(country);
+        }
+        if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
+            for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
+                if(shipmentAddress.getOrgData()!=null  && shipmentAddress.getOrgData().containsKey("Country")
+                        && shipmentAddress.getOrgData().get("Country")!=null) {
+                    String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3((String) shipmentAddress.getOrgData().get("Country"));
+                    shipmentAddress.setCountryCode(country);
+                }
+            }
         }
     }
 
@@ -332,7 +404,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
-
+        shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         return shipmentDetails;
     }
 
@@ -444,7 +516,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 });
             } catch (Exception e) {
                 log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
-                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getLocalizedMessage());
+                migrationUtil.saveErrorResponse(id, Constants.SHIPMENT, IntegrationType.V3_TO_V2_DATA_SYNC, Status.FAILED, e.getMessage());
                 throw new IllegalArgumentException(e);
             } finally {
                 v1Service.clearAuthContext();
