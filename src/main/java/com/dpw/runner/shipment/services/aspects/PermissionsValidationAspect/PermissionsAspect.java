@@ -40,6 +40,14 @@ public class PermissionsAspect {
             return;
         }
 
+        applyRequiredPermissions(commonRequestModel);
+    }
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService.exportExcel(..)) && args(*, commonRequestModel, *)")
+    public void beforeExportExcel(CommonRequestModel commonRequestModel) throws RunnerException {
+        this.applyRequiredPermissions(commonRequestModel);
+    }
+
+    private void applyRequiredPermissions(CommonRequestModel commonRequestModel) throws RunnerException {
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         if(permissionList == null || permissionList.isEmpty())
@@ -70,11 +78,18 @@ public class PermissionsAspect {
     public void beforeConsolidationListV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         this.beforeConsolidationList(joinPoint, commonRequestModel, getMasterData);
     }
-
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService.exportExcel(..)) && args(*, commonRequestModel, *)")
+    public void beforeExportExcelConsol(CommonRequestModel commonRequestModel) throws RunnerException {
+        this.applyRequiredPermissionsConsol(commonRequestModel);
+    }
     public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }
+        applyRequiredPermissionsConsol(commonRequestModel);
+    }
+
+    private void applyRequiredPermissionsConsol(CommonRequestModel commonRequestModel) throws RunnerException {
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
         if(permissionList == null || permissionList.isEmpty())

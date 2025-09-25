@@ -663,14 +663,16 @@ public class EventDao implements IEventDao {
                         EventConstants.PRDE, EventConstants.EMCR, EventConstants.ECCC, EventConstants.BLRS,
                         EventConstants.COOD, EventConstants.INGE, EventConstants.SISC, EventConstants.VGMS,
                         EventConstants.BBCK, EventConstants.DORC, EventConstants.DNMU, EventConstants.INGI,
-                        EventConstants.INGO
+                        EventConstants.INGO, EventConstants.LDVS, EventConstants.VSDT, EventConstants.ARDT,
+                        EventConstants.DCVS
                 ),
                 TRANSPORT_MODE_AIR, Set.of(
                         EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
                         EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
                         EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS, EventConstants.ECCC,
                         EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU, EventConstants.INGE,
-                        EventConstants.DNMU, EventConstants.INGI, EventConstants.INGO
+                        EventConstants.DNMU, EventConstants.INGI, EventConstants.INGO, EventConstants.LDVS,
+                        EventConstants.VSDT, EventConstants.ARDT, EventConstants.DCVS
                 )
         );
 

@@ -258,7 +258,7 @@ class BookingIntegrationsUtilityTest {
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         bookingIntegrationsUtility.updateBookingInPlatform(getCustomerBooking("FCL"));
 
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -268,7 +268,7 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_ROA);
         bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
 
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -278,15 +278,15 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_RAI);
         bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
 
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_throwsException() throws RunnerException {
-        doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any());
+        doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlatform(any());
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         bookingIntegrationsUtility.updateBookingInPlatform(getCustomerBooking("FCL"));
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
     }
 
     @Test
@@ -340,7 +340,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
         shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -352,7 +352,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
         shipment.setTransportMode(Constants.TRANSPORT_MODE_RAI);
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -360,7 +360,7 @@ class BookingIntegrationsUtilityTest {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.RUNNER);
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -617,7 +617,7 @@ class BookingIntegrationsUtilityTest {
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
         mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
-        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(platformServiceAdapter.updateAtPlatform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
@@ -634,7 +634,7 @@ class BookingIntegrationsUtilityTest {
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
-        when(platformServiceAdapter.updateAtPlaform(any())).thenThrow(new RuntimeException("Simulated exception"));
+        when(platformServiceAdapter.updateAtPlatform(any())).thenThrow(new RuntimeException("Simulated exception"));
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
@@ -837,7 +837,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setBookingReference("12345");
         bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
-        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((1))).updateAtPlatform(any());
     }
 
     @Test
@@ -846,7 +846,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setBookingReference(null);
         bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
-        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((0))).updateAtPlatform(any());
     }
 
     @Test
@@ -855,7 +855,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingType(CustomerBookingConstants.RUNNER);
         shipment.setBookingReference(null);
         bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
-        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((0))).updateAtPlatform(any());
     }
 
     @Test
@@ -865,7 +865,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingReference("12345");
         shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
         bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
-        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((0))).updateAtPlatform(any());
     }
 
     @Test

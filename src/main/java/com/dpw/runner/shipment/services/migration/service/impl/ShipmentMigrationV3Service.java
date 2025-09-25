@@ -221,6 +221,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
         }
     }
+
     private void setDeliveryPartiesInGeneral(ShipmentDetails shipmentDetails) {
         if(shipmentDetails.getDeliveryDetails()!=null){
             if(shipmentDetails.getDeliveryDetails().getBrokerDetail()!=null && shipmentDetails.getDeliveryDetails().getBrokerDetail().getOrgId()!=null)

@@ -660,11 +660,11 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         String authToken = RequestAuthContext.getAuthToken();
         sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
-        // Push data to dependant service
-        pushImportShipmentDataToDependantService(shipmentDetailsResponse.getId(), isCreateShip.isTrue(), oldShipmentDetails);
-
         // Update task status approved
         updateNteStatus(importShipmentRequest, shipmentDetailsResponse);
+
+        // Push data to dependant service
+        pushImportShipmentDataToDependantService(shipmentDetailsResponse.getId(), isCreateShip.isTrue(), oldShipmentDetails);
 
         return shipmentId;
     }
@@ -750,15 +750,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
 
         // Import consolidation implementation
-        ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails, oldVsNewShipIds);
+        ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails, oldVsNewShipIds, importConsolidationRequest.getTaskId());
         String consolidationNumber = Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getConsolidationNumber).orElse(null);
-
-        // Update task status approved
-        networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
-        var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
-        if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
-            updateNteStatus(nte.get(), consolidationDetailsResponse, oldVsNewShipIds);
-        }
 
         var response = ImportConsolidationResponse.builder()
                 .consolidationNumber(consolidationNumber)
@@ -826,7 +819,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
     }
 
-    private ConsolidationDetailsResponse createConsolidation (EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds) throws RunnerException, JsonMappingException {
+    private ConsolidationDetailsResponse createConsolidation (EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds, Long taskId) throws RunnerException, JsonMappingException {
         SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
         Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
@@ -897,9 +890,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             // Call document service api for copy docs
             String authToken = RequestAuthContext.getAuthToken();
             sendCopyDocumentRequest(copyDocumentsRequest, authToken);
-
-            // Push data to dependant service
-            pushImportConsoleDataToDependantService(consolidationDetailsResponse.getId(), shipmentIds, isCreateConsole.isTrue(), isCreateShipMap, oldConsolidationDetailsList);
         }
 
         // Send consolidated shipments email
@@ -910,6 +900,18 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
+        }
+
+        // Update task status approved
+        networkTransferService.updateStatusAndCreatedEntityId(taskId, NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
+        var nte = networkTransferDao.findById(taskId);
+        if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL) && consolidationDetailsResponse!=null) {
+            updateNteStatus(nte.get(), consolidationDetailsResponse, oldVsNewShipIds);
+        }
+
+        if(consolidationDetailsResponse!=null){
+            // Push data to dependant service
+            pushImportConsoleDataToDependantService(consolidationDetailsResponse.getId(), shipmentIds, isCreateConsole.isTrue(), isCreateShipMap, oldConsolidationDetailsList);
         }
 
         return consolidationDetailsResponse;
