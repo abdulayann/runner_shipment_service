@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -106,6 +107,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_EmptyQuartzJobInfo() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -126,6 +128,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfo_EmptyShipment() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -149,6 +152,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -184,6 +188,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment2() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -221,6 +226,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfoExists_SendShipment_BadRequest() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -253,6 +259,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment_ValidationError() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -285,6 +292,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment_ValidationThrowsException() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         shipmentDetails.setReceivingBranch(null);
         shipmentDetails.setTriangulationPartnerList(null);
@@ -315,6 +323,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfo_EmptyConsolidation() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         JobDetail jobDetail = mock(JobDetail.class);
@@ -339,6 +348,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -375,6 +385,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation2() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -414,6 +425,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfoExists_SendConsolidation_BadRequest() throws RunnerException {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -448,6 +460,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationError() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -482,6 +495,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationThrowsException() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -514,6 +528,7 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_Error() {
+        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
 
