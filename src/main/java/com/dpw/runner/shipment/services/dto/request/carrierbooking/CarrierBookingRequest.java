@@ -54,7 +54,8 @@ public class CarrierBookingRequest implements Serializable {
     @NotNull(message = "Shipper can not be null")
     private PartiesRequest shipper;
     private PartiesRequest consignee;
-    private PartiesResponse contract;
+    @NotNull(message =  "Contract can not be null")
+    private PartiesRequest contract;
     private PartiesRequest forwardingAgent;
     private PartiesRequest pickupFrom;
     private PartiesRequest deliveryTo;
