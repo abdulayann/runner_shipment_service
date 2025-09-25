@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -233,6 +234,7 @@ class ContainerServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
+        TenantContext.setCurrentTenant(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
