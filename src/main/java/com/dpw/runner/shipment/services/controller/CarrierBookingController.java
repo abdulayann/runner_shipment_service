@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -23,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,9 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-
-import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_AMEND;
-import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_SUBMIT;
 
 @RestController
 @RequestMapping(CarrierBookingConstants.CARRIER_BOOKING_API_HANDLE)
@@ -128,10 +125,10 @@ public class CarrierBookingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long carrierBookingId) {
         String responseMsg = "failure executing :(";
         try {
-            return carrierBookingService.getAllMasterData(shipmentId);
+            return carrierBookingService.getAllMasterData(carrierBookingId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";
@@ -165,21 +162,18 @@ public class CarrierBookingController {
         }
     }
 
-    @PostMapping(API_SUBMIT)
-    public ResponseEntity<IRunnerResponse> submit(@PathVariable("id") Long id) {
-        log.info("Received Carrier Booking Submit request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
-        carrierBookingService.submit(id);
-        log.info("Carrier Booking Submit successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
-        return ResponseHelper.buildSuccessResponse(CarrierBookingConstants.SUBMIT_SUCCESSFUL);
-    }
 
-    @PostMapping(API_AMEND)
-    public ResponseEntity<IRunnerResponse> amend(@PathVariable("id") Long id) {
-        log.info("Received Carrier Booking Amend request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
-        carrierBookingService.amend(id);
-        log.info("Carrier Booking Amend successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
-        return ResponseHelper.buildSuccessResponse(CarrierBookingConstants.AMEND_SUCCESSFUL);
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = CarrierBookingConstants.SUBMIT_AMEND_SUCCESSFUL, response = CarrierBookingController.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = CarrierBookingController.MyResponseClass.class)
+    })
+    @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND)
+    public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException {
+        log.info("Received Carrier Booking Request with RequestId: {} and OperationType: {}", LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType());
+        carrierBookingService.submitOrAmend(submitAmendInttraRequest);
+        log.info("Verified Gross Mass successful with RequestId: {}, OperationType: {} and response: {}",
+                LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType(), jsonHelper.convertToJson(submitAmendInttraRequest));
+        return ResponseHelper.buildSuccessResponse();
     }
-
 
 }

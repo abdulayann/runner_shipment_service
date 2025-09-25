@@ -344,7 +344,8 @@ public class ReportHelper {
         if (!(value instanceof String)) {
             return null;
         }
-        return value.toString();
+        String strValue = value.toString().trim();
+        return strValue.isEmpty() ? null : strValue;
     }
 
     public static List<String> getCompleteNameAndAddress(String name, List<String> list) {

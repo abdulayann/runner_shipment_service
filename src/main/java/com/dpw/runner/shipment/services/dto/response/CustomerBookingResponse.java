@@ -101,4 +101,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String shipmentReferenceNumber;
     private List<Parties> additionalParties;
     private String paymentTerms;
+    private String integrationSource;
 }

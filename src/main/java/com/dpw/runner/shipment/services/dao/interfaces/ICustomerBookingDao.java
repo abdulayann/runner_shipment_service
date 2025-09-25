@@ -25,6 +25,8 @@ public interface ICustomerBookingDao {
     CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException;
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
+    String findCustomerBookingIntegrationSourceByBookingNumber(String bookingNumber);
+
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
     int updateBillStatus(Long id, Boolean isBillCreated);
 

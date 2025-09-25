@@ -1,20 +1,16 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
@@ -22,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInst
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -32,6 +29,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -53,11 +51,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -107,6 +105,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     @Autowired
     private IPartiesDao partiesDao;
 
+    @Autowired
+    private CarrierBookingInttraUtil carrierBookingInttraUtil;
+
+    @Autowired
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
@@ -410,17 +413,17 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
         }
 
+
         Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
-        Page<ShippingInstruction> carrierBookingPage = repository.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
-
-        List<IRunnerResponse> filteredList = convertEntityListToDtoList(carrierBookingPage.getContent(), getMasterData);
+        List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
 
         return ResponseHelper.buildListSuccessResponse(
                 filteredList,
-                carrierBookingPage.getTotalPages(),
-                carrierBookingPage.getTotalElements());
+                shippingInstructionPage.getTotalPages(),
+                shippingInstructionPage.getTotalElements());
     }
 
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
@@ -504,7 +507,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return fieldClassDto;
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList, boolean getMasterData) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShippingInstruction> shippingInstructionList,
+                                                             boolean getMasterData) {
         List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
@@ -513,24 +517,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
-        getMasterDataForList(responseList, getMasterData);
+        shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
         return responseList;
-    }
-
-    public void getMasterDataForList(List<IRunnerResponse> responseList, boolean getMasterData) {
-        if (getMasterData) {
-            try {
-                double startTime = System.currentTimeMillis();
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
-                var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
-                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
-
-                CompletableFuture.allOf(locationDataFuture, vesselDataFuture, carrierDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
-            } catch (Exception ex) {
-                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
-            }
-        }
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(ShippingInstructionResponse shippingInstructionResponse) {
@@ -628,7 +616,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
-        sendForDownstreamProcess(si);
+        callBridge(si, "SI_CREATE");
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -662,10 +651,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
     }
 
-    private void sendForDownstreamProcess(ShippingInstruction shippingInstruction) {
-        String payload = jsonHelper.convertToJson(shippingInstruction);
-        kafkaHelper.sendDataToKafka(payload, GenericKafkaMsgType.SI, IntraKafkaOperationType.ORIGINAL);
-    }
 
     public ShippingInstructionResponse amendShippingInstruction(Long id) {
         Optional<ShippingInstruction> shippingInstructionEntity = repository.findById(id);
@@ -681,11 +666,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         validateSIRequest(shippingInstruction);
 
-        // Step 3: Mark SI as submitted
+        // Step 3: Mark SI as amended
         shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
-        sendForDownstreamProcess(shippingInstruction);
+        callBridge(shippingInstruction, "SI_AMEND");
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
 
@@ -711,5 +697,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
+    private void callBridge(ShippingInstruction shippingInstruction, String integrationCode) {
+        UUID transactionId = UUID.randomUUID();
+        try {
+            bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
+        } catch (RunnerException e) {
+            log.error("Exception while calling bridge. id {} {}", shippingInstruction.getId(), e.getMessage());
+        }
+    }
 
 }

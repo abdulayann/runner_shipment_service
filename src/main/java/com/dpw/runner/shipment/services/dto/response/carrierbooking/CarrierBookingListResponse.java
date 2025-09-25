@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import lombok.AllArgsConstructor;
@@ -11,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -22,8 +22,11 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String bookingNo;
     private Integer tenantId;
     private String carrierBookingNo;
-    private String mblNo;
-    private String consolidationNo;
+    private String carrierBlNo;
+    private Long entityId;
+    private String entityNumber;
+    private String entityType;
+    private String contractNo;
     private String serviceType;
     private String bookingOffice;
     private String bookingComment;
@@ -40,8 +43,7 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String externalEmails;
     private ShippingInstructionStatus siStatus;
     private VerifiedGrossMassStatus vgmStatus;
-    private SailingInformation sailingInformation;
-    private List<CommonContainerResponse> containersList;
-    private List<CarrierRoutingResponse> carrierRoutingList;
-    private List<ReferenceNumberResponse> referenceNumbersList;
+    private SailingInformationResponse sailingInformation;
+
+    private Map<String, String> tenantMasterData;
 }

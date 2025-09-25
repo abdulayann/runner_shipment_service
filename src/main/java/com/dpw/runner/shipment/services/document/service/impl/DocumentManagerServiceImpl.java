@@ -190,4 +190,10 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
             throw new DocumentClientException(ex.getMessage());
         }
     }
+
+    @Override
+    public void storeDocument(CommonRequestModel request) {
+        var response = restClient.storeDocument(request.getDependentData());
+        ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
 }

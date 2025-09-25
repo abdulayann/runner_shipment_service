@@ -588,6 +588,32 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void getConTruckWayDocumentData2()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setConsTruckWayBillMainPage("123456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setConsTruckWayBillMainPage("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setReportInfo(ReportConstants.CONS_TRUCKWAY_BILL);
+        reportRequest.setPrintType("DRAFT");
+        // Mock
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
     void getShipTruckDriverDocumentData()
             throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();

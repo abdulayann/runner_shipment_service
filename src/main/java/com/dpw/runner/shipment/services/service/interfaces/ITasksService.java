@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface ITasksService extends ICommonService{
     ResponseEntity<IRunnerResponse> createTaskForHbl(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> retrieveTask(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> retrieveMDMTask(String uuid, Long id) throws RunnerException;
     ResponseEntity<IRunnerResponse> updateTask(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> createTask(CommonRequestModel commonRequestModel);
 }

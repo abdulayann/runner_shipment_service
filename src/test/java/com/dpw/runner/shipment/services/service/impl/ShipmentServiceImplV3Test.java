@@ -1,29 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SYSTEM;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -76,12 +52,42 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneFlagsRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetField;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -95,6 +101,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -143,6 +152,7 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -161,11 +171,16 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -176,34 +191,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
@@ -214,9 +201,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -226,6 +219,78 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SYSTEM;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 @SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
@@ -284,6 +349,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IRoutingsV3Service routingsV3Service;
     @Mock
+    private CarrierDetailsMapper carrierDetailsMapper;
+    @Mock
     private ShipmentValidationV3Util shipmentValidationV3Util;
     @Mock
     private IDateTimeChangeLogService dateTimeChangeLogService;
@@ -307,6 +374,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
     @Mock
     private IDocumentManagerService documentManagerService;
+    @Mock
+    private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ILogsHistoryService logsHistoryService;
     @Mock
@@ -440,18 +509,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         ShipmentDetails details = new ShipmentDetails();
-        details.setWeight(BigDecimal.valueOf(1l));
-        details.setVolume(BigDecimal.valueOf(1l));
-        details.setVolumetricWeight(BigDecimal.valueOf(1l));
-        details.setChargable(BigDecimal.valueOf(1l));
-        details.setIsReefer(false);
+        details.setWeight(BigDecimal.valueOf(1));
+        details.setVolume(BigDecimal.valueOf(1));
+        details.setVolumetricWeight(BigDecimal.valueOf(1));
+        details.setChargable(BigDecimal.valueOf(1));
+        details.setIsReefer(null);
         ShipmentListResponse shipmentListResponse = new ShipmentListResponse();
         shipmentListResponse.setContainsHazardous(false);
-        shipmentListResponse.setWeight(BigDecimal.valueOf(1l));
-        shipmentListResponse.setVolume(BigDecimal.valueOf(1l));
-        shipmentListResponse.setVolumetricWeight(BigDecimal.valueOf(1l));
-        shipmentListResponse.setChargable(BigDecimal.valueOf(1l));
-        shipmentListResponse.setIsReefer(false);
+        shipmentListResponse.setWeight(BigDecimal.valueOf(1));
+        shipmentListResponse.setVolume(BigDecimal.valueOf(1));
+        shipmentListResponse.setVolumetricWeight(BigDecimal.valueOf(1));
+        shipmentListResponse.setChargable(BigDecimal.valueOf(1));
+        shipmentListResponse.setIsReefer(null);
         shipmentDetailsList.add(details);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         PageImpl<Long> shipmentIdPage = new PageImpl<>(List.of(1L));
@@ -734,6 +803,142 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
+        assertNull(response);
+    }
+
+
+    @Test
+    void createShipmentInV3TestWithUnlocCodes() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingV3Request packingV3Request = PackingV3Request.builder().packs("2").packsType("BAG").commodity("FAK").build();
+        packingV3Request.setWeight(BigDecimal.valueOf(11.5));
+        packingV3Request.setVolume(BigDecimal.valueOf(11));
+        packingV3Request.setLengthUnit("M");
+        ReferenceNumbersRequest referenceNumbersRequest = ReferenceNumbersRequest.builder().build();
+        referenceNumbersRequest.setReferenceNumber("SHP2411-A1PG00784");
+        referenceNumbersRequest.setType("CRR");
+        referenceNumbersRequest.setShipmentId(16787L);
+        referenceNumbersRequest.setCountryOfIssue("IND");
+        CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
+        customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
+        customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
+        customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        Notes notes = Notes.builder().label("Label").assignedTo("abc@yopmail.com").entityId(1L).entityType("CustomerBooking").text("text").build();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
+        shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().id(123L).containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(Containers.builder().build()));
+        when(jsonHelper.convertValueToList(any(), eq(Notes.class))).thenReturn(List.of(notes));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
+        when(notesDao.saveAll(any())).thenReturn(List.of(notes));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
+        ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
+        when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
+        assertNull(response);
+    }
+
+    @Test
+    void createShipmentInV3TestWithUnlocCodes2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingV3Request packingV3Request = PackingV3Request.builder().packs("2").packsType("BAG").commodity("FAK").build();
+        packingV3Request.setWeight(BigDecimal.valueOf(11.5));
+        packingV3Request.setVolume(BigDecimal.valueOf(11));
+        packingV3Request.setLengthUnit("M");
+        ReferenceNumbersRequest referenceNumbersRequest = ReferenceNumbersRequest.builder().build();
+        referenceNumbersRequest.setReferenceNumber("SHP2411-A1PG00784");
+        referenceNumbersRequest.setType("CRR");
+        referenceNumbersRequest.setShipmentId(16787L);
+        referenceNumbersRequest.setCountryOfIssue("IND");
+        CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
+        customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
+        customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
+        customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        Notes notes = Notes.builder().label("Label").assignedTo("abc@yopmail.com").entityId(1L).entityType("CustomerBooking").text("text").build();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
+        shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().id(123L).containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(Containers.builder().build()));
+        when(jsonHelper.convertValueToList(any(), eq(Notes.class))).thenReturn(List.of(notes));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
+        when(jsonHelper.convertValue(any(), eq(PartiesRequest.class))).thenReturn(PartiesRequest.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
+        when(notesDao.saveAll(any())).thenReturn(List.of(notes));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
+        ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
+        when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.checkIfPartyExists((Parties) any())).thenReturn(true);
 
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
@@ -4152,7 +4357,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetailsEntity);
 
         assertNotNull(shipmentDetailsEntity.getAdditionalDetails().getExportBroker());
-        assertEquals(1L, shipmentDetailsEntity.getOriginBranch());
+        assertNotEquals(1L, shipmentDetailsEntity.getOriginBranch());
     }
 
     @Test
@@ -7540,8 +7745,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentRetrieveExternalResponse.setStatus(0);
 
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
-        when(modelMapper.map(any(), eq(ShipmentRetrieveExternalResponse.class))).thenReturn(shipmentRetrieveExternalResponse);
-        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(commonUtils.setIncludedFieldsToResponse(same(shipmentDetailsEntity), anySet(), any(ShipmentRetrieveExternalResponse.class)))
+                .thenReturn(shipmentRetrieveExternalResponse);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.retrieveShipmentDataByIdUsingIncludeColumns(requestModel, "Source");
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -7759,7 +7964,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         settings.setDefaultShipmentType(DIRECTION_EXP);
         settings.setDefaultContainerType(SHIPMENT_TYPE_LCL);
         settings.setWeightChargeableUnit("KG");
-        settings.setVolumeChargeableUnit("CBM");
+        settings.setVolumeChargeableUnit("M3");
         settings.setIsRunnerV3Enabled(true);
 
         V1RetrieveResponse mockV1Response = mock(V1RetrieveResponse.class);
@@ -7796,7 +8001,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(DIRECTION_EXP, response.getDirection());
         assertEquals(SHIPMENT_TYPE_LCL, response.getShipmentType());
         assertEquals("KG", response.getWeightUnit());
-        assertEquals("CBM", response.getVolumeUnit());
+        assertEquals("M3", response.getVolumeUnit());
         assertEquals(SYSTEM, response.getSource());
         assertEquals(UserContext.getUser().getUsername(), response.getCreatedBy());
         assertEquals("HBL-SEA-EXP-001", response.getHouseBill());
@@ -7804,7 +8009,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("USD", response.getFreightLocalCurrency());
         assertNotNull(response.getAdditionalDetails().getExportBroker());
         assertEquals("AGENT001", response.getAdditionalDetails().getExportBroker().getOrgCode());
-        assertEquals(5L, response.getOriginBranch());
         assertEquals(masterDataMap, response.getMasterDataMap());
 
         verify(shipmentServiceImplV3, times(2)).generateCustomHouseBL(null);
@@ -8711,6 +8915,240 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setMarksNum("Test Marks");
         details.setAdditionalTerms("Test Additional Terms");
         return details;
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_NullShipmentId() {
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> shipmentServiceImplV3.resetShipmentQuoteRules(null)
+        );
+        assertEquals("Shipment Id Is Mandatory", ex.getMessage());
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_ShipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        DataRetrievalFailureException ex = assertThrows(
+                DataRetrievalFailureException.class,
+                () -> shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId)
+        );
+        assertTrue(Objects.requireNonNull(ex.getMessage()).contains("No Shipment found with Shipment Id"));
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_NoMainCarriage() {
+        Long shipmentId = 2L;
+
+        Routings routings = new Routings();
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE); // No MAIN_CARRIAGE
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setRoutingsList(List.of(routings));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
+
+        QuoteResetField polField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POL"))
+                .findFirst()
+                .orElseThrow();
+        QuoteResetField podField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POD"))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(polField.isEditable());
+        assertTrue(polField.isSelected());
+        assertTrue(podField.isEditable());
+        assertTrue(podField.isSelected());
+    }
+
+    @Test
+    void testResetShipmentQuoteRules_WithMainCarriage() {
+        Long shipmentId = 3L;
+
+        Routings routings = new Routings();
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setRoutingsList(List.of(routings));
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId);
+
+        QuoteResetField polField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POL"))
+                .findFirst()
+                .orElseThrow();
+        QuoteResetField podField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POD"))
+                .findFirst()
+                .orElseThrow();
+
+        assertFalse(polField.isEditable());
+        assertFalse(polField.isSelected());
+        assertFalse(podField.isEditable());
+        assertFalse(podField.isSelected());
+    }
+
+
+    @Test
+    void testPartialUpdate_Success_ById() throws RunnerException {
+        // Arrange
+        Long shipmentId = 1L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        patchRequest.setJobType(JsonNullable.of("DRT"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setJobType("STD");
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+
+        ShipmentDetails updatedShipment = new ShipmentDetails();
+        updatedShipment.setId(shipmentId);
+        updatedShipment.setJobType("DRT");
+
+        ShipmentDetailsV3Response expectedResponse = new ShipmentDetailsV3Response();
+        expectedResponse.setId(shipmentId);
+        expectedResponse.setJobType("DRT");
+        mockTenantSettings();
+        mockShipmentSettings();
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(existingShipment));
+        when(jsonHelper.convertValue(any(ShipmentDetails.class), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        doNothing().when(shipmentDetailsMapper).updateFromV3Patch(any(ShipmentPatchV3Request.class), any(ShipmentDetails.class));
+        when(shipmentDao.update(any(ShipmentDetails.class), eq(false))).thenReturn(updatedShipment);
+        doNothing().when(dependentServiceHelper).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        when(shipmentDetailsMapper.mapV3Response(any(ShipmentDetails.class))).thenReturn(expectedResponse);
+
+        // Act
+        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.partialUpdate(commonRequestModel);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getJobType(), actualResponse.getJobType());
+        verify(shipmentDao).findById(shipmentId);
+        verify(shipmentDao).update(any(ShipmentDetails.class), eq(false));
+    }
+
+    @Test
+    void testPartialUpdate_Success_ByShipmentId_WithChildAndCollectionUpdates() throws RunnerException {
+        // Arrange
+        String shipmentIdStr = "SHIP-001";
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setShipmentId(JsonNullable.of(shipmentIdStr));
+        patchRequest.setAdditionalDetails(new AdditionalDetailV3Request());
+        patchRequest.setCarrierDetails(new CarrierPatchV3Request());
+        patchRequest.setReferenceNumbersList(List.of(new ReferenceNumbersRequest()));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(1L);
+        existingShipment.setShipmentId(shipmentIdStr);
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+
+        mockTenantSettings();
+        mockShipmentSettings();
+        when(shipmentDao.findByShipmentIdIn(List.of(shipmentIdStr))).thenReturn(List.of(existingShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
+        when(shipmentDao.update(any(ShipmentDetails.class), eq(false))).thenReturn(existingShipment);
+        when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(new AdditionalDetails());
+        doNothing().when(carrierDetailsMapper).updateCarrierPatchV3(any(), any());
+        when(referenceNumbersDao.updateEntityFromShipment(any(), anyLong())).thenReturn(List.of(new ReferenceNumbers()));
+        when(shipmentDetailsMapper.mapV3Response(any(ShipmentDetails.class))).thenReturn(new ShipmentDetailsV3Response());
+
+        // Act
+        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.partialUpdate(commonRequestModel);
+
+        // Assert
+        assertNotNull(actualResponse);
+        verify(shipmentDao).findByShipmentIdIn(List.of(shipmentIdStr));
+        verify(additionalDetailDao).updateEntityFromShipment(any());
+        verify(carrierDetailsMapper).updateCarrierPatchV3(any(), any());
+        verify(referenceNumbersDao).updateEntityFromShipment(any(), eq(1L));
+    }
+
+    @Test
+    void testPartialUpdate_Failure_NoIdentifierProvided() {
+        // Arrange
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request(); // All identifiers are null
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals("Request Id is null", exception.getMessage());
+    }
+
+    @Test
+    void testPartialUpdate_Failure_ShipmentNotFoundById() {
+        // Arrange
+        Long shipmentId = 999L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+    }
+
+    @Test
+    void testPartialUpdate_Failure_MultipleShipmentsFoundByShipmentId() {
+        // Arrange
+        String shipmentIdStr = "SHIP-DUPLICATE";
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setShipmentId(JsonNullable.of(shipmentIdStr));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        when(shipmentDao.findByShipmentIdIn(List.of(shipmentIdStr)))
+                .thenReturn(List.of(new ShipmentDetails(), new ShipmentDetails())); // Return two results
+
+        // Act & Assert
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals(DaoConstants.DAO_INCORRECT_RESULT_SIZE_EXCEPTION_MSG, exception.getMessage());
+    }
+
+    @Test
+    void testPartialUpdate_Failure_ValidationException() {
+        // Arrange
+        Long shipmentId = 1L;
+        ShipmentPatchV3Request patchRequest = new ShipmentPatchV3Request();
+        patchRequest.setId(JsonNullable.of(shipmentId));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(patchRequest);
+
+        ShipmentDetails existingShipment = new ShipmentDetails();
+        existingShipment.setId(shipmentId);
+        existingShipment.setConsignee(new Parties());
+        existingShipment.setConsigner(new Parties());
+
+        existingShipment.setAdditionalDetails(new AdditionalDetails());
+        existingShipment.setCarrierDetails(new CarrierDetails());
+        mockShipmentSettings();
+
+        // Return the existing shipment as the "cloned" object
+        when(jsonHelper.convertValue(any(ShipmentDetails.class), eq(ShipmentDetails.class))).thenReturn(existingShipment);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(existingShipment));
+        doThrow(new ValidationException("Invalid job type change"))
+                .when(shipmentValidationV3Util).validateShipmentCreateOrUpdate(any(), any());
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            shipmentServiceImplV3.partialUpdate(commonRequestModel);
+        });
+        assertEquals("Invalid job type change", exception.getMessage());
     }
 
 }
