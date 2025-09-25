@@ -742,6 +742,7 @@ public class Constants {
 
     public static final String ATTACH = "ATTACH";
     public static final String DETACH = "DETACH";
+    public static final String DETACH_AND_ATTACH = "DETACH_AND_ATTACH";
 
 
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
