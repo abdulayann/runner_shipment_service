@@ -82,8 +82,8 @@ class KafkaPublisherTest {
         verify(postCommitExecutor).executeAfterCommit(
                 "test-topic",
                 payload,
-                "txn456",
-                500L,
+                transactionId,
+                999L,
                 kafkaTemplate
         );
 
