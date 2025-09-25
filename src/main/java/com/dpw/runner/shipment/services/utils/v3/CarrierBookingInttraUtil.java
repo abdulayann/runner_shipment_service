@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
@@ -14,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -28,6 +34,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -102,7 +109,7 @@ public class CarrierBookingInttraUtil {
                 .build();
     }
 
-    public Map<String, EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(SailingInformation sailingInformation) {
+    public Map<String, EntityTransferCarrier> fetchCarrierDetailsForBridgePayload(SailingInformationResponse sailingInformation) {
 
         Map<String, EntityTransferCarrier> carrierDatav1Map = new HashMap<>();
         try {
@@ -110,7 +117,7 @@ public class CarrierBookingInttraUtil {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> carrierList = new HashSet<>();
             if (!Objects.isNull(sailingInformation)) {
-                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest((IRunnerResponse) sailingInformation, SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(sailingInformation, SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
             }
             if (CollectionUtils.isEmpty(carrierList)) {
                 return new HashMap<>();
@@ -122,5 +129,25 @@ public class CarrierBookingInttraUtil {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
         }
         return carrierDatav1Map;
+    }
+
+    public Map<String, EntityTransferContainerType> addAllContainerTypesInSingleCall(List<CommonContainerResponse> commonContainerResponses) {
+        Map<String, EntityTransferContainerType> v1Data = new HashMap<>();
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> containerTypes = new HashSet<>();
+            if (!Objects.isNull(commonContainerResponses)) {
+                commonContainerResponses.forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
+            }
+            if (org.springframework.util.CollectionUtils.isEmpty(containerTypes)) {
+                return new HashMap<>();
+            }
+
+            v1Data= masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+        }
+        return v1Data;
     }
 }

@@ -12,4 +12,5 @@ public class CarrierBookingBridgeRequest extends CarrierBookingResponse implemen
     private String carrierScacCode;
     private String state;
     private String carrierDescription;
+    private String integrationCode;
 }

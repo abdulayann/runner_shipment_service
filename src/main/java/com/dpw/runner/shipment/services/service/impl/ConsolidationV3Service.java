@@ -2465,6 +2465,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 || !Objects.equals(console.getBookingAgent(), oldEntity.getBookingAgent())
                 || !Objects.equals(console.getCoLoadBookingReference(), oldEntity.getCoLoadBookingReference())
                 || !Objects.equals(console.getCoLoadMBL(), oldEntity.getCoLoadMBL())
+                || !Objects.equals(console.getControlled(), oldEntity.getControlled())
+                || !Objects.equals(console.getControlledReferenceNumber(), oldEntity.getControlledReferenceNumber())
                 || !Objects.equals(console.getDeliveryMode(), oldEntity.getDeliveryMode())
         );
     }
