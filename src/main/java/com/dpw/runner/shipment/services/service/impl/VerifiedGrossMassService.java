@@ -144,6 +144,32 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
             }
         }
+
+        // Building Container Difference Response
+        if (EntityType.CONSOLIDATION.equals(verifiedGrossMassEntity.getEntityType())) {
+            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(verifiedGrossMassEntity.getEntityId());
+
+            // Set mismatched containers
+            verifiedGrossMassResponse.setConsolContainerWarningResponseList(verifiedGrossMassUtil.compareVGMContainers(
+                    verifiedGrossMassEntity.getContainersList(), null, consolidationDetails.getContainersList()));
+            verifiedGrossMassResponse.setVgmContainerWarningResponseList(verifiedGrossMassUtil.compareVGMContainers(
+                    verifiedGrossMassEntity.getContainersList(), verifiedGrossMassEntity.getSubmittedContainersList(), null));
+
+
+        } else if (EntityType.CARRIER_BOOKING.equals(verifiedGrossMassEntity.getEntityType())) {
+            Optional<CarrierBooking> optionalCarrierBooking = carrierBookingDao.findById(verifiedGrossMassEntity.getEntityId());
+            if (optionalCarrierBooking.isPresent()
+                    && EntityType.CONSOLIDATION.toString().equalsIgnoreCase(optionalCarrierBooking.get().getEntityType())) {
+                ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(optionalCarrierBooking.get().getEntityId());
+
+                // Set mismatched containers
+                verifiedGrossMassResponse.setConsolContainerWarningResponseList(verifiedGrossMassUtil.compareVGMContainers(
+                        verifiedGrossMassEntity.getContainersList(), null, consolidationDetails.getContainersList()));
+                verifiedGrossMassResponse.setVgmContainerWarningResponseList(verifiedGrossMassUtil.compareVGMContainers(
+                        verifiedGrossMassEntity.getContainersList(), verifiedGrossMassEntity.getSubmittedContainersList(), null));
+            }
+        }
+
         return verifiedGrossMassResponse;
     }
 
