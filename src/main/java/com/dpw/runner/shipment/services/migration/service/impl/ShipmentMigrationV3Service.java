@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.CountryListHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +97,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     @Autowired
     private MigrationUtil migrationUtil;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
     @Autowired
     private ContractIdMapUtil contractIdMapUtil;
     @Value("${spring.profiles.active}")
@@ -163,6 +167,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Override
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException {
 
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipmentDetails, null);
+        }
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
