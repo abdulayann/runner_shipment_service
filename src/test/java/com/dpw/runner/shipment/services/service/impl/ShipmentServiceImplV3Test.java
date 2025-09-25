@@ -246,6 +246,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SYSTEM;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
@@ -260,7 +261,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.same;
@@ -7469,7 +7469,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         Long shipmentId = 1L;
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
 
-        RunnerException ex = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cancel(shipmentId));
+        RunnerException ex = assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cancel(shipmentId, true));
         assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, ex.getMessage());
     }
 
@@ -7479,6 +7479,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetails existingShipment = new ShipmentDetails();
         existingShipment.setId(shipmentId);
         existingShipment.setShipmentId("SHIP123");
+        existingShipment.setJobType(SHIPMENT_TYPE_DRT);
 
         V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
         settings.setIsMAWBColoadingEnabled(true);
@@ -7489,7 +7490,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-        shipmentServiceImplV3.cancel(shipmentId);
+        shipmentServiceImplV3.cancel(shipmentId, true);
 
         verify(shipmentDao).update(existingShipment, false);
         verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(shipmentId);
@@ -7511,7 +7512,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-        shipmentServiceImplV3.cancel(shipmentId);
+        shipmentServiceImplV3.cancel(shipmentId, true);
 
         verify(shipmentDao).update(existingShipment, false);
         verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(any());

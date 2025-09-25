@@ -300,11 +300,11 @@ class ShipmentControllerV3Test {
         try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
             helper.when(ResponseHelper::buildSuccessResponse).thenReturn(expectedResponse);
 
-            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId, false);
 
             assertEquals(HttpStatus.OK, actualResponse.getStatusCode());
             helper.verify(ResponseHelper::buildSuccessResponse);
-            verify(shipmentService).cancel(shipmentId);
+            verify(shipmentService).cancel(shipmentId, false);
         }
     }
 
@@ -314,12 +314,12 @@ class ShipmentControllerV3Test {
         String errorMsg = "Invalid shipment";
         ResponseEntity<IRunnerResponse> expectedResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-        doThrow(new RuntimeException(errorMsg)).when(shipmentService).cancel(shipmentId);
+        doThrow(new RuntimeException(errorMsg)).when(shipmentService).cancel(shipmentId, false);
 
         try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
             helper.when(() -> ResponseHelper.buildFailedResponse(errorMsg)).thenReturn(expectedResponse);
 
-            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId, false);
 
             assertEquals(HttpStatus.BAD_REQUEST, actualResponse.getStatusCode());
             helper.verify(() -> ResponseHelper.buildFailedResponse(errorMsg));
@@ -331,12 +331,12 @@ class ShipmentControllerV3Test {
         Long shipmentId = 789L;
         ResponseEntity<IRunnerResponse> expectedResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-        doThrow(new RuntimeException()).when(shipmentService).cancel(shipmentId);
+        doThrow(new RuntimeException()).when(shipmentService).cancel(shipmentId, false);
 
         try (MockedStatic<ResponseHelper> helper = Mockito.mockStatic(ResponseHelper.class)) {
             helper.when(() -> ResponseHelper.buildFailedResponse("")).thenReturn(expectedResponse);
 
-            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId);
+            ResponseEntity<IRunnerResponse> actualResponse = shipmentControllerV3.cancelShipment(shipmentId, false);
 
             assertEquals(HttpStatus.BAD_REQUEST, actualResponse.getStatusCode());
             helper.verify(() -> ResponseHelper.buildFailedResponse(""));

@@ -4885,7 +4885,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     @Transactional
-    public void cancel(Long id) throws RunnerException {
+    public void cancel(Long id, boolean masterBillRemove) throws RunnerException {
         Optional<ShipmentDetails> shipmentOptional = shipmentDao.findById(id);
         if (shipmentOptional.isEmpty()) {
             throw new RunnerException(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG);
@@ -4895,6 +4895,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
+        if(SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType()) && Boolean.TRUE.equals(masterBillRemove)){
+            shipment.setMasterBill(null);
+        }
         shipmentDao.update(shipment, false);
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled

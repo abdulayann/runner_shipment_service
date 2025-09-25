@@ -105,7 +105,7 @@ public interface IShipmentServiceV3 {
 
     String sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
     String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException;
-    void cancel(Long id) throws RunnerException;
+    void cancel(Long id, boolean masterBillRemove) throws RunnerException;
     CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException;
     void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException;
