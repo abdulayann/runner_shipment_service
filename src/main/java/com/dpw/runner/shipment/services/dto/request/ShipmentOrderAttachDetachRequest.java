@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import io.swagger.annotations.ApiModel;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +23,8 @@ public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
     private UUID shipmentGuid;
     private String event;
     private List<OrderDetails> orderDetailsList;
+    private List<OrderDetails> orderDetailsForAttach;
+    private List<OrderDetails> orderDetailsForDetach;
 
     @Builder
     @Data
@@ -33,6 +35,6 @@ public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
         private UUID orderGuid;
         private Long shipmentId;
         private LocalDateTime orderDate;
-        private List<PackingV3Request> orderPackings;
+        private List<OrderLineV3Response> orderPackings;
     }
 }

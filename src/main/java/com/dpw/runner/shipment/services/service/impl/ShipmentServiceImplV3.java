@@ -140,6 +140,7 @@ import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
@@ -214,7 +215,6 @@ import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.PackCategory;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -5593,9 +5593,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             validateRequest(attachDetachRequest);
 
             UUID shipmentGuid = attachDetachRequest.getShipmentGuid();
-            List<ShipmentOrderAttachDetachRequest.OrderDetails> requestedOrders = attachDetachRequest.getOrderDetailsList();
+            List<OrderDetails> orderDetailsForAttach = attachDetachRequest.getOrderDetailsForAttach();
+            List<OrderDetails> orderDetailsForDetach = attachDetachRequest.getOrderDetailsForDetach();
 
-            if (CollectionUtils.isEmpty(requestedOrders)) {
+            if (CollectionUtils.isEmpty(orderDetailsForAttach) && CollectionUtils.isEmpty(orderDetailsForDetach)) {
                 return ResponseHelper.buildSuccessResponse(); // nothing to process
             }
 
@@ -5607,10 +5608,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             );
 
             switch (attachDetachRequest.getEvent()) {
-                case Constants.ATTACH -> attachOrders(requestedOrders, existingShipmentOrders, shipmentEntity.getId());
-                case Constants.DETACH -> detachOrders(requestedOrders, existingShipmentOrders);
-                case Constants.DETACH_AND_ATTACH -> detachAndAttachOrders(requestedOrders, existingShipmentOrders, shipmentEntity.getId());
-                default -> throw new ValidationException("Event must be either ATTACH or DETACH");
+                case Constants.ATTACH -> attachOrders(orderDetailsForAttach, existingShipmentOrders, shipmentEntity.getId());
+                case Constants.DETACH -> detachOrders(orderDetailsForDetach, existingShipmentOrders);
+                case Constants.DETACH_AND_ATTACH -> detachAndAttachOrders(orderDetailsForAttach, orderDetailsForDetach, existingShipmentOrders, shipmentEntity.getId());
+                default -> throw new ValidationException("Event must be either ATTACH or DETACH or DETACH_AND_ATTACH");
             }
 
             triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
@@ -5622,14 +5623,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void detachAndAttachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> requestedOrders,
-            Map<UUID, ShipmentOrder> existingShipmentOrders, Long shipmentId) {
+    private void detachAndAttachOrders(List<OrderDetails> requestedOrderDetailsForAttach,
+            List<OrderDetails> requestedOrderDetailsForDetach, Map<UUID, ShipmentOrder> existingShipmentOrders, Long shipmentId) {
         try {
             // First detach
-            detachOrders(requestedOrders, existingShipmentOrders);
+            detachOrders(requestedOrderDetailsForDetach, existingShipmentOrders);
 
             // Then attach
-            attachOrders(requestedOrders, existingShipmentOrders, shipmentId);
+            attachOrders(requestedOrderDetailsForAttach, existingShipmentOrders, shipmentId);
 
             log.info("Successfully detached and attached orders for shipment {}", shipmentId);
         } catch (Exception ex) {
@@ -5643,7 +5644,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new ValidationException("Shipment GUID cannot be null");
         }
         if (request.getEvent() == null) {
-            throw new ValidationException("Event must be either ATTACH / DETACH");
+            throw new ValidationException("Event must be either ATTACH / DETACH / DETACH_AND_ATTACH");
         }
     }
 
@@ -5664,11 +5665,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         attachOrders(orderDetailsList, existingOrdersByGuid, shipmentId);
     }
 
-    private void attachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList,
+    private void attachOrders(List<OrderDetails> orderDetailsForAttach,
             Map<UUID, ShipmentOrder> existingOrdersByGuid, Long shipmentId) throws RunnerException {
-        for (var orderDetails : orderDetailsList) {
+        for (var orderDetails : orderDetailsForAttach) {
             UUID orderGuid = orderDetails.getOrderGuid();
-            List<PackingV3Request> packingRequests = orderDetails.getOrderPackings();
+            List<PackingV3Request> packingRequests = packingV3Util.mapOrderLineListToPackingV3RequestList(orderDetails.getOrderPackings());
 
             if (orderGuid != null && !existingOrdersByGuid.containsKey(orderGuid)) {
                 ShipmentOrder newOrder = ShipmentOrder.builder()
@@ -5682,7 +5683,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 packingRequests.forEach(p -> {
                     p.setShipmentOrderId(savedOrder.getId());
                     p.setShipmentId(shipmentId);
-                    p.setPackCategory(PackCategory.PURCHASE_ORDER);
                 });
 
                 for (PackingV3Request packingRequest : packingRequests) {
@@ -5692,13 +5692,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void detachOrders(List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList,
+    private void detachOrders(List<OrderDetails> orderDetailsForDetach,
             Map<UUID, ShipmentOrder> existingOrdersByGuid) throws RunnerException {
-        for (var orderDetails : orderDetailsList) {
+        for (var orderDetails : orderDetailsForDetach) {
             UUID orderGuid = orderDetails.getOrderGuid();
 
-            boolean hasLinkedContainer = orderDetails.getOrderPackings().stream()
-                    .filter(p -> PackCategory.PURCHASE_ORDER.equals(p.getPackCategory()))
+            List<PackingV3Request> orderPackings = packingV3Util.mapOrderLineListToPackingV3RequestList(orderDetails.getOrderPackings());
+            boolean hasLinkedContainer = orderPackings.stream()
+                    .filter(p -> p.getShipmentOrderId() != null)
                     .anyMatch(p -> p.getContainerId() != null);
 
             if (hasLinkedContainer) {

@@ -4610,6 +4610,7 @@ public class CommonUtils {
         }
 
         List<PackingV3Request> orderPackings = (request.getOrderPackings() == null) ? Collections.emptyList() : request.getOrderPackings();
+
         return ShipmentOrderAttachDetachRequest.OrderDetails.builder()
                 .orderNumber(request.getOrderNumber())
                 .orderGuid(request.getOrderGuid())

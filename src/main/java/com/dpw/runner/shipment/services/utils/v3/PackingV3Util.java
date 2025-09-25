@@ -584,6 +584,52 @@ public class PackingV3Util {
         }
     }
 
+    public List<OrderLineV3Response> mapPackingV3RequestListToOrderLineList(List<PackingV3Request> packingRequests) {
+        if (packingRequests == null || packingRequests.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return packingRequests.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapPackingV3RequestToOrderLine)
+                .toList();
+    }
+
+    public OrderLineV3Response mapPackingV3RequestToOrderLine(PackingV3Request packingRequest) {
+        if (packingRequest == null) {
+            return null;
+        }
+
+        return OrderLineV3Response.builder()
+                .id(packingRequest.getId())
+                .guid(packingRequest.getGuid())
+                .commodityGroup(packingRequest.getCommodityGroup())
+                .containerNumber(packingRequest.getContainerNumber())
+                .containerId(packingRequest.getContainerId())
+                .goodsDescription(packingRequest.getGoodsDescription())
+                .HSCode(packingRequest.getHSCode())
+                .length(packingRequest.getLength())
+                .lengthUnit(packingRequest.getLengthUnit())
+                .width(packingRequest.getWidth())
+                .widthUnit(packingRequest.getWidthUnit())
+                .height(packingRequest.getHeight())
+                .heightUnit(packingRequest.getHeightUnit())
+                .weight(packingRequest.getWeight())
+                .weightUnit(packingRequest.getWeightUnit())
+                .volume(packingRequest.getVolume())
+                .volumeUnit(packingRequest.getVolumeUnit())
+                .netWeight(packingRequest.getNetWeight())
+                .netWeightUnit(packingRequest.getNetWeightUnit())
+                .packs(packingRequest.getPacks())
+                .packsType(packingRequest.getPacksType())
+                .orderLineId(packingRequest.getOrderLineId())
+                .lineNo(packingRequest.getLineNo())
+                .subLineNo(packingRequest.getSubLineNo())
+                .productCode(packingRequest.getProductCode())
+                .shipmentOrderId(packingRequest.getShipmentOrderId())
+                .build();
+    }
+
+
     public List<PackingV3Request> mapOrderLineListToPackingV3RequestList(List<OrderLineV3Response> orderLinesList) {
         if (orderLinesList == null || orderLinesList.isEmpty()) {
             return Collections.emptyList();
