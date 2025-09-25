@@ -2913,11 +2913,8 @@ public class ReportService implements IReportService {
     }
 
     public void saveDocDetailsAfterPushToDocumentMaster(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
-        switch (reportRequest.getReportInfo()) {
-            case HOUSE_BILL, SEAWAY_BILL:
-                saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
-                break;
-            default:
+        if (reportRequest.getReportInfo().equals(HOUSE_BILL) || reportRequest.getReportInfo().equals(SEAWAY_BILL)) {
+            saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
         }
     }
 
