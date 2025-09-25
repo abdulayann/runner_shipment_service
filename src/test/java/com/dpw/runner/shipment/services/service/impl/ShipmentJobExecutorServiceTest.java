@@ -35,6 +35,9 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -107,7 +110,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_EmptyQuartzJobInfo() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -121,6 +123,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
@@ -128,7 +132,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfo_EmptyShipment() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -144,6 +147,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -152,7 +157,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -173,6 +177,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -188,7 +194,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment2() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -212,6 +217,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -226,7 +233,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfoExists_SendShipment_BadRequest() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -246,6 +252,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -259,7 +267,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment_ValidationError() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
         SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
@@ -279,6 +286,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -292,7 +301,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment_ValidationThrowsException() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         shipmentDetails.setReceivingBranch(null);
         shipmentDetails.setTriangulationPartnerList(null);
@@ -311,6 +319,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -323,7 +333,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfo_EmptyConsolidation() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         JobDetail jobDetail = mock(JobDetail.class);
@@ -340,6 +349,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -348,7 +359,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -371,6 +381,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -385,7 +397,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation2() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -411,6 +422,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -425,7 +438,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_QuartzJobInfoExists_SendConsolidation_BadRequest() throws RunnerException {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -447,6 +459,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -460,7 +474,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationError() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -482,6 +495,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -495,7 +510,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationThrowsException() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
         consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
@@ -517,6 +531,8 @@ class ShipmentJobExecutorServiceTest {
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
 
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
@@ -528,7 +544,6 @@ class ShipmentJobExecutorServiceTest {
 
     @Test
     void testExecuteJob_Error() {
-        TenantContext.setCurrentTenant(1);
         String jobId = "1";
         JobDetail jobDetail = mock(JobDetail.class);
 
@@ -541,6 +556,8 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
