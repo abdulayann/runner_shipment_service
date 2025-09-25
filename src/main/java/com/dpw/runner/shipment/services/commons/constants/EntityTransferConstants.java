@@ -102,4 +102,5 @@ public class EntityTransferConstants {
     public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 
     public static final Set<String> validDirectionForNetworkTransfer = new HashSet<>(Arrays.asList(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS, Constants.DIRECTION_IMP));
+    public static final String MAWB_NUMBER = "MAWB Number";
 }

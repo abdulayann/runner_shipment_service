@@ -1073,7 +1073,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest, true);
             isCreateShip.setTrue();
         } else {
-            shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentEtV3Request.class); // TODO
+            shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentEtV3Request.class);
             if(shipmentRequest.getParentGuid() == null)
                 shipmentRequest.setParentGuid(entityTransferShipmentDetails.getGuid());
             Long id = shipmentRequest.getId();
