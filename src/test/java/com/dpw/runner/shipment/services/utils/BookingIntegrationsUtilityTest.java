@@ -888,7 +888,7 @@ class BookingIntegrationsUtilityTest {
                     .build());
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any());
+        verify(platformServiceAdapter, times(0)).updateAtPlatform(any());
     }
 
     @Test
@@ -902,7 +902,7 @@ class BookingIntegrationsUtilityTest {
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
         mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
-        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(platformServiceAdapter.updateAtPlatform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
 
         when(docDetailsDao.findByFileId(anyString())).thenReturn(DocDetails.builder()
                 .fileId(fakeFileId)
@@ -912,7 +912,7 @@ class BookingIntegrationsUtilityTest {
                 .build());
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
     }
 
     @Test
@@ -926,11 +926,11 @@ class BookingIntegrationsUtilityTest {
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
         mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
-        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(platformServiceAdapter.updateAtPlatform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
 
         when(docDetailsDao.findByFileId(anyString())).thenReturn(null);
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
     }
 }
