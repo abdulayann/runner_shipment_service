@@ -80,11 +80,11 @@ class KafkaPublisherTest {
         ));
 
         verify(postCommitExecutor).executeAfterCommit(
-                eq("test-topic"),
-                eq(payload),
-                eq(transactionId),
-                eq(999L),
-                eq(kafkaTemplate)
+                "test-topic",
+                payload,
+                "txn456",
+                500L,
+                kafkaTemplate
         );
 
         verify(jsonHelper).convertToJson(payload);
@@ -113,11 +113,11 @@ class KafkaPublisherTest {
 
         // Assert
         verify(postCommitExecutor).executeAfterCommit(
-                eq("test-topic"),
-                eq(payload),
-                eq("txn456"),
-                eq(500L),
-                eq(kafkaTemplate)
+                "test-topic",
+                payload,
+                "txn456",
+                500L,
+                kafkaTemplate
         );
     }
 }
