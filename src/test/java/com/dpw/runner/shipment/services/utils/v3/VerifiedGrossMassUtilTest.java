@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VGMContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
@@ -15,12 +17,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -371,6 +377,270 @@ class VerifiedGrossMassUtilTest {
         assertEquals(container.getPacksUnit(), submittedContainer.getPacksUnit());
         assertEquals(container.getTareWeight(), submittedContainer.getTareWeight());
         assertEquals(container.getTareWeightUnit(), submittedContainer.getTareWeightUnit());
+    }
+
+    private CommonContainers createCommonContainer(Long id, String containerNo,
+                                                   BigDecimal grossWeight, String grossUnit,
+                                                   BigDecimal netWeight, String netUnit,
+                                                   BigDecimal tareWeight, String tareUnit) {
+        CommonContainers c = new CommonContainers();
+        c.setId(id);
+        c.setContainerNo(containerNo);
+        c.setGrossWeight(grossWeight);
+        c.setGrossWeightUnit(grossUnit);
+        c.setNetWeight(netWeight);
+        c.setNetWeightUnit(netUnit);
+        c.setTareWeight(tareWeight);
+        c.setTareWeightUnit(tareUnit);
+        return c;
+    }
+
+    private Containers createConsolContainer(Long id, String containerNo,
+                                             BigDecimal grossWeight, String grossUnit,
+                                             BigDecimal netWeight, String netUnit,
+                                             BigDecimal tareWeight, String tareUnit) {
+        Containers c = new Containers();
+        c.setId(id);
+        c.setContainerNumber(containerNo);
+        c.setGrossWeight(grossWeight);
+        c.setGrossWeightUnit(grossUnit);
+        c.setNetWeight(netWeight);
+        c.setNetWeightUnit(netUnit);
+        c.setTareWeight(tareWeight);
+        c.setTareWeightUnit(tareUnit);
+        return c;
+    }
+
+    @Test
+    void testCompareVGMContainers_NullInputLists_ReturnsEmptyWarnings() {
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(null, null, null);
+        assertNotNull(warnings);
+        assertTrue(warnings.isEmpty());
+    }
+
+    @Test
+    void testCompareVGMContainers_EmptyInputLists_ReturnsEmptyWarnings() {
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        assertNotNull(warnings);
+        assertTrue(warnings.isEmpty());
+    }
+
+    @Test
+    void testCompareVGMContainers_NoDifferences_ReturnsEmptyWarnings() {
+        CommonContainers current = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        CommonContainers submitted = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        Containers consol = createConsolContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
+                List.of(current), List.of(submitted), List.of(consol));
+
+        assertNotNull(warnings);
+        assertTrue(warnings.isEmpty());
+    }
+
+    @Test
+    void testCompareVGMContainers_WeightDifferenceWithSubmitted_AddsWarning() {
+        CommonContainers current = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(110), "KG", // changed weight
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        CommonContainers submitted = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
+                List.of(current), List.of(submitted), Collections.emptyList());
+
+        assertNotNull(warnings);
+        assertEquals(1, warnings.size());
+        VGMContainerWarningResponse warning = warnings.get(0);
+        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("110 KG", warning.getVgmNewWeightValue());
+        assertEquals("100 KG", warning.getVgmOldWeightValue());
+    }
+
+    @Test
+    void testCompareVGMContainers_WeightDifferenceWithConsol_AddsWarning() {
+        CommonContainers current = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(110), "KG", // changed weight
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        Containers consol = createConsolContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
+                List.of(current), Collections.emptyList(), List.of(consol));
+
+        assertNotNull(warnings);
+        assertEquals(1, warnings.size());
+        VGMContainerWarningResponse warning = warnings.get(0);
+        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("110 KG", warning.getVgmNewWeightValue());
+        assertEquals("100 KG", warning.getVgmOldWeightValue());
+    }
+
+    @Test
+    void testCompareVGMContainers_WeightDifferenceWithBothSubmittedAndConsol_AddsTwoWarnings() {
+        CommonContainers current = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(110), "KG", // changed weight
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        CommonContainers submitted = createCommonContainer(1L, "C1",
+                BigDecimal.valueOf(100), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        Containers consol = createConsolContainer(1L, "C1",
+                BigDecimal.valueOf(90), "KG",
+                BigDecimal.valueOf(50), "KG",
+                BigDecimal.valueOf(20), "KG");
+
+        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
+                List.of(current), List.of(submitted), List.of(consol));
+
+        assertNotNull(warnings);
+        assertEquals(2, warnings.size());
+
+        Set<String> oldWeights = new HashSet<>();
+        for (VGMContainerWarningResponse warning : warnings) {
+            assertEquals("C1", warning.getContainerNumber());
+            oldWeights.add(warning.getVgmOldWeightValue());
+            assertEquals("110 KG", warning.getVgmNewWeightValue());
+        }
+        // The old weights must include both 100 KG (submitted) and 90 KG (consol)
+        assertTrue(oldWeights.contains("100 KG"));
+        assertTrue(oldWeights.contains("90 KG"));
+    }
+
+    @Test
+    void testCompareVGMContainers_ExceptionHandled() {
+        // Create a subclass that throws exception in map collectors to simulate exception path
+        VerifiedGrossMassUtil utilWithException = new VerifiedGrossMassUtil() {
+            @Override
+            public List<VGMContainerWarningResponse> compareVGMContainers(List<CommonContainers> currentVGMContainersList,
+                                                                          List<CommonContainers> submittedVGMContainersList,
+                                                                          List<Containers> consolContainersList) {
+                throw new RuntimeException("Simulated exception");
+            }
+        };
+
+        try {
+            utilWithException.compareVGMContainers(null, null, null);
+            fail("Exception should propagate");
+        } catch (RuntimeException e) {
+            assertEquals("Simulated exception", e.getMessage());
+        }
+    }
+
+    @Test
+    void testCompareVGMContainers_ExceptionCaughtAndHandled() {
+        CommonContainers current = createCommonContainer(null, "CONT1", new BigDecimal("10"), "KG", new BigDecimal("8"), "KG", new BigDecimal("2"), "KG");
+
+        List<VGMContainerWarningResponse> result = util.compareVGMContainers(
+                List.of(current),
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testCompareVGMContainers_FormatWeightHandlesNullValues() {
+        // current container with null weights and null units
+        CommonContainers current = createCommonContainer(1L, "CONT1", null, null, null, null, null, null);
+        // submitted container with null weights and null units
+        CommonContainers submitted = createCommonContainer(1L, "CONT1", null, null, null, null, null, null);
+        Containers consol = createConsolContainer(1L, "CONT1", null, null, null, null, null, null);
+
+        List<VGMContainerWarningResponse> result = util.compareVGMContainers(
+                List.of(current),
+                List.of(submitted),
+                List.of(consol)
+        );
+
+        // Because weights are same (empty strings), no warnings expected
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testCompareVGMContainers_ContainerNumberFromConsolWhenSubmittedIsNull() {
+        CommonContainers current = createCommonContainer(1L, null, new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
+        Containers consol = createConsolContainer(1L, "CONSOL_CONT1", new BigDecimal("10"), "KG", new BigDecimal("8"), "KG", new BigDecimal("2"), "KG");
+
+        // submittedContainer is null, so buildVGMContainerWarning picks containerNumber from consolContainer
+        List<VGMContainerWarningResponse> result = util.compareVGMContainers(
+                List.of(current),
+                Collections.emptyList(),
+                List.of(consol)
+        );
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("CONSOL_CONT1", result.get(0).getContainerNumber());
+    }
+
+    @Test
+    void testCompareVGMContainers_ContainerNumberIsNullWhenBothSubmittedAndConsolNull() {
+        CommonContainers current = createCommonContainer(1L, null, new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
+
+        // Both submitted and consol containers are missing for the current container
+        List<VGMContainerWarningResponse> result = util.compareVGMContainers(
+                List.of(current),
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testBuildVGMContainerWarning_WithBothSubmittedAndConsolNull() throws Exception {
+        // Create current container with some weights
+        CommonContainers current = createCommonContainer(1L, "CONT1",
+                new BigDecimal("12"), "KG",
+                new BigDecimal("10"), "KG",
+                new BigDecimal("2"), "KG");
+
+        // Access private method buildVGMContainerWarning via reflection
+        Method method = VerifiedGrossMassUtil.class.getDeclaredMethod(
+                "buildVGMContainerWarning", CommonContainers.class, CommonContainers.class, Containers.class);
+        method.setAccessible(true);
+
+        VGMContainerWarningResponse warning = (VGMContainerWarningResponse) method.invoke(util, null, current, null);
+
+        // Assert container number is null because both submitted and consol are null
+        assertNull(warning.getContainerNumber());
+
+        // New weights are from current container (formatted)
+        assertEquals("12 KG", warning.getNewGrossWeightValue());
+        assertEquals("10 KG", warning.getNewNetWeightValue());
+        assertEquals("2 KG", warning.getNewTareWeightValue());
+
+        // Old weights should be null (because both submittedContainer and consolContainer are null)
+        assertNull(warning.getOldGrossWeightValue());
+        assertNull(warning.getOldNetWeightValue());
+        assertNull(warning.getOldTareWeightValue());
     }
 
 }

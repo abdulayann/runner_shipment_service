@@ -1,15 +1,14 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.TransactionHistory;
@@ -21,6 +20,7 @@ import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -57,6 +58,9 @@ public class CarrierBookingInttraUtil {
 
     @Autowired
     JsonHelper jsonHelper;
+
+    @Autowired
+    IConsolidationDetailsDao consolidationDetailsDao;
 
     public <T> void sendPayloadToBridge(T inttraResponse, Long id,
                                          String integrationCode, String transactionId, String referenceId,
@@ -85,6 +89,14 @@ public class CarrierBookingInttraUtil {
                 .entityId(id)
                 .build();
         transactionHistoryDao.save(transactionHistory);
+    }
+
+    public ConsolidationDetails getConsolidationDetail(Long id) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(id);
+        if (consolidationDetails.isEmpty()) {
+            throw new ValidationException("Consolidation details does not exist " + id);
+        }
+        return consolidationDetails.get();
     }
 
     public PartiesResponse fetchRequiredParty(Parties party) {
