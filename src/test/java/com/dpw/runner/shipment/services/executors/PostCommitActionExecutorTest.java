@@ -10,6 +10,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -45,8 +46,10 @@ class PostCommitActionExecutorTest {
         String transactionId = "tx123";
         Long eventId = 123L;
         String payloadJson = "{\"data\":\"test\"}";
+        String wrapperJson = "{\"eventId\":123,\"payload\":\"" + payloadJson + "\"}";
 
         when(jsonHelper.convertToJson(payload)).thenReturn(payloadJson);
+        when(jsonHelper.convertToJson(any(Map.class))).thenReturn(wrapperJson);
 
         // Act
         executor.executeAfterCommit(topic, payload, transactionId, eventId, kafkaTemplate);
@@ -57,7 +60,7 @@ class PostCommitActionExecutorTest {
         }
 
         // Assert
-        verify(kafkaTemplate).send(topic, transactionId, payloadJson);
+        verify(kafkaTemplate).send(topic, transactionId, wrapperJson);
         verify(internalEventRepository).updatePublishedStatus(eq(eventId), eq("Published"), any(LocalDateTime.class));
     }
 
@@ -69,7 +72,7 @@ class PostCommitActionExecutorTest {
         String transactionId = "tx123";
         Long eventId = 123L;
 
-        when(jsonHelper.convertToJson(payload)).thenThrow(new RuntimeException("Serialization error"));
+        when(jsonHelper.convertToJson(any(Map.class))).thenThrow(new RuntimeException("Serialization error"));
 
         // Act
         executor.executeAfterCommit(topic, payload, transactionId, eventId, kafkaTemplate);
