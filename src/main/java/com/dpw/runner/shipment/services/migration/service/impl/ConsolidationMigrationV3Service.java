@@ -124,6 +124,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     log.error("No Consolidation found with ID: {}", consolidationId);
                     return new DataRetrievalFailureException("No Console found with given id: " + consolidationId);
                 });
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, consolFromDb);
 
         // Step 2: Add notes to existing consolidation (for traceability & audit)
         notesUtil.addNotesForConsolidation(consolFromDb);
@@ -150,6 +151,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(consolShipment, null);
             List<Packing> packingList = consolShipment.getPackingList();
             List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
