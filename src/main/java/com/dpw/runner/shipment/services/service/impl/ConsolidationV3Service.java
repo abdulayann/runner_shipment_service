@@ -873,8 +873,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             if (Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
-                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get(Constants.TENANTID) != null)
-                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get(Constants.TENANTID).toString()));
+                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getAddressData() != null) {
+                    Long originBranchId = commonUtils.getReceivingBranch(consolidationDetails.getSendingAgent().getOrgId(), consolidationDetails.getSendingAgent().getAddressId());
+                    consolidationDetails.setOriginBranch(originBranchId);
+                }
             } else if (Constants.DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
                 consolidationDetails.setReceivingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
             }
@@ -5093,8 +5095,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
             if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
                 response.setSendingAgent(partiesResponse);
-                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get(Constants.TENANTID)!=null)
-                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get(Constants.TENANTID).toString()));
+                Long originBranchId = commonUtils.getReceivingBranch(partiesResponse.getOrgId(), partiesResponse.getAddressId());
+                response.setOriginBranch(originBranchId);
             } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
                 response.setReceivingAgent(partiesResponse);
             }

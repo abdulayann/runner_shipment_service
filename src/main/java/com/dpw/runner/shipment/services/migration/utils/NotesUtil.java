@@ -143,7 +143,6 @@ public class NotesUtil {
         text.append("Package Details: ").append("\n");
         for(Packing packing: packingList){
             text.append("No Of Package: ").append(nullSafe(packing.getPacks())).append(" ").append(nullSafe(packing.getPacksType())).append("\n");
-            text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
             String containerNumber = "";
             if (packing.getContainerId() != null) {
                 Containers matchedContainer = containerIdMap.get(packing.getContainerId());
@@ -152,6 +151,8 @@ public class NotesUtil {
                 }
             }
             text.append("Container Number: ").append(nullSafe(containerNumber)).append("\n");
+            text.append("Length: ").append(nullSafe(packing.getLength())).append(" ").append(nullSafe(packing.getLengthUnit())).append("\n");
+            text.append("Width: ").append(nullSafe(packing.getWidth())).append(" ").append(nullSafe(packing.getWidthUnit())).append("\n");
             text.append("Height: ").append(nullSafe(packing.getHeight())).append(" ").append(nullSafe(packing.getHeightUnit())).append("\n");
             text.append("Gross Weight: ").append(nullSafe(packing.getWeight())).append(" ").append(nullSafe(packing.getWeightUnit())).append("\n");
             text.append(netWeight).append(nullSafe(packing.getNetWeight())).append(" ").append(nullSafe(packing.getNetWeightUnit())).append("\n");

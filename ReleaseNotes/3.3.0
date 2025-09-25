@@ -8,8 +8,6 @@ CargoRunnerV2 (1.15.2)
 Post-Release Notes:-
 DB Script
 1. Run ShippedOnboardDateMigration DB Patch in all the environments.
-
-
 Release -
 runner-account-orchestrator - (Release-v1.25.0)
 Workflow Configuration Change
