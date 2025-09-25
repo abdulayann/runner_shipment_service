@@ -1905,21 +1905,9 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.seaConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-                if(Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP)){
-                    List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
-                    if (hbls.isEmpty()) {
-                        isPrintHblError = true;
-                        errorShipments.add(shipment.getShipmentId());
-                        errorShipIds.add(shipment.getId());
-                    }
-                }
-                else{
-                    if(Strings.isNullOrEmpty(shipment.getHouseBill())){
-                        isHblNumberError = true;
-                        errorShipments.add(shipment.getShipmentId());
-                        errorShipIds.add(shipment.getId());
-                    }
-                }
+                Pair<Boolean, Boolean> hblErrorFlags = checkHblErrors(shipment, isPrintHblError, isHblNumberError, errorShipments, errorShipIds);
+                isPrintHblError = hblErrorFlags.getLeft();
+                isHblNumberError = hblErrorFlags.getRight();
             }
         }
 
@@ -1966,6 +1954,25 @@ public class EntityTransferService implements IEntityTransferService {
             shipErrorMsg = "Please enter the HBL number to retrigger the transfer.";
         }
         return Pair.of(errorMsg, shipErrorMsg);
+    }
+
+    private Pair<Boolean, Boolean> checkHblErrors(ShipmentDetails shipment, boolean isPrintHblError, boolean isHblNumberError, List<String> errorShipments, List<Long> errorShipIds){
+        if(Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP)){
+            List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
+            if (hbls.isEmpty()) {
+                isPrintHblError = true;
+                errorShipments.add(shipment.getShipmentId());
+                errorShipIds.add(shipment.getId());
+            }
+        }
+        else{
+            if(Strings.isNullOrEmpty(shipment.getHouseBill())){
+                isHblNumberError = true;
+                errorShipments.add(shipment.getShipmentId());
+                errorShipIds.add(shipment.getId());
+            }
+        }
+        return Pair.of(isPrintHblError, isHblNumberError);
     }
 
     private List<String> seaConsoleFieldValidations (ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
