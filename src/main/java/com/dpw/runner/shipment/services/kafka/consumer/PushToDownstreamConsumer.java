@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamServ
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
@@ -15,6 +16,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -26,12 +28,14 @@ public class PushToDownstreamConsumer {
     private final ObjectMapper objectMapper;
     private final IPushToDownstreamService pushToDownstreamService;
     private final IV1Service v1Service;
+    private final RetryTemplate retryTemplate;
 
     @Autowired
-    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service) {
+    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service, RetryTemplate retryTemplate) {
         this.objectMapper = objectMapper;
         this.pushToDownstreamService = pushToDownstreamService;
         this.v1Service = v1Service;
+        this.retryTemplate = retryTemplate;
     }
 
     @KafkaListener(
@@ -48,16 +52,44 @@ public class PushToDownstreamConsumer {
             Acknowledgment acknowledgment) {
 
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);
-        try {
-            PushToDownstreamEventDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), PushToDownstreamEventDto.class);
-            pushToDownstreamService.process(object, transactionId);
 
-            log.info("{} | Passed", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM);
+        try {
+            PushToDownstreamEventDto object = parseMessage(message, topic, partition, offset);
+            if (object == null) {
+                return;
+            }
+
+            retryTemplate.execute(retryContext -> {
+                pushToDownstreamService.process(object, transactionId);
+                log.info("{} | Passed", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM);
+                return null;
+            });
+
         } catch (Exception ex) {
-            log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, message, ex.getLocalizedMessage());
+            log.error("Exception occurred for event: {} | message: {} | error: {}",
+                    LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, message, ex.getMessage(), ex);
         } finally {
             v1Service.clearAuthContext();
             acknowledgment.acknowledge();
+        }
+    }
+
+    /**
+     * Parses Kafka message JSON into DTO. Returns null if parsing fails (and logs error).
+     */
+    private PushToDownstreamEventDto parseMessage(String message,
+            String topic,
+            int partition,
+            long offset) {
+        try {
+            return objectMapper.readValue(
+                    StringEscapeUtils.unescapeJson(message),
+                    PushToDownstreamEventDto.class
+            );
+        } catch (IOException e) {
+            log.error("Invalid JSON. Skipping retries. Event: {} | topic={} | partition={} | offset={} | message={}",
+                    LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, topic, partition, offset, message, e);
+            return null;
         }
     }
 
