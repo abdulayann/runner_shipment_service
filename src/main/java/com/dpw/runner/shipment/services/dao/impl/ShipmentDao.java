@@ -194,6 +194,7 @@ public class ShipmentDao implements IShipmentDao {
         ShipmentDetails oldShipment = null;
         if (shipmentDetails.getId() != null) {
             long id = shipmentDetails.getId();
+            entityManager.detach(shipmentDetails);
             Optional<ShipmentDetails> oldEntity = findById(id);
             if (!oldEntity.isPresent()) {
                 log.debug("Shipment is null for Id {}", shipmentDetails.getId());

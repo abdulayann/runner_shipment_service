@@ -266,7 +266,7 @@ public class ShipmentConstants {
     public static final String PENDING_NOTIFICATION_COUNT_SUCCESSFUL = "Pending Notification Count successful";
 
     public static final String SHIPMENT_ID = "Shipment Id";
-    public static final String SHIPMENT_MAWB_REMOVE = "Shipment MAWB remove";
+    public static final String SHIPMENT_MASTER_BILL_REMOVE = "Shipment MasterBill remove";
     public static final String SHIPMENT_GUID = "Shipment Guid";
     public static final String CONSOLIDATION_ID = "Consolidation Id";
 

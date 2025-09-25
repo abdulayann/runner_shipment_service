@@ -278,10 +278,10 @@ public class ShipmentControllerV3 {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CANCELLED, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.CANCEL)
     public ResponseEntity<IRunnerResponse> cancelShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id,
-                                                          @ApiParam(value = ShipmentConstants.SHIPMENT_MAWB_REMOVE, required = false) @RequestParam boolean mawbRemove) {
+                                                          @ApiParam(value = ShipmentConstants.SHIPMENT_MASTER_BILL_REMOVE, required = false) @RequestParam boolean masterBillRemove) {
         String responseMsg;
         try {
-            shipmentService.cancel(id, mawbRemove);
+            shipmentService.cancel(id, masterBillRemove);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
