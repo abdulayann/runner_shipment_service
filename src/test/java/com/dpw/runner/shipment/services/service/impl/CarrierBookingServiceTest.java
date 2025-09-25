@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -42,7 +41,6 @@ import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -103,7 +101,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRI
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1049,8 +1046,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
-        when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
-
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = carrierBooking;
@@ -1088,7 +1083,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(carrierBookingBridgeRequest);
-        when(bridgeServiceAdapter.bridgeApiIntegration(any(), any(), any(), any())).thenReturn(new BridgeServiceResponse());
 
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
 

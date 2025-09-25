@@ -25,6 +25,7 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String carrierBlNo;
     private Long entityId;
     private String entityNumber;
+    private String entityType;
     private String contractNo;
     private String serviceType;
     private String bookingOffice;

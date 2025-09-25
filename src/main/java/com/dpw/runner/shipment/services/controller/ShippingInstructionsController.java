@@ -155,7 +155,7 @@ public class ShippingInstructionsController {
     public ResponseEntity<IRunnerResponse> amendSI(@PathVariable("id") Long id) {
         try {
             service.amendShippingInstruction(id);
-            return ResponseHelper.buildSuccessResponse();
+            return ResponseHelper.buildSuccessResponse(ShippingInstructionsConstants.AMEND_SUCCESSFUL);
         } catch (Exception ex) {
             String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error amending Shipping Instruction";
             log.error(responseMsg, ex);
