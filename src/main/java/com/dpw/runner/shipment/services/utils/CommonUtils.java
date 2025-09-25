@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.itextpdf.text.*;
@@ -165,6 +166,8 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
 
@@ -3226,4 +3229,13 @@ public class CommonUtils {
             }
         }
     }
+
+    public boolean getBooleanConfigFromAppConfig(String appConfigKey) {
+        String configuredValue = applicationConfigService.getValue(appConfigKey);
+        if (null == configuredValue) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(configuredValue);
+    }
+
 }

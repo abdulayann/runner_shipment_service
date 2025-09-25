@@ -127,7 +127,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
 
     @Override
-    public ShipmentDetails migrateShipmentV2ToV3(Long shipId) throws RunnerException {
+    public ShipmentDetails migrateShipmentV2ToV3(Long shipId, boolean isUnLocationLocCodeRequired) throws RunnerException {
         log.info("Starting V2 to V3 migration for Shipment [id={}]", shipId);
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipId);
@@ -136,7 +136,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipId);
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
-        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+        }
         notesUtil.addNotesForShipment(shipment);
         log.info("Notes added for Shipment [id={}]", shipment.getId());
         mapShipmentV2ToV3(shipment, new HashMap<>(), true);
