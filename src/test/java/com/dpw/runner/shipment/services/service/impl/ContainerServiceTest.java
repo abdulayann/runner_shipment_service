@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -1544,6 +1545,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);
@@ -1580,6 +1582,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesForNewContainers() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setGuid(UUID.randomUUID());
@@ -1623,6 +1626,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesWithEmptyBookingRef() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);

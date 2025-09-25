@@ -1219,7 +1219,7 @@ public class HblService implements IHblService {
     }
 
     private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {
-        if (Objects.isNull(key) || !v1Data.containsKey(key))
+        if (Objects.isNull(key) || !v1Data.containsKey(key) || Objects.isNull(v1Data.get(key).getLocCode()))
             return Constants.EMPTY_STRING;
 
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
