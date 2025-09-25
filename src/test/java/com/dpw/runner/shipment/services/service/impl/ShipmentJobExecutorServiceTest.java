@@ -106,6 +106,7 @@ class ShipmentJobExecutorServiceTest {
         quartzJobInfo.setGuid(UUID.randomUUID());
         quartzJobInfo.setEntityId(100L);
         quartzJobInfo.setEntityType(Constants.SHIPMENT);
+        TransactionSynchronizationManager.clear();
     }
 
     @Test
@@ -123,8 +124,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
@@ -147,8 +146,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -177,8 +174,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -217,8 +212,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -252,8 +245,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -286,8 +277,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -319,8 +308,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -349,8 +336,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -381,8 +366,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -422,8 +405,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -459,8 +440,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -495,8 +474,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
@@ -531,8 +508,6 @@ class ShipmentJobExecutorServiceTest {
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
 
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
@@ -556,8 +531,6 @@ class ShipmentJobExecutorServiceTest {
         doNothing().when(v1Service).clearAuthContext();
 
         shipmentJobExecutorService.executeJob(jobExecutionContext);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
 
         verify(v1Service).setAuthContext();
         verify(v1Service).clearAuthContext();
