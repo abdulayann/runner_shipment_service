@@ -84,6 +84,7 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private String ediTransactionId;
 
     private Long originBranch;
+    private Long receivingBranch;
 
     private boolean intraBranch;
     private Long documentationPartner;

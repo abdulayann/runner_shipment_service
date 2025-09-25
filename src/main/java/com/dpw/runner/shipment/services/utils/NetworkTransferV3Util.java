@@ -59,9 +59,10 @@ public class NetworkTransferV3Util {
                 processOldEntityInterBranch(consolidationDetails);
 
             if (consolidationDetails.getTransportMode()!=null && !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) {
-                processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
-                        oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
-                        reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
+                if(Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP))
+                    processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                            oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                            reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
 
                 processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
             }
@@ -557,10 +558,7 @@ public class NetworkTransferV3Util {
             // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransferForNTSchedule(shipmentDetails)) {
 
-                // Process the receiving branch for network transfer
-                processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                        oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
-                        reverseDirection(shipmentDetails.getDirection()));
+                processReceivingBranch(shipmentDetails, oldEntity);
 
                 if (shipmentDetails.getTriangulationPartnerList() != null) {
                     processTriangulationPartnerList(shipmentDetails, oldEntity);
@@ -576,6 +574,15 @@ public class NetworkTransferV3Util {
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+        }
+    }
+
+    private void processReceivingBranch(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(Objects.equals(shipmentDetails.getShipmentType(), DIRECTION_EXP)) {
+            // Process the receiving branch for network transfer
+            processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                    reverseDirection(shipmentDetails.getDirection()));
         }
     }
 
