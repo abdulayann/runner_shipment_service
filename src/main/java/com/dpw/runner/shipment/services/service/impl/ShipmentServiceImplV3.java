@@ -2925,7 +2925,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             createNotes(notesRequests, shipmentId);
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            this.triggerPushToDownStream(shipmentDetails, null, true);
 
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
