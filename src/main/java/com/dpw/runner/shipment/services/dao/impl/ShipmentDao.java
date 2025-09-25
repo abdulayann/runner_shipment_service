@@ -332,6 +332,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public List<ShipmentDetails> findByParentGuid(UUID parentGuid) {
+        return shipmentRepository.findAllByParentGuid(parentGuid);
+    }
+
+    @Override
     public Optional<ShipmentDetails> findByGuid(UUID id) {
         return shipmentRepository.findByGuid(id);
     }

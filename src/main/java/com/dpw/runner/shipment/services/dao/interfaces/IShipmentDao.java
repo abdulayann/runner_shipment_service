@@ -29,6 +29,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
     List<ShipmentDetails> findByGuids(List<UUID> guids);
+    List<ShipmentDetails> findByParentGuid(UUID parentGuid);
 
     Optional<ShipmentDetails> findByGuid(UUID id);
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
