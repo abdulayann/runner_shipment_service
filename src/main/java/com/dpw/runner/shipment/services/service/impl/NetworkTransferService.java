@@ -772,7 +772,6 @@ public class NetworkTransferService implements INetworkTransferService {
 
     public ResponseEntity<IRunnerResponse> getAllMasterDataForNT(Map<String, Object> requestPayload) {
 
-
         // Convert incoming payload to consolidation model
         ConsolidationDetails consolidationDetails =
                 jsonHelper.convertValue(requestPayload, ConsolidationDetails.class);
