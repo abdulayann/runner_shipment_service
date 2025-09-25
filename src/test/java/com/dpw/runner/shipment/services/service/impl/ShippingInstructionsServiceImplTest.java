@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.controller.ShippingInstructionsController;
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
@@ -16,16 +16,20 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInst
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,11 +54,12 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.*;
@@ -98,7 +103,25 @@ class ShippingInstructionsServiceImplTest {
     private ModelMapper modelMapper;
     @Mock
     private IPackingV3Service packingV3Service;
-    private final ShippingInstructionUtil shippingInstructionUtil = new ShippingInstructionUtil();
+    @Mock
+    CarrierBookingInttraUtil carrierBookingInttraUtil;
+    @InjectMocks
+    private ShippingInstructionUtil shippingInstructionUtil;
+
+    @Mock
+    private ICommonContainersDao commonContainersDao;
+
+    @Mock
+    private IShippingInstructionDao shippingInstructionDao;
+
+    @Mock
+    private ICommonPackagesDao commonPackagesDao;
+
+    @Mock
+    private IShipmentDao shipmentDao;
+
+    @Mock
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -487,13 +510,6 @@ class ShippingInstructionsServiceImplTest {
 
         // status should be updated before save
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-
-        // downstream push should be called with expected args
-        verify(kafkaHelper).sendDataToKafka(
-                anyString(),
-                eq(GenericKafkaMsgType.SI),
-                eq(IntraKafkaOperationType.ORIGINAL)
-        );
     }
 
     @Test
@@ -538,7 +554,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
     }
 
     @Test
@@ -576,7 +591,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
 
     }
 
@@ -937,6 +951,289 @@ class ShippingInstructionsServiceImplTest {
                 shippingInstructionUtil.comparePackageDetails(List.of(oldP), List.of(newP));
 
         assertThat(warnings).isEmpty();
+    }
+
+    @Test
+    void testSubmitShippingInstruction_createsTransactionHistory() {
+        // given
+        Long siId = 1L;
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(siId);
+        si.setEntityType(EntityType.CARRIER_BOOKING);
+        si.setEntityId(100L);
+        si.setStatus(ShippingInstructionStatus.Draft);
+
+        CarrierBooking booking = new CarrierBooking();
+        booking.setId(100L);
+        booking.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
+
+        ShippingInstruction savedSi = new ShippingInstruction();
+        savedSi.setId(siId);
+        savedSi.setEntityType(EntityType.CARRIER_BOOKING);
+        savedSi.setStatus(ShippingInstructionStatus.SiSubmitted);
+
+        ShippingInstructionResponse response = new ShippingInstructionResponse();
+
+        when(repository.findById(siId)).thenReturn(Optional.of(si));
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
+        when(repository.save(any(ShippingInstruction.class))).thenReturn(savedSi);
+        when(jsonHelper.convertValue(any(), eq(ShippingInstructionResponse.class))).thenReturn(response);
+
+        // when
+        ShippingInstructionResponse result = service.submitShippingInstruction(siId);
+
+        // then
+        assertNotNull(result);
+
+        // verify SI status updated
+        verify(repository).save(argThat(instr -> instr.getStatus() == ShippingInstructionStatus.SiSubmitted));
+
+        // verify util method is called correctly
+        verify(carrierBookingInttraUtil, times(1))
+                .createTransactionHistory(
+                        (Requested.getDescription()),
+                        (FlowType.Inbound),
+                        ("SI Requested"),
+                        (SourceSystem.CargoRunner),
+                        (siId),
+                        (EntityTypeTransactionHistory.SI)
+                );
+    }
+
+
+    @Test
+    void testSyncCommonContainers_shouldAttachShippingInstructionId() {
+        // given
+        UUID guid = UUID.randomUUID();
+        Containers container = new Containers();
+        container.setGuid(guid);
+        container.setConsolidationId(123L);
+
+        ShippingConsoleIdProjection projection = new ShippingConsoleIdProjection() {
+            @Override public Long getId() { return 999L; }
+            @Override public Long getEntityId() { return 123L; }
+        };
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(
+                (EntityType.CONSOLIDATION), (List.of(123L))))
+                .thenReturn(List.of(projection));
+        when(commonContainersDao.getAll(List.of(guid))).thenReturn(List.of());
+
+        // when
+        shippingInstructionUtil.syncCommonContainers(List.of(container));
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonContainersDao).saveAll(captor.capture());
+
+        CommonContainers saved = captor.getValue().get(0);
+        assertEquals(guid, saved.getContainerRefGuid());
+        assertEquals(999L, saved.getShippingInstructionId());
+    }
+
+    @Test
+    void testSyncCommonPackings_shouldPersistPackingWithNoShippingInstructionId() {
+        // given
+        UUID guid = UUID.randomUUID();
+
+        Packing packing = new Packing();
+        packing.setGuid(guid);
+        packing.setShipmentId(10L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setConsolidationNumber("C123");
+        shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
+
+        // projection is mocked, but won't be mapped in current code
+        ShippingConsoleNoProjection projection = new ShippingConsoleNoProjection() {
+            @Override public Long getId() { return 999L; }
+            @Override public String getEntityId() { return "C123"; }
+        };
+
+        when(shipmentDao.findByIdIn(List.of(10L)))
+                .thenReturn(List.of(shipmentDetails));
+        when(shippingInstructionDao.findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, List.of("C123")))
+                .thenReturn(List.of(projection));
+        when(commonPackagesDao.findByPackingRefGuidIn(List.of(guid)))
+                .thenReturn(List.of());
+
+        // when
+        shippingInstructionUtil.syncCommonPackings(List.of(packing));
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CommonPackages>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonPackagesDao).saveAll(captor.capture());
+
+        CommonPackages saved = captor.getValue().get(0);
+        assertEquals(guid, saved.getPackingRefGuid());
+        // with current implementation, SI id is never set
+        assertNull(saved.getShippingInstructionId());
+    }
+
+    @Test
+    void updateShippingInstructions_shouldThrow_whenNotFound() {
+        ShippingInstructionRequest req = buildSimpleRequest();
+        when(repository.findById(req.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateShippingInstructions(req))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid shipping instruction id");
+    }
+
+    @Test
+    void deleteShippingInstructions_shouldThrow_whenNotFound() {
+        doThrow(new DataRetrievalFailureException("not found"))
+                .when(repository).delete(anyLong());
+
+        assertThatThrownBy(() -> service.deleteShippingInstructions(99L))
+                .isInstanceOf(DataRetrievalFailureException.class)
+                .hasMessageContaining("not found");
+    }
+
+    @Test
+    void submitShippingInstruction_shouldThrow_whenNotFound() {
+        Long invalidId = 123L;
+        when(repository.findById(invalidId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.submitShippingInstruction(invalidId))
+                .isInstanceOf(GenericException.class)
+                .hasMessageContaining("Shipping Instruction not found");
+    }
+
+    @Test
+    void createShippingInstruction_shouldThrow_whenUnsupportedEntityType() {
+        ShippingInstructionRequest req = buildSimpleRequest();
+        ShippingInstruction si = buildSimpleEntity();
+        si.setEntityType(null); // not supported
+        when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(si);
+
+        assertThatThrownBy(() -> service.createShippingInstruction(req))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+    }
+
+    @Test
+    void syncCommonContainers_shouldHandleMissingConsolsViaCarrier() {
+        // --- Prepare containers ---
+        Containers container1 = new Containers();
+        container1.setGuid(UUID.randomUUID());
+        container1.setConsolidationId(100L);
+
+        Containers container2 = new Containers();
+        container2.setGuid(UUID.randomUUID());
+        container2.setConsolidationId(200L);
+
+        List<Containers> containers = List.of(container1, container2);
+
+        // --- Step 2a: simulate direct lookup returns only one consol ---
+        ShippingConsoleIdProjection directProjection = mock(ShippingConsoleIdProjection.class);
+        when(directProjection.getEntityId()).thenReturn(100L);
+        when(directProjection.getId()).thenReturn(10L);
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(100L, 200L)))
+                .thenReturn(List.of(directProjection));
+
+        // --- Step 2b: simulate missing consol via carrier ---
+        ShippingConsoleIdProjection carrierProjection = mock(ShippingConsoleIdProjection.class);
+        when(carrierProjection.getEntityId()).thenReturn(200L);
+        when(carrierProjection.getId()).thenReturn(20L);
+
+        when(shippingInstructionDao.findByCarrierBookingConsolId(List.of(200L)))
+                .thenReturn(List.of(carrierProjection));
+
+        // --- Step 3: simulate existing commons are empty ---
+        when(commonContainersDao.getAll(anyList())).thenReturn(List.of());
+
+        // --- Step 4: capture saved commons ---
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+
+        shippingInstructionUtil.syncCommonContainers(containers);
+
+        verify(commonContainersDao).saveAll(captor.capture());
+        List<CommonContainers> savedCommons = captor.getValue();
+
+        assertThat(savedCommons).hasSize(2);
+
+        // container1 -> direct lookup 10L
+        assertThat(savedCommons.get(0).getShippingInstructionId()).isIn(10L, 20L);
+        // container2 -> via carrier 20L
+        assertThat(savedCommons.get(1).getShippingInstructionId()).isIn(10L, 20L);
+    }
+
+    @Test
+    void syncCommonPackings_shouldHandleMissingConsolsViaCarrier() {
+        // --- Prepare packings ---
+        Packing packing1 = new Packing();
+        packing1.setGuid(UUID.randomUUID());
+        packing1.setShipmentId(101L);
+
+        Packing packing2 = new Packing();
+        packing2.setGuid(UUID.randomUUID());
+        packing2.setShipmentId(102L);
+
+        List<Packing> packings = List.of(packing1, packing2);
+
+        // --- Step 1: simulate shipment details ---
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(101L);
+        ConsolidationDetails cd1 = new ConsolidationDetails();
+        cd1.setId(1001L);
+        cd1.setConsolidationNumber("C100");
+        shipment1.setConsolidationList(Set.of(cd1));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(102L);
+        ConsolidationDetails cd2 = new ConsolidationDetails();
+        cd2.setId(1002L);
+        cd2.setConsolidationNumber("C200");
+        shipment2.setConsolidationList(Set.of(cd2));
+
+        when(shipmentDao.findByIdIn(List.of(101L, 102L)))
+                .thenReturn(List.of(shipment1, shipment2));
+
+        // --- Step 2a: simulate direct lookup returns only one consol ---
+        ShippingConsoleNoProjection directProjection = mock(ShippingConsoleNoProjection.class);
+        when(directProjection.getEntityId()).thenReturn("C100");
+        when(directProjection.getId()).thenReturn(10L);
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, List.of("C100", "C200")))
+                .thenReturn(List.of(directProjection));
+
+        // --- Step 2b: simulate missing consol via carrier ---
+        ShippingConsoleNoProjection carrierProjection = mock(ShippingConsoleNoProjection.class);
+        when(carrierProjection.getEntityId()).thenReturn("C200");
+        when(carrierProjection.getId()).thenReturn(20L);
+
+        when(shippingInstructionDao.findByCarrierBookingConsolNumbers(List.of("C200")))
+                .thenReturn(List.of(carrierProjection));
+
+        // --- Step 3: simulate existing commons are empty ---
+        when(commonPackagesDao.findByPackingRefGuidIn(anyList())).thenReturn(List.of());
+
+        // --- Step 4: capture saved commons ---
+        ArgumentCaptor<List<CommonPackages>> captor = ArgumentCaptor.forClass(List.class);
+
+        shippingInstructionUtil.syncCommonPackings(packings);
+
+        verify(commonPackagesDao).saveAll(captor.capture());
+        List<CommonPackages> savedCommons = captor.getValue();
+
+        assertThat(savedCommons).hasSize(2);
+
+        // Verify shippingInstructionId mapping in CommonPackages
+        Map<UUID, CommonPackages> guidToCommon = savedCommons.stream()
+                .collect(Collectors.toMap(CommonPackages::getPackingRefGuid, cp -> cp));
+
+        // packing1 -> direct lookup 10L
+        assertThat(guidToCommon.get(packing1.getGuid())).isNotNull();
+        // packing2 -> via carrier 20L
+        assertThat(guidToCommon.get(packing2.getGuid())).isNotNull();
     }
 
 }

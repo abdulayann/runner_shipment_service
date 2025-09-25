@@ -51,7 +51,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateAtPlatform(CommonRequestModel requestModel) throws RunnerException {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import javax.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -188,7 +189,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
     private LocalDateTime cargoReadyDate;
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
@@ -254,5 +254,11 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days")
+    private Integer numberOfFreeDaysCutOff;
+
     private List<ShipmentOrderV3Request> shipmentOrders;
 }

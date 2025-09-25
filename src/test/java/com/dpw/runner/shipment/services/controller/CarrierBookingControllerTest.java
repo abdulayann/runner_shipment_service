@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -223,31 +224,13 @@ class CarrierBookingControllerTest {
     }
 
     @Test
-    void submit_Success() {
-        // Mock
-        Long id = 123L;
-        doNothing().when(carrierBookingService).submit(id);
+    void submitOrAmend_Success() throws RunnerException {
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        doNothing().when(carrierBookingService).submitOrAmend(submitAmendInttraRequest);
 
-        // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.submit(id);
+        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.submitOrAmend(submitAmendInttraRequest);
 
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        verify(carrierBookingService).submit(id);
-    }
-
-    @Test
-    void amend_Success() {
-        // Mock
-        Long id = 123L;
-        doNothing().when(carrierBookingService).amend(id);
-
-        // Test
-        ResponseEntity<IRunnerResponse> responseEntity = carrierBookingController.amend(id);
-
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        verify(carrierBookingService).amend(id);
+        assertNotNull(responseEntity);
     }
 
 }

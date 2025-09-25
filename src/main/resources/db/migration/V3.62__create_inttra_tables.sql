@@ -81,10 +81,14 @@ CREATE TABLE IF NOT EXISTS verified_gross_mass (
     entity_number VARCHAR(100),
     internal_emails TEXT,
     external_emails TEXT,
+    created_by_user_email VARCHAR,
+    submit_by_user_email VARCHAR,
+    is_delegated BOOLEAN DEFAULT false,
     requestor_id BIGINT REFERENCES parties(id),
     authorised_id BIGINT REFERENCES parties(id),
     responsible_id BIGINT REFERENCES parties(id),
-    sailing_information_id BIGINT REFERENCES sailing_information(id)
+    sailing_information_id BIGINT REFERENCES sailing_information(id),
+    submitted_containers_list JSONB
 );
 -- Step 3: Create carrier_booking table
 CREATE TABLE IF NOT EXISTS carrier_booking (
@@ -236,6 +240,7 @@ CREATE TABLE IF NOT EXISTS common_containers (
     vgm_weight_unit VARCHAR(50),
     weight_determination_method VARCHAR(100),
     weight_determination_location VARCHAR(255),
+    weight_determination_datetime TIMESTAMP WITHOUT TIME ZONE,
     vgm_status VARCHAR(100),
     container_ref_guid uuid,
     carrier_booking_id BIGINT REFERENCES carrier_booking(id),

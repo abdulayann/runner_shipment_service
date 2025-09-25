@@ -120,6 +120,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ExportExcelResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -247,6 +248,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -264,6 +266,7 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -282,6 +285,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -307,6 +311,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_CACHE_KEY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
@@ -511,6 +516,11 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
+    @Autowired
+    @Qualifier("redisTemplateExport")
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private CustomKeyGenerator customKeyGenerator;
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
@@ -1115,8 +1125,6 @@ public class ConsolidationService implements IConsolidationService {
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
         }
-        if (!Objects.isNull(consolidationId))
-            awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         boolean isConsolePullCall = false;
         if(shipmentRequestedType == null && !shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection())) {
@@ -4616,26 +4624,43 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (invalidateExcel(commonRequestModel, request)) return;
 
-        applyPermissionFilter(commonRequestModel);
+        String username = UserContext.getUser().getUsername();
+        String expireTime = applicationConfigService.getValue(Constants.EXPORT_EXCEL_EXPIRE_TIME);
+        int defaultTime = 10;
+        if (StringUtility.isNotEmpty(expireTime)) {
+            defaultTime = Integer.valueOf(expireTime);
+        }
+        StringBuilder key = customKeyGenerator.cacheBaseKey();
+        key = key.append(EXPORT_EXCEL_CACHE_KEY).append(username).append(UserContext.getUser().getTenantId());
+        Object value = redisTemplate.opsForValue().get(key.toString());
+        if (Objects.nonNull(value)) {
+            Long seconds = redisTemplate.getExpire(key.toString(), TimeUnit.SECONDS);
+            String message = commonUtils.convertSeconds(seconds);
+            throw new ValidationException(message);
+        }
+        redisTemplate.opsForValue().set(key.toString(), username, Duration.ofMinutes(defaultTime));
+
         String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
         Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
         request.setPageSize(exportExcelLimit);
-
-        Page<ConsolidationLiteResponse> consolidationDetailsPageLite = fetchConsolidationPageForExport(request);
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.TENANT_ID, UserContext.getUser().getTenantId(), Constants.EQ, request);
+        Page<ConsolidationLiteResponse> consolidationDetailsPageLite = fetchConsolidationPageForExport(listCommonRequest);
         long consolidationCount = consolidationDetailsPageLite.getTotalElements();
 
         if(consolidationCount <= exportExcelLimit){
             downloadShipmentListExcel(response, consolidationDetailsPageLite);
         }else{
-            request.setPageSize(Integer.MAX_VALUE);
+            exportExcelResponse.setEmailSent(true);
+            listCommonRequest.setPageSize((int)consolidationCount);
+            listCommonRequest.setContainsText(request.getContainsText());
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
                 TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
                 txTemplate.execute(status -> {
-                    emailConsolidationListExcel(response, request);
+                    emailConsolidationListExcel(response, listCommonRequest);
                     return null;
                 });
             }), executorService);

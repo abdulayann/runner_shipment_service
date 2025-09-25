@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -71,6 +72,11 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days")
+    private Integer numberOfFreeDaysCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;

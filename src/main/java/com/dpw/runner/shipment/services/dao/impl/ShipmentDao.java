@@ -678,7 +678,7 @@ public class ShipmentDao implements IShipmentDao {
 
         CarrierResponse correspondingCarrier = getCorrespondingCarrier(shipmentRequest, oldMasterBill);
 
-        if (shipmentRequest.getDirection().equals("IMP")) {
+        if(!Constants.SHIPMENT_TYPE_DRT.equals(shipmentRequest.getJobType()) || shipmentRequest.getDirection().equals(Constants.IMP)) {
             return;
         }
 

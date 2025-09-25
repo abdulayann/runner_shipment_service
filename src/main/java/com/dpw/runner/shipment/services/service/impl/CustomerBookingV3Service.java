@@ -49,7 +49,18 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -151,6 +162,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     ExecutorService executorService = Executors.newFixedThreadPool(10);
     private static final Random rnd = new SecureRandom();
 
+    @Value("${booking.event.kafka.queue}")
+    private String senderQueue;
+
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
@@ -200,10 +214,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry("notifyPartyAddressCode", RunnerEntityMapping.builder().tableName("notifyParty").dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
-            Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("origin").build()),
-            Map.entry("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destination").build()),
-            Map.entry("originPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originPort").build()),
-            Map.entry("destinationPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationPort").build()),
+            Map.entry(ORIGIN, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("origin").build()),
+            Map.entry(DESTINATION, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destination").build()),
+            Map.entry(ORIGIN_PORT, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originPort").build()),
+            Map.entry(DESTINATION_PORT, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationPort").build()),
             Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("bookingNumber").isContainsText(true).build()),
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingStatus.class).fieldName("bookingStatus").build()),
@@ -216,13 +230,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
             Map.entry("incoterms", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("incoterms").isContainsText(true).build()),
-            Map.entry("serviceMode", RunnerEntityMapping.builder().tableName(CUSTOMER_BOOKING).dataType(String.class).fieldName("serviceMode").isContainsText(true).build()),
+            Map.entry(SERVICE_MODE, RunnerEntityMapping.builder().tableName(CUSTOMER_BOOKING).dataType(String.class).fieldName("serviceMode").isContainsText(true).build()),
             Map.entry("shipmentReferenceNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentReferenceNumber").build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("transportType").isContainsText(true).build()),
             Map.entry(DIRECTION, RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("direction").isContainsText(true).build()),
             Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("additionalTerms").isContainsText(true).build()),
             Map.entry("description", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("description").isContainsText(true).build()),
-            Map.entry("cargoType", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("cargoType").isContainsText(true).build()),
+            Map.entry(CARGO_TYPE, RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("cargoType").isContainsText(true).build()),
             Map.entry("originLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("originLocCode").build()),
             Map.entry("destinationLocCode", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationLocCode").build()),
             Map.entry(ORIGIN_PORT_LOC_CODE, RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
@@ -311,7 +325,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
 
@@ -367,7 +381,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -515,6 +529,30 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
+    }
+
+    @Override
+    public QuoteResetRulesResponse resetBookingQuoteRules(Long bookingId) {
+        QuoteResetRulesResponse response = new QuoteResetRulesResponse();
+
+        List<QuoteResetField> quoteResetFields = List.of(
+                QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Transport Mode").fieldName("transportType").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Cargo Type").fieldName(CARGO_TYPE).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Service Type").fieldName(SERVICE_MODE).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Origin").fieldName(ORIGIN).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("POL").fieldName(ORIGIN_PORT).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("POD").fieldName(DESTINATION_PORT).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Destination").fieldName(DESTINATION).editable(true).selected(true).build(),
+                QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build(),
+                QuoteResetField.builder().label("Incoterms").fieldName("incoTerms").editable(true).selected(true).build(),
+                QuoteResetField.builder().label("PaymentTerm").fieldName("paymentTerms").editable(true).selected(true).build()
+        );
+
+        response.setQuotesResetFields(quoteResetFields);
+        return response;
     }
 
     private void setCargoDetailsFromShipment(CloneRequest request, ShipmentDetails shipmentDetails, CustomerBookingV3Response customerBookingResponse) {
@@ -822,6 +860,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> orgIds = new HashSet<>((masterDataUtils.createInBulkOrganizationRequest(customerBookingV3Response, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName(), cacheMap)));
+
 
             Map<String, EntityTransferOrganizations> keyMasterDataMap = masterDataUtils.fetchInOrganizations(orgIds, EntityTransferConstants.ID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.ORGANIZATIONS, orgIds, new EntityTransferOrganizations(), cacheMap);
@@ -1639,7 +1678,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private CustomerBookingV3Response updatePlatformBooking(CustomerBookingV3Request request, CustomerBooking oldEntity) throws RunnerException {
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         if(request.getSource()==null)
@@ -1659,7 +1698,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
@@ -1909,8 +1948,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response getDefaultBooking() {
         var tenantSettings = commonUtils.getShipmentSettingFromContext();
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
-        customerBookingV3Response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+        customerBookingV3Response.setVolumeUnit(VOLUME_UNIT_M3);
         customerBookingV3Response.setGrossWeightUnit(tenantSettings.getWeightChargeableUnit());
+        customerBookingV3Response.setPackageType(tenantSettings.getDefaultPackUnit());
         customerBookingV3Response.setSource(BookingSource.Runner);
         customerBookingV3Response.setTenantId(UserContext.getUser().TenantId);
         return customerBookingV3Response;
@@ -2528,29 +2568,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 RequestAuthContext.setAuthToken(token);
                 UserContext.setUser(userContext1);
                 runnable.run();
-            } finally {
-                RequestAuthContext.removeToken();
-                MDC.clear();
-                UserContext.removeUser();
-            }
-        };
-    }
-
-    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
-        Map<String, String> mdc = MDC.getCopyOfContextMap();
-        String token = RequestAuthContext.getAuthToken();
-        var userContext1 = UserContext.getUser();
-
-        return () -> {
-            try {
-                if (mdc != null) {
-                    MDC.setContextMap(mdc);
-                } else {
-                    MDC.clear();
-                }
-                RequestAuthContext.setAuthToken(token);
-                UserContext.setUser(userContext1);
-                return supplier.get();
             } finally {
                 RequestAuthContext.removeToken();
                 MDC.clear();

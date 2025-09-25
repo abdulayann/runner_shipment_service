@@ -48,7 +48,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL_RELEASE_TYPE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA_WAYBILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
@@ -430,6 +429,7 @@ public class ReportService implements IReportService {
         BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
 
         pdfByteContent = getPdfBytesForHouseBill(reportRequest, dataRetrived, waterMarkRequired, pdfByteContent, font, isOriginalPrint, isSurrenderPrint, isNeutralPrint, tenantSettingsRow);
+        pdfByteContent = addWaterMarkForDraftSeawayBill(reportRequest, pdfByteContent, font);
         addHBLToRepoForSeawayBill(reportRequest, pdfByteContent, tenantSettingsRow);
         createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrived, tenantSettingsRow);
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
@@ -442,6 +442,19 @@ public class ReportService implements IReportService {
         // Push document to document master
         var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
+    }
+
+    // Add Watermark for draft Seaway Bill
+    private byte[] addWaterMarkForDraftSeawayBill(ReportRequest reportRequest, byte[] pdfByteContent, BaseFont font) {
+        try {
+            if (ReportConstants.SEAWAY_BILL.equalsIgnoreCase(reportRequest.getReportInfo()) && pdfByteContent != null
+                    && DRAFT.equalsIgnoreCase(reportRequest.getPrintType())) {
+                pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, ReportConstants.DRAFT_WATERMARK);
+            }
+        } catch (Exception e) {
+            throw new ValidationException(e.getMessage());
+        }
+        return pdfByteContent;
     }
 
     private void setReportParametersFromRequest(IReport report, ReportRequest reportRequest) {
@@ -695,14 +708,14 @@ public class ReportService implements IReportService {
 
         if (Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
-        } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
-            if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
+        } else if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)
+                && Objects.nonNull(awb) && !Objects.equals(awb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED)) {
+            if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
                 awbDao.updateAirMessageStatusFromConsolidationId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
 
-            if (Objects.nonNull(awb))
-                awb.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
+            awb.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
         }
     }
 
@@ -980,9 +993,7 @@ public class ReportService implements IReportService {
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else if (report instanceof SeawayBillReport vSeawayBillReport) {
-            validateReleaseTypeForReport(reportRequest);
-            dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createEvent(reportRequest, EventConstants.FHBL);
+            dataRetrived = getSeaWayBillReportData(reportRequest, vSeawayBillReport);
         } else if (report instanceof HawbReport vHawbReport) {
             vHawbReport.printType = reportRequest.getPrintType();
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
@@ -990,6 +1001,18 @@ public class ReportService implements IReportService {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
         return dataRetrived;
+    }
+
+    private Map<String, Object> getSeaWayBillReportData(ReportRequest reportRequest, SeawayBillReport vSeawayBillReport) {
+        Map<String, Object> dataRetrieved;
+        validateReleaseTypeForReport(reportRequest);
+        dataRetrieved = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
+        if(ObjectUtils.isNotEmpty(reportRequest.getPrintType()) && reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
+            createEvent(reportRequest, EventConstants.DHBL);
+        } else {
+            createEvent(reportRequest, EventConstants.FHBL);
+        }
+        return dataRetrieved;
     }
 
     private Map<String, Object> getDataRetrivedForHblReport(IReport report, ReportRequest reportRequest, HblReport vHblReport) throws RunnerException {
@@ -2167,9 +2190,7 @@ public class ReportService implements IReportService {
 
     private byte[] getBytesForMainDoc(DocPages pages, String reportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int copyCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
         if (copyCount > 0) {
-            json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
-            json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
-            json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+            setCopyDetailsInJson(json, reportRequest);
             if (reportRequest.isPrintForParties()) {
                 mainDoc = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null ? "" : json.get(ReportConstants.HAWB_NO).toString(), json, pages);
             } else {
@@ -2182,6 +2203,15 @@ public class ReportService implements IReportService {
 
         }
         return mainDoc;
+    }
+
+    private void setCopyDetailsInJson(Map<String, Object> json, ReportRequest reportRequest) {
+        json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
+        json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
+        json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
+
+        if (Objects.equals(reportRequest.getReportInfo(), HOUSE_BILL) || Objects.equals(reportRequest.getReportInfo(), SEAWAY_BILL))
+            json.put(ReportConstants.BL_RELEASE_TYPE, "NON-NEGOTIABLE COPY");
     }
 
     private String getLogopath(DocPages pages, String reportInfo, Map<String, Object> json, String hbltype) {
@@ -2848,9 +2878,9 @@ public class ReportService implements IReportService {
                     docType = DocumentConstants.HBL;
                     break;
                 case SEAWAY_BILL:
-                    filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
-                    childType = SEA_WAYBILL;
-                    docType = DocumentConstants.HBL;
+                    filename = SEAWAY_BILL + DocumentConstants.DASH + StringUtility.convertToString(reportRequest.getPrintType()) + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = reportRequest.getPrintType();
+                    docType = DocumentConstants.SEA_WAYBILL;
                     break;
                 case HAWB, MAWB:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
@@ -2915,6 +2945,11 @@ public class ReportService implements IReportService {
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB))
                         && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                } else if (SEAWAY_BILL.equalsIgnoreCase(docType)) {
+                    if (DRAFT.equalsIgnoreCase(childType))
+                        customFileName = baseDocName + "_" + DRAFT + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
+                    else
+                        customFileName = StringUtility.toUpperCase(childType) + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 } else if (Objects.equals(docType, TRANSPORT_INSTRUCTIONS)) {
                     customFileName = baseDocName + "_" + StringUtility.toUpperCase(childType) + suffix + DocumentConstants.DOT_PDF;
                 }else {
@@ -2965,8 +3000,10 @@ public class ReportService implements IReportService {
         String entityGuid;
         String entityType;
         String identifier;
+        if (StringUtility.isEmpty(reportRequest.getEntityName())) {
+            return new HashMap<>();
+        }
         log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
-
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
@@ -3026,7 +3063,7 @@ public class ReportService implements IReportService {
         addBasicConsolidationFields(dict, consolidationDetails);
         addReferenceNumbers(dict, consolidationDetails.getReferenceNumbersList());
         addRoutingDetails(dict, consolidationDetails.getRoutingsList());
-        addPartyDetails(dict, consolidationDetails.getConsolidationAddresses());
+        addPartyDetails(dict, consolidationDetails);
         addAgentDetails(dict, "C_OriginAgent", consolidationDetails.getSendingAgent());
         addAgentDetails(dict, "C_DestinationAgent", consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
@@ -3105,7 +3142,8 @@ public class ReportService implements IReportService {
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+    private void addPartyDetails(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+        List<Parties> parties = consolidationDetails.getConsolidationAddresses();
         if (parties == null) {
             return;
         }
@@ -3115,6 +3153,10 @@ public class ReportService implements IReportService {
                 dict.put("C_" + party.getType(), buildPartyMap(party));
             }
         }
+
+        dict.put("C_BorrowedFrom", buildPartyMap(consolidationDetails.getBorrowedFrom()));
+        dict.put("C_Creditor", buildPartyMap(consolidationDetails.getCreditor()));
+        dict.put("C_CoLoadWith", buildPartyMap(consolidationDetails.getCoLoadWith()));
     }
 
     // Adds single agent party (either origin or destination) using a provided key
@@ -3126,6 +3168,11 @@ public class ReportService implements IReportService {
 
     // Converts a Parties object into a consistent map of address/organization values
     private List<Map<String, Object>> buildPartyMap(Parties party) {
+
+        if(party == null) {
+            return List.of();
+        }
+
         Map<String, Object> map = new HashMap<>();
 
         // Add organization name if available

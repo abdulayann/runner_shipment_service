@@ -26,7 +26,15 @@ import com.dpw.runner.shipment.services.dao.interfaces.IQuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
@@ -45,7 +53,6 @@ import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -89,7 +96,6 @@ import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
@@ -302,7 +308,6 @@ public class CommonUtils {
         request.setFilterCriteria(criterias);
         return request;
     }
-
     public static ListCommonRequest constructListRequestFromEntityId(Long entityId, String entityType) {
         FilterCriteria entityIdCriteria = FilterCriteria.builder()
                 .innerFilter(Arrays.asList(FilterCriteria.builder()
@@ -881,7 +886,7 @@ public class CommonUtils {
     }
 
     public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
-                                                 OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
 
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -891,7 +896,7 @@ public class CommonUtils {
 
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-                template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -1503,13 +1508,13 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
-    public String getTaskIdHyperLink(String shipmentId, String taskGuid) {
-        String link = baseUrl + "/v2/manage/tasks/" + taskGuid;
+    public String getTaskIdHyperLinkV3(String shipmentId, String taskUuid) {
+        String link = baseUrl + "/v2/cr3/shipments/task/" + taskUuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
-    public String getTaskIdHyperLinkV3(String shipmentId, String taskUuid) {
-        String link = baseUrl + "/v2/cr3/shipments/task/" + taskUuid;
+    public String getTaskIdHyperLinkV2(String shipmentId, String taskGuid) {
+        String link = baseUrl + "/v2/shipments/tasks/" + taskGuid;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
@@ -1884,14 +1889,19 @@ public class CommonUtils {
     }
 
     public void populateDictionaryForOceanDGApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks,
-                                                     TaskCreateResponse taskCreateResponse) {
+                                                     TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
 
         populateDictionaryForDGEmailFromShipment(dictionary, shipmentDetails, vesselsResponse, taskCreateResponse);
         populateDictionaryApprovalRequestForDGEmail(dictionary, remarks);
+        if(taskServiceV2Enabled){
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
+        }else {
+            dictionary.put(VIEWS, getTaskIdHyperLinkV2(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+        }
     }
 
-    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
-        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+    public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse, boolean taskServiceV2Enabled) {
+        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse, taskServiceV2Enabled);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
                 DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null && !auditLogList.isEmpty()){
@@ -1994,27 +2004,27 @@ public class CommonUtils {
 
     public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
         MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
-                .builder()
-                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
-                .entityUuid(shipmentDetails.getGuid().toString())
-                .roleId(roleId)
-                .taskType(DG_OCEAN_APPROVAL)
-                .status(PENDING_ACTION_TASK)
-                .userId(UserContext.getUser().getUserId())
-                .isCreatedFromV2(true)
-                .sendEmail(false)
-                .build();
+            .builder()
+            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+            .entityUuid(shipmentDetails.getGuid().toString())
+            .roleId(roleId)
+            .taskType(DG_OCEAN_APPROVAL)
+            .status(PENDING_ACTION_TASK)
+            .userId(UserContext.getUser().getUserId())
+            .isCreatedFromV2(true)
+            .sendEmail(false)
+            .build();
 
         try {
-            MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
+            com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
             return TaskCreateResponse
-                    .builder()
-                    .tasksId(mdmTaskCreateResponse.getId().toString())
-                    .taskGuid(mdmTaskCreateResponse.getUuid())
-                    .build();
+                .builder()
+                .tasksId(mdmTaskCreateResponse.getId().toString())
+                .taskGuid(mdmTaskCreateResponse.getUuid())
+                .build();
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
-                    shipmentDetails.getId(), e.getMessage()));
+                shipmentDetails.getId(), e.getMessage()));
         }
     }
 
@@ -2092,7 +2102,6 @@ public class CommonUtils {
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
         dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
-        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskGuid()));
     }
 
     private void populateDictionaryApprovalRequestForDGEmail(Map<String, Object> dictionary, String remarks) {
@@ -2291,6 +2300,12 @@ public class CommonUtils {
         if (isStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
             return null;
         return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
+    }
+
+    public String getTwoDigitCountryFromUnLocCode(String unLocCode) {
+        if (isStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return unLocCode.substring(0, 2);
     }
 
     public void checkForMandatoryHsCodeForUAE(Awb awb) {
@@ -3430,7 +3445,7 @@ public class CommonUtils {
     }
 
     public CommonV1ListRequest createCriteriaToFetchAddressList(List<String> addressIdList) {
-        List<Object> addressIdField = new ArrayList<>(List.of(Constants.ID));
+        List<Object> addressIdField = new ArrayList<>(List.of(ID));
         List<Object> addressCriteria = new ArrayList<>(List.of(addressIdField, Constants.IN, List.of(addressIdList)));
         return CommonV1ListRequest.builder().criteriaRequests(addressCriteria).build();
     }
@@ -3474,6 +3489,74 @@ public class CommonUtils {
         }
         return null;
     }
+
+    public static String constructAddress(Map<String, Object> addressData) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+
+        if (addressData != null) {
+            // Address1
+            if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
+                ));
+            }
+
+            // Address2
+            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+                sb.append(newLine).append(
+                        StringUtility.toUpperCase(
+                                StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
+                        )
+                );
+            }
+
+            // City + State + Zip + Country in one line
+            StringBuilder line3 = new StringBuilder(constructAddressL3(addressData));
+
+            if (!line3.isEmpty()) {
+                sb.append(newLine).append(line3);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static String constructAddressL3(Map<String, Object> addressData) {
+        StringBuilder line3 = new StringBuilder();
+        if (addressData.containsKey(PartiesConstants.CITY)) {
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.STATE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
+            ));
+        }
+        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+            if (!line3.isEmpty()) line3.append(" ");
+            line3.append(StringUtility.toUpperCase(
+                    getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
+            ));
+        }
+        return line3.toString();
+    }
+
+    private static String getCountryName(String code) {
+        if (StringUtility.isEmpty(code))
+            return null;
+        String countryName = CountryListHelper.ISO3166.getCountryNameByCode(code);
+        return StringUtility.isNotEmpty(countryName) ? countryName : code;
+    }
+
     public List<Map<String, Object>> buildFlatList(
             List<Object[]> results,
             List<String> columnOrder
@@ -4450,4 +4533,17 @@ public class CommonUtils {
         return true;
     }
 
+
+    public String convertSeconds(long totalSeconds) {
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+
+        if (minutes == 0) {
+            return Constants.EXPORT_EXCEL_MESSAGE + seconds + " seconds. Please try again after that time.";
+        } else if (seconds == 0) {
+            return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes. Please try again after that time.";
+        } else {
+            return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
+        }
+    }
 }

@@ -30,12 +30,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.futureCompletion;
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
 
 @Service
 @Slf4j
@@ -77,18 +77,20 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
 
     @Override
-    public void restore(Integer tenantId) {
+    public Map<String, Object> restore(Integer tenantId) {
 
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
-
         List<ConsolidationBackupEntity> consolidationBackupEntities = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
         Set<Long> consolidationIds = consolidationBackupEntities.stream().map(ConsolidationBackupEntity::getConsolidationId)
                 .collect(Collectors.toSet());
 
         log.info("Total consolidation IDS : {}", consolidationIds.size());
+        Map<String, Object> map = new HashMap<>();
+        Map<Long, String>  failureMap = new HashMap<>();
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
-            return;
+            map.put("Total Consolidation : ", 0);
+            return map;
         }
         log.info("Fetched all consolidation ids to restore...");
         consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
@@ -97,38 +99,48 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 .map(ConsolidationBackupEntity::getConsolidationId).collect(Collectors.toSet());
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(new ArrayList<>(consolidationIds), tenantId);
 
-        List<CompletableFuture<Object>> consolefutures = consolidationIds.stream()
-                .map(id -> trxExecutor.runInAsyncForConsole(() -> {
-                    try {
-                        v1Service.setAuthContext();
-                        TenantContext.setCurrentTenant(tenantId);
-                        UserContext.getUser().setPermissions(new HashMap<>());
-                        return transactionTemplate.execute(status -> {
-                            processAndRestoreConsolidation(id, tenantId);
-                            return null;
-                        });
-                    } catch (Exception e) {
-                        log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
-                        migrationUtil.saveErrorResponse(
-                                id,
-                                Constants.CONSOLIDATION,
-                                IntegrationType.RESTORE_DATA_SYNC,
-                                Status.FAILED,
-                                e.getLocalizedMessage()
-                        );
-                        throw new IllegalArgumentException(e);
-                    } finally {
-                        v1Service.clearAuthContext();
-                    }
-                }))
-                .toList();
-        log.info("Waiting for all consolidation restore tasks to complete...");
-        futureCompletion(consolefutures);
+        map.put("Total Consolidation : ", consolidationIds.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        consolidationIds.forEach(id -> {
+                    Future<Long> future = trxExecutor.runInAsyncForConsole(() -> {
+                        try {
+                            v1Service.setAuthContext();
+                            TenantContext.setCurrentTenant(tenantId);
+                            UserContext.getUser().setPermissions(new HashMap<>());
+                            return transactionTemplate.execute(status -> {
+                                processAndRestoreConsolidation(id, tenantId);
+                                return null;
+                            });
+                        } catch (Exception e) {
+                            log.error("Consolidation restore failed [id={}]: {}", id, e.getMessage(), e);
+                            migrationUtil.saveErrorResponse(
+                                    id,
+                                    Constants.CONSOLIDATION,
+                                    IntegrationType.RESTORE_DATA_SYNC,
+                                    Status.FAILED,
+                                    e.getMessage()
+                            );
+                            failureMap.put(id, e.getMessage());
+                            throw new IllegalArgumentException(e);
+                        } finally {
+                            v1Service.clearAuthContext();
+                        }
+                    });
+            bookingQueue.add(future);
+        });
+
+        List<Long> consoleProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Consolidation Restore", consoleProcessed.size());
+        if (!failureMap.isEmpty()) {
+            map.put("Failed Consolidation Restore details: ", failureMap);
+        }
         log.info("Completed consolidation restore for tenant: {}", tenantId);
+        return map;
     }
 
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
+
             log.info("Started processing of consol id : {}", consolidationId);
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
             if (Objects.isNull(consolidationBackupDetails)) {
@@ -174,7 +186,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndRestoreTriangularPartnerDetails(consolidationId);
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
-            log.info("Completed processing of consol id : {}", consolidationId);
+            log.info("Completed processing of console id : {}", consolidationId);
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new IllegalArgumentException(e);

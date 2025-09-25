@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -7,6 +9,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -23,9 +27,11 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -34,12 +40,15 @@ import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
+import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassUtil;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -67,9 +76,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -99,6 +110,15 @@ class VerifiedGrossMassServiceTest {
     private ExecutorService executorServiceMasterData;
 
     @Mock
+    private VerifiedGrossMassUtil verifiedGrossMassUtil;
+
+    @Mock
+    private CarrierBookingInttraUtil carrierBookingInttraUtil;
+
+    @Mock
+    private BridgeServiceAdapter bridgeServiceAdapter;
+
+    @Mock
     private VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
 
     @Mock
@@ -117,6 +137,7 @@ class VerifiedGrossMassServiceTest {
     private VerifiedGrossMassResponse testResponse;
     private CarrierBooking testCarrierBooking;
     private ConsolidationDetails testConsolidationDetails;
+    private SubmitAmendInttraRequest request;
 
     @BeforeEach
     void setUp() {
@@ -151,14 +172,26 @@ class VerifiedGrossMassServiceTest {
 
         CommonContainers c1 = new CommonContainers();
         c1.setId(1L);
+        c1.setApprovalSignature("abc");
+        c1.setWeighingParty(party);
+
         CommonContainers c2 = new CommonContainers();
         c2.setId(2L);
+        c2.setApprovalSignature("abc");
+        c2.setWeighingParty(party);
         List<CommonContainers> containers = Arrays.asList(c1, c2);
 
         when(commonContainersRepository.findAllByIdIn(request.getContainerIds()))
                 .thenReturn(containers);
         when(commonContainersRepository.saveAll(containers))
                 .thenReturn(containers);
+
+        PartiesResponse partyResponse = PartiesResponse.builder()
+                .id(party.getId())
+                .orgCode(party.getOrgCode())
+                .type(party.getType())
+                .build();
+
 
         // Mock JsonHelper conversion
         when(jsonHelper.convertValue(any(CommonContainers.class), eq(CommonContainerResponse.class)))
@@ -167,7 +200,7 @@ class VerifiedGrossMassServiceTest {
                     CommonContainerResponse r = new CommonContainerResponse();
                     r.setId(c.getId());
                     r.setApprovalSignature(c.getApprovalSignature());
-                    r.setWeighingParty(c.getWeighingParty());
+                    r.setWeighingParty(partyResponse);
                     return r;
                 });
 
@@ -279,7 +312,7 @@ class VerifiedGrossMassServiceTest {
 
     @Test
     void testCreate_WithCarrierBooking_Success() {
-        // Arrange [web:3]
+        // Arrange
         when(verifiedGrossMassValidationUtil.validateRequest(EntityType.CARRIER_BOOKING, 1L))
                 .thenReturn(testCarrierBooking);
         when(jsonHelper.convertValue(testRequest, VerifiedGrossMass.class))
@@ -289,21 +322,28 @@ class VerifiedGrossMassServiceTest {
         when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class))
                 .thenReturn(testResponse);
 
-        // Act
-        VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto mockUser = mock(UsersDto.class);
+            when(mockUser.getEmail()).thenReturn("carrieruser@example.com");
+            userContext.when(UserContext::getUser).thenReturn(mockUser);
 
-        // Assert [web:3]
-        assertNotNull(result);
-        verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
-        verify(verifiedGrossMassValidationUtil).validateRequest(EntityType.CARRIER_BOOKING, 1L);
-        verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
-        assertEquals(VerifiedGrossMassStatus.Draft, testEntity.getStatus());
+            // Act
+            VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+
+            // Assert
+            assertNotNull(result);
+            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
+            verify(verifiedGrossMassValidationUtil).validateRequest(EntityType.CARRIER_BOOKING, 1L);
+            verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
+            assertEquals(VerifiedGrossMassStatus.Draft, testEntity.getStatus());
+        }
     }
 
     @Test
     void testCreate_WithConsolidation_Success() {
-        // Arrange [web:7]
+        // Arrange
         testRequest.setEntityType(EntityType.CONSOLIDATION);
+
         when(verifiedGrossMassValidationUtil.validateRequest(EntityType.CONSOLIDATION, 1L))
                 .thenReturn(testConsolidationDetails);
         when(jsonHelper.convertValue(testRequest, VerifiedGrossMass.class))
@@ -313,13 +353,17 @@ class VerifiedGrossMassServiceTest {
         when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class))
                 .thenReturn(testResponse);
 
-        // Act
-        VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto mockUser = Mockito.mock(UsersDto.class);
+            when(mockUser.getEmail()).thenReturn("testuser@example.com");
+            userContext.when(UserContext::getUser).thenReturn(mockUser);
 
-        // Assert [web:7]
-        assertNotNull(result);
-        verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
-        verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
+            VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+
+            assertNotNull(result);
+            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
+            verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
+        }
     }
 
     @Test
@@ -786,4 +830,161 @@ class VerifiedGrossMassServiceTest {
         container.setContainerNo("CONT" + id);
         return container;
     }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_VgmNotFound_ShouldThrowException() {
+        // Arrange
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
+        request.setId(99L);
+        when(verifiedGrossMassDao.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request)
+        );
+
+        assertEquals("Invalid VGM Id: 99", ex.getMessage());
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Submit() throws RunnerException {
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
+        request.setId(1L);
+        request.setContainerIds(List.of(101L, 102L));
+        request.setOperationType(OperationType.SUBMIT);
+
+        VerifiedGrossMass vgm = createMockVGM();
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+
+        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
+        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container1)).thenReturn(container1);
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container2)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container2)).thenReturn(container2);
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request);
+
+            verify(verifiedGrossMassDao).save(any()); // assert save was called with updated VGM
+            verify(carrierBookingInttraUtil, times(2)).sendPayloadToBridge(any(), anyLong(), anyString(), anyString(), anyString(), any(), any());
+        }
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Amend() throws RunnerException {
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
+        request.setId(1L);
+        request.setContainerIds(List.of(101L, 102L));
+        request.setOperationType(OperationType.AMEND);
+
+        VerifiedGrossMass vgm = createMockVGM();
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+
+        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
+        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container1)).thenReturn(container1);
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container2)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container2)).thenReturn(container2);
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request);
+
+            verify(verifiedGrossMassDao).save(any()); // assert save was called with updated VGM
+            verify(carrierBookingInttraUtil, times(2)).sendPayloadToBridge(any(), anyLong(), anyString(), anyString(), anyString(), any(), any());
+        }
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_WithNullCarrierDetails() throws RunnerException {
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
+        verifiedGrossMassInttraRequest.setId(1L);
+        verifiedGrossMassInttraRequest.setContainerIds(List.of(101L));
+        verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
+
+        VerifiedGrossMass vgm = createMockVGM();
+        CommonContainers container = new CommonContainers(); container.setId(101L);
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+        when(commonContainersRepository.findAllByIdIn(List.of(101L))).thenReturn(List.of(container));
+
+
+        when(carrierBookingInttraUtil.fetchRequiredParty(any(Parties.class))).thenReturn(new PartiesResponse());
+        when(verifiedGrossMassUtil.buildContainerResponse(container)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container)).thenReturn(container);
+
+        when(verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(vgm)).thenReturn(null); // trigger null branch
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(verifiedGrossMassInttraRequest);
+        }
+
+        verify(verifiedGrossMassDao).save(any()); // assert save called
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_EmptyContainerList() throws RunnerException {
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
+        verifiedGrossMassInttraRequest.setId(1L);
+        verifiedGrossMassInttraRequest.setContainerIds(Collections.emptyList());
+        verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
+
+        VerifiedGrossMass vgm = createMockVGM();
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+        when(commonContainersRepository.findAllByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(verifiedGrossMassInttraRequest);
+        }
+
+        verify(verifiedGrossMassDao).save(any());
+    }
+
+    private VerifiedGrossMass createMockVGM() {
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setId(1L);
+        vgm.setCarrierBookingNo("CB123");
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        vgm.setIsDelegated(true);
+
+        Parties party = new Parties();
+        party.setOrgCode("ORG");
+        vgm.setRequestor(party);
+        vgm.setResponsible(party);
+        vgm.setAuthorised(party);
+
+        return vgm;
+    }
+
 }

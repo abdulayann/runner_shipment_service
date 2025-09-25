@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,9 +97,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
-    @ExcludeTimeZone
     private LocalDateTime cargoReadinessDate;
-    @ExcludeTimeZone
     private LocalDateTime cargoDeliveryDate;
     private Boolean controlled;
     private String controlledReferenceNumber;
@@ -112,13 +111,10 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
-    @ExcludeTimeZone
     private LocalDateTime pickupAtOriginDate;
-    @ExcludeTimeZone
     private LocalDateTime deliveryAtDestinationDate;
     @ExcludeTimeZone
     private LocalDateTime estimatedPickupAtOriginDate;
-    @ExcludeTimeZone
     private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
@@ -148,4 +144,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String description;
     private String marksnNumbers;
     private String additionalTerms;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days CutOff")
+    private Integer numberOfFreeDaysCutOff;
 }
