@@ -4307,7 +4307,6 @@ public class ShipmentService implements IShipmentService {
         itemRow.createCell(headerMap.get("20s Count")).setCellValue(String.valueOf(shipment.getContainer20Count()));
         itemRow.createCell(headerMap.get("40s Count")).setCellValue(String.valueOf(shipment.getContainer40Count()));
         itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount() != null ? shipment.getTeuCount().toString() : null);
-        itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
         itemRow.createCell(headerMap.get("POL")).setCellValue(originPort);
         itemRow.createCell(headerMap.get("POD")).setCellValue(destinationPort);
         itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(String.valueOf(shipment.getWayBillNumber()));
