@@ -1547,6 +1547,9 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
+        int tenantId = 1;
+        TenantContext.setCurrentTenant(tenantId);
+
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);
@@ -1563,7 +1566,7 @@ class ContainerServiceTest extends CommonMocks {
         v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
         v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
         Map<Integer, V1TenantSettingsResponse> tenantSettingsResponseMap = new HashMap<>();
-        tenantSettingsResponseMap.put(1, v1TenantSettingsResponse);
+        tenantSettingsResponseMap.put(tenantId, v1TenantSettingsResponse);
         when(v1ServiceUtil.getTenantSettingsMap(any())).thenReturn(tenantSettingsResponseMap);
 
         ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
@@ -1583,6 +1586,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesForNewContainers() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setGuid(UUID.randomUUID());
@@ -1597,7 +1601,7 @@ class ContainerServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(c1,c2);
         List<Containers> oldContainers = List.of(c1);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        Set<Containers> containers = new HashSet<Containers>();
+        Set<Containers> containers = new HashSet<>();
         containers.add(c1);
         shipmentDetails.setContainersList(containers);
         shipmentDetails.setBookingReference("DBFC-4353158-409107");
@@ -1626,6 +1630,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesWithEmptyBookingRef() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);

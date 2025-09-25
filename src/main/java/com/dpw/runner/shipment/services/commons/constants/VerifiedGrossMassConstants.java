@@ -51,6 +51,9 @@ public class VerifiedGrossMassConstants {
     public static final String VERIFIED_GROSS_MASS_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Carrier list with Request Id {}";
     public static final String VERIFIED_GROSS_MASS_LIST_REQUEST_NULL_ERROR = "Carrier List Request is Null";
     public static final String VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
+    public static final String GROSS_WEIGHT = "Gross Weight";
+    public static final String NET_WEIGHT = "Net Weight";
+    public static final String TARE_WEIGHT = "Tare Weight";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
     public static final List<String> serviceTypes = List.of("P2P","D2D","D2P","P2D");
