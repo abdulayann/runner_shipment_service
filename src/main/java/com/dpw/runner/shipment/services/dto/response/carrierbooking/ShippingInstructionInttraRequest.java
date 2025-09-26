@@ -14,7 +14,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShippingInstructionInttraResponse implements IRunnerResponse {
+public class ShippingInstructionInttraRequest implements IRunnerResponse {
     private String messageStatus;
     private LocalDateTime dateTime; //202508180550 format
     private List<FreightDetailResponse> freightDetailList;
@@ -30,15 +30,15 @@ public class ShippingInstructionInttraResponse implements IRunnerResponse {
     private Double totalGrossVolume;
     private Integer totalNumberOfEquipments; //figure out how to fill
     private SailingInformationResponse sailingInformation;
-    private PartiesResponse forwardingAgent; // we will use it for requestor party details. crosscheck once
     private ShippingInstructionType shippingInstructionType;
     private Integer noOfFreightCopies;
     private Integer noOfUnFreightCopies;
     private PartiesResponse shipper;
     private PartiesResponse consignee;
-    private PartiesResponse requester;
     private PartiesResponse requestor;
-    private PartiesResponse notifyParty;
+    private PartiesResponse forwardingAgent;
     List<CommonContainerResponse> commonContainersList;
     List<CommonPackageResponse> commonPackagesList;
+    private String carrierScacCode;
+    private String carrierDescription;
 }

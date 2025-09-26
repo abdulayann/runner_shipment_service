@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -15,7 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstr
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -595,7 +594,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     public ShippingInstructionResponse submitShippingInstruction(Long id) { //Take only Id
         Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
         ShippingInstruction si;
-        CarrierBooking booking = null;
         if (shippingInstruction.isPresent()) {
             si = shippingInstruction.get();
         } else {
@@ -603,7 +601,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
-             booking = carrierBookingDao.findById(si.getEntityId())
+            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             // Step 1: Check booking status
@@ -625,13 +623,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
-        ShippingInstructionInttraResponse instructionInttraResponse = jsonHelper.convertValue(si, ShippingInstructionInttraResponse.class);
+        ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
+        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest);
+        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(si.getSailingInformation()), instructionInttraRequest);
 
-        assert booking != null;
-        instructionInttraResponse.setRequester(jsonHelper.convertValue(booking.getRequester(), PartiesResponse.class));
-
-        shippingInstructionUtil.populateInttraSpecificData(instructionInttraResponse);
-        callBridge(instructionInttraResponse, "SI_CREATE");
+        callBridge(instructionInttraRequest, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -712,7 +708,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
-    private void callBridge(ShippingInstructionInttraResponse shippingInstruction, String integrationCode) {
+    private void callBridge(ShippingInstructionInttraRequest shippingInstruction, String integrationCode) {
         UUID transactionId = UUID.randomUUID();
         try {
             bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
