@@ -3778,7 +3778,7 @@ public class CommonUtils {
             }
 
             // Address2
-            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+            if (checkAddressKeyExists(addressData, PartiesConstants.ADDRESS2)) {
                 sb.append(newLine).append(
                         StringUtility.toUpperCase(
                                 StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
@@ -3799,30 +3799,35 @@ public class CommonUtils {
 
     private static String constructAddressL3(Map<String, Object> addressData) {
         StringBuilder line3 = new StringBuilder();
-        if (addressData.containsKey(PartiesConstants.CITY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.CITY)) {
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.STATE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.STATE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.ZIP_POST_CODE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.COUNTRY)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
             ));
         }
         return line3.toString();
+    }
+
+    private static boolean checkAddressKeyExists(Map<String, Object> addressData, String key) {
+        return addressData.containsKey(key) &&
+                addressData.get(key) != null && StringUtility.isNotEmpty(String.valueOf(addressData.get(key)));
     }
 
     private static String getCountryName(String code) {
