@@ -386,7 +386,7 @@ public class ShippingInstructionUtil {
         }
     }
 
-    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse) {
+    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse, String inttraId) {
         // Calculate total number of equipments
         if (instructionInttraResponse.getCommonContainersList() != null) {
             instructionInttraResponse.setTotalNumberOfEquipments(instructionInttraResponse.getCommonContainersList().stream()
