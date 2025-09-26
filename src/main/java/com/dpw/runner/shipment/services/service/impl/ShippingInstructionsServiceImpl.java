@@ -601,6 +601,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new GenericException("Shipping Instruction not found");
         }
 
+        Parties[] partiesToCheck = {si.getRequestor(), si.getShipper(), si.getForwardingAgent()};
+        String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
+
+        if (null == remoteId) {
+            throw new ValidationException("SI does not belong to INTTRA");
+        }
+
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
             CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
@@ -625,7 +632,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
-        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest);
+        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
 
         callBridge(instructionInttraRequest, "SI_CREATE");

@@ -162,4 +162,19 @@ public class CarrierBookingInttraUtil {
         }
         return v1Data;
     }
+
+    public String getInttraRemoteId(Parties[] allMadatoryParties) {
+        // Check parties in order: requestor, shipper, forwardingAgent
+        for (Parties party : allMadatoryParties) {
+            if (party != null && party.getOrgData() != null &&
+                    "INTRA_COMPANY_ID".equals(party.getOrgData().get("RemoteIdType"))) {
+                return (String) party.getOrgData().get("RemoteId");
+            } else if (party != null && party.getOrgData() != null &&
+                    "INTRA_COMPANY_ID".equals(party.getOrgData().get("remoteIdType"))) {
+                return (String) party.getOrgData().get("remoteId");
+            }
+        }
+        return null;
+    }
+
 }
