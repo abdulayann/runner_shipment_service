@@ -3054,12 +3054,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (order == null) {
             return;
         }
-        List<PackingV3Request> orderPackings = packingV3Util.mapOrderLineListToPackingV3RequestList(order.getOrderLines());
         ShipmentOrderV3Request shipmentOrder = ShipmentOrderV3Request.builder()
                 .orderNumber(customerBookingRequest.getOrderManagementNumber())
                 .orderGuid(UUID.fromString(customerBookingRequest.getOrderManagementId()))
                 .shipmentId(shipmentRequest.getId())
-                .orderPackings(orderPackings)
+                .orderPackings(order.getOrderLines())
                 .build();
         List<ShipmentOrderV3Request> shipmentOrdersList = Arrays.asList(shipmentOrder);
         shipmentRequest.setShipmentOrders(shipmentOrdersList);
@@ -5657,11 +5656,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .collect(Collectors.toMap(ShipmentOrder::getOrderGuid, Function.identity()));
     }
 
-
-
     private void attachOrderWhenCreatingFromBookingResponse(List<ShipmentOrderV3Request> shipmentOrderV3List, Long shipmentId) throws RunnerException {
         Map<UUID, ShipmentOrder> existingOrdersByGuid = new HashMap<>();
-        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList = CommonUtils.mapToOrderDetailsList(shipmentOrderV3List);
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList = packingV3Util.mapToOrderDetailsList(shipmentOrderV3List);
         attachOrders(orderDetailsList, existingOrdersByGuid, shipmentId);
     }
 

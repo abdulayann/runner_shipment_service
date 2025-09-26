@@ -25,6 +25,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -74,6 +76,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -629,6 +632,29 @@ public class PackingV3Util {
                 .build();
     }
 
+    public List<ShipmentOrderAttachDetachRequest.OrderDetails> mapToOrderDetailsList(List<ShipmentOrderV3Request> shipmentOrderV3List) {
+        if (ObjectUtils.isEmpty(shipmentOrderV3List)) {
+            return Collections.emptyList();
+        }
+        return shipmentOrderV3List.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapToOrderDetails)
+                .toList();
+    }
+
+    public ShipmentOrderAttachDetachRequest.OrderDetails mapToOrderDetails(ShipmentOrderV3Request request) {
+        if (request == null) {
+            return null;
+        }
+        List<OrderLineV3Response> orderPackings = (request.getOrderPackings() == null) ? Collections.emptyList() : request.getOrderPackings();
+        return ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                .orderNumber(request.getOrderNumber())
+                .orderGuid(request.getOrderGuid())
+                .shipmentId(request.getShipmentId())
+                .orderDate(request.getOrderDate())
+                .orderPackings(orderPackings)
+                .build();
+    }
 
     public List<PackingV3Request> mapOrderLineListToPackingV3RequestList(List<OrderLineV3Response> orderLinesList) {
         if (orderLinesList == null || orderLinesList.isEmpty()) {

@@ -158,7 +158,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -7379,52 +7378,5 @@ class CommonUtilsTest {
         long expectedSeconds = Long.MAX_VALUE % 60;
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
-    }
-
-    @Test
-    void testMapToOrderDetailsList_returnEmptyList() {
-        List<ShipmentOrderV3Request> list = new ArrayList<>();
-        List<ShipmentOrderAttachDetachRequest.OrderDetails> response = CommonUtils.mapToOrderDetailsList(list);
-        assertTrue(response.isEmpty());
-    }
-
-
-    @Test
-    void testMapToOrderDetailsList() {
-        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
-        element.setId(1L);
-        element.setOrderGuid(UUID.randomUUID());
-        element.setOrderNumber("ORD_00001");
-        element.setShipmentId(2L);
-
-        PackingV3Request packingReq = PackingV3Request.builder()
-                .packs("test packs")
-                .packsType("test type")
-                .build();
-        element.setOrderPackings(List.of(packingReq));
-
-        List<ShipmentOrderV3Request> list = new ArrayList<>();
-        list.add(element);
-
-        List<ShipmentOrderAttachDetachRequest.OrderDetails> response = CommonUtils.mapToOrderDetailsList(list);
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void testMapToOrderDetail_returnNull() {
-        ShipmentOrderAttachDetachRequest.OrderDetails response = CommonUtils.mapToOrderDetails(null);
-        assertNull(response);
-    }
-
-    @Test
-    void testMapToOrderDetail_orderPackingIsNull() {
-        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
-        element.setId(1L);
-        element.setOrderGuid(UUID.randomUUID());
-        element.setOrderNumber("ORD_00001");
-        element.setShipmentId(2L);
-
-        ShipmentOrderAttachDetachRequest.OrderDetails response = CommonUtils.mapToOrderDetails(element);
-        assertNotNull(response);
     }
 }

@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -22,5 +22,5 @@ public class ShipmentOrderV3Request extends CommonRequest implements IRunnerRequ
     private Long shipmentId;
     private String orderNumber;
     private LocalDateTime orderDate;
-    private List<PackingV3Request> orderPackings;
+    private List<OrderLineV3Response> orderPackings;
 }

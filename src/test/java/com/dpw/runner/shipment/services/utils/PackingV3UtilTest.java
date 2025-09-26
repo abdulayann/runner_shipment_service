@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
@@ -54,11 +56,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -843,6 +841,53 @@ class PackingV3UtilTest extends CommonMocks {
         // Then
         assertNull(result);
         verify(packingService, never()).calculatePackSummary(anyList(), anyString(), any(), any());
+    }
+
+    @Test
+    void testMapToOrderDetailsList_returnEmptyList() {
+        List<ShipmentOrderV3Request> list = new ArrayList<>();
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsResponse = packingV3Util.mapToOrderDetailsList(list);
+        assertTrue(orderDetailsResponse.isEmpty());
+    }
+
+
+    @Test
+    void testMapToOrderDetailsList() {
+        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
+        element.setId(1L);
+        element.setOrderGuid(UUID.randomUUID());
+        element.setOrderNumber("ORD_00001");
+        element.setShipmentId(2L);
+
+        OrderLineV3Response packingReq = OrderLineV3Response.builder()
+                .packs("test packs")
+                .packsType("test type")
+                .build();
+        element.setOrderPackings(List.of(packingReq));
+
+        List<ShipmentOrderV3Request> list = new ArrayList<>();
+        list.add(element);
+
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsResponse = packingV3Util.mapToOrderDetailsList(list);
+        assertFalse(orderDetailsResponse.isEmpty());
+    }
+
+    @Test
+    void testMapToOrderDetail_returnNull() {
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetailsResponse = packingV3Util.mapToOrderDetails(null);
+        assertNull(orderDetailsResponse);
+    }
+
+    @Test
+    void testMapToOrderDetail_orderPackingIsNull() {
+        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
+        element.setId(1L);
+        element.setOrderGuid(UUID.randomUUID());
+        element.setOrderNumber("ORD_00001");
+        element.setShipmentId(2L);
+
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetailsResponse = packingV3Util.mapToOrderDetails(element);
+        assertNotNull(orderDetailsResponse);
     }
 
     @Test

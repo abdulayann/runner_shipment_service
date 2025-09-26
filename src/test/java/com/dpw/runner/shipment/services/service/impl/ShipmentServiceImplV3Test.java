@@ -105,21 +105,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneFlagsRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -9295,6 +9281,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .build();
         when(orderManagementAdapter.getOrderManagementDTOByGuid(any())).thenReturn(dto);
         when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                        .orderNumber("1")
+                        .orderGuid(UUID.randomUUID())
+                        .orderPackings(orderLines)
+                        .build();
+        when(packingV3Util.mapToOrderDetailsList(any())).thenReturn(List.of(orderDetails));
 
         ShipmentOrder savedShipmentOrder = ShipmentOrder.builder().build();
         when(shipmentOrderDao.save(any())).thenReturn(savedShipmentOrder);
