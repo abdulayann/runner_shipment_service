@@ -351,9 +351,7 @@ public class HblReport extends IReport {
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
 
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
-        if(hblModel.shipment.getAdditionalDetails() != null)
-            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MMM/yyyy", true));
+        addIssueDateField(dictionary, hblModel);
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -510,6 +508,12 @@ public class HblReport extends IReport {
 
         dictionary.put(BL_RELEASE_TYPE, ORIGINAL);
         return dictionary;
+    }
+
+    private void addIssueDateField(Map<String, Object> dictionary, HblModel hblModel) {
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
+        if(hblModel.shipment.getAdditionalDetails() != null)
+            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MMM/yyyy", true));
     }
 
     public String getContainerSummary(List<ContainerModel> containers) {
