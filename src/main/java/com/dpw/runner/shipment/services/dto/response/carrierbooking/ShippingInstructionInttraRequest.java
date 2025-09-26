@@ -41,4 +41,6 @@ public class ShippingInstructionInttraRequest implements IRunnerResponse {
     List<CommonPackageResponse> commonPackagesList;
     private String carrierScacCode;
     private String carrierDescription;
+    private String inttraOrgId;
+    private String fileName;
 }

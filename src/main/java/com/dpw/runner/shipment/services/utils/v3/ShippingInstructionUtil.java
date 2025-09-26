@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
@@ -21,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -424,6 +430,8 @@ public class ShippingInstructionUtil {
         } else {
             instructionInttraResponse.setTotalGrossVolume(0.0);
         }
+
+        instructionInttraResponse.setInttraOrgId(inttraId);
     }
 
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, ShippingInstructionInttraRequest shippingInstructionInttraRequest) {
@@ -440,6 +448,21 @@ public class ShippingInstructionUtil {
             // Set the fetched details in the VerifiedGrossMassInttraResponse
             shippingInstructionInttraRequest.setCarrierScacCode(carrierScacCode);
             shippingInstructionInttraRequest.setCarrierDescription(carrierDescription);
+        }
+    }
+
+    private void convertWeightVolumeToRequiredUnit(ShippingInstructionInttraRequest shippingInstructionInttraRequest) throws RunnerException {
+        if (shippingInstructionInttraRequest == null || shippingInstructionInttraRequest.getCommonContainersList() == null || shippingInstructionInttraRequest.getCommonContainersList().isEmpty()) {
+            return;
+        }
+
+        for (CommonContainerResponse container : shippingInstructionInttraRequest.getCommonContainersList()) {
+            BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            BigDecimal netWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(), container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            BigDecimal volume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(), container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
+            container.setVolume(volume);
+            container.setGrossWeight(weight);
+            container.setNetWeight(netWeight);
         }
     }
 

@@ -47,6 +47,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -630,8 +631,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         // Step 3: Mark SI as submitted
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
+        // Generates number between 10000 and 99999 and set fileName
+        SecureRandom random = new SecureRandom();
+        int rnd = 10000000 + random.nextInt(90000000);
+        String fileName = "SIRequest_" + si.getId() + "." + rnd + ".xml";
         ShippingInstruction saved = repository.save(si);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
+        instructionInttraRequest.setFileName(fileName);
         shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
 
@@ -719,10 +725,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private void callBridge(ShippingInstructionInttraRequest shippingInstruction, String integrationCode) {
         UUID transactionId = UUID.randomUUID();
         try {
-            bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
+            bridgeServiceAdapter.bridgeApiIntegration(shippingInstruction, integrationCode, transactionId.toString(), transactionId.toString());
         } catch (RunnerException e) {
             log.error("Exception while calling bridge. {}", e.getMessage());
         }
     }
-
 }
