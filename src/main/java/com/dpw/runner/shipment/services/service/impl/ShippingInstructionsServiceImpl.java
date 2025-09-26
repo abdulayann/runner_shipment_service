@@ -613,7 +613,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
             }
 
-            ConsolidationDetails consolidationDetails = getConsolidationDetail(si.getEntityId());
+            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(si.getEntityId());
             fillDetailsFromConsol(si, consolidationDetails);
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
@@ -625,7 +625,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction saved = repository.save(si);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
         shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest);
-        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(si.getSailingInformation()), instructionInttraRequest);
+        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
 
         callBridge(instructionInttraRequest, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
