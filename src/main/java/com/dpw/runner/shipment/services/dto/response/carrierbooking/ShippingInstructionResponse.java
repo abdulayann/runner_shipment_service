@@ -24,6 +24,7 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private PartiesResponse shipper;
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
+    private PartiesResponse requestor;
     private List<PartiesResponse> additionalParties;
     private BigDecimal shipperDeclaredValue;
     private String shipperDeclaredValueCurrency;

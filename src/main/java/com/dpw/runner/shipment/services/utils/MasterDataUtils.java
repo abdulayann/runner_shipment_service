@@ -337,8 +337,12 @@ public class MasterDataUtils{
         }
         else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())){
+        }
+        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())){
             carriers.addAll(createInBulkCarriersRequest(carrierBookingListResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId(), cacheMap));
+        }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse && shippingInstructionResponse.getSailingInformation() != null && StringUtility.isEmpty(shippingInstructionResponse.getSailingInformation().getCarrier())){
+            carriers.addAll(createInBulkCarriersRequest(shippingInstructionResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + shippingInstructionResponse.getSailingInformation().getId(), cacheMap));
         }
     }
 
@@ -356,8 +360,12 @@ public class MasterDataUtils{
         }
         else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
-        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
+        }
+        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
             carrierBookingListResponse.getSailingInformation().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse && shippingInstructionResponse.getSailingInformation() != null && StringUtility.isEmpty(shippingInstructionResponse.getSailingInformation().getCarrier())) {
+            shippingInstructionResponse.getSailingInformation().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + shippingInstructionResponse.getSailingInformation().getId()), CacheConstants.CARRIER, cacheMap));
         }
     }
 
@@ -379,6 +387,9 @@ public class MasterDataUtils{
                 r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
 
         applyIfApplicable(response, CarrierBookingListResponse.class,
+                r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ShippingInstructionResponse.class,
                 r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
     }
 
@@ -427,6 +438,9 @@ public class MasterDataUtils{
         }
         else if (response instanceof CarrierBookingResponse carrierBookingResponse) {
             addCarrierRoutingVessels(carrierBookingResponse.getSailingInformation(), vessels, fieldNameKeyMap, cacheMap);
+        }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse) {
+            addCarrierRoutingVessels(shippingInstructionResponse.getSailingInformation(), vessels, fieldNameKeyMap, cacheMap);
         }
     }
 

@@ -1,12 +1,18 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -377,6 +383,63 @@ public class ShippingInstructionUtil {
             return value != null ? Integer.valueOf(value) : fallback;
         } catch (NumberFormatException e) {
             return fallback;
+        }
+    }
+
+    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse) {
+        // Calculate total number of equipments
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalNumberOfEquipments(instructionInttraResponse.getCommonContainersList().stream()
+                    .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalNumberOfEquipments(0);
+        }
+
+        // Calculate total number of packages
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalNoOfPackages(instructionInttraResponse.getCommonContainersList().stream()
+                    .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalNoOfPackages(0);
+        }
+
+        // Calculate total gross weight
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalGrossWeight(instructionInttraResponse.getCommonContainersList().stream()
+                    .filter(container -> container.getGrossWeight() != null)
+                    .mapToDouble(container -> container.getGrossWeight().doubleValue())
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalGrossWeight(0.0);
+        }
+
+        // Calculate total gross volume
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalGrossVolume(instructionInttraResponse.getCommonContainersList().stream()
+                    .filter(container -> container.getVolume() != null)
+                    .mapToDouble(container -> container.getVolume().doubleValue())
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalGrossVolume(0.0);
+        }
+    }
+
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, ShippingInstructionInttraRequest shippingInstructionInttraRequest) {
+
+        if (Objects.isNull(carrierDatav1Map)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
+            EntityTransferCarrier carrier = entry.getValue();
+
+            String carrierScacCode = carrier.ItemValue;
+            String carrierDescription = carrier.ItemDescription;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            shippingInstructionInttraRequest.setCarrierScacCode(carrierScacCode);
+            shippingInstructionInttraRequest.setCarrierDescription(carrierDescription);
         }
     }
 
