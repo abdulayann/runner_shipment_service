@@ -715,6 +715,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setConsolBookingNumber(console.get().getBookingNumber());
                 isInterBranchShip = Boolean.TRUE.equals(console.get().getInterBranchConsole());
                 response.setIsInterBranchConsoleAttached(isInterBranchShip && !Objects.equals(TenantContext.getCurrentTenant(), console.get().getTenantId()));
+                response.setIsInterBranchShip(isInterBranchShip);
 
             }
             if (Objects.equals(response.getTransportMode(), TRANSPORT_MODE_AIR) &&

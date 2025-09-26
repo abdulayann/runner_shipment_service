@@ -1547,9 +1547,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
-        int tenantId = 1;
-        TenantContext.setCurrentTenant(tenantId);
-
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);
@@ -1566,7 +1564,7 @@ class ContainerServiceTest extends CommonMocks {
         v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
         v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
         Map<Integer, V1TenantSettingsResponse> tenantSettingsResponseMap = new HashMap<>();
-        tenantSettingsResponseMap.put(tenantId, v1TenantSettingsResponse);
+        tenantSettingsResponseMap.put(1, v1TenantSettingsResponse);
         when(v1ServiceUtil.getTenantSettingsMap(any())).thenReturn(tenantSettingsResponseMap);
 
         ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
