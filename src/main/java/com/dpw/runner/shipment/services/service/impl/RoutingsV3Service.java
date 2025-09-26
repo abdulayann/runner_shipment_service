@@ -199,6 +199,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
                     // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
                     updatedExisitngMainCarriage(shipmentDetails, mainCarriageList, updatedRoutings);
+                    resetLegs(updatedRoutings);
+
                     //update flight no back to voyage in case of air
                     populateVoyageFromFlightNumberInAir(updatedRoutings);
                     // Step 5: Push to update
@@ -209,6 +211,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                 }
             }
+        }
+    }
+
+    private static void resetLegs(List<Routings> updatedRoutings) {
+        long leg=1;
+        for (Routings routings : updatedRoutings) {
+            routings.setLeg(leg++);
         }
     }
 
@@ -244,16 +253,35 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
 
     }
-    private static void insertNewConsolMainCarriageAtInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes, List<Routings> consolidatedMainCarriages, int offset) {
-        for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
-            int insertAt = i < inheritedIndexes.size()
-                    ? inheritedIndexes.get(i)
-                    : offset; // append to end if more than removed
-            if (insertAt >= updatedRoutings.size()) {
-                updatedRoutings.add(consolidatedMainCarriages.get(i));
+    private static void insertNewConsolMainCarriageAtInheritedIndex(List<Routings> updatedRoutings,
+                                                                    List<Integer> inheritedIndexes,
+                                                                    List<Routings> consolidatedMainCarriages,
+                                                                    int offset) {
+        // Sort inheritedIndexes to ensure insertion happens in order
+        List<Integer> sortedIndexes = new ArrayList<>(inheritedIndexes);
+        Collections.sort(sortedIndexes);
+
+        int indexPointer = 0;
+        for (Routings carriage : consolidatedMainCarriages) {
+            int insertAt;
+
+            // If we still have an inherited index, use it
+            if (indexPointer < sortedIndexes.size()) {
+                insertAt = sortedIndexes.get(indexPointer);
+                indexPointer++;
             } else {
-                updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+                // No inherited index left → append sequentially at offset
+                insertAt = offset;
             }
+
+            // Clamp insertAt so it never exceeds current size
+            if (insertAt > updatedRoutings.size()) {
+                insertAt = updatedRoutings.size();
+            }
+
+            updatedRoutings.add(insertAt, carriage);
+
+            // Move offset to just after inserted element
             offset = insertAt + 1;
         }
     }
@@ -265,7 +293,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
         }
         updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                Boolean.TRUE.equals(r.getInheritedFromConsolidation()) && Objects.isNull(r.getConsolRouteRefGuid()));
+                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
     }
     private static void getMainCarriageInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes) {
         for (int i = 0; i < updatedRoutings.size(); i++) {
