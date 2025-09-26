@@ -58,6 +58,7 @@ deployment:
   name: runner-shipment-service-deployment
   imageName: runner-shipment-service
   imageTag: latest
+  sprintName: latest
   port: 8080
   healthCheck: /shipment-service/actuator/health
   initialDelaySeconds: 60

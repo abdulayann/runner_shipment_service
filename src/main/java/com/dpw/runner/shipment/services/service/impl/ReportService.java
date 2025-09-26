@@ -2715,6 +2715,7 @@ public class ReportService implements IReportService {
 
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        validateControlledFieldsForBlGeneration(shipment);
 
         if (report instanceof HblReport) {
             validateUnassignedPackagesInternal(
@@ -2733,6 +2734,14 @@ public class ReportService implements IReportService {
             );
         } else {
             throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
+        }
+    }
+
+    private void validateControlledFieldsForBlGeneration(ShipmentDetails shipment) {
+        if(ObjectUtils.isNotEmpty(shipment)
+                && ObjectUtils.isNotEmpty(shipment.getControlled())
+                && !Boolean.TRUE.equals(shipment.getControlled())) {
+            throw new ValidationException("Update the Shipment as Controlled - YES and Controlled Ref No.");
         }
     }
 

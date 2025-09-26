@@ -105,6 +105,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Integer tenantId;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime updatedAt;
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
@@ -183,4 +185,11 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Boolean isWeightEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
     private MigrationStatus migrationStatus;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

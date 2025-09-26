@@ -36,7 +36,7 @@ import java.util.UUID;
 @Getter
 @Table(name = "shipment_details")
 @Accessors(chain = true)
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -740,6 +740,19 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "trigger_migration_warning")
     private Boolean triggerMigrationWarning = false;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
+
 
     @Override
     public boolean equals(Object o) {

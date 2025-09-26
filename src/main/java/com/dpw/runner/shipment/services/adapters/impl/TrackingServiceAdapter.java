@@ -588,8 +588,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    @SuppressWarnings("java:S125")
-//    @Override
+    //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
 //        // Toggle this flag to switch between remote call and reading from file
 //        boolean useLocalJson = true; // Set this to true to use JSON file A
@@ -638,6 +637,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 //    }
 
     @Override
+    @SuppressWarnings({"java:S125", "java:S3776"})
     public String convertTrackingEventCodeToShortCode(Event event, Container container) {
 
         String safeEventType = StringUtils.defaultString(event.getEventType());
@@ -713,8 +713,64 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return emcr;
         }
 
+        String ldvs = getLDVSEventCode(safeEventType, safeLocationRole);
+        if (ldvs != null) {
+            return ldvs;
+        }
+
+        String vsdt = getVSDTEventCode(safeEventType, safeLocationRole);
+        if (vsdt != null) {
+            return vsdt;
+        }
+
+        String ardt = getARDTEventCode(safeEventType, safeLocationRole);
+        if (ardt != null) {
+            return ardt;
+        }
+
+        String dcvs = getDCVSEventCode(safeEventType, safeLocationRole);
+        if (dcvs != null) {
+            return dcvs;
+        }
+
         log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventType, safeLocationRole);
         return safeEventType;
+    }
+
+    private String getDCVSEventCode(String safeEventType, String safeLocationRole) {
+        if (EventConstants.DISCHARGE_FROM_VESSEL.equalsIgnoreCase(safeEventType)
+                && safeLocationRole.equalsIgnoreCase(EventConstants.DESTINATION_PORT)) {
+            log.info("Matched DISCHARGE_FROM_VESSEL and DESTINATION_PORT. Returning short code: {}", EventConstants.DCVS);
+            return EventConstants.DCVS;
+        }
+        return null;
+    }
+
+    private String getARDTEventCode(String safeEventType, String safeLocationRole) {
+        if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventType)
+                && safeLocationRole.equalsIgnoreCase(EventConstants.OCEAN_TRANSIT_PORT)) {
+            log.info("Matched VESSEL_ARRIVAL_WITH_CONTAINER and OCEAN_TRANSIT_PORT. Returning short code: {}", EventConstants.ARDT);
+            return EventConstants.ARDT;
+        }
+        return null;
+    }
+
+    private String getVSDTEventCode(String safeEventType, String safeLocationRole) {
+        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType)
+                && safeLocationRole.equalsIgnoreCase(EventConstants.OCEAN_TRANSIT_PORT)) {
+            log.info("Matched VESSEL_DEPARTURE_WITH_CONTAINER and OCEAN_TRANSIT_PORT. Returning short code: {}", EventConstants.VSDT);
+            return EventConstants.VSDT;
+        }
+        return null;
+    }
+
+    private String getLDVSEventCode(String safeEventType, String safeLocationRole) {
+        if (EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType)
+                && safeLocationRole.equalsIgnoreCase(EventConstants.ORIGIN_PORT)) {
+            log.info("Matched LOAD_ON_VESSEL and ORIGIN_PORT. Returning short code: {}", EventConstants.LDVS);
+            return EventConstants.LDVS;
+        }
+        return null;
     }
 
     private String getTrcfTnfdTrcsEventCode(String safeEventCode, String safeDescription) {
@@ -738,9 +794,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            log.info("Matched GATE_OUT_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
         return null;

@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -249,6 +251,8 @@ public class DbAccessHelper {
         Path<T> path;
         if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
             path = root;
+        } else if (tableNames.get(input.getFieldName()).getParentTable() != null) {
+            return getPathIfParentTableNameExists(input, map, tableNames, root, query);
         } else {
             if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().isEmpty() && root.getFetches().isEmpty()) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
                     (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {//NOSONAR
@@ -259,6 +263,27 @@ public class DbAccessHelper {
             } else {
                 path = map.get(tableNames.get(input.getFieldName()).getTableName());
             }
+        }
+        return path;
+    }
+
+    private static <T> Path<T> getPathIfParentTableNameExists(Criteria input, Map<String, Join<Class<T>, T>> map, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query) {
+        Join<Class<T>, T> join;
+        Path<T> path;
+        RunnerEntityMapping tableNameMapValue = tableNames.get(input.getFieldName());
+        String mapKey = tableNameMapValue.getParentTable() + "." + tableNameMapValue.getTableName();
+        if ((root.getJoins() == null && root.getFetches() == null) ||
+                (root.getJoins().isEmpty() && root.getFetches().isEmpty()) ||
+                (map.get(mapKey) == null) ||
+                (!root.getJoins().contains(map.get(mapKey)) && !root.getFetches().contains(map.get(mapKey))) //NOSONAR
+        ) {
+            join = root.join(tableNameMapValue.getParentTable(), JoinType.LEFT)
+                    .join(tableNameMapValue.getTableName(), JoinType.LEFT);
+            map.put(mapKey, join);
+            path = join;
+            query.distinct(true);
+        } else {
+            path = map.get(mapKey);
         }
         return path;
     }
@@ -561,5 +586,32 @@ public class DbAccessHelper {
         } catch (ParseException e) {
             return null;
         }
+    }
+       /**
+     * Generic method to build JPA sort order for any entity that extends MultiTenancy.
+     *
+     * Usage examples:
+     * - For ShipmentDetails: buildSortOrder(cb, shipmentRoot, payload)
+     * - For ConsolidationDetails: buildSortOrder(cb, consolidationRoot, payload)
+     *
+     * @param cb CriteriaBuilder instance
+     * @param root Root entity (must extend MultiTenancy)
+     * @param payload Request payload containing sort criteria
+     * @return JPA Order for sorting, or null if no sort criteria provided
+     */
+    public static <T> Order buildSortOrder(CriteriaBuilder cb,
+                                 Root<T> root,
+                                           ListCommonRequest payload) {
+        SortRequest sortRequest =  payload.getSortRequest();
+        if (sortRequest != null) {
+            String fieldName = sortRequest.getFieldName();
+            String order = sortRequest.getOrder();
+            if ("DESC".equalsIgnoreCase(order)) {
+                return cb.desc(root.get(fieldName));
+            } else {
+                return cb.asc(root.get(fieldName));
+            }
+        }
+        return null;
     }
 }

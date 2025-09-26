@@ -343,7 +343,14 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void shouldValidateHblReport_CallInternalValidator() {
         when(reportsFactory.getReport(any())).thenReturn(new HblReport());
-        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder()
+                        .isRunnerV3Enabled(true).volumeDecimalPlace(2).build());
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
@@ -353,6 +360,44 @@ class ReportServiceTest extends CommonMocks {
         verify(reportService).validateUnassignedPackagesInternal(
                 any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
         );
+    }
+
+    @Test
+    void shouldNotThrow_whenShipmentControlledIsTrue() {
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+        shipmentDetails.setControlled(true);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(reportService).validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        assertDoesNotThrow(() -> reportService.validateHouseBill(reportRequest));
+    }
+
+    @Test
+    void shouldThrowValidationException_whenShipmentControlledIsFalse() {
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+        shipmentDetails.setControlled(false);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> reportService.validateHouseBill(reportRequest));
+
+        assertEquals("Update the Shipment as Controlled - YES and Controlled Ref No.", ex.getMessage());
     }
 
     @Test

@@ -5,6 +5,11 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,12 +17,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository @Generated
 @InterBranchEntity
@@ -34,6 +33,25 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     default Optional<Events> findById(Long id) {
         Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
+    }
+
+    @ExcludeTenantFilter
+    default Optional<Events> findByIdWithoutTenant(Long id) {
+        Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
+
+    @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE events SET is_deleted = true WHERE id = ?1", nativeQuery = true)
+    void deleteByIdWithoutTenant(Long id);
+
+    @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    default Events saveWithoutTenant(Events event) {
+        return save(event);
     }
 
     default Optional<Events> findByGuid(UUID id) {

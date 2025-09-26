@@ -40,6 +40,7 @@ public class ApiConstants {
 
     public static final String API_UPDATE = "/update";
     public static final String API_UPDATE_BULK = "/update/bulk";
+    public static final String API_PATCH_UPDATE_BULK = "/patch/update/bulk";
 
     public static final String API_RETRIEVE = "/retrieve";
 
@@ -79,6 +80,7 @@ public class ApiConstants {
     public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
+    public static final String API_SUBMIT_OR_AMEND = "/submitOrAmend";
     public static final String CREATE_NON_BILLABLE_CUSTOMER = "/createNonBillableCustomer";
     public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
@@ -214,4 +216,18 @@ public class ApiConstants {
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
     public static final String API_UPDATE_PARTIES = "/update/parties";
+    public static final String API_CLONE_FROM_SHIPMENT = "/cloneFromShipment";
+    public static final String API_CLONE_BOOKING = "/clone/booking";
+    public static final String API_CLONE_SHIPMENT = "/clone/shipment";
+    public static final String API_CLONE_CONFIG = "/getCloneConfig";
+    public static final String API_RESET_QUOTE_FIELDS = "/quote/reset-fields";
+
+    // Dynamic endpoints
+    public static final String API_DYNAMIC_LIST = "/dynamic/list";
+    public static final String API_DYNAMIC_RETRIEVE = "/dynamic/retrieve";
+    public static final String API_BULK_UPDATE = "/containers/bulk-update";
+
+    public static final String API_SUBMIT = "/submit/{id}";
+    public static final String API_AMEND = "/amend/{id}";
+
 }

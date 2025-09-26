@@ -102,6 +102,26 @@ class ContainerV3ControllerTest {
   }
 
   @Test
+  void testUpdatePatchBulk() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulk(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void testUpdatePatchBulkShipment() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulkShipment(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
   void testShipmentUpdateBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
@@ -118,9 +138,9 @@ class ContainerV3ControllerTest {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.deleteBulk(requestList, "CONSOLIDATION")).thenReturn(response);
+    Mockito.when(containerV3Service.deleteBulk(requestList, "CONSOLIDATION", false)).thenReturn(response);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList, false);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
@@ -131,9 +151,9 @@ class ContainerV3ControllerTest {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.deleteBulk(requestList, "SHIPMENT")).thenReturn(response);
+    Mockito.when(containerV3Service.deleteBulk(requestList, "SHIPMENT", false)).thenReturn(response);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulkFromShipment(requestList);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulkFromShipment(requestList, false);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
@@ -180,7 +200,11 @@ class ContainerV3ControllerTest {
 
     UnAssignContainerRequest request = new UnAssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
-    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class)))
+    Mockito.lenient().when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class),  Mockito.anyMap(),
+                    Mockito.anyList(),
+                    Mockito.anyList(),
+                    Mockito.anyBoolean(),
+                    Mockito.anyBoolean()))
             .thenReturn(response);
     ResponseEntity<IRunnerResponse> result = containerV3Controller.unAssignContainers(request);
     assertEquals(HttpStatus.OK, result.getStatusCode());
@@ -297,5 +321,7 @@ class ContainerV3ControllerTest {
     IRunnerResponse body = result.getBody();
     assertNotNull(body);
   }
+
+
 }
 

@@ -477,7 +477,7 @@ class TrackingServiceAdapterTest {
     void convertTrackingEventCodeToShortCode_GateInWithContainerEmpty_Origin() {
         Event event = new Event();
         event.setLocationRole(EventConstants.ORIGIN);
-        event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
+        event.setEventType(EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY);
         event.setDescription("some description");
         Container container = Container.builder()
                 .journey(Journey.builder().scacCode("").build())
@@ -563,6 +563,51 @@ class TrackingServiceAdapterTest {
 
         // Expect EMCR to be returned
         assertEquals(EventConstants.EMCR, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_DCVS() {
+        Event event = new Event();
+        event.setLocationRole(EventConstants.DESTINATION_PORT);
+        event.setEventType(EventConstants.DISCHARGE_FROM_VESSEL);
+        event.setDescription("");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        // Expect EMCR to be returned
+        assertEquals(EventConstants.DCVS, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_ARDT() {
+        Event event = new Event();
+        event.setLocationRole(EventConstants.OCEAN_TRANSIT_PORT);
+        event.setEventType(EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER);
+        event.setDescription("");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        // Expect EMCR to be returned
+        assertEquals(EventConstants.ARDT, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_VSDT() {
+        Event event = new Event();
+        event.setLocationRole(EventConstants.OCEAN_TRANSIT_PORT);
+        event.setEventType(EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER);
+        event.setDescription("");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        // Expect EMCR to be returned
+        assertEquals(EventConstants.VSDT, result);
     }
 
     @Test

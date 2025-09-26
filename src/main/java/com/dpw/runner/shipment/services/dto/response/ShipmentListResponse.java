@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
@@ -163,6 +165,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonIgnore
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private Set<ConsolidationDetailsResponse> consolidationList;
+    private Boolean isReefer;
 
     // dps items
     private String dpsStatus;
@@ -170,4 +173,11 @@ public class ShipmentListResponse implements IRunnerResponse {
     
     private Boolean isFrob;
     private MigrationStatus migrationStatus;
+    private List<Packing> packingList;
+    private List<Parties> shipmentAddresses;
+
+    private String contractId;
+    private String parentContractId;
+    private String destinationContractId;
+    private String destinationParentContractId;
 }

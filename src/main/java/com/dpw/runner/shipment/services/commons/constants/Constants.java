@@ -12,6 +12,9 @@ public class Constants {
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LOCAL_REFERENCE_NUMBER = "LocalReferenceNumber";
 
+    public static final String AMEND = "Amend";
+    public static final String ORIGINAL = "Original";
+
     public static final String GLOBALFF = "GLOBALFF";
     public static final String GLOBAL = "GLOBAL";
     public static final String SUBMITTED = "Submitted";
@@ -277,12 +280,14 @@ public class Constants {
     // Source
     public static final String API = "API";
     public static final String KAFKA_EVENT_CREATE = "create";
+    public static final String KAFKA_EVENT_DELETE = "delete";
     public static final String KAFKA_EVENT_UPDATE = "update";
     public static final String ORIGINAL_PRINT = "ORIGINAL_PRINT";
     public static final String ROUTING_CFD = "CFD";
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
     public static final String NETWORK_TRANSFER = "network_transfer";
+    public static final String CROSS_TENANT_SOURCE = "cross_tenant";
 
     public static final String METER = "M";
     public static final String ANGSTROM = "A";
@@ -453,6 +458,7 @@ public class Constants {
     public static final String CONSIGNEE_COUNTRY = "consigneeCountry";
     public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
     public static final String AWB_COUNTRY = "country";
+    public static final String SERVICE_MODE = "serviceMode";
 
     // Include Column fields
     public static final String BILLING_DATA = "billingData";
@@ -642,6 +648,9 @@ public class Constants {
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String NOTIFY_PARTY_ORG_CODE = "notifyPartyOrgCode";
+    public static final String ORIGIN_AGENT_ORG_CODE = "originAgentOrgCode";
+    public static final String DESTINATION_AGENT_ORG_CODE = "destinationAgentOrgCode";
     public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
     public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
@@ -724,6 +733,15 @@ public class Constants {
     public static final String UN_NUMBER = "unNumber";
     public static final String PACKING_GROUP = "packingGroup";
     public static final String TENANTS = "Tenants";
+    public static final String ORG_DATA = "orgData";
+    public static final String ADDRESS_DATA = "addressData";
+    public static final String SHIPMENT_ROOT_KEY_NAME = "shipmentDetails";
+    public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
+    public static final String DOT = ".";
+
+    public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
+    public static final String BEARER = "Bearer ";
+
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_NUMBER = "Seal Number not entered against the Container Number - ";
     public static final String SEAL_NUMBER_NOT_ENTERED_AGAINST_CONTAINER_CODE = "Seal Number not entered against the Container Code - ";
     public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
@@ -734,6 +752,8 @@ public class Constants {
     public static final String CONTRACT_TYPE = "CONTRACT";
     public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     public static final String EXPORT_EXCEL_MESSAGE = "The export will be available in approximately ";
+    public static final String CARRIER_BOOKING_INTTRA_AMEND = "CARRIER_BOOKING_INTTRA_AMEND";
+    public static final String CARRIER_BOOKING_INTTRA_CREATE = "CARRIER_BOOKING_INTTRA_CREATE";
 
     private Constants() {
     }

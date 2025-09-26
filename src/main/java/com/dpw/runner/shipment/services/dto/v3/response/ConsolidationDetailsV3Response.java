@@ -39,6 +39,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -80,6 +81,13 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime earliestEmptyEquPickUp;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
@@ -205,4 +213,6 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
     private Map<String, Object> masterDataMap;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

@@ -3,17 +3,65 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
+import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -39,8 +87,21 @@ import org.springframework.stereotype.Component;
 import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKAGES;
@@ -146,6 +207,10 @@ public class MasterDataUtils{
             setUnlocationMasterDataInCarrierDetails(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         } else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             setUnlocationMasterDataInCarrierDetails(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        } else if (response instanceof ShippingInstructionResponse shippingInstructionResponse) {
+            setUnlocationMasterDataInSailing(shippingInstructionResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
+        } else if(response instanceof CarrierBookingListResponse carrierBookingListResponse){
+            setUnlocationMasterDataInSailing(carrierBookingListResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         }
     }
 
@@ -172,6 +237,28 @@ public class MasterDataUtils{
         else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
             addLocCodesFromCarrierDetailsResponse(customerBookingV3Response.getCarrierDetails(), locCodes, fieldNameKeyMap, cacheMap);
         }
+        else if(response instanceof CarrierBookingListResponse carrierBookingListResponse) {
+            addLocCodesFromCarrierBookingResponse(carrierBookingListResponse, locCodes, fieldNameKeyMap, cacheMap);
+        }
+        else if(response instanceof ShippingInstructionResponse shippingInstructionListResponse) {
+            addLocCodesFromSiResponse(shippingInstructionListResponse, locCodes, fieldNameKeyMap, cacheMap);
+        }
+    }
+
+    private void addLocCodesFromCarrierBookingResponse(CarrierBookingListResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+       if(Objects.nonNull(response.getSailingInformation())) {
+           locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
+       }
+
+        locCodes.addAll(createInBulkUnLocationsRequest(response, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() + response.getId(), cacheMap));
+
+    }
+
+    private void addLocCodesFromSiResponse(ShippingInstructionResponse response, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(Objects.nonNull(response.getSailingInformation())) {
+            locCodes.addAll(createInBulkUnLocationsRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + response.getSailingInformation().getId(), cacheMap));
+        }
+
     }
 
     private void addLocCodesFromCarrierDetailsResponse(CarrierDetailResponse carrierDetails, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
@@ -183,6 +270,11 @@ public class MasterDataUtils{
     private void setUnlocationMasterDataInCarrierDetails(CarrierDetailResponse carrierDetails, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (carrierDetails != null)
             carrierDetails.setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + carrierDetails.getId()), CacheConstants.UNLOCATIONS, cacheMap));
+    }
+
+    private void setUnlocationMasterDataInSailing(SailingInformationResponse sailingInformationResponse, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (sailingInformationResponse != null)
+            sailingInformationResponse.setUnlocationData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + sailingInformationResponse.getId()), CacheConstants.UNLOCATIONS, cacheMap));
     }
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
@@ -242,8 +334,11 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+        }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
+        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())){
+            carriers.addAll(createInBulkCarriersRequest(carrierBookingListResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId(), cacheMap));
         }
     }
 
@@ -261,24 +356,53 @@ public class MasterDataUtils{
         }
         else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
             customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
+            carrierBookingListResponse.getSailingInformation().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId()), CacheConstants.CARRIER, cacheMap));
         }
     }
 
-    private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-        if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
-                shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
+
+
+    private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        applyIfApplicable(response, ShipmentListResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, AttachListShipmentResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ConsolidationListResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ConsolidationDetailsResponse.class,
+                r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, CarrierBookingListResponse.class,
+                r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
+    }
+
+    private void setCarrierDetailsVessels(
+            CarrierDetailResponse carrierDetails,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        if (carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getVessel())) {
+            carrierDetails.setVesselsMasterData(
+                    setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + carrierDetails.getId()),
+                            CacheConstants.VESSELS, cacheMap));
         }
-        else if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
-            if (attachListShipmentResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(attachListShipmentResponse.getCarrierDetails().getVessel()))
-                attachListShipmentResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + attachListShipmentResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        }
-        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
-                consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
-        }
-        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-            consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
+    }
+
+    private void setSailingInfoVessels(
+            SailingInformationResponse sailingInfo,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        if (sailingInfo != null && StringUtility.isNotEmpty(sailingInfo.getVesselName())) {
+            sailingInfo.setVesselsMasterData(
+                    setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + sailingInfo.getId()),
+                            CacheConstants.VESSELS, cacheMap));
         }
     }
 
@@ -301,6 +425,17 @@ public class MasterDataUtils{
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
             vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
         }
+        else if (response instanceof CarrierBookingResponse carrierBookingResponse) {
+            addCarrierRoutingVessels(carrierBookingResponse.getSailingInformation(), vessels, fieldNameKeyMap, cacheMap);
+        }
+    }
+
+    private void addCarrierRoutingVessels(SailingInformationResponse sailingInformationResponse, Set<String> vessels,
+            Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (sailingInformationResponse == null || StringUtility.isEmpty(sailingInformationResponse.getVesselName())) {
+            return;
+        }
+        vessels.addAll(createInBulkVesselsRequest(sailingInformationResponse, SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + sailingInformationResponse.getId(), cacheMap));
     }
 
     public void fetchTenantIdForList(List<IRunnerResponse> responseList) {
@@ -367,36 +502,90 @@ public class MasterDataUtils{
         }
     }
 
-    private void setTenantsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-        if (response instanceof ShipmentListResponse shipmentListResponse) {
-            shipmentListResponse.setTenantMasterData(new HashMap<>());
-            if (shipmentListResponse.getTenantId() != null)
-                shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS, cacheMap));
-            shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS, cacheMap));
-        }
-        if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
-            attachListShipmentResponse.setTenantMasterData(new HashMap<>());
-            if (attachListShipmentResponse.getTenantId() != null)
-                attachListShipmentResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + attachListShipmentResponse.getId()), CacheConstants.TENANTS, cacheMap));
-            attachListShipmentResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + attachListShipmentResponse.getId()), CacheConstants.TENANTS, cacheMap));
-        }
-        if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
-            consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS, cacheMap));
-        }
-        if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            consolidationListResponse.setTenantMasterData(new HashMap<>());
-            if (consolidationListResponse.getTenantId() != null)
-                consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
-        }
+    private void setTenantsMasterData(
+            IRunnerResponse response,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
 
-        if (response instanceof NetworkTransferListResponse networkTransferListResponse) {
-            networkTransferListResponse.setTenantMasterData(new HashMap<>());
-            if (networkTransferListResponse.getSourceBranchId() != null)
-                networkTransferListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId()), CacheConstants.TENANTS, cacheMap));
-        }
+        applyIfApplicable(response, ShipmentListResponse.class,
+                r -> {
+                    r.setTenantMasterData(new HashMap<>());
+                    if (r.getTenantId() != null) {
+                        r.getTenantMasterData().putAll(
+                                setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                    r.getTenantMasterData().putAll(
+                            setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + r.getId()),
+                                    CacheConstants.TENANTS, cacheMap));
+                });
 
-        if (response instanceof NotificationListResponse notificationListResponse) {
-            setTenantsMasterDataForNotificationListResponse(fieldNameKeyMap, cacheMap, notificationListResponse);
+        applyIfApplicable(response, AttachListShipmentResponse.class,
+                r -> {
+                    r.setTenantMasterData(new HashMap<>());
+                    if (r.getTenantId() != null) {
+                        r.getTenantMasterData().putAll(
+                                setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                    r.getTenantMasterData().putAll(
+                            setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + r.getId()),
+                                    CacheConstants.TENANTS, cacheMap));
+                });
+
+        applyIfApplicable(response, ConsolidationDetailsResponse.class,
+                r -> {
+                    if (r.getTenantId() != null) {
+                        r.setTenantIdsData(
+                                setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                });
+
+        applyIfApplicable(response, ConsolidationListResponse.class,
+                r -> {
+                    r.setTenantMasterData(new HashMap<>());
+                    if (r.getTenantId() != null) {
+                        r.getTenantMasterData().putAll(
+                                setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                });
+
+        applyIfApplicable(response, NetworkTransferListResponse.class,
+                r -> {
+                    r.setTenantMasterData(new HashMap<>());
+                    if (r.getSourceBranchId() != null) {
+                        r.getTenantMasterData().putAll(
+                                setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                });
+
+        applyIfApplicable(response, NotificationListResponse.class,
+                r -> setTenantsMasterDataForNotificationListResponse(fieldNameKeyMap, cacheMap, r));
+
+        applyIfApplicable(response, CarrierBookingListResponse.class,
+                r -> {
+                    r.setTenantMasterData(new HashMap<>());
+                    if (r.getTenantId() != null) {
+                        r.getTenantMasterData().putAll(
+                                setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + r.getId()),
+                                        CacheConstants.TENANTS, cacheMap));
+                    }
+                    r.getTenantMasterData().putAll(
+                            setMasterData(fieldNameKeyMap.get(CarrierBooking.class.getSimpleName() + r.getId()),
+                                    CacheConstants.TENANTS, cacheMap));
+                });
+    }
+
+    private <T extends IRunnerResponse> void applyIfApplicable(
+            IRunnerResponse response,
+            Class<T> type,
+            Consumer<T> consumer) {
+
+        if (type.isInstance(response)) {
+            consumer.accept(type.cast(response));
         }
     }
 
@@ -406,32 +595,73 @@ public class MasterDataUtils{
             notificationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(Notification.class.getSimpleName() + notificationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
     }
 
-    private void getTenantIdsFromResponseList(IRunnerResponse response, Set<String> tenantIdList, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
-        if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getTenantId() != null) {
-                tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId(), cacheMap));
+
+    private void getTenantIdsFromResponseList(
+            IRunnerResponse response,
+            Set<String> tenantIdList,
+            Map<String, Map<String, String>> fieldNameKeyMap,
+            Map<String, Object> cacheMap) {
+
+        addIfApplicable(response, ShipmentListResponse.class,
+                r -> r.getTenantId() != null,
+                (r, ids) -> {
+                    ids.addAll(createInBulkTenantsRequest(r, MultiTenancy.class, fieldNameKeyMap,
+                            MultiTenancy.class.getSimpleName() + r.getId(), cacheMap));
+                    ids.addAll(createInBulkTenantsRequest(r, ShipmentDetails.class, fieldNameKeyMap,
+                            ShipmentDetails.class.getSimpleName() + r.getId(), cacheMap));
+                }, tenantIdList);
+
+        addIfApplicable(response, AttachListShipmentResponse.class,
+                r -> r.getTenantId() != null,
+                (r, ids) -> {
+                    ids.addAll(createInBulkTenantsRequest(r, MultiTenancy.class, fieldNameKeyMap,
+                            MultiTenancy.class.getSimpleName() + r.getId(), cacheMap));
+                    ids.addAll(createInBulkTenantsRequest(r, ShipmentDetails.class, fieldNameKeyMap,
+                            ShipmentDetails.class.getSimpleName() + r.getId(), cacheMap));
+                }, tenantIdList);
+
+        addIfApplicable(response, ConsolidationDetailsResponse.class,
+                r -> r.getTenantId() != null,
+                (r, ids) -> ids.addAll(createInBulkTenantsRequest(r, MultiTenancy.class, fieldNameKeyMap,
+                        MultiTenancy.class.getSimpleName() + r.getId(), cacheMap)), tenantIdList);
+
+        addIfApplicable(response, ConsolidationListResponse.class,
+                r -> r.getTenantId() != null,
+                (r, ids) -> ids.addAll(createInBulkTenantsRequest(r, MultiTenancy.class, fieldNameKeyMap,
+                        MultiTenancy.class.getSimpleName() + r.getId(), cacheMap)), tenantIdList);
+
+        addIfApplicable(response, NetworkTransferListResponse.class,
+                r -> r.getSourceBranchId() != null,
+                (r, ids) -> ids.addAll(createInBulkTenantsRequest(r, NetworkTransfer.class, fieldNameKeyMap,
+                        NetworkTransfer.class.getSimpleName() + r.getId(), cacheMap)), tenantIdList);
+
+        addIfApplicable(response, NotificationListResponse.class,
+                r -> r.getRequestedBranchId() != null
+                        || r.getReassignedToBranchId() != null
+                        || r.getReassignedFromBranchId() != null,
+                (r, ids) -> ids.addAll(createInBulkTenantsRequest(r, Notification.class, fieldNameKeyMap,
+                        Notification.class.getSimpleName() + r.getId(), cacheMap)), tenantIdList);
+
+        addIfApplicable(response, CarrierBookingListResponse.class,
+                r -> r.getTenantId() != null,
+                (r, ids) -> ids.addAll(createInBulkTenantsRequest(r, CarrierBooking.class, fieldNameKeyMap,
+                        CarrierBooking.class.getSimpleName() + r.getId(), cacheMap)), tenantIdList);
+    }
+
+    private <T extends IRunnerResponse> void addIfApplicable(IRunnerResponse response,
+            Class<T> type,
+            Predicate<T> condition,
+            BiConsumer<T, Set<String>> consumer,
+            Set<String> tenantIdList) {
+
+        if (type.isInstance(response)) {
+            T casted = type.cast(response);
+            if (condition.test(casted)) {
+                consumer.accept(casted, tenantIdList);
             }
-            tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId(), cacheMap));
-        }
-        if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
-            if (attachListShipmentResponse.getTenantId() != null) {
-                tenantIdList.addAll(createInBulkTenantsRequest(attachListShipmentResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + attachListShipmentResponse.getId(), cacheMap));
-            }
-            tenantIdList.addAll(createInBulkTenantsRequest(attachListShipmentResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() + attachListShipmentResponse.getId(), cacheMap));
-        }
-        if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
-            tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId(), cacheMap));
-        }
-        if (response instanceof ConsolidationListResponse consolidationListResponse && (consolidationListResponse.getTenantId() != null)) {
-                tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId(), cacheMap));
-        }
-        if (response instanceof NetworkTransferListResponse networkTransferListResponse && (networkTransferListResponse.getSourceBranchId() != null)) {
-            tenantIdList.addAll(createInBulkTenantsRequest(networkTransferListResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId(), cacheMap));
-        }
-        if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null || notificationListResponse.getReassignedFromBranchId() != null)) {
-            tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
         }
     }
+
 
     public <T extends IRunnerResponse> void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<T> responseList) {
         try {
@@ -1864,6 +2094,29 @@ public class MasterDataUtils{
                 UserContext.removeUser();
             }
 
+        };
+    }
+
+    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext1 = UserContext.getUser();
+
+        return () -> {
+            try {
+                if (mdc != null) {
+                    MDC.setContextMap(mdc);
+                } else {
+                    MDC.clear();
+                }
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext1);
+                return supplier.get();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
         };
     }
 

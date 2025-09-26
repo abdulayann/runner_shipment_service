@@ -49,6 +49,9 @@ class ConsolidationV3ControllerTest {
   @InjectMocks
   private ConsolidationV3Controller controller;
 
+  @InjectMocks
+  private ConsolidationControllerExternal controller2;
+
   @Mock
   private IConsolidationV3Service consolidationV3Service;
 
@@ -253,7 +256,7 @@ class ConsolidationV3ControllerTest {
     when(consolidationV3Service.retrieveByIdExternal(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-    ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternal(id, guid, xSource);
+    ResponseEntity<IRunnerResponse> response = controller2.retrieveByIdExternal(id, guid, xSource);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -271,7 +274,7 @@ class ConsolidationV3ControllerTest {
         when(consolidationV3Service.retrieveByIdExternalPartial(any())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-        ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternalPartial(request, xSource);
+        ResponseEntity<IRunnerResponse> response = controller2.retrieveByIdExternalPartial(request, xSource);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -289,7 +292,7 @@ class ConsolidationV3ControllerTest {
     when(consolidationV3Service.listExternal(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-    ResponseEntity<IRunnerResponse> response = controller.listExternal(listRequest);
+    ResponseEntity<IRunnerResponse> response = controller2.listExternal(listRequest);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());

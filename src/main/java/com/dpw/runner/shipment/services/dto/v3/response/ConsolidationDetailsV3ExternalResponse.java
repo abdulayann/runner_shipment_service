@@ -29,6 +29,7 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private String consolidationNumber;
     private Integer tenantId;
     private String transportMode;
+    private String assignedTo;
     private String mawb;
     private String payment;
     private String containerCategory;
@@ -136,4 +137,6 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private List<EventsResponse> eventsList;
     private List<ContainerResponse> containersList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

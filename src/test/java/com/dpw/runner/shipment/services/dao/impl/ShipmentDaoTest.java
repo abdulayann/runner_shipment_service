@@ -669,8 +669,6 @@ class ShipmentDaoTest extends CommonMocks {
     void updateHblNumberMasterBillEmptyEXPTest() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
-
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .houseBill("HBL123")
@@ -691,9 +689,6 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
-
 
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
@@ -707,8 +702,6 @@ class ShipmentDaoTest extends CommonMocks {
     @Test
     void updateHblNumberMasterBillEmptyEXPIataTest() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
-
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
@@ -730,9 +723,6 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
-
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
 
 
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
@@ -2444,5 +2434,273 @@ class ShipmentDaoTest extends CommonMocks {
                 MigrationStatus.MIGRATED_FROM_V3.name()), 400);
         verify(shipmentRepository, times(1)).findAllShipmentIdsByMigratedStatuses(List.of(MigrationStatus.CREATED_IN_V2.name(),
                 MigrationStatus.MIGRATED_FROM_V3.name()), 400);
+    }
+
+    @Test
+    void applyShipmentValidationsTest2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_IMP)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(new AdditionalDetails())
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(Parties.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_IMP)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(additionalDetails)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest4() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_CTS)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest5() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_CTS)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(additionalDetails)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest6() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(Parties.builder().build());
+        additionalDetails.setExportBroker(Parties.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_CTS)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(additionalDetails)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest7() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(Parties.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_CTS)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(additionalDetails)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsTest8() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        containers.setGuid(UUID.randomUUID());
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_CTS)
+                .jobType(Constants.CONSOLIDATION_TYPE_STD)
+                .additionalDetails(additionalDetails)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 }

@@ -56,14 +56,14 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             DataRetrievalFailureException.class,
             NotificationServiceException.class
     })
-    private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
+    public ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler({
             ReportExceptionWarning.class
     })
-    private ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
+    public ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
         return ResponseHelper.buildSuccessResponseWithWarning(ex.getMessage());
     }
 

@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -253,5 +254,10 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days")
+    private Integer numberOfFreeDaysCutOff;
 
 }

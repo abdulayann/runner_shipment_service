@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -52,6 +53,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -82,6 +84,7 @@ import static org.mockito.Mockito.*;
 @Execution(CONCURRENT)
 class PackingV3ServiceTest extends CommonMocks {
 
+    @Spy
     @InjectMocks
     private PackingV3Service packingV3Service;
 
@@ -119,6 +122,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private ShipmentValidationV3Util shipmentValidationV3Util;
     @Mock
     private ConsolidationV3Service consolidationV3Service;
+    @Mock
+    private ShippingInstructionUtil shippingInstructionUtil;
 
     private Packing packing;
     private PackingV3Request request;
@@ -830,7 +835,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary2() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.of(testShipment));
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.of(testShipment));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
@@ -841,7 +846,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary3() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setShipmentEntityId(14388L);
-        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.empty());
+        when(shipmentService.retrieveShipmentByIdWithQuery(any(), any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
 
@@ -860,7 +865,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testCalculatePackSummary5() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
         request1.setConsolidationId(14388L);
-        when(consolidationV3Service.retrieveForNte(any())).thenReturn(Optional.of(testconsol));
+        when(consolidationV3Service.retrieveConsolidationByIdWithQuery(any(), any())).thenReturn(Optional.of(testconsol));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
         PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
@@ -878,7 +883,14 @@ class PackingV3ServiceTest extends CommonMocks {
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(containerV3Service, never()).unAssignContainers(any(), any(), any());
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+    }
+
+    @Test
+    void testUnAssignPackageContainersWithReassignFlow() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -890,7 +902,7 @@ class PackingV3ServiceTest extends CommonMocks {
         packing.setContainerId(1L);
         when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
-        verify(containerV3Service).unAssignContainers(any(), any(), any());
+        verify(containerV3Service).unAssignContainers(any(), any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -1095,9 +1107,9 @@ class PackingV3ServiceTest extends CommonMocks {
     @Test
     void testAssignShipmentPackagesContainers_success() throws RunnerException {
 
-        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
-        request.setPackingIds(List.of(1L, 2L));
+        AssignContainerRequest request = new AssignContainerRequest();
         request.setContainerId(100L);
+        request.setShipmentPackIds(Map.of(10L, List.of(1L, 2L)));
 
         Packing packing1 = new Packing();
         packing1.setId(1L);
@@ -1111,21 +1123,22 @@ class PackingV3ServiceTest extends CommonMocks {
         shipmentDetails.setId(10L);
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
 
-        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
-        assignContainerRequest.setContainerId(request.getContainerId());
-        assignContainerRequest.setShipmentPackIds(Map.of(10L, request.getPackingIds()));
+        ContainerResponse expectedResponse = new ContainerResponse();
+        expectedResponse.setContainerCode("C123");
 
-        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+        when(packingDao.findByIdIn(List.of(1L, 2L))).thenReturn(List.of(packing1, packing2));
         when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
-        when(containerV3Service.assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING)))
-                .thenReturn(new ContainerResponse());
+        when(containerV3Service.assignContainers(request, SHIPMENT_PACKING))
+                .thenReturn(expectedResponse);
 
-        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(assignContainerRequest);
+        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(request);
 
         assertNotNull(response);
-        verify(packingDao).findByIdIn(request.getPackingIds());
+        assertEquals(expectedResponse, response);
+
+        verify(packingDao).findByIdIn(List.of(1L, 2L));
         verify(shipmentService).findById(10L);
-        verify(containerV3Service).assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING));
+        verify(containerV3Service).assignContainers(request, SHIPMENT_PACKING);
     }
 
     @Test
@@ -1303,16 +1316,35 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testAssignPackagesContainers_WithSingleShipmentId_DelegatesToContainerService() throws RunnerException {
-        AssignContainerRequest assignedContainerRequest = new AssignContainerRequest();
-        assignedContainerRequest.setShipmentPackIds(Map.of(1L, List.of(100L)));
-        ContainerResponse expectedResponse = new ContainerResponse();
-        Mockito.when(containerV3Service.assignContainers(assignedContainerRequest, Constants.CONSOLIDATION_PACKING))
-                .thenReturn(expectedResponse);
-        ContainerResponse containerResponse = packingV3Service.assignPackagesContainers(assignedContainerRequest);
-        assertEquals(expectedResponse, containerResponse);
-        Mockito.verify(containerV3Service).assignContainers(assignedContainerRequest, Constants.CONSOLIDATION_PACKING);
+    void assignPackagesContainers_multipleShipments_throwsValidationException() {
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, Arrays.asList(101L));
+        shipmentPackIds.put(2L, Arrays.asList(201L));
+        request.setShipmentPackIds(shipmentPackIds);
+
+        assertThrows(ValidationException.class,
+                () -> packingV3Service.assignPackagesContainers(request));
     }
+
+    @Test
+    void assignPackagesContainers_singleShipment_delegatesToAssignContainers() throws RunnerException {
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, Arrays.asList(101L, 102L));
+        request.setShipmentPackIds(shipmentPackIds);
+
+        ContainerResponse expectedResponse = new ContainerResponse();
+        expectedResponse.setContainerCode("C123");
+
+        when(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING)).thenReturn(expectedResponse);
+
+        ContainerResponse actualResponse = packingV3Service.assignPackagesContainers(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(containerV3Service).assignContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
 
     @Test
     void testCalculateCargoSummary_FCL() throws RunnerException {

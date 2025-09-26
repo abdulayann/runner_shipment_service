@@ -82,7 +82,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     private IConsolidationV3Service consolidationV3Service;
     @Autowired
     private ITrackingServiceAdapter trackingServiceAdapter;
-
+    private static final String TRANSACTIONAL_ID_CONSTANT = " | transactionId=";
+    private static final String NOT_FOUND_CONSTANT = " not found.";
     @Autowired
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
@@ -191,7 +192,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsService.findById(message.getParentEntityId());
 
         if (pickupDeliveryDetails.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] TI: " + message.getParentEntityId() + " | transactionId=" + transactionId + " not found.";
+            String errMsg = "[InternalKafkaConsume] TI: " + message.getParentEntityId() + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -265,7 +266,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
         if (consolidationDetailsOpt.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + " | transactionId=" + transactionId + " not found.";
+            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -317,7 +318,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
         if (consolidationDetailsOpt.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + " | transactionId=" + transactionId + " not found.";
+            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -359,7 +360,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         TenantContext.setCurrentTenant(tenantId);
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
         if (customerBooking.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + " | transactionId=" + transactionId + " not found.";
+            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -374,7 +375,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
         if (shipmentDetails.isEmpty()) {
             log.info("Shipment {} not found.", entityId);
-            String errorMsg = "Shipment " + entityId + " not found.";
+            String errorMsg = "Shipment " + entityId + NOT_FOUND_CONSTANT;
             throw new ValidationException(errorMsg);
         }
         // Setting tenant id of shipment to context for V1TenantSettings

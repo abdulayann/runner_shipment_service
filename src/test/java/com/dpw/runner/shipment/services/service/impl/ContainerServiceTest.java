@@ -234,7 +234,9 @@ class ContainerServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
+        TenantContext.setCurrentTenant(1);
         mockUser.setUsername("user");
+        TenantContext.setCurrentTenant(1);
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
         MockitoAnnotations.initMocks(this);
@@ -1597,7 +1599,7 @@ class ContainerServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(c1,c2);
         List<Containers> oldContainers = List.of(c1);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        Set<Containers> containers = new HashSet<Containers>();
+        Set<Containers> containers = new HashSet<>();
         containers.add(c1);
         shipmentDetails.setContainersList(containers);
         shipmentDetails.setBookingReference("DBFC-4353158-409107");
