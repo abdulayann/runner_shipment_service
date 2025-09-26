@@ -13,7 +13,9 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageS
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -120,7 +122,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         List<Parties> additionalPartiesList = shippingInstruction.getAdditionalParties();
         if (additionalPartiesList != null) {
             List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(additionalPartiesList,
-                    Parties.class, false), shippingInstruction.getId(), ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
+                    Parties.class, false), shippingInstruction.getId(), SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
             savedInfo.setAdditionalParties(updatedParties);
         }
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
@@ -208,6 +210,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setContract(partiesResponse);
+        }
+        if (Objects.nonNull(carrierBooking.getRequester())) {
+            Parties partiesResponse = carrierBooking.getRequester();
+            partiesResponse.setId(null);
+            partiesResponse.setGuid(null);
+            shippingInstruction.setRequestor(partiesResponse);
         }
     }
 
@@ -392,7 +400,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             ShippingInstruction shippingInstruction = shippingInstructionOpt.get();
             long start = System.currentTimeMillis();
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShippingInstruction.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
-            includeColumns.addAll(ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS);
+            includeColumns.addAll(LIST_INCLUDE_COLUMNS);
             ShippingInstructionResponse shippingInstructionResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(shippingInstruction, new HashSet<>(includeColumns), new ShippingInstructionResponse());
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(shippingInstructionResponse);
@@ -414,7 +422,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
 
-        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
+        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
         Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
@@ -443,9 +451,14 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
-        if (shippingInstruction == null || shippingInstruction.getSailingInformation() == null) {
+        if (shippingInstruction == null) {
             return; // nothing to populate
         }
+
+        if (shippingInstruction.getSailingInformation() == null) {
+            shippingInstruction.setSailingInformation(new SailingInformation());
+        }
+
         if (consolidationDetails != null && consolidationDetails.getCarrierDetails() != null) {
 
             CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
@@ -590,6 +603,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     public ShippingInstructionResponse submitShippingInstruction(Long id) { //Take only Id
         Optional<ShippingInstruction> shippingInstruction = repository.findById(id);
         ShippingInstruction si;
+        CarrierBooking booking = null;
         if (shippingInstruction.isPresent()) {
             si = shippingInstruction.get();
         } else {
@@ -597,7 +611,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
-            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
+             booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             // Step 1: Check booking status
@@ -608,6 +622,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             if (si.getStatus() != ShippingInstructionStatus.Draft) {
                 throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
             }
+
+            ConsolidationDetails consolidationDetails = getConsolidationDetail(si.getEntityId());
+            fillDetailsFromConsol(si, consolidationDetails);
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
@@ -616,7 +633,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstruction saved = repository.save(si);
-        callBridge(si, "SI_CREATE");
+        ShippingInstructionInttraResponse instructionInttraResponse = jsonHelper.convertValue(si, ShippingInstructionInttraResponse.class);
+
+        assert booking != null;
+        instructionInttraResponse.setRequester(jsonHelper.convertValue(booking.getRequester(), PartiesResponse.class));
+
+        shippingInstructionUtil.populateInttraSpecificData(instructionInttraResponse);
+        callBridge(instructionInttraResponse, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -670,7 +693,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
-        callBridge(shippingInstruction, "SI_AMEND");
+        // callBridge(shippingInstruction, "SI_AMEND");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -697,12 +720,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
-    private void callBridge(ShippingInstruction shippingInstruction, String integrationCode) {
+    private void callBridge(ShippingInstructionInttraResponse shippingInstruction, String integrationCode) {
         UUID transactionId = UUID.randomUUID();
         try {
             bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
         } catch (RunnerException e) {
-            log.error("Exception while calling bridge. id {} {}", shippingInstruction.getId(), e.getMessage());
+            log.error("Exception while calling bridge. {}", e.getMessage());
         }
     }
 

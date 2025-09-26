@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
@@ -377,6 +379,46 @@ public class ShippingInstructionUtil {
             return value != null ? Integer.valueOf(value) : fallback;
         } catch (NumberFormatException e) {
             return fallback;
+        }
+    }
+
+    public void populateInttraSpecificData(ShippingInstructionInttraResponse instructionInttraResponse) {
+        // Calculate total number of equipments
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalNumberOfEquipments(instructionInttraResponse.getCommonContainersList().stream()
+                    .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalNumberOfEquipments(0);
+        }
+
+        // Calculate total number of packages
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalNoOfPackages(instructionInttraResponse.getCommonContainersList().stream()
+                    .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalNoOfPackages(0);
+        }
+
+        // Calculate total gross weight
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalGrossWeight(instructionInttraResponse.getCommonContainersList().stream()
+                    .filter(container -> container.getGrossWeight() != null)
+                    .mapToDouble(container -> container.getGrossWeight().doubleValue())
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalGrossWeight(0.0);
+        }
+
+        // Calculate total gross volume
+        if (instructionInttraResponse.getCommonContainersList() != null) {
+            instructionInttraResponse.setTotalGrossVolume(instructionInttraResponse.getCommonContainersList().stream()
+                    .filter(container -> container.getVolume() != null)
+                    .mapToDouble(container -> container.getVolume().doubleValue())
+                    .sum());
+        } else {
+            instructionInttraResponse.setTotalGrossVolume(0.0);
         }
     }
 
