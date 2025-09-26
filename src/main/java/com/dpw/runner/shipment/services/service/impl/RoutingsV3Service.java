@@ -264,7 +264,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
         }
         updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+                Boolean.TRUE.equals(r.getInheritedFromConsolidation()) && Objects.isNull(r.getConsolRouteRefGuid()));
     }
     private static void getMainCarriageInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes) {
         for (int i = 0; i < updatedRoutings.size(); i++) {
