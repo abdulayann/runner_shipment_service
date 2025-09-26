@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,7 +66,7 @@ public class CarrierBookingConstants {
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
-                    .dataType(String.class)   // CarrierBookingStatus is an enum stored as string
+                    .dataType(CarrierBookingStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
@@ -217,14 +220,14 @@ public class CarrierBookingConstants {
                     .build()),
             Map.entry("siStatus", RunnerEntityMapping.builder()
                     .tableName(SHIPPING_INSTRUCTION)
-                    .dataType(String.class)
+                    .dataType(ShippingInstructionStatus.class)
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
 
             Map.entry("vgmStatus", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS)
-                    .dataType(String.class)
+                    .dataType(VerifiedGrossMassStatus.class)
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
