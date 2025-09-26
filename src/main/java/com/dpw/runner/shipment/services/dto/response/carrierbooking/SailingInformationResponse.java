@@ -39,4 +39,9 @@ public class SailingInformationResponse implements IRunnerResponse {
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;
     private Map<String, String> vesselsMasterData;
+
+    private String originLocCode;
+    private String destinationLocCode;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
 }

@@ -619,6 +619,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(savedCarrierBooking, CarrierBookingBridgeRequest.class);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
+        carrierBookingUtil.populateLocCode(carrierBookingInttraUtil.fetchUnLocationMap(carrierBookingBridgeRequest), carrierBookingBridgeRequest);
 
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
 

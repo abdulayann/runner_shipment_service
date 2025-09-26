@@ -1,12 +1,17 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -19,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -161,5 +167,13 @@ public class CarrierBookingInttraUtil {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
         }
         return v1Data;
+    }
+
+    public Map<String, EntityTransferUnLocations> fetchUnLocationMap(CarrierBookingBridgeRequest carrierBookingResponse ){
+        SailingInformationResponse sailingInformationResponse = carrierBookingResponse.getSailingInformation();
+        Set<String> locationCodes = Set.of(sailingInformationResponse.getPod(), sailingInformationResponse.getPol(), sailingInformationResponse.getCarrierDeliveryPlace(), sailingInformationResponse.getCarrierReceiptPlace());
+        locationCodes.add(carrierBookingResponse.getBookingOffice());
+        Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        return locationsMap;
     }
 }

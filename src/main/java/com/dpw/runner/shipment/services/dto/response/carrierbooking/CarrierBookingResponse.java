@@ -29,6 +29,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String entityNumber;
     private String serviceType;
     private String bookingOffice;
+    private String bookingOfficeLocCode;
     private LocalDateTime pickupFromReqEmptyPositioningDate;
     private LocalDateTime pickupFromReqFullPickupDate;
     private String pickupFromContactName;
