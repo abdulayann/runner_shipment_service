@@ -229,7 +229,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -4591,33 +4590,6 @@ public class CommonUtils {
         } catch (Exception e) {
             throw new ValidationException("Invalid Type");
         }
-    }
-
-    public static List<ShipmentOrderAttachDetachRequest.OrderDetails> mapToOrderDetailsList(List<ShipmentOrderV3Request> shipmentOrderV3List) {
-        if (ObjectUtils.isEmpty(shipmentOrderV3List)) {
-            return Collections.emptyList();
-        }
-
-        return shipmentOrderV3List.stream()
-                .filter(Objects::nonNull)
-                .map(CommonUtils::mapToOrderDetails)
-                .toList();
-    }
-
-    public static ShipmentOrderAttachDetachRequest.OrderDetails mapToOrderDetails(ShipmentOrderV3Request request) {
-        if (request == null) {
-            return null;
-        }
-
-        List<PackingV3Request> orderPackings = (request.getOrderPackings() == null) ? Collections.emptyList() : request.getOrderPackings();
-
-        return ShipmentOrderAttachDetachRequest.OrderDetails.builder()
-                .orderNumber(request.getOrderNumber())
-                .orderGuid(request.getOrderGuid())
-                .shipmentId(request.getShipmentId())
-                .orderDate(request.getOrderDate())
-                .orderPackings(orderPackings)
-                .build();
     }
 
     public LocalDateTime convertToLocalDateTimeFromInttra(String dateValue, String dateFormat) {
