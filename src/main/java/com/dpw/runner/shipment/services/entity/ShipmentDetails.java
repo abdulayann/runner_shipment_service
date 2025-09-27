@@ -746,12 +746,16 @@ public class ShipmentDetails extends MultiTenancy {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ShipmentDetails that = (ShipmentDetails) o;
+        // If either entity has no id yet, fall back to default (reference) comparison
+        if (this.getId() == null || that.getId() == null) {
+            return false;
+        }
         return Objects.equals(getId(), that.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId());
+        return (getId() != null) ? getId().hashCode() : System.identityHashCode(this);
     }
 
 }
