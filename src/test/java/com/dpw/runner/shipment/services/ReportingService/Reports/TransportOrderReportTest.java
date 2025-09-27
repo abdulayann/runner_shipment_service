@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -70,6 +72,12 @@ class TransportOrderReportTest extends CommonMocks {
 
     @Mock
     private IContainerDao containerDao;
+
+    @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private ShipmentServiceImplV3 shipmentServiceImplV3;
