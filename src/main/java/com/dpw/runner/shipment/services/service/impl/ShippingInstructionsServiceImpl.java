@@ -48,6 +48,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -441,6 +444,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         populateFreightDetails(shippingInstruction, consolidationDetails);
+        shippingInstruction.setCarrierBookingNo(consolidationDetails.getCarrierBookingRef());
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
@@ -631,13 +635,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         // Step 3: Mark SI as submitted
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
-        // Generates number between 10000 and 99999 and set fileName
-        SecureRandom random = new SecureRandom();
-        int rnd = 10000000 + random.nextInt(90000000);
-        String fileName = "SIRequest_" + si.getId() + "." + rnd + ".xml";
         ShippingInstruction saved = repository.save(si);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
-        instructionInttraRequest.setFileName(fileName);
+        instructionInttraRequest.setFileName(getFileName(si));
         shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
 
@@ -684,20 +684,65 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
 
+        Parties[] partiesToCheck = {shippingInstruction.getRequestor(), shippingInstruction.getShipper(), shippingInstruction.getForwardingAgent()};
+        String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
+
+        if (null == remoteId) {
+            throw new ValidationException("SI does not belong to INTTRA");
+        }
 
         if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.get().getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.get().getStatus())) {
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
+        CarrierBooking booking = null;
+        if (shippingInstruction.getEntityType() == EntityType.CARRIER_BOOKING) {
+            booking = carrierBookingDao.findById(shippingInstruction.getEntityId())
+                    .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
+        } else if (shippingInstruction.getEntityType() == EntityType.CONSOLIDATION) {
+            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
+            fillDetailsFromConsol(shippingInstruction, consolidationDetails);
+        } else {
+            throw new ValidationException(INVALID_ENTITY_TYPE);
+        }
+
         validateSIRequest(shippingInstruction);
+
+        if (booking != null) {
+            shippingInstruction.setCarrierBookingNo(booking.getCarrierBookingNo());
+        }
 
         // Step 3: Mark SI as amended
         shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
-        // callBridge(shippingInstruction, "SI_AMEND");
+        ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
+        instructionInttraRequest.setFileName(getFileName(shippingInstruction));
+        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
+
+        try {
+            callBridge(instructionInttraRequest, "SI_AMEND");
+        } catch (Exception e) {
+            log.error("Exception in calling bridge {}", e.getMessage());
+            carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, e.getMessage(), SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
+            throw e;
+        }
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    private String getFileName(ShippingInstruction si) {
+        // Format timestamp in UTC
+        String timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneOffset.UTC)
+                .format(Instant.now());
+
+        return "SIRequest_" + si.getId() + "_"
+                + si.getCarrierBookingNo()  // use carrier booking number
+                + "_"
+                + timestamp
+                + ".xml";
     }
 
 
