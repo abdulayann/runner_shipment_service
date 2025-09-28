@@ -449,7 +449,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         populateFreightDetails(shippingInstruction, consolidationDetails);
-        shippingInstruction.setCarrierBookingNo(consolidationDetails.getCarrierBookingRef());
+        shippingInstruction.setCarrierBookingNo(consolidationDetails.getBookingNumber());
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
@@ -741,7 +741,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
-        if (!isStandAlone && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
+        if (!isStandAlone && booking!=null && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
             throw new ValidationException("Amendment not allowed. Carrier booking is not submitted.");
         }
     }
