@@ -54,6 +54,7 @@ public class VerifiedGrossMassConstants {
     public static final String GROSS_WEIGHT = "Gross Weight";
     public static final String NET_WEIGHT = "Net Weight";
     public static final String TARE_WEIGHT = "Tare Weight";
+    public static final String VERIFIED_GROSS_MASS_EMAIL_TEMPLATE = "VERIFIED_GROSS_MASS";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
     public static final List<String> serviceTypes = List.of("P2P","D2D","D2P","P2D");

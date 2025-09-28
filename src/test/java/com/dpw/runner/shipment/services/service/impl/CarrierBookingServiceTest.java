@@ -768,7 +768,6 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void test_cancel() {
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
-        when(iv1Service.getEmailTemplates(any())).thenReturn(new V1DataResponse());
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
         emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
         lenient().when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
@@ -780,9 +779,6 @@ class CarrierBookingServiceTest extends CommonMocks {
     @Test
     void test_cancel1() {
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.setEntities(new CarrierBooking());
-        when(iv1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
         emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
         lenient().when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
@@ -1049,13 +1045,9 @@ class CarrierBookingServiceTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = carrierBooking;
-        when(iv1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
 
         EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
         emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
-
-        List<EmailTemplatesRequest> emailTemplatesRequests = List.of(emailTemplatesRequest);
-        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(emailTemplatesRequests);
 
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
 
