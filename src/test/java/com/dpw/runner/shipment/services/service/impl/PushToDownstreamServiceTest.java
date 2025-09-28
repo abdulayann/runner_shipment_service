@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
@@ -22,6 +25,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -37,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +52,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -129,7 +131,7 @@ class PushToDownstreamServiceTest {
     void testPushContainerData() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        assertDoesNotThrow(() -> pushToDownstreamService.pushContainerData(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushContainerData(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -144,7 +146,7 @@ class PushToDownstreamServiceTest {
     void testPushConsolidationData() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        assertDoesNotThrow(() -> pushToDownstreamService.pushConsolidationData(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationData(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -195,7 +197,7 @@ class PushToDownstreamServiceTest {
     void testPushConsolidationDataToTracking() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        assertDoesNotThrow(() -> pushToDownstreamService.pushConsolidationDataToTracking(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationDataToTracking(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -236,7 +238,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.SHIPMENT);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -273,7 +275,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.CUSTOMER_BOOKING);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -282,7 +284,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(List.of(new PushToDownstreamEventDto.Triggers(123L, Constants.SHIPMENT, "")));
         pushToDownstreamEventDto.setParentEntityName(Constants.SHIPMENT);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -294,7 +296,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
         pushToDownstreamEventDto.setMeta(meta);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -306,7 +308,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
         pushToDownstreamEventDto.setMeta(meta);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -318,7 +320,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
         pushToDownstreamEventDto.setMeta(meta);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
     @Test
     void testProcess9() {

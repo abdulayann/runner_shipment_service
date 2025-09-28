@@ -40,4 +40,6 @@ public class VerifiedGrossMassResponse implements IRunnerResponse {
     private List<CommonContainerResponse> containersList;
     private List<ReferenceNumberResponse> referenceNumbersList;
     private List<CommonContainerResponse> submittedContainersList;
+    private List<VGMContainerWarningResponse> consolContainerWarningResponseList;
+    private List<VGMContainerWarningResponse> vgmContainerWarningResponseList;
 }

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -86,7 +87,6 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -234,7 +234,9 @@ class ContainerServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
+        TenantContext.setCurrentTenant(1);
         mockUser.setUsername("user");
+        TenantContext.setCurrentTenant(1);
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
         MockitoAnnotations.initMocks(this);
@@ -1545,6 +1547,9 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
+        int tenantId = 1;
+        TenantContext.setCurrentTenant(tenantId);
+
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);
@@ -1561,7 +1566,7 @@ class ContainerServiceTest extends CommonMocks {
         v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
         v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
         Map<Integer, V1TenantSettingsResponse> tenantSettingsResponseMap = new HashMap<>();
-        tenantSettingsResponseMap.put(1, v1TenantSettingsResponse);
+        tenantSettingsResponseMap.put(tenantId, v1TenantSettingsResponse);
         when(v1ServiceUtil.getTenantSettingsMap(any())).thenReturn(tenantSettingsResponseMap);
 
         ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
@@ -1581,6 +1586,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesForNewContainers() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setGuid(UUID.randomUUID());
@@ -1595,7 +1601,7 @@ class ContainerServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(c1,c2);
         List<Containers> oldContainers = List.of(c1);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        Set<Containers> containers = new HashSet<Containers>();
+        Set<Containers> containers = new HashSet<>();
         containers.add(c1);
         shipmentDetails.setContainersList(containers);
         shipmentDetails.setBookingReference("DBFC-4353158-409107");
@@ -1624,6 +1630,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesWithEmptyBookingRef() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);

@@ -30,6 +30,6 @@ public class VerifiedGrossMassInttraResponse implements IRunnerResponse {
     private String carrierScacCode;
     private String carrierDescription;
     private NotificationContactResponse carrierNotificationContact;
-    private boolean isDelegated;
+    private Boolean isDelegated = Boolean.FALSE;
     private String fileName;
 }

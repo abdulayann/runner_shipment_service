@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -119,6 +120,9 @@ class ShippingInstructionsServiceImplTest {
     @Mock
     private IShipmentDao shipmentDao;
 
+    @Mock
+    private IBridgeServiceAdapter bridgeServiceAdapter;
+
     private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
@@ -204,8 +208,11 @@ class ShippingInstructionsServiceImplTest {
     void createShippingInstruction_ShouldValidate_Save_AndReturnResponse() {
         // Arrange
         ShippingInstructionRequest request = buildSimpleRequest();
-        ShippingInstruction entity = buildSimpleEntity();
-        ShippingInstruction saved = buildSimpleEntity(); // same back
+        ShippingInstruction entity = buildSimpleEntity();  // entityId = 100L
+        ShippingInstruction mappedEntity = buildSimpleEntity();
+        mappedEntity.setCarrierBookingNo("CB-001");
+        mappedEntity.setCarrierBlNo("BL-001");
+
         ShippingInstructionResponse response = ShippingInstructionResponse.builder()
                 .status(ShippingInstructionStatus.Draft.name())
                 .carrierBookingNo("CB-001")
@@ -217,10 +224,9 @@ class ShippingInstructionsServiceImplTest {
 
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
-        when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
-        when(repository.save(any(ShippingInstruction.class))).thenReturn(saved);
-        when(jsonHelper.convertValue(saved, ShippingInstructionResponse.class)).thenReturn(response);
-
+        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
+        when(repository.save(any(ShippingInstruction.class))).thenReturn(mappedEntity);
+        when(jsonHelper.convertValue(mappedEntity, ShippingInstructionResponse.class)).thenReturn(response);
 
         // Act
         ShippingInstructionResponse out = service.createShippingInstruction(request);
@@ -228,9 +234,15 @@ class ShippingInstructionsServiceImplTest {
         // Assert
         assertThat(out).isNotNull();
         assertThat(out.getStatus()).isEqualTo(ShippingInstructionStatus.Draft.name());
+        assertThat(out.getCarrierBookingNo()).isEqualTo("CB-001");
+        assertThat(out.getCarrierBlNo()).isEqualTo("BL-001");
+
+        // Verify interactions
         verify(repository, times(1)).save(any(ShippingInstruction.class));
         verify(carrierBookingDao, times(1)).findById(100L);
-        verify(consolidationDetailsDao, times(1)).findById(200L);
+        verify(carrierBookingInttraUtil, times(1)).getConsolidationDetail(200L);
+        verify(jsonHelper, times(1)).convertValue(request, ShippingInstruction.class);
+        verify(jsonHelper, times(1)).convertValue(mappedEntity, ShippingInstructionResponse.class);
     }
 
 
@@ -276,9 +288,8 @@ class ShippingInstructionsServiceImplTest {
         when(consol.getVerifiedGrossMassCutoff()).thenReturn(LocalDateTime.now());
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
-
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
-        when(consolidationDetailsDao.findById(999L)).thenReturn(Optional.of(consol));
+        when(carrierBookingInttraUtil.getConsolidationDetail(999L)).thenReturn(consol);
 
         ShippingInstruction saved = entity;
         ShippingInstructionResponse resp = ShippingInstructionResponse.builder().carrierBookingNo(null).build();
@@ -290,8 +301,8 @@ class ShippingInstructionsServiceImplTest {
 
         // Assert
         assertThat(out).isNotNull();
-        verify(consolidationDetailsDao).findById(999L);
         verify(repository).save(any(ShippingInstruction.class));
+        verify(carrierBookingInttraUtil).getConsolidationDetail(999L); // ✅ replace old verify
     }
 
     @Test
@@ -506,13 +517,6 @@ class ShippingInstructionsServiceImplTest {
 
         // status should be updated before save
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-
-        // downstream push should be called with expected args
-        verify(kafkaHelper).sendDataToKafka(
-                anyString(),
-                eq(GenericKafkaMsgType.SI),
-                eq(IntraKafkaOperationType.ORIGINAL)
-        );
     }
 
     @Test
@@ -557,7 +561,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
     }
 
     @Test
@@ -595,7 +598,6 @@ class ShippingInstructionsServiceImplTest {
 
         assertNotNull(resp);
         verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
-        verify(kafkaHelper).sendDataToKafka(anyString(), any(), any());
 
     }
 
@@ -628,9 +630,8 @@ class ShippingInstructionsServiceImplTest {
         consol.setConsolidationNumber("CON-123");
 
         when(carrierBookingDao.findById(bookingId)).thenReturn(Optional.of(cb));
-        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consol));
+        when(carrierBookingInttraUtil.getConsolidationDetail(consolidationId)).thenReturn(consol);
 
-        // Make jsonHelper.convertValue return a response carrying the SI status if set on the passed SI
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenAnswer(inv -> {
                     ShippingInstruction arg = inv.getArgument(0);
@@ -640,6 +641,7 @@ class ShippingInstructionsServiceImplTest {
                     }
                     return r;
                 });
+
 
         ShippingInstructionResponse resp = service.getDefaultShippingInstructionValues(EntityType.CARRIER_BOOKING, bookingId);
 
@@ -663,7 +665,7 @@ class ShippingInstructionsServiceImplTest {
         cb.setId(100L);
         cb.setEntityId(200L);
         cb.setStatus(CarrierBookingStatus.ConfirmedByCarrier);
-        when(carrierBookingDao.findById(anyLong())).thenReturn(Optional.of(cb));
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
 
         ConsolidationDetails consol = new ConsolidationDetails();
         consol.setId(200L);
@@ -671,8 +673,11 @@ class ShippingInstructionsServiceImplTest {
         container.setId(10L);
         container.setContainerNumber("C-10");
         consol.setContainersList(List.of(container));
-        when(consolidationDetailsDao.findById(200L)).thenReturn(Optional.of(consol));
+        consol.setBookingStatus("Confirmed");
 
+        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
+
+        // Mock packing data
         Packing packing = new Packing();
         packing.setContainerId(10L);
         packing.setPacks("5");
@@ -729,13 +734,15 @@ class ShippingInstructionsServiceImplTest {
         consol.setId(entityId);
         consol.setBookingStatus("BOOKING-OK");
 
-        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.of(consol));
+        when(carrierBookingInttraUtil.getConsolidationDetail(entityId)).thenReturn(consol);
 
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenAnswer(inv -> {
                     ShippingInstruction arg = inv.getArgument(0);
                     ShippingInstructionResponse r = new ShippingInstructionResponse();
-                    if (arg != null && arg.getStatus() != null) r.setStatus(arg.getStatus().name());
+                    if (arg != null && arg.getStatus() != null) {
+                        r.setStatus(arg.getStatus().name());
+                    }
                     return r;
                 });
 

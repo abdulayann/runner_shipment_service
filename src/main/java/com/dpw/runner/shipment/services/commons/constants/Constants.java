@@ -12,6 +12,9 @@ public class Constants {
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LOCAL_REFERENCE_NUMBER = "LocalReferenceNumber";
 
+    public static final String AMEND = "Amend";
+    public static final String ORIGINAL = "Original";
+
     public static final String GLOBALFF = "GLOBALFF";
     public static final String GLOBAL = "GLOBAL";
     public static final String SUBMITTED = "Submitted";
@@ -277,6 +280,7 @@ public class Constants {
     // Source
     public static final String API = "API";
     public static final String KAFKA_EVENT_CREATE = "create";
+    public static final String KAFKA_EVENT_DELETE = "delete";
     public static final String KAFKA_EVENT_UPDATE = "update";
     public static final String ORIGINAL_PRINT = "ORIGINAL_PRINT";
     public static final String ROUTING_CFD = "CFD";
@@ -748,6 +752,8 @@ public class Constants {
     public static final String CONTRACT_TYPE = "CONTRACT";
     public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
     public static final String EXPORT_EXCEL_MESSAGE = "The export will be available in approximately ";
+    public static final String CARRIER_BOOKING_INTTRA_AMEND = "CARRIER_BOOKING_INTTRA_AMEND";
+    public static final String CARRIER_BOOKING_INTTRA_CREATE = "CARRIER_BOOKING_INTTRA_CREATE";
 
     private Constants() {
     }

@@ -80,6 +80,11 @@ public class EventConstants {
     public static final String TRED = "TRED";
     public static final String BKAC = "BKAC";
     public static final String INTR = "INTR";
+    public static final String LDVS = "LDVS";
+    public static final String VSDT = "VSDT";
+    public static final String ARDT = "ARDT";
+    public static final String DCVS = "DCVS";
+
     // ~~~~~~ end runner event short codes
 
     public static final String BKAC_DESCRIPTION = "Booking Acknowledged";
@@ -102,6 +107,7 @@ public class EventConstants {
     public static final List<String> AIR_TRACKING_CODE_LIST = List.of(FLAR, FLDR, TRCF, TNFD, TRCS);
     public static final String VESSEL_DEPARTURE = "Vessel Departure";
     public static final String VESSEL_DEPARTURE_FROM_POL = "Vessel Departure from POL";
+    public static final String DISCHARGE_FROM_VESSEL = "dischargeFromVessel";
     public static final String VESSEL_ARRIVAL_WITH_CONTAINER = "vesselArrivalWithContainer";
     public static final String VESSEL_DEPARTURE_FROM_TS_PORT = "Vessel Departure from T/S Port";
     public static final String VESSEL_ARRIVAL = "Vessel Arrival";
@@ -132,6 +138,8 @@ public class EventConstants {
     public static final String ENTITY_TYPE = "entityType";
     public static final String SHIPMENT_NUMBER = "shipmentNumber";
     public static final String ORIGIN_PORT = "originPort";
+    public static final String DESTINATION_PORT = "destinationPort";
+    public static final String OCEAN_TRANSIT_PORT = "oceanTransitPort";
     public static final String LOAD_ON_VESSEL = "loadOnVessel";
     public static final String MSCU = "MSCU";
     public static final String EXPORT_LOADED_ON_VESSEL = "Export Loaded on Vessel";

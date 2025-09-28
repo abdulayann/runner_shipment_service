@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -24,6 +25,7 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private String carrierBlNo;
     private Long entityId;
     private String entityNumber;
+    private String entityType;
     private String contractNo;
     private String serviceType;
     private String bookingOffice;
@@ -42,4 +44,6 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private ShippingInstructionStatus siStatus;
     private VerifiedGrossMassStatus vgmStatus;
     private SailingInformationResponse sailingInformation;
+
+    private Map<String, String> tenantMasterData;
 }

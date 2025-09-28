@@ -8,6 +8,6 @@ import org.springframework.http.ResponseEntity;
 public interface IPlatformServiceAdapter {
     ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> updateAtPlaform(CommonRequestModel requestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> updateAtPlatform(CommonRequestModel requestModel) throws RunnerException;
 
 }

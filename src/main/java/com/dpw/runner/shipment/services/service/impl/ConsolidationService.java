@@ -4628,7 +4628,6 @@ public class ConsolidationService implements IConsolidationService {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (invalidateExcel(commonRequestModel, request)) return;
 
-        applyPermissionFilter(commonRequestModel);
         String username = UserContext.getUser().getUsername();
         String expireTime = applicationConfigService.getValue(Constants.EXPORT_EXCEL_EXPIRE_TIME);
         int defaultTime = 10;

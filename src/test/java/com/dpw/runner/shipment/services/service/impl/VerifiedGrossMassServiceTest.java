@@ -10,11 +10,9 @@ import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassBridgeRequest;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
@@ -29,11 +27,8 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
-import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
-import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
-import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -81,6 +76,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -141,7 +137,7 @@ class VerifiedGrossMassServiceTest {
     private VerifiedGrossMassResponse testResponse;
     private CarrierBooking testCarrierBooking;
     private ConsolidationDetails testConsolidationDetails;
-    private VerifiedGrossMassInttraRequest request;
+    private SubmitAmendInttraRequest request;
 
     @BeforeEach
     void setUp() {
@@ -836,67 +832,9 @@ class VerifiedGrossMassServiceTest {
     }
 
     @Test
-    void testSubmitOrAmendVerifiedGrossMass_Submit_Success_WithMockedUserContext() throws RunnerException {
-        // Arrange
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
-        request.setId(1L);
-        request.setContainerIds(List.of(101L));
-        request.setOperationType(OperationType.SUBMIT);
-
-        VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setId(1L);
-        vgm.setCarrierBookingNo("CB123");
-        Parties requestorParties = new Parties();
-        requestorParties.setOrgCode("REQ_ORG");
-        vgm.setRequestor(requestorParties);
-        vgm.setResponsible(requestorParties);
-        vgm.setAuthorised(requestorParties);
-        vgm.setStatus(VerifiedGrossMassStatus.Draft);
-        vgm.setIsDelegated(true);
-
-        CommonContainers container = new CommonContainers();
-        container.setId(101L);
-
-        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(commonContainersRepository.findAllByIdIn(request.getContainerIds()))
-                .thenReturn(List.of(container));
-
-        when(carrierBookingInttraUtil.fetchRequiredParty(any(Parties.class)))
-                .thenReturn(new PartiesResponse());
-
-        when(verifiedGrossMassUtil.populateRequestorEmails(any(VerifiedGrossMass.class)))
-                .thenReturn("test@example.com");
-        CommonContainerResponse containerResponse = new CommonContainerResponse();
-        when(verifiedGrossMassUtil.buildContainerResponse(container)).thenReturn(containerResponse);
-
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
-        when(verifiedGrossMassUtil.mapToBridgeRequest(any())).thenReturn(new VerifiedGrossMassBridgeRequest());
-        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(new BridgeServiceResponse());
-        when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(false);
-
-        // Mock UserContext static getUser
-        UsersDto mockUser = Mockito.mock(UsersDto.class);
-        when(mockUser.getUsername()).thenReturn("testUser");
-        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
-
-            mockedUserContext.when(UserContext::getUser).thenReturn(mockUser);
-
-            // Act
-            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request);
-
-            // Assert
-            verify(carrierBookingInttraUtil).createTransactionHistory(
-                    "Processed By INNTRA", FlowType.Inbound, "Booking Requested by : testUser",
-                    SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
-            );
-            verify(bridgeServiceAdapter).requestTactResponse(any());
-        }
-    }
-
-    @Test
     void testSubmitOrAmendVerifiedGrossMass_VgmNotFound_ShouldThrowException() {
         // Arrange
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(99L);
         when(verifiedGrossMassDao.findById(99L)).thenReturn(Optional.empty());
 
@@ -907,106 +845,222 @@ class VerifiedGrossMassServiceTest {
 
         assertEquals("Invalid VGM Id: 99", ex.getMessage());
     }
+
     @Test
-    void testSubmitOrAmendVerifiedGrossMass_Amend_Success() throws RunnerException {
-        // Arrange
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+    void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Submit() throws RunnerException {
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(1L);
-        request.setContainerIds(List.of(101L));
-        request.setOperationType(OperationType.AMEND);
+        request.setContainerIds(List.of(101L, 102L));
+        request.setOperationType(OperationType.SUBMIT);
 
-        VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setId(1L);
-        vgm.setCarrierBookingNo("CB123");
-        Parties requestorParties = new Parties();
-        requestorParties.setOrgCode("REQ_ORG");
-        vgm.setRequestor(requestorParties);
-        vgm.setResponsible(requestorParties);
-        vgm.setAuthorised(requestorParties);
-        vgm.setStatus(VerifiedGrossMassStatus.Draft);
-        vgm.setIsDelegated(false);
-
-        CommonContainers container = new CommonContainers();
-        container.setId(101L);
+        VerifiedGrossMass vgm = createMockVGM();
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(commonContainersRepository.findAllByIdIn(request.getContainerIds()))
-                .thenReturn(List.of(container));
-        when(carrierBookingInttraUtil.fetchRequiredParty(any(Parties.class)))
-                .thenReturn(new PartiesResponse());
 
-        when(verifiedGrossMassUtil.populateRequestorEmails(any(VerifiedGrossMass.class)))
-                .thenReturn("test@example.com");
-        CommonContainerResponse containerResponse = new CommonContainerResponse();
-        when(verifiedGrossMassUtil.buildContainerResponse(container)).thenReturn(containerResponse);
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
-        when(verifiedGrossMassUtil.mapToBridgeRequest(any())).thenReturn(new VerifiedGrossMassBridgeRequest());
-        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(new BridgeServiceResponse());
-        when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(false);
+        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
+        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container1)).thenReturn(container1);
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container2)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container2)).thenReturn(container2);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
-            UsersDto mockUser = Mockito.mock(UsersDto.class);
-            when(mockUser.getUsername()).thenReturn("testUser");
-            userContext.when(UserContext::getUser).thenReturn(mockUser);
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
 
-            // Act
             verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request);
 
-            // Assert
-            verify(carrierBookingInttraUtil).createTransactionHistory(
-                    "Processed By INNTRA", FlowType.Inbound, "Amend Requested by : testUser",
-                    SourceSystem.CargoRunner, 1L, EntityTypeTransactionHistory.VGM
-            );
+            verify(verifiedGrossMassDao).save(any()); // assert save was called with updated VGM
+            verify(carrierBookingInttraUtil, times(2)).sendPayloadToBridge(any(), anyLong(), anyString(), anyString(), anyString(), any(), any());
         }
     }
 
     @Test
-    void testSubmitOrAmendVerifiedGrossMass_BridgeError_ShouldThrowRunnerException() throws RunnerException {
-        // Arrange
-        VerifiedGrossMassInttraRequest request = new VerifiedGrossMassInttraRequest();
+    void testSubmitOrAmendVerifiedGrossMass_MultipleContainers_Amend() throws RunnerException {
+        SubmitAmendInttraRequest request = new SubmitAmendInttraRequest();
         request.setId(1L);
-        request.setContainerIds(List.of(101L));
-        request.setOperationType(OperationType.SUBMIT);
+        request.setContainerIds(List.of(101L, 102L));
+        request.setOperationType(OperationType.AMEND);
 
-        VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setIsDelegated(true);
-        vgm.setId(1L);
-        Parties requestorParties = new Parties();
-        requestorParties.setOrgCode("REQ_ORG");
-        vgm.setRequestor(requestorParties);
-        vgm.setResponsible(requestorParties);
-        vgm.setAuthorised(requestorParties);
-        vgm.setStatus(VerifiedGrossMassStatus.Draft);
-
-        CommonContainers container = new CommonContainers();
-        container.setId(101L);
+        VerifiedGrossMass vgm = createMockVGM();
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
-        when(commonContainersRepository.findAllByIdIn(request.getContainerIds()))
-                .thenReturn(List.of(container));
-        when(carrierBookingInttraUtil.fetchRequiredParty(any(Parties.class)))
-                .thenReturn(new PartiesResponse());
 
-        when(verifiedGrossMassUtil.populateRequestorEmails(any(VerifiedGrossMass.class)))
-                .thenReturn("test@example.com");
-        CommonContainerResponse containerResponse = new CommonContainerResponse();
-        when(verifiedGrossMassUtil.buildContainerResponse(container)).thenReturn(containerResponse);
-        when(verifiedGrossMassUtil.mapToBridgeRequest(any())).thenReturn(new VerifiedGrossMassBridgeRequest());
-        when(bridgeServiceAdapter.requestTactResponse(any())).thenReturn(new BridgeServiceResponse());
-        when(carrierBookingInttraUtil.isBridgeServiceResponseNotValid(any())).thenReturn(true);
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        CommonContainers container1 = new CommonContainers(); container1.setId(101L);
+        CommonContainers container2 = new CommonContainers(); container2.setId(102L);
+        when(commonContainersRepository.findAllByIdIn(request.getContainerIds())).thenReturn(List.of(container1, container2));
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container1)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container1)).thenReturn(container1);
+
+        when(verifiedGrossMassUtil.buildContainerResponse(container2)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container2)).thenReturn(container2);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
-            UsersDto mockUser = Mockito.mock(UsersDto.class);
-            when(mockUser.getUsername()).thenReturn("testUser");
-            userContext.when(UserContext::getUser).thenReturn(mockUser);
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
 
-            // Act & Assert
-            RunnerException exception = assertThrows(RunnerException.class, () ->
-                    verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request));
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(request);
 
-            assertEquals("Getting error from Bridge", exception.getMessage());
+            verify(verifiedGrossMassDao).save(any()); // assert save was called with updated VGM
+            verify(carrierBookingInttraUtil, times(2)).sendPayloadToBridge(any(), anyLong(), anyString(), anyString(), anyString(), any(), any());
         }
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_WithNullCarrierDetails() throws RunnerException {
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
+        verifiedGrossMassInttraRequest.setId(1L);
+        verifiedGrossMassInttraRequest.setContainerIds(List.of(101L));
+        verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
+
+        VerifiedGrossMass vgm = createMockVGM();
+        CommonContainers container = new CommonContainers(); container.setId(101L);
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+        when(commonContainersRepository.findAllByIdIn(List.of(101L))).thenReturn(List.of(container));
+
+
+        when(carrierBookingInttraUtil.fetchRequiredParty(any(Parties.class))).thenReturn(new PartiesResponse());
+        when(verifiedGrossMassUtil.buildContainerResponse(container)).thenReturn(new CommonContainerResponse());
+        when(verifiedGrossMassUtil.populateRequestorEmails(any())).thenReturn("test@example.com");
+        when(verifiedGrossMassUtil.buildSubmittedContainer(container)).thenReturn(container);
+
+        when(verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(vgm)).thenReturn(null); // trigger null branch
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(verifiedGrossMassInttraRequest);
+        }
+
+        verify(verifiedGrossMassDao).save(any()); // assert save called
+    }
+
+    @Test
+    void testSubmitOrAmendVerifiedGrossMass_EmptyContainerList() throws RunnerException {
+        SubmitAmendInttraRequest verifiedGrossMassInttraRequest = new SubmitAmendInttraRequest();
+        verifiedGrossMassInttraRequest.setId(1L);
+        verifiedGrossMassInttraRequest.setContainerIds(Collections.emptyList());
+        verifiedGrossMassInttraRequest.setOperationType(OperationType.SUBMIT);
+
+        VerifiedGrossMass vgm = createMockVGM();
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(vgm));
+        when(commonContainersRepository.findAllByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            when(user.getUsername()).thenReturn("testUser");
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            verifiedGrossMassService.submitOrAmendVerifiedGrossMass(verifiedGrossMassInttraRequest);
+        }
+
+        verify(verifiedGrossMassDao).save(any());
+    }
+
+    @Test
+    void retrieveById_ShouldReturnResponse_WhenCarrierBookingExistsWithProjection() {
+        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
+        testEntity.setEntityId(100L);
+
+        CarrierBookingInfoProjection projection = new CarrierBookingInfoProjection() {
+            public String getBookingStatus() { return "Draft"; }
+            public String getBookingNo() { return "BK001"; }
+            public String getSiStatus() { return "Draft"; }
+        };
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingDao.findCarrierBookingInfoById(100L)).thenReturn(projection);
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(verifiedGrossMassDao).findById(1L);
+        verify(jsonHelper).convertValue(testEntity, VerifiedGrossMassResponse.class);
+        verify(carrierBookingDao).findCarrierBookingInfoById(100L);
+    }
+
+    @Test
+    void retrieveById_ShouldHandleCarrierBookingLinkedToConsolidation() {
+        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
+        testEntity.setEntityId(100L);
+        testEntity.setContainersList(List.of(new CommonContainers()));
+        testEntity.setSubmittedContainersList(List.of(new CommonContainers()));
+
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setEntityType(EntityType.CONSOLIDATION.name());
+        carrierBooking.setEntityId(200L);
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setContainersList(List.of(new Containers()));
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingDao.findCarrierBookingInfoById(100L)).thenReturn(null); // projection null
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(carrierBooking));
+        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(details);
+        when(verifiedGrossMassUtil.compareVGMContainers(any(), any(), any())).thenReturn(List.of());
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(verifiedGrossMassDao).findById(1L);
+        verify(carrierBookingDao).findById(100L);
+        verify(verifiedGrossMassUtil, times(2)).compareVGMContainers(any(), any(), any());
+    }
+
+    @Test
+    void retrieveById_ShouldHandleConsolidationEntityType() {
+        testEntity.setEntityType(EntityType.CONSOLIDATION);
+        testEntity.setEntityId(300L);
+        testEntity.setContainersList(List.of(new CommonContainers()));
+        testEntity.setSubmittedContainersList(List.of(new CommonContainers()));
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setContainersList(List.of(new Containers()));
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(testResponse);
+        when(carrierBookingInttraUtil.getConsolidationDetail(300L)).thenReturn(details);
+        when(verifiedGrossMassUtil.compareVGMContainers(any(), any(), any())).thenReturn(List.of());
+
+        VerifiedGrossMassResponse response = verifiedGrossMassService.retrieveById(1L);
+
+        assertNotNull(response);
+        verify(carrierBookingInttraUtil).getConsolidationDetail(300L);
+        verify(verifiedGrossMassUtil, times(2)).compareVGMContainers(any(), any(), any());
+    }
+
+
+
+    private VerifiedGrossMass createMockVGM() {
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setId(1L);
+        vgm.setCarrierBookingNo("CB123");
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        vgm.setIsDelegated(true);
+
+        Parties party = new Parties();
+        party.setOrgCode("ORG");
+        vgm.setRequestor(party);
+        vgm.setResponsible(party);
+        vgm.setAuthorised(party);
+
+        return vgm;
     }
 
 }

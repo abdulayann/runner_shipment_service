@@ -279,4 +279,11 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private List<RoutingsLiteResponse> routingsLiteResponses;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

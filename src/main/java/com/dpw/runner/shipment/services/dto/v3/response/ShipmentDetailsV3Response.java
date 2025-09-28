@@ -275,4 +275,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Integer slac;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }
