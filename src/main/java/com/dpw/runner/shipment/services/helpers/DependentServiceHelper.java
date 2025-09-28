@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.kafka.producer.PushToDownstreamPublisher;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 @Component
@@ -36,6 +38,9 @@ public class DependentServiceHelper {
     private String downStreamQueue;
     private final ITrackingServiceAdapter trackingServiceAdapter;
     private final IContainerService containerService;
+
+    @Autowired
+    private PushToDownstreamPublisher pushToDownstreamPublisher;
 
     DependentServiceHelper(JsonHelper jsonHelper, KafkaProducer producer, ITrackingServiceAdapter trackingServiceAdapter
         , IContainerService containerService) {
@@ -109,6 +114,7 @@ public class DependentServiceHelper {
 
     public void pushToKafkaForDownStream(PushToDownstreamEventDto request, String transactionId) {
         log.info("Producing PushToDownstreamServiceMsg to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        producer.produceToKafka(jsonHelper.convertToJson(request), downStreamQueue, transactionId);
+        //It executes only AFTER TRANSACTION COMMITS
+        pushToDownstreamPublisher.publish(request, transactionId, request.getParentEntityId(), request.getParentEntityName());
     }
 }
