@@ -5645,6 +5645,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             // First detach
             detachOrders(requestedOrderDetailsForDetach, existingShipmentOrders);
 
+            existingShipmentOrders = getShipmentOrdersByGuid(shipmentOrderDao.findByShipmentId(shipmentId));
+
             // Then attach
             attachOrders(requestedOrderDetailsForAttach, existingShipmentOrders, shipmentId);
 

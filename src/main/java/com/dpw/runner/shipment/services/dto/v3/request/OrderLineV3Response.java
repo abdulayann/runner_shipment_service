@@ -79,4 +79,6 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
     private Long shipmentOrderId;
 
     private Long orderLineId;
+
+    private String orderLineGuid;
 }
