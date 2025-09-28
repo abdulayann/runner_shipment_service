@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -36,6 +37,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -43,6 +47,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassUtil;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,6 +72,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -79,6 +85,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -126,6 +133,9 @@ class VerifiedGrossMassServiceTest {
 
     @Mock
     private ICommonContainersRepository commonContainersRepository;
+
+    @Mock
+    private INotificationService notificationService;
 
     @InjectMocks
     private VerifiedGrossMassService verifiedGrossMassService;
@@ -1063,4 +1073,99 @@ class VerifiedGrossMassServiceTest {
         return vgm;
     }
 
+    @Test
+    void testSendNotification_Success() throws JsonProcessingException {
+        VerifiedGrossMass vgm = createMockVGM();  // Mock VGM object
+
+        // Mock email template response
+        EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+        emailTemplate.setType(VERIFIED_GROSS_MASS_EMAIL_TEMPLATE);
+        emailTemplate.setSubject("Test Subject");
+        emailTemplate.setBody("Test Body");
+
+        // Mocking fetchEmailTemplate to return the email template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
+        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm, emailTemplate)).thenReturn(new SendEmailBaseRequest());
+
+        // Mock the email sending
+        when(notificationService.sendEmail(any(SendEmailBaseRequest.class))).thenReturn(new NotificationServiceResponse());
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            verifiedGrossMassService.sendNotification(vgm);
+
+            // Verify that email sending occurred
+            verify(notificationService, times(1)).sendEmail(any(SendEmailBaseRequest.class));
+        }
+    }
+
+    @Test
+    void testSendNotification_NoEmailTemplateFound() throws JsonProcessingException {
+        VerifiedGrossMass vgm = createMockVGM();
+
+        // Mock fetchEmailTemplate to return an empty list (no templates found)
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(Collections.emptyList());
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            verifiedGrossMassService.sendNotification(vgm);
+
+            // Verify that email sending did not occur
+            verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
+        }
+    }
+
+    @Test
+    void testSendNotification_ExceptionDuringEmailSending() throws JsonProcessingException {
+        VerifiedGrossMass vgm = createMockVGM();  // Mock VGM object
+
+        // Mock email template response
+        EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+        emailTemplate.setType(VERIFIED_GROSS_MASS_EMAIL_TEMPLATE);
+        emailTemplate.setSubject("Test Subject");
+        emailTemplate.setBody("Test Body");
+
+        // Mock fetchEmailTemplate to return the email template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
+        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm, emailTemplate)).thenReturn(new SendEmailBaseRequest());
+
+        // Mock the email sending to throw an exception
+        doThrow(new RuntimeException("Email sending failed")).when(notificationService).sendEmail(any(SendEmailBaseRequest.class));
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            verifiedGrossMassService.sendNotification(vgm);
+
+            // Verify that an error was logged
+            verify(notificationService, times(1)).sendEmail(any(SendEmailBaseRequest.class));
+        }
+    }
+
+    @Test
+    void testSendNotification_NullEmailTemplate() throws JsonProcessingException {
+        VerifiedGrossMass vgm = createMockVGM();  // Mock VGM object
+
+        // Mock fetchEmailTemplate to return a null template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(Collections.singletonList(null));
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            verifiedGrossMassService.sendNotification(vgm);
+
+            // Verify that email sending did not occur
+            verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
+        }
+    }
 }

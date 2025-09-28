@@ -2,10 +2,13 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
@@ -19,7 +22,9 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +59,16 @@ class CarrierBookingInttraUtilTest {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+
+    @Mock
+    private IV1Service v1Service;
+
+    @Mock
+    private V1DataResponse v1DataResponse;
+
+    @Mock
+    private EmailTemplatesRequest emailTemplatesRequest;
 
     @BeforeEach
     void setUp() {
@@ -316,4 +331,50 @@ class CarrierBookingInttraUtilTest {
         verify(masterDataUtils, never()).fetchInBulkContainerTypes(anySet());
     }
 
+    @Test
+    void testFetchEmailTemplate_v1DataResponseIsNull() {
+        // Mocking v1Service to return null
+        when(v1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(null);
+
+        // Call the method under test
+        List<EmailTemplatesRequest> result = carrierBookingInttraUtil.fetchEmailTemplate(List.of("templateCode"));
+
+        // Verify that an empty list is returned
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchEmailTemplate_entitiesIsNull() {
+        // Mocking v1DataResponse to return a response with null entities
+        when(v1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(v1DataResponse);
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.setEntities(null);
+        when(v1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
+
+        // Call the method under test
+        List<EmailTemplatesRequest> result = carrierBookingInttraUtil.fetchEmailTemplate(List.of("templateCode"));
+
+        // Verify that an empty list is returned
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFetchEmailTemplate_entitiesIsNotNull() {
+        // Prepare mock data
+        List<EmailTemplatesRequest> mockEmailTemplates = List.of(emailTemplatesRequest);
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.setEntities(new CarrierBooking());
+        when(v1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(mockEmailTemplates);
+
+        // Call the method under test
+        List<EmailTemplatesRequest> result = carrierBookingInttraUtil.fetchEmailTemplate(List.of("templateCode"));
+
+        // Verify that the result is as expected
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(emailTemplatesRequest, result.get(0));
+    }
 }
