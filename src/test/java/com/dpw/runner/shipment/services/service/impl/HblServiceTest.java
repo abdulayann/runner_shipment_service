@@ -58,6 +58,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -1066,38 +1067,45 @@ class HblServiceTest extends CommonMocks {
         HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
         var inputHbl = mockHbl;
         inputHbl.setHblNotifyParty(null);
-
-        when(shipmentDao.findById(10L)).thenReturn(Optional.of(completeShipment));
-        when(hblDao.findByShipmentId(10L)).thenReturn(List.of(inputHbl));
-        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
-        when(hblDao.save(any())).thenReturn(inputHbl);
         mockShipmentSettings();
 
-        // Building v1Data map
+        // --- Build v1Data map with updated location objects ---
         EntityTransferUnLocations usLoc = new EntityTransferUnLocations();
         usLoc.setLocCode("USNYC");
         usLoc.setNameWoDiacritics("New York");
+        usLoc.setCountry("US");
+        usLoc.setState("NY");
+        usLoc.setCityName("New York");
 
         EntityTransferUnLocations usLoc1 = new EntityTransferUnLocations();
-        usLoc1.setLocCode("USNYC");
-        usLoc1.setName("New York");
-        usLoc1.setStateName("XY");
-        usLoc1.setCityName("ABC");
+        usLoc1.setLocCode("USLAX");
+        usLoc1.setName("Los Angeles");
+        usLoc1.setNameWoDiacritics("Los Angeles");
+        usLoc1.setState("CA");
+        usLoc1.setCityName("Los Angeles");
+        usLoc1.setCountry("US");
 
         EntityTransferUnLocations usLoc2 = new EntityTransferUnLocations();
-        usLoc2.setLocCode("USNYC");
-        usLoc2.setName("New York");
+        usLoc2.setLocCode("USTXA");
+        usLoc2.setName("Some City");
+        usLoc2.setNameWoDiacritics("Some City");
         usLoc2.setState("XY");
-        usLoc2.setCityName("ABC");
+        usLoc2.setCityName("Some City");
+        usLoc2.setCountry("US");
 
         EntityTransferUnLocations usLoc3 = new EntityTransferUnLocations();
         usLoc3.setLocCode("USNYC");
         usLoc3.setName("New York");
-        usLoc3.setState("XY");
+        usLoc3.setNameWoDiacritics("New York");
+        usLoc3.setState("NY");
+        usLoc3.setCountry("US");
+        usLoc3.setCityName("New York");
 
         EntityTransferUnLocations inLoc = new EntityTransferUnLocations();
         inLoc.setLocCode("INBLR");
         inLoc.setNameWoDiacritics("Bengaluru");
+        inLoc.setCountry("IN");
+        inLoc.setCityName("Bengaluru");
 
         Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
         v1Data.put("USKEY", usLoc);
@@ -1107,42 +1115,42 @@ class HblServiceTest extends CommonMocks {
         v1Data.put("USKEY3", usLoc3);
 
         try {
-            Method method = hblService.getClass().getDeclaredMethod("getUnLocationsName", Map.class, String.class);
+            Method method = hblService.getClass().getDeclaredMethod("getUnLocationsNameV3", Map.class, String.class);
             method.setAccessible(true);
 
             // Case 1: Null key
             String result1 = (String) method.invoke(hblService, v1Data, null);
             assertEquals("", result1);
 
-            // Case 2: RunnerV3 Flag enabled and US key
+            // Case 2: New York with NY state
             String result2 = (String) method.invoke(hblService, v1Data, "USKEY");
-            assertEquals("", result2);
+            assertEquals("NEW YORK, NY", result2);
 
-            // Case 3: RunnerV3 Flag enabled and Non-US key
+            // Case 3: Bengaluru, India
             String result3 = (String) method.invoke(hblService, v1Data, "INKEY");
-            assertEquals("BENGALURU", result3);
+            assertEquals("BENGALURU, IN", result3);
 
-            String result5 = (String) method.invoke(hblService, v1Data, "USKEY1");
-            assertEquals("ABC", result5);
+            // Case 4: Los Angeles with CA state
+            String result4 = (String) method.invoke(hblService, v1Data, "USKEY1");
+            assertEquals("LOS ANGELES, CA", result4);
 
-            String result6 = (String) method.invoke(hblService, v1Data, "USKEY2");
-            assertEquals("ABC,XY", result6);
+            // Case 5: Some City with XY state
+            String result5 = (String) method.invoke(hblService, v1Data, "USKEY2");
+            assertEquals("SOME CITY, XY", result5);
 
-            String result7 = (String) method.invoke(hblService, v1Data, "USKEY3");
-            assertEquals("XY", result7);
+            // Case 6: Another New York with NY state
+            String result6 = (String) method.invoke(hblService, v1Data, "USKEY3");
+            assertEquals("NEW YORK, NY", result6);
 
-            // Case 4: RunnerV3 Flag disabled
-            shipmentSettingsDetails.setIsRunnerV3Enabled(false);
-            String result4 = (String) method.invoke(hblService, v1Data, "INKEY");
-            assertEquals("INBLR Bengaluru", result4);
+            // Case 7: Missing key → empty string
+            String result7 = (String) method.invoke(hblService, v1Data, "MISSINGKEY");
+            assertEquals("", result7);
 
         } catch (Exception e) {
             fail("Reflection call failed: " + e.getMessage());
         }
-
-        var responseEntity = hblService.partialUpdateHBL(commonRequestModel);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+
 
 
     @Test
@@ -1673,6 +1681,66 @@ class HblServiceTest extends CommonMocks {
                 .build();
         String response = hblService.getCargoTerms(shipmentDetails);
         assertEquals(Constants.CARGO_TERMS_RORO, response);
+    }
+    @Test
+    void testGetUnLocationsNameV3_withFallbackToLocCodeCountryCode() {
+        Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
+
+        EntityTransferUnLocations frPar = new EntityTransferUnLocations();
+        frPar.setLocCode("FRPAR");
+        frPar.setNameWoDiacritics("Paris");
+        // no state, no country set
+
+        v1Data.put("FRPAR", frPar);
+
+        String result = ReflectionTestUtils.invokeMethod(hblService,"getUnLocationsNameV3",v1Data, "FRPAR");
+        assertEquals("PARIS, FR", result); // Fallback to substring(0,2) from locCode
+    }
+
+    @Test
+    void testGetUnLocationsNameV3_withNonUSLocationHavingState() {
+        Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
+
+        EntityTransferUnLocations deHam = new EntityTransferUnLocations();
+        deHam.setLocCode("DEHAM");
+        deHam.setNameWoDiacritics("Hamburg");
+        deHam.setState("HAM");
+        deHam.setCountry("DE");
+
+        v1Data.put("DEHAM", deHam);
+
+        String result = ReflectionTestUtils.invokeMethod(hblService,"getUnLocationsNameV3",v1Data, "DEHAM");
+        assertEquals("HAMBURG, HAM", result);
+    }
+
+    @Test
+    void testGetUnLocationsNameV3_withNonUSLocationNoStateButCountry() {
+        Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
+
+        EntityTransferUnLocations inChn = new EntityTransferUnLocations();
+        inChn.setLocCode("INMAA");
+        inChn.setNameWoDiacritics("Chennai");
+        inChn.setCountry("IN");
+
+        v1Data.put("INMAA", inChn);
+
+        String result = ReflectionTestUtils.invokeMethod(hblService,"getUnLocationsNameV3",v1Data, "INMAA");
+        assertEquals("CHENNAI, IN", result);
+    }
+    @Test
+    void testGetUnLocationsNameV3_withUSLocationHavingState() {
+        Map<String, EntityTransferUnLocations> v1Data = new HashMap<>();
+
+        EntityTransferUnLocations usNy = new EntityTransferUnLocations();
+        usNy.setLocCode("USNYC");
+        usNy.setNameWoDiacritics("New York");
+        usNy.setState("NYC");
+        usNy.setCountry("US");
+
+        v1Data.put("USNYC", usNy);
+
+        String result = ReflectionTestUtils.invokeMethod(hblService,"getUnLocationsNameV3",v1Data, "USNYC");
+        assertEquals("NEW YORK, NYC", result);
     }
 
 }

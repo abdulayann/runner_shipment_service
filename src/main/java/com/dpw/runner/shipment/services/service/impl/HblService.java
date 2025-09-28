@@ -1198,6 +1198,14 @@ public class HblService implements IHblService {
                 if (!Objects.isNull(additionalDetails))
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
                 break;
+            case "PlaceOfIssue":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
+                break;
+            case "PayableAt":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                break;
             case "All":
                 if (!Objects.isNull(carrierDetails)) {
                     hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
@@ -1206,6 +1214,8 @@ public class HblService implements IHblService {
                 }
                 if (!Objects.isNull(additionalDetails)) {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
                 }
                 break;
             default:
@@ -1233,21 +1243,33 @@ public class HblService implements IHblService {
     }
 
     private String getUnLocationsNameV3(Map<String, EntityTransferUnLocations> v1Data, String key) {
-        // Extract country code from UNLOC using initial 2 characters
-        String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
-        if (US.equalsIgnoreCase(countryCode)) {
-            String cityName = Optional.ofNullable(v1Data.get(key).getCityName()).orElse("").trim();
-            String stateCode = Optional.ofNullable(v1Data.get(key).getState()).orElse("").trim();
-
-            if (cityName.isEmpty() && stateCode.isEmpty()) {
-                return "";
-            } else if (!cityName.isEmpty() && !stateCode.isEmpty()) {
-                return (cityName + "," + stateCode).toUpperCase();
-            } else {
-                return (!cityName.isEmpty() ? cityName : stateCode).toUpperCase();
-            }
+        if (v1Data == null || key == null || !v1Data.containsKey(key)) {
+            return "";
         }
-        return v1Data.get(key).getNameWoDiacritics().toUpperCase();
+        EntityTransferUnLocations location = v1Data.get(key);
+        if (location == null) {
+            return "";
+        }
+        String name = location.getNameWoDiacritics();
+        if (name == null) {
+            return "";
+        }
+        name = name.toUpperCase();
+        if (location.getState() != null && !location.getState().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getState().trim())) {
+            String state = location.getState().toUpperCase();
+            return String.format("%s, %s", name, state);
+        }
+        // Fallback to country if state is not available
+        if (location.getCountry() != null && !location.getCountry().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getCountry().trim())) {
+            String country = location.getCountry().toUpperCase();
+            return String.format("%s, %s", name, country);
+        }
+        // Final fallback to country code from LocCode
+        if (location.getLocCode() != null && location.getLocCode().length() >= 2) {
+            String countryCode = location.getLocCode().substring(0, 2).toUpperCase();
+            return String.format("%s, %s", name, countryCode);
+        }
+        return name;
     }
 
 }

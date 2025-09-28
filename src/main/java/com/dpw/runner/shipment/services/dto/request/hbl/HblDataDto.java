@@ -81,4 +81,6 @@ public class HblDataDto {
     private Integer quantity;
     private String blRemarksDescription;
     private String blRemark;
+    private String placeOfIssue;
+    private String payableAt;
 }

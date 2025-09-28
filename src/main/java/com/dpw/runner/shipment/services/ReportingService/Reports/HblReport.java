@@ -346,6 +346,7 @@ public class HblReport extends IReport {
         setBlObject(hblModel);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
+        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
@@ -430,7 +431,6 @@ public class HblReport extends IReport {
 
         processShipmentPickupDetails(hblModel, dictionary, tsDateTimeFormat);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
-        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         getPartiesModel(hblModel, dictionary);
 
         dictionary.put(USER_FULLNAME, hblModel.user.getDisplayName());
@@ -1059,6 +1059,8 @@ public class HblReport extends IReport {
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
+            dictionary.put(BL_PLACE_OF_ISSUE, hblModel.blObject.getHblData().getPlaceOfIssue() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfIssue()));
+            dictionary.put(BL_PAYABLE_AT, hblModel.blObject.getHblData().getPayableAt() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPayableAt()));
         }
     }
 
