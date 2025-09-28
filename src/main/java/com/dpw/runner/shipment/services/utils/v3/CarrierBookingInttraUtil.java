@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeService
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -45,6 +46,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Component
@@ -184,10 +187,17 @@ public class CarrierBookingInttraUtil {
     }
 
 
-    public Map<String, EntityTransferUnLocations> fetchUnLocationMap(CarrierBookingBridgeRequest carrierBookingResponse ){
-        SailingInformationResponse sailingInformationResponse = carrierBookingResponse.getSailingInformation();
-        Set<String> locationCodes = Set.of(sailingInformationResponse.getPod(), sailingInformationResponse.getPol(), sailingInformationResponse.getCarrierDeliveryPlace(), sailingInformationResponse.getCarrierReceiptPlace());
-        locationCodes.add(carrierBookingResponse.getBookingOffice());
+    public Map<String, EntityTransferUnLocations> fetchUnLocationMap(CarrierBooking carrierBooking ){
+        SailingInformation sailingInformationResponse = carrierBooking.getSailingInformation();
+        Set<String> locationCodes = Stream.of(
+                        sailingInformationResponse.getPod(),
+                        sailingInformationResponse.getPol(),
+                        sailingInformationResponse.getCarrierDeliveryPlace(),
+                        sailingInformationResponse.getCarrierReceiptPlace(),
+                        carrierBooking.getBookingOffice()
+                )
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return locationsMap;
     }

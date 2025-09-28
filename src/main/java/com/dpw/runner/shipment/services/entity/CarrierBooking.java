@@ -69,6 +69,9 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "booking_office", length = 100)
     private String bookingOffice;
 
+    @Column(name = "booking_office_loc_code")
+    private String bookingOfficeLocCode;
+
     @Column(name = "booking_comment", length = 10000)
     private String bookingComment;
 

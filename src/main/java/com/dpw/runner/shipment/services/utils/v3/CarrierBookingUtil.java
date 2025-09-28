@@ -173,27 +173,27 @@ public class CarrierBookingUtil {
         }
     }
 
-    public void populateLocCode(Map<String, EntityTransferUnLocations> unlocationsMap, CarrierBookingBridgeRequest carrierBookingResponse) {
+    public void populateLocCode(Map<String, EntityTransferUnLocations> unlocationsMap, CarrierBooking carrierBooking) {
         try {
-            EntityTransferUnLocations pol = unlocationsMap.get(carrierBookingResponse.getSailingInformation().getPol());
-            EntityTransferUnLocations pod = unlocationsMap.get(carrierBookingResponse.getSailingInformation().getPod());
-            EntityTransferUnLocations origin = unlocationsMap.get(carrierBookingResponse.getSailingInformation().getCarrierReceiptPlace());
-            EntityTransferUnLocations destination = unlocationsMap.get(carrierBookingResponse.getSailingInformation().getCarrierDeliveryPlace());
-            EntityTransferUnLocations bookingOffice = unlocationsMap.get(carrierBookingResponse.getBookingOffice());
+            EntityTransferUnLocations pol = unlocationsMap.get(carrierBooking.getSailingInformation().getPol());
+            EntityTransferUnLocations pod = unlocationsMap.get(carrierBooking.getSailingInformation().getPod());
+            EntityTransferUnLocations carrierReceiptPlace = unlocationsMap.get(carrierBooking.getSailingInformation().getCarrierReceiptPlace());
+            EntityTransferUnLocations carrierDeliveryPlace = unlocationsMap.get(carrierBooking.getSailingInformation().getCarrierDeliveryPlace());
+            EntityTransferUnLocations bookingOffice = unlocationsMap.get(carrierBooking.getBookingOffice());
 
-            if (!Objects.isNull(origin))
-                carrierBookingResponse.getSailingInformation().setOriginLocCode(origin.getLocCode());
-            if (!Objects.isNull(destination))
-                carrierBookingResponse.getSailingInformation().setDestinationLocCode(destination.getLocCode());
+            if (!Objects.isNull(carrierReceiptPlace))
+                carrierBooking.getSailingInformation().setCarrierReceiptLocCode(carrierReceiptPlace.getLocCode());
+            if (!Objects.isNull(carrierDeliveryPlace))
+                carrierBooking.getSailingInformation().setCarrierDeliveryLocCode(carrierDeliveryPlace.getLocCode());
             if (!Objects.isNull(pol))
-                carrierBookingResponse.getSailingInformation().setOriginPortLocCode(pol.getLocCode());
+                carrierBooking.getSailingInformation().setOriginPortLocCode(pol.getLocCode());
             if (!Objects.isNull(pod))
-                carrierBookingResponse.getSailingInformation().setDestinationPortLocCode(pod.getLocCode());
+                carrierBooking.getSailingInformation().setDestinationPortLocCode(pod.getLocCode());
             if (!Objects.isNull(bookingOffice))
-                carrierBookingResponse.setBookingOfficeLocCode(bookingOffice.getLocCode());
+                carrierBooking.setBookingOfficeLocCode(bookingOffice.getLocCode());
 
         } catch (Exception e) {
-            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierBookingResponse.getId(), e.getMessage());
+            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierBooking.getId(), e.getMessage());
         }
     }
 
