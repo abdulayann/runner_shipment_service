@@ -136,6 +136,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         validateSIRequest(shippingInstruction);
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         mapper.setShippingInstruction(shippingInstruction);
+        if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
+            List<CarrierBookingInfoProjection> cbInfoProjection = repository.findBookingByConsolId(shippingInstruction.getEntityNumber());
+            if (!cbInfoProjection.isEmpty()) {
+                throw new ValidationException("SI creation not allowed. Consolidation linked with a Booking already!!");
+            }
+        }
         setDefaultValues(shippingInstruction.getEntityType(), shippingInstruction.getEntityId(), mapper, isCreate);
         return mapper.getShippingInstruction();
     }
@@ -623,7 +629,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             }
         } else if (si.getEntityType() == EntityType.CONSOLIDATION) {
             if (si.getStatus() != ShippingInstructionStatus.Draft) {
-                throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
+                throw new ValidationException("Submit not allowed. Shipping Instruction not in draft state.");
             }
 
             ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(si.getEntityId());
@@ -683,29 +689,23 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Invalid shipping instruction id");
         }
         ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
+        ConsolidationDetails consolidationDetails;
 
         Parties[] partiesToCheck = {shippingInstruction.getRequestor(), shippingInstruction.getShipper(), shippingInstruction.getForwardingAgent()};
         String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
-
-        if (null == remoteId) {
-            throw new ValidationException("SI does not belong to INTTRA");
-        }
-
-        if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.get().getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.get().getStatus())) {
-            throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
-        }
 
         CarrierBooking booking = null;
         if (shippingInstruction.getEntityType() == EntityType.CARRIER_BOOKING) {
             booking = carrierBookingDao.findById(shippingInstruction.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
         } else if (shippingInstruction.getEntityType() == EntityType.CONSOLIDATION) {
-            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
             fillDetailsFromConsol(shippingInstruction, consolidationDetails);
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
+        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() == EntityType.CARRIER_BOOKING) ;
         validateSIRequest(shippingInstruction);
 
         if (booking != null) {
@@ -730,6 +730,21 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    private static void checkIfAllowed(String remoteId, ShippingInstruction shippingInstructionEntity, CarrierBooking booking,
+                                       boolean isStandAlone) {
+        if (null == remoteId) {
+            throw new ValidationException("SI does not belong to INTTRA");
+        }
+
+        if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.getStatus())) {
+            throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
+        }
+
+        if (!isStandAlone && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
+            throw new ValidationException("Amendment not allowed. Carrier booking is not submitted.");
+        }
     }
 
     private String getFileName(ShippingInstruction si) {
