@@ -387,7 +387,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         TenantContext.setCurrentTenant(tenantId);
         Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
         if (customerBookingOptional.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + " | transactionId=" + transactionId + " not found.";
+            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.info(errMsg);
             throw new ValidationException(errMsg);
         }
