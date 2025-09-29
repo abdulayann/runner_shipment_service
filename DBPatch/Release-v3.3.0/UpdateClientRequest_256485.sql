@@ -1,14 +1,13 @@
 -- Shipment ID : (92421)
 -- Update Parties
-update
-    parties
-set
-    org_code = 'FRC00039841',
-    address_code = 'FRO00041585',
-    org_id = '157275',
-    address_id = '262371',
-    updated_at = NOW(),
-    org_data = '{
+update parties
+    set
+        org_code = 'FRC00039841',
+        address_code = 'FRO00041585',
+        org_id = '157275',
+        address_id = '262371',
+        updated_at = NOW(),
+        org_data = '{
                 "Id": 157275,
                 "City": "Dottingen",
                 "Guid": "52634fc2-8c10-4015-8e66-dfd8a62f2b3f",
@@ -88,13 +87,13 @@ set
             "AddressShortCode": "FRO00041585",
             "OrgOrganizationCode": "FRC00039841"
             }'
-where
-    id = 1463044 and tenant_id = 685;
+    where
+        id = 1463044 and tenant_id = 685;
 -- Update Shipments
 UPDATE shipment_details
-SET
-    client_dps_address_id = 116507,
-    updated_at = NOW()
-WHERE
-    id = 92421
-    AND tenant_id = 685;
+    SET
+        client_dps_address_id = 116507,
+        updated_at = NOW()
+    WHERE
+        id = 92421
+        AND tenant_id = 685;
