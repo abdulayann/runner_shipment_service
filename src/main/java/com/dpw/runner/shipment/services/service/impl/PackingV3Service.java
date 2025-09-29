@@ -443,64 +443,92 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
+        log.info("Updating Packing with request: {} for module: {}", packingRequest, module);
+
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
+
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
+            log.error("Packing not found for id: {}", packingRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
         validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
+
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
+            log.info("ContainerId mismatch detected. Request ContainerId: {}, Existing ContainerId: {}",
+                    packingRequest.getContainerId(), oldPacking.getContainerId());
             throw new ValidationException("Changes are available for Package section, Please refresh for latest updates.");
         }
+
         Packing oldConvertedPacking = jsonHelper.convertValue(oldPacking, Packing.class);
         Packing newPacking = jsonHelper.convertValue(packingRequest, Packing.class);
 
         ShipmentDetails shipmentDetails = null;
         Long consolidationId = null;
+
         if (Constants.SHIPMENT.equalsIgnoreCase(module) || Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
-
-            if (entity instanceof ShipmentDetails sd) {
-                shipmentDetails = sd;
-            }
-
-            if (entity instanceof ShipmentOrder shipmentOrder) {
-                shipmentDetails = packingV3Util.getShipmentById(shipmentOrder);
-            }
-
+            shipmentDetails = extractShipmentDetails(entity);
             if (shipmentDetails != null) {
                 consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(newPacking));
+                log.info("ConsolidationId updated from ShipmentDetails: {}", consolidationId);
             }
         }
 
-        if(consolidationId == null && packingRequest.getShipmentId() != null) {
+        if (consolidationId == null && packingRequest.getShipmentId() != null) {
             consolidationId = packingV3Util.getConsolidationId(packingRequest.getShipmentId());
-        }
-        ConsolidationDetails consolidationDetails = null;
-        ShipmentWtVolResponse oldShipmentWtVolResponse = null;
-        if(consolidationId != null) {
-            consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-            oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(consolidationDetails);
+            log.info("ConsolidationId resolved from ShipmentId: {}", consolidationId);
         }
 
+        ConsolidationDetails consolidationDetails = null;
+        ShipmentWtVolResponse oldShipmentWtVolResponse = null;
+        if (consolidationId != null) {
+            consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
+            oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(consolidationDetails);
+            log.info("Fetched ConsolidationDetails and calculated old Wt/Vol for consolidationId: {}", consolidationId);
+        }
+
+        log.info("Saving updated Packing entity for id: {}", packingRequest.getId());
         Packing updatedPacking = packingDao.save(newPacking);
 
         ParentResult parentResult = getParentDetails(List.of(updatedPacking), module);
-        if(Objects.equals(module, BOOKING)) {
+        if (Objects.equals(module, BOOKING)) {
+            log.info("Updating Packing info in Booking for bookingId: {}", packingRequest.getBookingId());
             customerBookingV3Service.updatePackingInfoInBooking(packingRequest.getBookingId());
         }
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
-        afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, List.of(oldConvertedPacking));
-        boolean isAutoSell = false;
-        if (!Objects.equals(oldConvertedPacking.getPacksType(), updatedPacking.getPacksType()) || !Objects.equals(oldConvertedPacking.getPacks(), updatedPacking.getPacks())) {
-            isAutoSell = true;
-        }
+        afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse,
+                List.of(oldConvertedPacking));
+
+        boolean isAutoSell = !Objects.equals(oldConvertedPacking.getPacksType(), updatedPacking.getPacksType())
+                || !Objects.equals(oldConvertedPacking.getPacks(), updatedPacking.getPacks());
+
+        log.debug("AutoSell flag determined as: {} (Old PacksType: {}, New PacksType: {}, Old Packs: {}, New Packs: {})",
+                isAutoSell, oldConvertedPacking.getPacksType(), updatedPacking.getPacksType(),
+                oldConvertedPacking.getPacks(), updatedPacking.getPacks());
+
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(updatedPacking), isAutoSell, module);
+        log.info("Packing update completed successfully for id: {}", updatedPacking.getId());
+
         return convertEntityToDto(updatedPacking);
+    }
+
+    private ShipmentDetails extractShipmentDetails(Object entity) {
+        if (entity instanceof ShipmentDetails sd) {
+            log.debug("Entity resolved as ShipmentDetails");
+            return sd;
+        }
+        if (entity instanceof ShipmentOrder shipmentOrder) {
+            log.debug("Entity resolved as ShipmentOrder");
+            return packingV3Util.getShipmentById(shipmentOrder);
+        }
+        log.debug("Entity did not match ShipmentDetails or ShipmentOrder");
+        return null;
     }
 
     @Override
@@ -610,112 +638,153 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
+        log.info("Starting bulk packing update for module={} isFromQuote={} requestSize={}", module, isFromQuote, packingRequestList.size());
+        log.debug("PackingRequestList: {}", packingRequestList);
+
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
-        // Separate IDs and determine existing packings
+
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+        log.info("Collected incoming IDs count={}", incomingIds.size());
+
         validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
+        log.info("Fetched existing packings count={}", existingPackings.size());
+
         validateOpenAttachmentFlag(module, entity);
-        // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
-        // Separate into create and update requests
-        List<PackingV3Request> updateRequests = new ArrayList<>();
-        List<PackingV3Request> createRequests = new ArrayList<>();
+        // Split requests
+        RequestSplit split = splitRequests(packingRequestList, incomingIds);
 
-        for (PackingV3Request request : packingRequestList) {
-            if (request.getId() != null && incomingIds.contains(request.getId())) {
-                updateRequests.add(request);
-            } else {
-                createRequests.add(request);
-            }
+        if (!module.equals(BOOKING)) {
+            packingValidationV3Util.validateContainerIds(split.createRequests, split.updateRequests, existingPackings);
         }
 
-        if(!module.equals(BOOKING)) {
-            packingValidationV3Util.validateContainerIds(createRequests, updateRequests, existingPackings);
-        }
-
-        // Convert and process updates
         List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
-        List<Packing> updatedPackings = jsonHelper.convertValueToList(updateRequests, Packing.class);
+        List<Packing> updatedPackings = jsonHelper.convertValueToList(split.updateRequests, Packing.class);
+        List<Packing> newPackings = jsonHelper.convertValueToList(split.createRequests, Packing.class);
 
-        // Convert and process creates
-        List<Packing> newPackings = jsonHelper.convertValueToList(createRequests, Packing.class);
-
-        ShipmentDetails shipmentDetails = null;
-        Long consolidationId = null;
-        if (Constants.SHIPMENT.equalsIgnoreCase(module) || Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
-
-            if (entity instanceof ShipmentDetails sd) {
-                shipmentDetails = sd;
-            }
-
-            if (entity instanceof ShipmentOrder shipmentOrder) {
-                shipmentDetails = packingV3Util.getShipmentById(shipmentOrder);
-            }
-
-            if (shipmentDetails != null) {
-                consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, updatedPackings);
-                setConsolidationId(shipmentDetails, newPackings, consolidationId);
-                packingV3Util.setColoadingStation(shipmentDetails);
-            }
-        }
-
-        if(consolidationId == null && packingRequestList.get(0).getShipmentId() != null) {
-            consolidationId = packingV3Util.getConsolidationId(packingRequestList.get(0).getShipmentId());
-        }
-        ConsolidationDetails consolidationDetails = null;
-        ShipmentWtVolResponse oldShipmentWtVolResponse = null;
-        if(consolidationId != null) {
-            consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-            oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(consolidationDetails);
-        }
+        // Shipment & consolidation
+        ShipmentConsolidationContext ctx = handleShipmentAndConsolidation(entity, module, packingRequestList, updatedPackings, newPackings);
 
         List<Packing> savedUpdatedPackings = saveIfNotEmpty(updatedPackings);
         List<Packing> savedNewPackings = saveIfNotEmpty(newPackings);
 
-        // Combine results for parent calculation and auditing
         List<Packing> allSavedPackings = new ArrayList<>();
         allSavedPackings.addAll(savedNewPackings);
         allSavedPackings.addAll(savedUpdatedPackings);
 
         ParentResult parentResult = getParentDetails(allSavedPackings, module);
-
-        // Audit logs
         auditLogsChanges(oldConvertedPackings, savedUpdatedPackings, savedNewPackings, parentResult);
 
-        boolean isAutoSell = false;
-        Map<UUID, Packing> oldPackings = oldConvertedPackings.stream().collect(Collectors.toMap(Packing::getGuid, packing -> packing, (packing1, packing2) -> packing1));
+        // Auto-sell detection
+        boolean isAutoSell = detectAutoSell(updatedPackings, oldConvertedPackings);
 
-        for (Packing packing : updatedPackings) {
-            Packing packing1 = oldPackings.get(packing.getGuid());
-            if (!Objects.equals(packing1.getPacksType(), packing.getPacksType()) || !Objects.equals(packing1.getPacks(), packing.getPacks())) {
-                isAutoSell = true;
-                break;
-            }
-        }
-        if(Objects.equals(module, BOOKING)) {
+        if (Objects.equals(module, BOOKING)) {
             customerBookingV3Service.updatePackingInfoInBooking(packingRequestList.iterator().next().getBookingId());
+            log.info("Booking module detected, packing info updated in booking");
         }
 
-        // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
-        afterSave(allSavedPackings, module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, oldConvertedPackings);
+        afterSave(allSavedPackings, module, ctx.shipmentDetails, ctx.consolidationDetails, ctx.oldShipmentWtVolResponse, oldConvertedPackings);
 
-        // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(allSavedPackings, isAutoSell, module);
+
+        log.info("Bulk packing update completed for module={} totalSavedPackings={} isAutoSell={}", module, allSavedPackings.size(), isAutoSell);
 
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private static class RequestSplit {
+        List<PackingV3Request> updateRequests;
+        List<PackingV3Request> createRequests;
+    }
+
+    private RequestSplit splitRequests(List<PackingV3Request> packingRequestList, List<Long> incomingIds) {
+        RequestSplit split = new RequestSplit();
+        split.updateRequests = new ArrayList<>();
+        split.createRequests = new ArrayList<>();
+
+        for (PackingV3Request request : packingRequestList) {
+            if (request.getId() != null && incomingIds.contains(request.getId())) {
+                split.updateRequests.add(request);
+            } else {
+                split.createRequests.add(request);
+            }
+        }
+
+        log.info("Split requests: updateRequests={} createRequests={}", split.updateRequests.size(), split.createRequests.size());
+        return split;
+    }
+
+    private static class ShipmentConsolidationContext {
+        ShipmentDetails shipmentDetails;
+        ConsolidationDetails consolidationDetails;
+        ShipmentWtVolResponse oldShipmentWtVolResponse;
+    }
+
+    private ShipmentConsolidationContext handleShipmentAndConsolidation(Object entity, String module,
+            List<PackingV3Request> packingRequestList, List<Packing> updatedPackings, List<Packing> newPackings) throws RunnerException {
+
+        ShipmentConsolidationContext ctx = new ShipmentConsolidationContext();
+        Long consolidationId = null;
+
+        if (Constants.SHIPMENT.equalsIgnoreCase(module) || Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
+            if (entity instanceof ShipmentDetails sd) {
+                ctx.shipmentDetails = sd;
+                log.info("Entity resolved as ShipmentDetails, id={}", sd.getId());
+            } else if (entity instanceof ShipmentOrder shipmentOrder) {
+                ctx.shipmentDetails = packingV3Util.getShipmentById(shipmentOrder);
+                log.info("Entity resolved as ShipmentOrder, linked shipmentId={}", ctx.shipmentDetails != null ? ctx.shipmentDetails.getId() : null);
+            }
+
+            if (ctx.shipmentDetails != null) {
+                consolidationId = packingV3Util.updateConsolidationIdInPackings(ctx.shipmentDetails, updatedPackings);
+                setConsolidationId(ctx.shipmentDetails, newPackings, consolidationId);
+                packingV3Util.setColoadingStation(ctx.shipmentDetails);
+                log.info("ConsolidationId updated via shipment flow, consolidationId={}", consolidationId);
+            }
+        }
+
+        if (consolidationId == null && packingRequestList.get(0).getShipmentId() != null) {
+            consolidationId = packingV3Util.getConsolidationId(packingRequestList.get(0).getShipmentId());
+            log.info("ConsolidationId resolved from shipmentId={}, consolidationId={}", packingRequestList.get(0).getShipmentId(), consolidationId);
+        }
+
+        if (consolidationId != null) {
+            ctx.consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
+            ctx.oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(ctx.consolidationDetails);
+            log.info("Fetched consolidation details for consolidationId={}", consolidationId);
+        }
+
+        return ctx;
+    }
+
+    private boolean detectAutoSell(List<Packing> updatedPackings, List<Packing> oldConvertedPackings) {
+        Map<UUID, Packing> oldPackingsMap = oldConvertedPackings.stream()
+                .collect(Collectors.toMap(Packing::getGuid, p -> p, (p1, p2) -> p1));
+
+        for (Packing packing : updatedPackings) {
+            Packing old = oldPackingsMap.get(packing.getGuid());
+            if (!Objects.equals(old.getPacksType(), packing.getPacksType())
+                    || !Objects.equals(old.getPacks(), packing.getPacks())) {
+                log.info("Auto-sell detected for packingGuid={} oldPacksType={} newPacksType={} oldPacks={} newPacks={}",
+                        packing.getGuid(), old.getPacksType(), packing.getPacksType(), old.getPacks(), packing.getPacks());
+                return true;
+            }
+        }
+        log.info("No auto-sell detected");
+        return false;
     }
 
     private void validateOpenAttachmentFlag(String module, Object entity) {
