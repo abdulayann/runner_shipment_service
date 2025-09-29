@@ -1,12 +1,22 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -377,6 +389,104 @@ public class ShippingInstructionUtil {
             return value != null ? Integer.valueOf(value) : fallback;
         } catch (NumberFormatException e) {
             return fallback;
+        }
+    }
+
+    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse, String inttraId) throws RunnerException {
+        List<CommonContainerResponse> containers = instructionInttraResponse.getCommonContainersList();
+
+        if (containers == null) {
+            setDefaultTotals(instructionInttraResponse);
+            instructionInttraResponse.setInttraOrgId(inttraId);
+            return;
+        }
+
+        calculateEquipmentTotals(instructionInttraResponse, containers);
+        convertUnitsAndCalculateTotals(instructionInttraResponse, containers);
+        instructionInttraResponse.setInttraOrgId(inttraId);
+    }
+
+    private void setDefaultTotals(ShippingInstructionInttraRequest response) {
+        response.setTotalNumberOfEquipments(0);
+        response.setTotalNoOfPackages(0);
+        response.setTotalGrossWeight(0.0);
+        response.setTotalGrossVolume(0.0);
+    }
+
+    private void calculateEquipmentTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) {
+        int totalEquipments = containers.stream()
+                .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                .sum();
+
+        int totalPackages = containers.stream()
+                .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
+                .sum();
+
+        response.setTotalNumberOfEquipments(totalEquipments);
+        response.setTotalNoOfPackages(totalPackages);
+    }
+
+    private void convertUnitsAndCalculateTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) throws RunnerException {
+        double totalWeight = 0.0;
+        double totalVolume = 0.0;
+
+        for (CommonContainerResponse container : containers) {
+            totalWeight += convertAndUpdateWeight(container);
+            totalVolume += convertAndUpdateVolume(container);
+        }
+
+        response.setTotalGrossWeight(totalWeight);
+        response.setTotalGrossVolume(totalVolume);
+    }
+
+    private double convertAndUpdateWeight(CommonContainerResponse container) throws RunnerException {
+        double totalWeight = 0.0;
+
+        // Convert and update gross weight
+        if (container.getGrossWeight() != null) {
+            BigDecimal convertedWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(),
+                    container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setGrossWeight(convertedWeight);
+            container.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+            totalWeight = convertedWeight.doubleValue();
+        }
+
+        // Convert and update net weight
+        if (container.getNetWeight() != null) {
+            BigDecimal convertedNetWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(),
+                    container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setNetWeight(convertedNetWeight);
+            container.setNetWeightUnit(Constants.WEIGHT_UNIT_KG);
+        }
+
+        return totalWeight;
+    }
+
+    private double convertAndUpdateVolume(CommonContainerResponse container) throws RunnerException {
+        if (container.getVolume() != null) {
+            BigDecimal convertedVolume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(),
+                    container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
+            container.setVolume(convertedVolume);
+            container.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+            return convertedVolume.doubleValue();
+        }
+        return 0.0;
+    }
+
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, ShippingInstructionInttraRequest shippingInstructionInttraRequest) {
+
+        if (Objects.isNull(carrierDatav1Map)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
+            EntityTransferCarrier carrier = entry.getValue();
+
+            String carrierScacCode = carrier.ItemValue;
+            String carrierDescription = carrier.ItemDescription;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            shippingInstructionInttraRequest.setCarrierScacCode(carrierScacCode);
+            shippingInstructionInttraRequest.setCarrierDescription(carrierDescription);
         }
     }
 

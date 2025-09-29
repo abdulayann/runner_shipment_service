@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -23,6 +24,8 @@ import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.InttraFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -30,7 +33,6 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -48,6 +50,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Component
@@ -74,20 +79,22 @@ public class CarrierBookingInttraUtil {
     @Autowired
     IV1Service v1Service;
 
-    public <T> void sendPayloadToBridge(T inttraResponse, Long id,
-                                         String integrationCode, String transactionId, String referenceId,
-                                         IntegrationType integrationType, String entityType) throws RunnerException {
+
+    public <T> BridgeServiceResponse sendPayloadToBridge(T inttraResponse, Long id,
+                                                     String integrationCode, String transactionId, String referenceId,
+                                                     IntegrationType integrationType, String entityType) throws RunnerException {
         String bridgePayload = jsonHelper.convertToJson(inttraResponse);
         log.info("Bridge payload {}", bridgePayload);
         BridgeServiceResponse bridgeServiceResponse;
         try {
             bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(inttraResponse, integrationCode, transactionId, referenceId);
+            migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, bridgeServiceResponse.toString());
+            return bridgeServiceResponse;
         } catch (Exception exception) {
-            log.error("Getting error from Bridge while uploading template to: " + exception);
+            log.error("Getting error from Bridge while uploading template to: {}", String.valueOf(exception));
             migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.FAILED, exception.getMessage());
             throw new RunnerException("Getting error from Bridge");
         }
-        migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, bridgeServiceResponse.toString());
     }
 
     public void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id, EntityTypeTransactionHistory entityType) {
@@ -186,5 +193,51 @@ public class CarrierBookingInttraUtil {
             return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
         }
         return new ArrayList<>();
+    }
+
+    public String getInttraRemoteId(Parties[] allMadatoryParties) {
+        // Check parties in order: requestor, shipper, forwardingAgent
+        for (Parties party : allMadatoryParties) {
+            if (party != null && party.getOrgData() != null &&
+                    "INTRA_COMPANY_ID".equals(party.getOrgData().get("RemoteIdType"))) {
+                return (String) party.getOrgData().get("RemoteId");
+            } else if (party != null && party.getOrgData() != null &&
+                    "INTRA_COMPANY_ID".equals(party.getOrgData().get("remoteIdType"))) {
+                return (String) party.getOrgData().get("remoteId");
+            }
+        }
+        return null;
+    }
+
+
+    public Map<String, EntityTransferUnLocations> fetchUnLocationMap(CarrierBooking carrierBooking ){
+        SailingInformation sailingInformationResponse = carrierBooking.getSailingInformation();
+        Set<String> locationCodes = Stream.of(
+                        sailingInformationResponse.getPod(),
+                        sailingInformationResponse.getPol(),
+                        sailingInformationResponse.getCarrierDeliveryPlace(),
+                        sailingInformationResponse.getCarrierReceiptPlace(),
+                        carrierBooking.getBookingOffice()
+                )
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+    }
+
+    public void validateContainersIntegrationCode(List<CommonContainerResponse> containersList) {
+
+        if (containersList == null || containersList.isEmpty()) {
+            return;
+        }
+        String invalidContainers = containersList.stream()
+                .filter(c -> c.getIntegrationCode() == null || c.getIntegrationCode().trim().isEmpty())
+                .map(c -> c.getContainerNo() != null ? c.getContainerNo() : "Container ID: " + c.getId())
+                .collect(Collectors.joining(", "));
+
+        if (!invalidContainers.isEmpty()) {
+            throw new ValidationException(
+                    "IntegrationCode is a mandatory field for INTTRA. Missing for containers: " + invalidContainers
+            );
+        }
     }
 }

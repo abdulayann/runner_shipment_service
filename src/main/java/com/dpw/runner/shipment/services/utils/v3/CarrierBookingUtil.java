@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -170,6 +172,31 @@ public class CarrierBookingUtil {
             }
         }
     }
+
+    public void populateLocCode(Map<String, EntityTransferUnLocations> unlocationsMap, CarrierBooking carrierBooking) {
+        try {
+            EntityTransferUnLocations pol = unlocationsMap.get(carrierBooking.getSailingInformation().getPol());
+            EntityTransferUnLocations pod = unlocationsMap.get(carrierBooking.getSailingInformation().getPod());
+            EntityTransferUnLocations carrierReceiptPlace = unlocationsMap.get(carrierBooking.getSailingInformation().getCarrierReceiptPlace());
+            EntityTransferUnLocations carrierDeliveryPlace = unlocationsMap.get(carrierBooking.getSailingInformation().getCarrierDeliveryPlace());
+            EntityTransferUnLocations bookingOffice = unlocationsMap.get(carrierBooking.getBookingOffice());
+
+            if (!Objects.isNull(carrierReceiptPlace))
+                carrierBooking.getSailingInformation().setCarrierReceiptLocCode(carrierReceiptPlace.getLocCode());
+            if (!Objects.isNull(carrierDeliveryPlace))
+                carrierBooking.getSailingInformation().setCarrierDeliveryLocCode(carrierDeliveryPlace.getLocCode());
+            if (!Objects.isNull(pol))
+                carrierBooking.getSailingInformation().setOriginPortLocCode(pol.getLocCode());
+            if (!Objects.isNull(pod))
+                carrierBooking.getSailingInformation().setDestinationPortLocCode(pod.getLocCode());
+            if (!Objects.isNull(bookingOffice))
+                carrierBooking.setBookingOfficeLocCode(bookingOffice.getLocCode());
+
+        } catch (Exception e) {
+            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierBooking.getId(), e.getMessage());
+        }
+    }
+
 
     public SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
         String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";

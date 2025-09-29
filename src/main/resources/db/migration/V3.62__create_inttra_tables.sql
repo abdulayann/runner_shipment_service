@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS sailing_information (
     pol VARCHAR(100),
     pod VARCHAR(100),
     carrier_delivery_place VARCHAR(100),
+    carrier_receipt_loc_code VARCHAR(100),
+    carrier_delivery_loc_code VARCHAR(100),
+    origin_port_loc_code VARCHAR(100),
+    destination_port_loc_code VARCHAR(100)
     carrier VARCHAR(100),
     vessel_name VARCHAR(2048),
     voyage_no VARCHAR(100),
@@ -109,6 +113,7 @@ CREATE TABLE IF NOT EXISTS carrier_booking (
     entity_number VARCHAR(100),
     service_type VARCHAR(50),
     booking_office VARCHAR(100),
+    booking_office_loc_code varchar(100),
     booking_comment TEXT,
     carrier_comment TEXT,
     requester_id BIGINT REFERENCES parties(id),
