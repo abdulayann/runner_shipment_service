@@ -266,7 +266,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Shipment [id={}] and start time: {}", id, System.currentTimeMillis());
-                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id);
+                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id, isUnLocationLocCodeRequired);
                             log.info("Successfully migrated Shipment [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
