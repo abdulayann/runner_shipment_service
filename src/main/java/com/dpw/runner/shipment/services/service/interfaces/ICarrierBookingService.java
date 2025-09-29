@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -63,5 +64,8 @@ public interface ICarrierBookingService {
     Optional<CarrierBooking> findById(Long entityId);
 
     void submitOrAmend(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
+    CarrierBookingCloneResponse cloneBooking(Long carrierBookingId);
+
+    ResponseEntity<IRunnerResponse> consolidatedList(CommonRequestModel commonRequestModel, boolean getMasterData);
 }
 
