@@ -280,6 +280,8 @@ public class CarrierBookingConstants {
                     .fieldName("pod")
                     .isContainsText(true)
                     .build()),
+            Map.entry(Constants.SHIPPER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.SHIPPER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("createdAt", RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(LocalDateTime.class)

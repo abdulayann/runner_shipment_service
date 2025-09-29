@@ -389,6 +389,7 @@ public class Constants {
     public static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     public static final String CLIENT = "client";
     public static final String CONSIGNER = "consigner";
+    public static final String SHIPPER = "shipper";
     public static final String CONSIGNEE = "consignee";
     public static final String SHIPMENT_DETAILS = "ShipmentDetails";
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
@@ -648,6 +649,7 @@ public class Constants {
     public static final String CLIENT_ORG_CODE = "clientOrgCode";
     public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
     public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String SHIPPER_ORG_CODE = "shipperOrgCode";
     public static final String NOTIFY_PARTY_ORG_CODE = "notifyPartyOrgCode";
     public static final String ORIGIN_AGENT_ORG_CODE = "originAgentOrgCode";
     public static final String DESTINATION_AGENT_ORG_CODE = "destinationAgentOrgCode";
