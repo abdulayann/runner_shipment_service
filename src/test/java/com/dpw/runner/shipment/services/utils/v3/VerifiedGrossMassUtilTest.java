@@ -463,12 +463,12 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_WeightDifferenceWithConsol_AddsWarning() {
-        CommonContainers current = createCommonContainer(1L, "C1",
-                BigDecimal.valueOf(110), "KG", // changed weight
+        CommonContainers current = createCommonContainer(1L, "1",
+                BigDecimal.valueOf(110), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        Containers consol = createConsolContainer(1L, "C1",
+        Containers consol = createConsolContainer(1L, "1",
                 BigDecimal.valueOf(100), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
@@ -479,24 +479,24 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("110 KG", warning.getVgmNewWeightValue());
         assertEquals("100 KG", warning.getVgmOldWeightValue());
     }
 
     @Test
     void testCompareVGMContainers_WeightDifferenceWithBothSubmittedAndConsol_AddsTwoWarnings() {
-        CommonContainers current = createCommonContainer(1L, "C1",
+        CommonContainers current = createCommonContainer(1L, "1",
                 BigDecimal.valueOf(110), "KG", // changed weight
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        CommonContainers submitted = createCommonContainer(1L, "C1",
+        CommonContainers submitted = createCommonContainer(1L, "1",
                 BigDecimal.valueOf(100), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        Containers consol = createConsolContainer(1L, "C1",
+        Containers consol = createConsolContainer(1L, "1",
                 BigDecimal.valueOf(90), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
@@ -509,7 +509,7 @@ class VerifiedGrossMassUtilTest {
 
         Set<String> oldWeights = new HashSet<>();
         for (VGMContainerWarningResponse warning : warnings) {
-            assertEquals("C1", warning.getContainerNumber());
+            assertEquals("1", warning.getContainerNumber());
             oldWeights.add(warning.getVgmOldWeightValue());
             assertEquals("110 KG", warning.getVgmNewWeightValue());
         }
@@ -573,7 +573,8 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_ContainerNumberFromConsolWhenSubmittedIsNull() {
-        CommonContainers current = createCommonContainer(1L, null, new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
+        CommonContainers current = createCommonContainer(
+                1L, String.valueOf(1), new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
         Containers consol = createConsolContainer(1L, "CONSOL_CONT1", new BigDecimal("10"), "KG", new BigDecimal("8"), "KG", new BigDecimal("2"), "KG");
 
         // submittedContainer is null, so buildVGMContainerWarning picks containerNumber from consolContainer
@@ -605,14 +606,14 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_OneContainerHasWeightDifference_ReturnsSingleWarning() {
-        CommonContainers current1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers current2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current1 = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current2 = createCommonContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
-        CommonContainers submitted1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted1 = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted2 = createCommonContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
-        Containers consol1 = createConsolContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol2 = createConsolContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol1 = createConsolContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol2 = createConsolContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current1, current2), List.of(submitted1, submitted2), List.of(consol1, consol2));
@@ -620,7 +621,7 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("100 KG", warning.getVgmNewWeightValue());
         assertEquals("110 KG", warning.getVgmOldWeightValue());
     }
@@ -639,8 +640,8 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_OnlySubmittedContainersWithDifference_ReturnsWarning() {
-        CommonContainers current = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current), List.of(submitted), Collections.emptyList());
@@ -648,21 +649,21 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("110 KG", warning.getVgmNewWeightValue());
         assertEquals("100 KG", warning.getVgmOldWeightValue());
     }
 
     @Test
     void testCompareVGMContainers_MultipleContainersWithWeightDifferences_ReturnsMultipleWarnings() {
-        CommonContainers current1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers current2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(120), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        CommonContainers current1 = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current2 = createCommonContainer(2L, "2", BigDecimal.valueOf(120), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
-        CommonContainers submitted1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        CommonContainers submitted1 = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted2 = createCommonContainer(2L, "2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
-        Containers consol1 = createConsolContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol2 = createConsolContainer(2L, "C2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        Containers consol1 = createConsolContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol2 = createConsolContainer(2L, "2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current1, current2), List.of(submitted1, submitted2), List.of(consol1, consol2));
@@ -676,15 +677,15 @@ class VerifiedGrossMassUtilTest {
             containerNumbers.add(warning.getContainerNumber());
         }
 
-        assertTrue(containerNumbers.contains("C1"));
-        assertTrue(containerNumbers.contains("C2"));
+        assertTrue(containerNumbers.contains("1"));
+        assertTrue(containerNumbers.contains("2"));
     }
 
     @Test
     void testCompareVGMContainers_WeightCalculation_HandledCorrectly() {
-        CommonContainers current = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol = createConsolContainer(1L, "C1", BigDecimal.valueOf(90), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol = createConsolContainer(1L, "1", BigDecimal.valueOf(90), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current), List.of(submitted), List.of(consol));
