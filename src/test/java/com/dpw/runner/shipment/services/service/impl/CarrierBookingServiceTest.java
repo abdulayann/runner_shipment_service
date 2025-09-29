@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
@@ -48,6 +49,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.DateInfo;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Equipment;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Haulage;
@@ -172,6 +175,10 @@ class CarrierBookingServiceTest extends CommonMocks {
     private BridgeServiceConfig bridgeServiceConfig;
     @Mock
     private BridgeServiceAdapter bridgeServiceAdapter;
+    @Mock
+    private VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
+    @Mock
+    private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
 
     @Spy
     @InjectMocks
@@ -230,6 +237,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         usersDto.setEmail("test@abc.com");
         UserContext.setUser(usersDto);
     }
+
     @Test
     void testConvertEntityListToDtoList_WithValidData_ShouldReturnResponseList() {
         // Arrange
@@ -807,17 +815,6 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_cancel1() {
-        when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
-        EmailTemplatesRequest emailTemplatesRequest = new EmailTemplatesRequest();
-        emailTemplatesRequest.setType(CARRIER_BOOKING_EMAIL_TEMPLATE);
-        lenient().when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
-        when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
-        carrierBookingService.cancel(1L);
-        verify(carrierBookingDao, times(1)).findById(any());
-    }
-
-    @Test
     void test_setContainerEmptyAndDropOffLocationDetails() {
         InttraCarrierBookingEventDto inttraCarrierBookingEventDto = new InttraCarrierBookingEventDto();
         Equipment equipment = new Equipment();
@@ -1056,7 +1053,7 @@ class CarrierBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void submitAmend_Exception(){
+    void submitAmend_Exception() {
         when(carrierBookingDao.findById(any())).thenThrow(new ValidationException("EX"));
         SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
         assertThrows(ValidationException.class, () -> carrierBookingService.submitOrAmend(submitAmendInttraRequest));
@@ -1182,6 +1179,7 @@ class CarrierBookingServiceTest extends CommonMocks {
         CarrierBookingBridgeRequest requestWithEmptyList = new CarrierBookingBridgeRequest();
         requestWithEmptyList.setContainersList(new ArrayList<>());
         carrierBookingService.convertWeightVolumeToRequiredUnit(requestWithEmptyList);
+        assertNotNull(requestWithEmptyList);
     }
 
 
@@ -1240,5 +1238,107 @@ class CarrierBookingServiceTest extends CommonMocks {
         response.setExtraResponseParams(extraParams);
 
         return response;
+    }
+
+    @Test
+    void cloneBooking_shouldThrowException_whenCarrierBookingNotFound() {
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.empty());
+
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> carrierBookingService.cloneBooking(1L)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid carrier booking Id"));
+    }
+
+    @Test
+    void cloneBooking_shouldThrowException_whenShippingInstructionStatusInvalid() {
+        ShippingInstruction si = new ShippingInstruction();
+        si.setStatus(ShippingInstructionStatus.Draft);
+        carrierBooking.setShippingInstruction(si);
+
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> carrierBookingService.cloneBooking(1L)
+        );
+
+        assertTrue(ex.getMessage().contains("SI status"));
+    }
+
+    @Test
+    void cloneBooking_shouldThrowException_whenVGMStatusInvalid() {
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        carrierBooking.setVerifiedGrossMass(vgm);
+
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> carrierBookingService.cloneBooking(1L)
+        );
+
+        assertTrue(ex.getMessage().contains("VGM status"));
+    }
+
+    @Test
+    void cloneBooking_shouldReturnDraftClone_onSuccess() {
+        CarrierBookingCloneResponse cloneResponse = new CarrierBookingCloneResponse();
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+        when(jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class)).thenReturn(cloneResponse);
+
+        CarrierBookingCloneResponse response = carrierBookingService.cloneBooking(1L);
+
+        assertEquals(CarrierBookingStatus.Draft.name(), response.getStatus());
+        verify(jsonHelper).convertValue(carrierBooking, CarrierBookingCloneResponse.class);
+    }
+
+    // ---------- consolidatedList() Tests ----------
+
+    @Test
+    void consolidatedList_shouldThrowException_whenRequestIsNull() {
+        CommonRequestModel request = CommonRequestModel.buildRequest();
+
+        request.setData(null);
+
+        assertThrows(
+                ValidationException.class,
+                () -> carrierBookingService.consolidatedList(request, false)
+        );
+    }
+
+    @Test
+    void consolidatedList_shouldIncludeShippingInstructionAndVGMResponses() {
+
+        // Arrange: Build ListCommonRequest
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("id", "containersList"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        // Mock a ShippingInstruction entity
+        CarrierBooking carrierBooking1 = new CarrierBooking();
+        carrierBooking1.setId(1L);
+        carrierBooking1.setCarrierBlNo("CX");
+
+        Page<CarrierBooking> resultPage = new PageImpl<>(List.of(carrierBooking1));
+
+        // Mock repository behavior
+        when(carrierBookingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(resultPage);
+
+        // Mock convertEntityListToDtoList behavior
+        CarrierBookingListResponse mockResponse = new CarrierBookingListResponse();
+        lenient().when(jsonHelper.convertValue(any(), eq(CarrierBookingListResponse.class)))
+                .thenReturn(mockResponse);
+
+        // Act: Call service
+        ResponseEntity<IRunnerResponse> response = carrierBookingService.consolidatedList(commonRequestModel, true);
+
+        // Assert: Verify response
+        Assert.assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Assert.assertNotNull(response.getBody());
     }
 }

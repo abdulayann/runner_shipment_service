@@ -27,6 +27,7 @@ public class CarrierBookingConstants {
     public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Carrier Booking Retrieval";
+    public static final String CLONE_CARRIER_BOOKING_SUCCESS = "Successful Carrier Booking clone Retrieval";
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
     public static final String SUBMIT_AMEND_SUCCESSFUL = "Carrier Booking submitted/Amended successfully.";
     public static final String CON = "CON";
