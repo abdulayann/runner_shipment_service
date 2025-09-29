@@ -40,4 +40,6 @@ public interface IShippingInstructionDao {
 
     List<CarrierBookingInfoProjection> findBookingByConsolId(String consolidationNumber);
 
+    List<CarrierBookingInfoProjection> findConfimedBookingByConsolId(String consolidationNumber);
+
 }

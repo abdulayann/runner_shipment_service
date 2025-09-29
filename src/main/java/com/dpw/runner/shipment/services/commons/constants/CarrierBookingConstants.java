@@ -30,7 +30,14 @@ public class CarrierBookingConstants {
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
     public static final String SUBMIT_AMEND_SUCCESSFUL = "Carrier Booking submitted/Amended successfully.";
     public static final String CON = "CON";
-
+    public static final String MESSAGE = "message";
+    public static final String PAYLOAD = "payload";
+    public static final String INTTRA_REFERENCE = "inttraReference";
+    public static final String CARRIER_REFERENCE_NUMBER = "carrierReferenceNumber";
+    public static final String BOOKING_DETAILS= "bookingDetails";
+    public static final String SERVICE_RESPONSE= "SERVICE_RESPONSE";
+    public static final String SERVICE_HTTP_STATUS_CODE= "SERVICE_HTTP_STATUS_CODE";
+    //public static final String BOOKING_DETAILS= "bookingDetails";
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation
@@ -281,4 +288,6 @@ public class CarrierBookingConstants {
                     .build())
     );
 
+    //ERROR messages
+    public static final String ERR_INTTRA_MISSING_KEY = "Invalid inttraa response: %s is missing or empty";
 }

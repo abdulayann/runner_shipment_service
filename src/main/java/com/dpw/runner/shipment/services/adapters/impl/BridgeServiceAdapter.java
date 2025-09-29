@@ -21,6 +21,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -133,7 +134,8 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         HttpEntity<String> httpEntity = new HttpEntity<>(jsonHelper.convertToJson(request), headers);
 
         try {
-            var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
+            ResponseEntity<BridgeServiceResponse> bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
+
             log.info("Received data from bridge service for inttra integration: {}", jsonHelper.convertToJson(bridgeResponse));
             return bridgeResponse.getBody();
         }

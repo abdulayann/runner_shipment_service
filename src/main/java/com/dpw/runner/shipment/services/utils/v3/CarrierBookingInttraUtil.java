@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.InttraFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Component
@@ -77,20 +80,22 @@ public class CarrierBookingInttraUtil {
     @Autowired
     IV1Service v1Service;
 
-    public <T> void sendPayloadToBridge(T inttraResponse, Long id,
-                                         String integrationCode, String transactionId, String referenceId,
-                                         IntegrationType integrationType, String entityType) throws RunnerException {
+
+    public <T> BridgeServiceResponse sendPayloadToBridge(T inttraResponse, Long id,
+                                                     String integrationCode, String transactionId, String referenceId,
+                                                     IntegrationType integrationType, String entityType) throws RunnerException {
         String bridgePayload = jsonHelper.convertToJson(inttraResponse);
         log.info("Bridge payload {}", bridgePayload);
         BridgeServiceResponse bridgeServiceResponse;
         try {
             bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.bridgeApiIntegration(inttraResponse, integrationCode, transactionId, referenceId);
+            migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, bridgeServiceResponse.toString());
+            return bridgeServiceResponse;
         } catch (Exception exception) {
-            log.error("Getting error from Bridge while uploading template to: " + exception);
+            log.error("Getting error from Bridge while uploading template to: {}", String.valueOf(exception));
             migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.FAILED, exception.getMessage());
             throw new RunnerException("Getting error from Bridge");
         }
-        migrationUtil.saveErrorResponse(id, entityType, integrationType, Status.SUCCESS, bridgeServiceResponse.toString());
     }
 
     public void createTransactionHistory(String actionStatus, FlowType flowType, String description, SourceSystem sourceSystem, Long id, EntityTypeTransactionHistory entityType) {
@@ -219,5 +224,22 @@ public class CarrierBookingInttraUtil {
                 .collect(Collectors.toSet());
         Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return locationsMap;
+    }
+
+    public void validateContainersIntegrationCode(List<CommonContainerResponse> containersList) {
+
+        if (containersList == null || containersList.isEmpty()) {
+            return;
+        }
+        String invalidContainers = containersList.stream()
+                .filter(c -> c.getIntegrationCode() == null || c.getIntegrationCode().trim().isEmpty())
+                .map(c -> c.getContainerNo() != null ? c.getContainerNo() : "Container ID: " + c.getId())
+                .collect(Collectors.joining(", "));
+
+        if (!invalidContainers.isEmpty()) {
+            throw new ValidationException(
+                    "IntegrationCode is a mandatory field for INTTRA. Missing for containers: " + invalidContainers
+            );
+        }
     }
 }
