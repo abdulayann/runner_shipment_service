@@ -713,7 +713,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
-        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() == EntityType.CARRIER_BOOKING) ;
+        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING) ;
         validateSIRequest(shippingInstruction);
 
         if (booking != null) {
