@@ -1708,7 +1708,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
         when(packingV3Util.mapOrderLineListToPackingV3RequestList(anyList())).thenReturn(List.of(packingReq));
         when(packingV3Util.mapOrderLineListToPackingV3RequestList(null)).thenReturn(List.of());
-        when(packingDao.findByOrderLineGuid(anyString())).thenReturn(Optional.empty());
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of());
 
         assertThrows(RunnerException.class, () -> {
             packingV3Service.orderLineCreateUpdateDeleteBulk(orderLineRequest, "shipment", false);
@@ -1789,8 +1789,9 @@ class PackingV3ServiceTest extends CommonMocks {
         packingDaoResponse.setId(1L);
         packingDaoResponse.setGuid(UUID.randomUUID());
         packingDaoResponse.setShipmentId(100L);
+        packingDaoResponse.setOrderLineGuid(orderLineGuid);
 
-        when(packingDao.findByOrderLineGuid(anyString())).thenReturn(Optional.of(packingDaoResponse));
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of(packingDaoResponse));
         testShipment.setDirection(null);
         testShipment.setShipmentId("12432");
 
@@ -1809,7 +1810,7 @@ class PackingV3ServiceTest extends CommonMocks {
         assertNotNull(result.getPackingResponseList());
         assertFalse(result.getPackingResponseList().isEmpty());
 
-        verify(packingDao, times(1)).findByOrderLineGuid(orderLineGuid);
+        verify(packingDao, times(1)).findByOrderLineGuidIn(List.of(orderLineGuid));
     }
 
     @Test
@@ -1885,8 +1886,9 @@ class PackingV3ServiceTest extends CommonMocks {
         packingDaoResponse.setId(1L);
         packingDaoResponse.setGuid(UUID.randomUUID());
         packingDaoResponse.setShipmentId(100L);
+        packingDaoResponse.setOrderLineGuid(orderLineGuid);
 
-        when(packingDao.findByOrderLineGuid(anyString())).thenReturn(Optional.of(packingDaoResponse));
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of(packingDaoResponse));
         testShipment.setDirection(null);
         testShipment.setShipmentId("12432");
 
@@ -1902,6 +1904,6 @@ class PackingV3ServiceTest extends CommonMocks {
         assertNotNull(result);
         assertNull(result.getPackingResponseList());
 
-        verify(packingDao, times(1)).findByOrderLineGuid(orderLineGuid);
+        verify(packingDao, times(1)).findByOrderLineGuidIn(List.of(orderLineGuid));
     }
 }

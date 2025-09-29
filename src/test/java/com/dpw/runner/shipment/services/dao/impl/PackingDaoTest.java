@@ -146,20 +146,20 @@ class PackingDaoTest {
     }
 
     @Test
-    void findByOrderLineGuid() {
-        Optional<Packing> optionalPacking = Optional.of(testPacking);
-        when(packingRepository.findByOrderLineGuid(anyString())).thenReturn(optionalPacking);
+    void findByOrderLineGuidIn() {
+        when(packingRepository.findByOrderLineGuidIn(anyList())).thenReturn(List.of(testPacking));
 
-        Optional<Packing> packing = packingDao.findByOrderLineGuid("test-guid");
+        List<Packing> packing = packingDao.findByOrderLineGuidIn(List.of("test-guid"));
 
-        assertTrue(packing.isPresent());
-        assertEquals(testPacking, packing.get());
+        assertNotNull(packing);
+        assertEquals(1, packing.size());
+        assertEquals(testPacking, packing.get(0));
     }
 
     @Test
-    void findByOrderLineGuid_notFound() {
-        when(packingRepository.findByOrderLineGuid(anyString())).thenReturn(Optional.empty());
-        Optional<Packing> packing = packingDao.findByOrderLineGuid("test-guid");
+    void findByOrderLineGuidIn_notFound() {
+        when(packingRepository.findByOrderLineGuidIn(anyList())).thenReturn(List.of());
+        List<Packing> packing = packingDao.findByOrderLineGuidIn(List.of("test-guid"));
         assertTrue(packing.isEmpty());
     }
 
