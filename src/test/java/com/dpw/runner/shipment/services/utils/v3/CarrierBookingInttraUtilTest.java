@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -331,6 +333,43 @@ class CarrierBookingInttraUtilTest {
         assertTrue(result.isEmpty());
         verify(masterDataUtils, never()).createInBulkContainerTypeRequest(any(), any(), anyMap(), any(), anyMap());
         verify(masterDataUtils, never()).fetchInBulkContainerTypes(anySet());
+    }
+
+
+    @Test
+    void validateContainersIntegrationCode_EmptyList_ShouldReturn() {
+        carrierBookingInttraUtil.validateContainersIntegrationCode(new ArrayList<>());
+    }
+
+    @Test
+    void validateContainersIntegrationCode_AllValidIntegrationCodes_ShouldPass() {
+        // Setup
+        List<CommonContainerResponse> containers = Arrays.asList(
+                createContainer("CONT001", "INTG001"),
+                createContainer("CONT002", "INTG002"),
+                createContainer("CONT003", "INTG003")
+        );
+        carrierBookingInttraUtil.validateContainersIntegrationCode(containers);
+    }
+
+    @Test
+    void validateContainersIntegrationCode_SingleInvalidContainer_ShouldThrowException() {
+        // Setup
+        CommonContainerResponse container = createContainer("SINGLE_CONT", "  ");
+        List<CommonContainerResponse> containers = Collections.singletonList(container);
+
+        // Execute & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> carrierBookingInttraUtil.validateContainersIntegrationCode(containers));
+        assertEquals("IntegrationCode is a mandatory field for INTTRA. Missing for containers: SINGLE_CONT",
+                exception.getMessage());
+    }
+
+    private CommonContainerResponse createContainer(String containerNo, String integrationCode) {
+        CommonContainerResponse container = new CommonContainerResponse();
+        container.setContainerNo(containerNo);
+        container.setIntegrationCode(integrationCode);
+        return container;
     }
 
     @Test
