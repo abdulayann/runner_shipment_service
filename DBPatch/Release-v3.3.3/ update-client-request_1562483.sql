@@ -1,4 +1,4 @@
--- Shipment ID : (91291, 91288)
+-- Shipment ID : (98186)
 -- Update Parties
 update
     parties
