@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -186,7 +188,7 @@ public class VerifiedGrossMassUtil {
             if (Objects.isNull(consolContainersList)) consolContainersList = Collections.emptyList();
 
             Map<Long, CommonContainers> submittedContainersVGMMap = submittedVGMContainersList.stream()
-                    .collect(Collectors.toMap(CommonContainers::getId, Function.identity(), (a, b) -> a));
+                    .collect(Collectors.toMap(container -> Long.parseLong(container.getContainerNo()), Function.identity(), (a, b) -> a));
 
             Map<Long, Containers> consolContainersMap = consolContainersList.stream()
                     .collect(Collectors.toMap(Containers::getId, Function.identity(), (a, b) -> a));
@@ -194,14 +196,14 @@ public class VerifiedGrossMassUtil {
             for (CommonContainers currentContainer : currentVGMContainersList) {
 
                 // Compare with previous submitted VGM (if exists)
-                CommonContainers submittedContainer = submittedContainersVGMMap.get(currentContainer.getId());
+                CommonContainers submittedContainer = submittedContainersVGMMap.get(Long.parseLong(currentContainer.getContainerNo()));
                 if (Objects.nonNull(submittedContainer) && hasAnyWeightDifference(currentContainer, submittedContainer)) {
                     warnings.add(buildVGMContainerWarning(submittedContainer, currentContainer, null));
                     
                 }
 
                 // Compare with consol container (if exists)
-                Containers consolContainer = consolContainersMap.get(currentContainer.getId());
+                Containers consolContainer = consolContainersMap.get(Long.parseLong(currentContainer.getContainerNo()));
                 if (Objects.nonNull(consolContainer) && hasAnyWeightDifference(currentContainer, consolContainer)) {
                     warnings.add(buildVGMContainerWarning(null, currentContainer, consolContainer));
                 }
@@ -305,5 +307,34 @@ public class VerifiedGrossMassUtil {
 
     private boolean hasWeightChanged(String currentValue, String previousValue) {
         return !StringUtils.equals(currentValue, previousValue);
+    }
+
+    public SendEmailBaseRequest getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass, EmailTemplatesRequest verifiedGrossMassTemplate) {
+        String toEmails = verifiedGrossMass.getInternalEmails() == null ? "" : verifiedGrossMass.getInternalEmails();
+
+        // Add the 'createByUserEmail' only if it's not blank
+        String createByUserEmail = verifiedGrossMass.getCreateByUserEmail();
+        if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
+            if (!toEmails.isEmpty()) {
+                toEmails += ",";
+            }
+            toEmails += createByUserEmail;
+        }
+
+        // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
+        String submitByUserEmail = verifiedGrossMass.getSubmitByUserEmail();
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty() && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+            if (!toEmails.isEmpty()) {
+                toEmails += ",";
+            }
+            toEmails += submitByUserEmail;
+        }
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(verifiedGrossMassTemplate.getSubject());
+        request.setTemplateName(verifiedGrossMassTemplate.getName());
+        request.setHtmlBody(verifiedGrossMassTemplate.getBody());
+        return request;
     }
 }

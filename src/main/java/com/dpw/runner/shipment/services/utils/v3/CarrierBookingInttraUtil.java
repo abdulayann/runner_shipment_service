@@ -1,18 +1,17 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -31,14 +30,18 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,6 +73,9 @@ public class CarrierBookingInttraUtil {
 
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    IV1Service v1Service;
 
     public <T> void sendPayloadToBridge(T inttraResponse, Long id,
                                          String integrationCode, String transactionId, String referenceId,
@@ -170,6 +176,19 @@ public class CarrierBookingInttraUtil {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
         }
         return v1Data;
+    }
+
+    public List<EmailTemplatesRequest> fetchEmailTemplate(List<String> templateCodes) {
+        CommonV1ListRequest commonV1ListRequest = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
+        commonV1ListRequest.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = v1Service.getEmailTemplates(commonV1ListRequest);
+        if (Objects.nonNull(v1DataResponse) && Objects.nonNull(v1DataResponse.entities)) {
+            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+        }
+        return new ArrayList<>();
     }
 
     public String getInttraRemoteId(Parties[] allMadatoryParties) {

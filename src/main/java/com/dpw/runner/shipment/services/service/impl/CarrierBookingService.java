@@ -66,13 +66,11 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -80,7 +78,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -136,7 +133,6 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final CarrierBookingValidationUtil carrierBookingValidationUtil;
     private final CommonUtils commonUtils;
     private final INotificationService notificationService;
-    private final IV1Service iv1Service;
     private final CarrierBookingUtil carrierBookingUtil;
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
@@ -862,7 +858,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         try {
             List<String> requests = new ArrayList<>(
                     List.of(Constants.CARRIER_BOOKING_EMAIL_TEMPLATE));
-            List<EmailTemplatesRequest> emailTemplates = getCarrierBookingEmailTemplate(requests);
+            List<EmailTemplatesRequest> emailTemplates = carrierBookingInttraUtil.fetchEmailTemplate(requests);
             EmailTemplatesRequest carrierBookingTemplate = emailTemplates.stream()
                     .filter(Objects::nonNull)
                     .filter(template -> Constants.CARRIER_BOOKING_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
@@ -876,19 +872,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         } catch (Exception e) {
             log.error("Error in  sending carrier booking email: {}", e.getMessage());
         }
-    }
-
-    public List<EmailTemplatesRequest> getCarrierBookingEmailTemplate(List<String> templateCodes) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
-        if (v1DataResponse != null && v1DataResponse.entities != null) {
-            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-        }
-        return new ArrayList<>();
     }
 
     private void mismatchDetection(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
