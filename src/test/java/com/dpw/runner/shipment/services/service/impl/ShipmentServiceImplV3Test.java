@@ -9298,4 +9298,150 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(shipmentOrderDao, times(1)).save(any());
         verify(packingV3Service, times(1)).create(any(), any());
     }
+
+    @Test
+    void test_attachDetachOrder_nullRequest_throws() {
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.attachDetachOrder(null));
+    }
+
+    @Test
+    void test_attachDetachOrder_noAttachNoDetach_returnsSuccess() {
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(UUID.randomUUID());
+        req.setEvent(Constants.ATTACH);
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+    }
+
+    @Test
+    void test_attachDetachOrder_validAttach_success() {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.randomUUID());
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.ATTACH);
+        req.setOrderDetailsForAttach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of());
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(shipmentOrderDao, times(1)).save(any());
+    }
+
+    @Test
+    void test_attachDetachOrder_validDetach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.DETACH);
+        req.setOrderDetailsForDetach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(shipmentOrder));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+    }
+
+    @Test
+    void test_attachDetachOrder_validDetachAndAttach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest.OrderDetails detachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        detachOrder.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        detachOrder.setOrderNumber("ORD-DETACH");
+        detachOrder.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest.OrderDetails attachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        attachOrder.setOrderGuid(UUID.randomUUID());
+        attachOrder.setOrderNumber("ORD-ATTACH");
+        attachOrder.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.DETACH_AND_ATTACH);
+        req.setOrderDetailsForDetach(List.of(detachOrder));
+        req.setOrderDetailsForAttach(List.of(attachOrder));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        ShipmentOrder existingOrder = ShipmentOrder.builder()
+                .shipmentId(100L)
+                .orderGuid(detachOrder.getOrderGuid())
+                .build();
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(existingOrder));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+        verify(shipmentOrderDao, times(1)).save(any());
+        verify(packingV3Service, times(1)).create(any(), anyString());
+    }
+
+    @Test
+    void test_attachDetachOrder_invalidAttach_throws() {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.randomUUID());
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent("INVALID-CASE");
+        req.setOrderDetailsForAttach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of());
+
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.attachDetachOrder(req));
+    }
 }
