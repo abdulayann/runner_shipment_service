@@ -2048,9 +2048,20 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
+        triggerPushToDownStreamInternal(shipmentDetails, oldShipment, isCreate, shipmentDetails.getId().toString());
+    }
+
+    public void triggerPushToDownStreamBooking(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate, Long customerBookingId) {
+        triggerPushToDownStreamInternal(shipmentDetails, oldShipment, isCreate, customerBookingId.toString());
+    }
+
+    private void triggerPushToDownStreamInternal(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate, String messageKey) {
+
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
         if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
-            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(
+                    shipmentDetails.getConsolidationList().iterator().next().getId()
+            );
         }
 
         boolean isAutoSell = false;
@@ -2066,8 +2077,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (!Objects.equals(oldOrigin, newOrigin) || !Objects.equals(oldDestination, newDestination)) {
                 isAutoSell = true;
             }
-
         }
+
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(shipmentDetails.getId())
                 .parentEntityName(SHIPMENT)
@@ -2076,11 +2087,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .isAutoSellRequired(isAutoSell)
                         .build())
                 .build();
+
         if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
             PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
                     .entityId(consoleShipmentMappings.get(0).getConsolidationId())
                     .entityName(Constants.CONSOLIDATION)
                     .build();
+
             List<PushToDownstreamEventDto.Triggers> triggersList = consoleShipmentMappings.stream()
                     .filter(x -> !Objects.equals(x.getShipmentId(), shipmentDetails.getId()))
                     .map(x -> PushToDownstreamEventDto.Triggers.builder()
@@ -2088,11 +2101,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .entityName(SHIPMENT)
                             .build())
                     .collect(Collectors.toList());
+
             triggersList.add(triggers);
             pushToDownstreamEventDto.setTriggers(triggersList);
         }
-        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentDetails.getId().toString());
+
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, messageKey);
     }
+
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails consolidationDetails) {
         log.info("shipment afterSave syncShipment..... ");
@@ -3136,7 +3152,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             createNotes(notesRequests, shipmentId);
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            this.triggerPushToDownStream(shipmentDetails, null, true);
+            this.triggerPushToDownStreamBooking(shipmentDetails, null, true, customerBookingV3Request.getId());
 
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -5627,6 +5644,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         try {
             // First detach
             detachOrders(requestedOrderDetailsForDetach, existingShipmentOrders);
+
+            existingShipmentOrders = getShipmentOrdersByGuid(shipmentOrderDao.findByShipmentId(shipmentId));
 
             // Then attach
             attachOrders(requestedOrderDetailsForAttach, existingShipmentOrders, shipmentId);
