@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -348,7 +350,7 @@ class CarrierBookingInttraUtilTest {
     void testFetchEmailTemplate_entitiesIsNull() {
         // Mocking v1DataResponse to return a response with null entities
         when(v1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(v1DataResponse);
-        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse = new V1DataResponse();
         v1DataResponse.setEntities(null);
         when(v1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
 
@@ -364,7 +366,7 @@ class CarrierBookingInttraUtilTest {
     void testFetchEmailTemplate_entitiesIsNotNull() {
         // Prepare mock data
         List<EmailTemplatesRequest> mockEmailTemplates = List.of(emailTemplatesRequest);
-        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse = new V1DataResponse();
         v1DataResponse.setEntities(new CarrierBooking());
         when(v1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(mockEmailTemplates);
@@ -377,4 +379,64 @@ class CarrierBookingInttraUtilTest {
         assertEquals(1, result.size());
         assertEquals(emailTemplatesRequest, result.get(0));
     }
+
+    @Test
+    void testFetchUnLocationMap_success() {
+        // Prepare CarrierBooking with SailingInformation
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPod("POD123");
+        sailingInfo.setPol("POL456");
+        sailingInfo.setCarrierDeliveryPlace("DEL789");
+        sailingInfo.setCarrierReceiptPlace("REC321");
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice("BOOK654");
+
+        // Mock locations map response
+        Map<String, EntityTransferUnLocations> mockResponse = new HashMap<>();
+        mockResponse.put("POD123", new EntityTransferUnLocations());
+        mockResponse.put("POL456", new EntityTransferUnLocations());
+
+        when(masterDataUtils.fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+                .thenReturn(mockResponse);
+
+        // Call the method under test
+        Map<String, EntityTransferUnLocations> result = carrierBookingInttraUtil.fetchUnLocationMap(carrierBooking);
+
+        // Assertions
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // Verify interaction
+        verify(masterDataUtils, times(1))
+                .fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID));
+    }
+
+    @Test
+    void testFetchUnLocationMap_withNullValues() {
+        // Prepare CarrierBooking with null values in SailingInformation
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPod(null);
+        sailingInfo.setPol(null);
+        sailingInfo.setCarrierDeliveryPlace(null);
+        sailingInfo.setCarrierReceiptPlace(null);
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice(null);
+
+        when(masterDataUtils.fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+                .thenReturn(Collections.emptyMap());
+
+        // Call the method
+        Map<String, EntityTransferUnLocations> result = carrierBookingInttraUtil.fetchUnLocationMap(carrierBooking);
+
+        // Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(masterDataUtils, times(1))
+                .fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID));
+    }
+
+
 }

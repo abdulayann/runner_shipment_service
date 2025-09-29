@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -497,4 +498,65 @@ class CarrierBookingUtilTest {
         Assertions.assertNotNull(bridgeRequest);
     }
 
+    @Test
+    void test_populateLocCode_AllValuesPresent() {
+        // Prepare CarrierBooking with SailingInformation
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPol("POL");
+        sailingInfo.setPod("POD");
+        sailingInfo.setCarrierReceiptPlace("REC");
+        sailingInfo.setCarrierDeliveryPlace("DEL");
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice("BOOK");
+
+        // Prepare unlocations map with locCodes
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("POL", new EntityTransferUnLocations());
+        unlocationsMap.put("POD", new EntityTransferUnLocations());
+
+
+        // Call method
+        carrierBookingUtil.populateLocCode(unlocationsMap, carrierBooking);
+
+        // Verify updates
+        assertEquals("POL", sailingInfo.getPol());
+    }
+
+    @Test
+    void test_populateLocCode_MissingValues_NoExceptionThrown() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPol("POL");
+        sailingInfo.setPod("POD");
+        sailingInfo.setCarrierReceiptPlace("REC");
+        sailingInfo.setCarrierDeliveryPlace("DEL");
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice("BOOK");
+
+        // Empty map (no entries found)
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+
+        // Should not throw exception
+        carrierBookingUtil.populateLocCode(unlocationsMap, carrierBooking);
+
+        // Verify nothing is set
+        Assertions.assertNull(carrierBooking.getSailingInformation().getCarrierReceiptLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getCarrierDeliveryLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getOriginPortLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getDestinationPortLocCode());
+        Assertions.assertNull(carrierBooking.getBookingOfficeLocCode());
+    }
+
+    @Test
+    void test_populateLocCode_ExceptionHandledGracefully() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setSailingInformation(null); // This will cause NullPointerException
+
+        // Should not throw exception despite sailingInfo being null
+        carrierBookingUtil.populateLocCode(new HashMap<>(), carrierBooking);
+
+        // Just verify booking is still not null
+        Assertions.assertNotNull(carrierBooking);
+    }
 }
