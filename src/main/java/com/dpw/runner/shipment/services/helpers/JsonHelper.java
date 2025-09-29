@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.mixin.ConsoleShipmentMixIn;
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
@@ -117,7 +118,7 @@ public class JsonHelper {
             return mapper.readValue(jsonString, clazz);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json " + jsonString);
-            log.info("Exception thrown while parsing json: {}", e.toString());
+            log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
             throw new JsonParseException(e);
         }
     }
@@ -128,7 +129,7 @@ public class JsonHelper {
         } catch (JsonProcessingException e) {
             log.error("Failed Parsed Object: {}", object.toString());
             log.error("Failed to Parse given Json: " + e.getMessage());
-            log.info("Exception thrown while parsing json: {}", e.toString());
+            log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
             throw new JsonParseException(e);
         }
     }
@@ -215,7 +216,7 @@ public class JsonHelper {
             return mapper.readTree(jsonString);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse given JSON string: {}", jsonString);
-            log.info("Exception thrown while parsing json: {}", e.toString());
+            log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
             throw new JsonParseException(e);
         }
     }
