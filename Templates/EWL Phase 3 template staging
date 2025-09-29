@@ -1,6 +1,17 @@
 <#assign json = JsonUtil.jsonToMap(json)>
 
 
+<#-- Check if childJobs array is empty and populate it with the current json if needed -->
+<#if !json.childJobs?? || json.childJobs?size == 0>
+    <#assign json = json + {
+        "childJobs": [json]
+    }>
+</#if>
+
+
+
+
+
 <#function jsonEscape text>
 <#if text??>
   <#local s = text>
@@ -15,20 +26,37 @@
 </#if>
 </#function>
 
+<#assign hasMappingError = false>
+<#assign fieldToMap = "">
 
 <#-- Generic macro -->
-<#function processRequestIfValueExists map key fieldName orgCode addressCode>
-    <#assign mapValue = (map[key!''])?if_exists>
-    <#if mapValue?? && (mapValue?size > 0)>
-        <#-- ✅ Value exists, proceed with your full request -->
-        <#if json.childJobs[0].customer?? && json.childJobs[0].customer.code?has_content>
+<#function processRequestIfValueExists map addressMap sourceFieldName destinationFieldName orgCode addressCode>
+    <#assign mapValue = (map[orgCode!''])?if_exists>
+    <#assign addMapValue = (addressMap[addressCode!''])?if_exists>
+    <#if mapValue?? && (mapValue?size > 0) && addMapValue?? && (addMapValue?size > 0)>
+        <#-- ✅ Value exists, proceed with request -->
+        <#if orgCode?? && orgCode?has_content && addressCode?? && addressCode?has_content>
+
+            <#-- Null-safe lookup for address -->
+            <#assign addressList = (addressMap[addressCode!''])?if_exists>
+            <#if addressList?? && (addressList?size > 0) && addressList[0].addressShortCode?has_content>
+                <#assign addressShortCode = addressList[0].addressShortCode>
+            </#if>
+
+            <#-- Null-safe lookup for org -->
+            <#assign orgList = (orgMap[orgCode!''])?if_exists>
+            <#if orgList?? && (orgList?size > 0) && orgList[0].organizationCode?has_content>
+                <#assign organizationCode = orgList[0].organizationCode>
+            </#if>
+
+            <#-- ✅ All values safe, build request -->
             <#assign requestPayloadMap = {
                 "Party": {
                     "id": 726703,
                     "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
                 },
-                "AddressCode": "${addressMap[addressCode!''][0].addressShortCode}",
-                "OrgCode": "${orgMap[orgCode!''][0].organizationCode}"
+                "AddressCode": addressShortCode,
+                "OrgCode": organizationCode
             }>
 
             <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
@@ -42,19 +70,38 @@
             <#return res>
         </#if>
     <#else>
-        <#-- ❌ Value missing, log error -->
-        <#assign _ignore = ErrorUtil.logError(
-            fieldName,
-            (key)!"",
-            fieldName,
-            "",
-            "MissingRunnerMasterData",
-            "The master data for the value in ${fieldName} doesn't exist in Runner. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
-            null, null, null
-        )>
+        <#if !mapValue?? || mapValue?size == 0>
+            <#-- ❌ Main mapping value missing -->
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "${sourceFieldName}" + " orgCode, ">
+            <#assign _ignore = ErrorUtil.logError(
+                sourceFieldName,
+                (orgCode)!"",
+                destinationFieldName,
+                "",
+                "MissingMappingMasterData",
+                "The mapping for the value in ${sourceFieldName} orgCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+                null, null, null
+            )>
+        </#if>
+        <#if !addMapValue?? || addMapValue?size == 0>
+            <#-- ❌ Main mapping value missing -->
+            <#assign hasMappingError = true>
+            <#assign fieldToMap += "${sourceFieldName}" + " addressCode, ">
+            <#assign _ignore = ErrorUtil.logError(
+                sourceFieldName,
+                (addressCode)!"",
+                destinationFieldName,
+                "",
+                "MissingMappingMasterData",
+                "The mapping for the value in ${sourceFieldName} addressCode doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+                null, null, null
+            )>
+        </#if>    
         <#return "">
     </#if>
 </#function>
+
 
 
 
@@ -70,7 +117,10 @@
             child.consignor.code!'',
             child.consignee.code!'',
             child.agent.code!'',
-            json.destinationAgent.code
+            child.notify1.code!'',
+            child.supplier.code!'',
+            json.agent.code!'',
+            json.destinationAgent.code!''
         ]>
         <#list childCodes as code>
             <#if code != "" && !allPartyCodes?seq_contains(code)>
@@ -89,11 +139,30 @@
             child.consignor.addressCode!'',
             child.consignee.addressCode!'',
             child.agent.addressCode!'',
-            json.destinationAgent.addressCode
+            child.notify1.addressCode!'',
+            child.supplier.addressCode!'',
+            json.agent.addressCode!'',
+            json.destinationAgent.addressCode!''
         ]>
         <#list childCodes as code>
             <#if code != "" && !allAddressCodes?seq_contains(code)>
                 <#assign allAddressCodes = allAddressCodes + [code]>
+            </#if>
+        </#list>
+    </#list>
+</#if>
+
+<#-- Build list of all unloc codes and remove duplicates -->
+<#assign allUnlocCodes = []>
+<#if json.sailingLeg??>
+    <#list json.sailingLeg as leg>
+        <#assign unlocCodes = [
+            leg.polPort.code!'',
+            leg.podPort.code!''
+        ]>
+        <#list unlocCodes as code>
+            <#if code != "" && !allUnlocCodes?seq_contains(code)>
+                <#assign allUnlocCodes = allUnlocCodes + [code]>
             </#if>
         </#list>
     </#list>
@@ -134,9 +203,7 @@
                   "field": "reference",
                   "operator": "in",
                   "values": [
-                      "20GP",
-                      "40GP",
-                      "20RE"
+                      "20GP", "40GP", "20RE", "40RE", "45HC", "40HC", "20FR", "20HC", "20NOR", "20TK", "40HCPW", "40HD", "40OT", "40OTHC", "40TK", "53HC", "40REHC", "20HD", "20HR", "20OT", "20PL", "40FR", "40NOR", "40PL"
                   ]
               }
           ]
@@ -170,7 +237,7 @@
                   "field": "reference",
                   "operator": "in",
                   "values": [
-                      "Waybill"
+                      "Waybill", "Original", "TELEX", "FCR"
                   ]
               }
           ],
@@ -217,10 +284,7 @@
           {
               "field": "reference",
               "operator": "in",
-              "values": [
-                  "${json.childJobs[0].sailingLeg[0].polPort.code}",
-                  "${json.childJobs[0].sailingLeg[0].podPort.code}"
-              ]
+              "values": allUnlocCodes
           }
       ]
   }
@@ -262,7 +326,7 @@
           <#assign carrierMap = entity.CARRIER>
       </#if>
       <#if entity.ADDRESS??>
-          <#assign addressMap = entity.ADDRESS>
+        <#assign addressMap = entity.ADDRESS>
       </#if>
   </#list>
 
@@ -274,8 +338,8 @@
     }>
     
     <#assign authPayloadMap = {
-        "Username": "xiamenaamirewl",
-        "Password": "Test@123"
+        "Username": "egyptuat_2@yopmail.com",
+        "Password": "Welcome@123"
     }>
     <#assign authPayload = JsonUtil.objectToJsonString(authPayloadMap)>
     
@@ -301,33 +365,13 @@
 
     <#assign consigneeOrgData = processRequestIfValueExists(
     orgMap,
-    json.childJobs[0].customer.code,
-    "organizationCode",
+    addressMap,
+    "customer",
+    "consignee",
     json.childJobs[0].customer.code,
     json.childJobs[0].customer.addressCode
 )>
 
-    <#-- <#if json.childJobs[0].customer?? && json.childJobs[0].customer.code?has_content>
-      <#assign requestPayloadMap = {
-        "Party": {
-            "id": 726703,
-            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
-        },
-       "AddressCode": "${addressMap[json.childJobs[0].customer.addressCode!''][0].addressShortCode}",
-        "OrgCode": "${orgMap[json.childJobs[0].customer.code!''][0].organizationCode}"
-      }>
-      
-      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
-
-      <#assign response = MdmApiUtil.connectHttp(
-          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
-          requestPayload,
-          httpHeaders
-      )/>
-      <#assign res = JsonUtil.getStringFromStream(response.body)>
-
-      <#assign consigneeOrgData = res>
-    </#if> -->
 
 
 
@@ -335,114 +379,118 @@
 
     <#assign consignerOrgData = processRequestIfValueExists(
     orgMap,
-    json.childJobs[0].supplier.code,
-    "organizationCode",
+    addressMap,
+    "supplier",
+    "consigner",
     json.childJobs[0].supplier.code,
     json.childJobs[0].supplier.addressCode
 )>
 
-
-    <#-- <#if json.childJobs[0].supplier?? && json.childJobs[0].supplier.code?has_content>
-      <#assign requestPayloadMap = {
-        "Party": {
-            "id": 726703,
-            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
-        },
-       "AddressCode": "${addressMap[json.childJobs[0].supplier.addressCode!''][0].addressShortCode}", 
-        "OrgCode": "${orgMap[json.childJobs[0].supplier.code!''][0].organizationCode}"
-      }>
-      
-      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
-      
-      <#assign response = MdmApiUtil.connectHttp(
-          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
-          requestPayload,
-          httpHeaders
-      )/>
-      <#assign res = JsonUtil.getStringFromStream(response.body)>
-
-      <#assign consignerOrgData = res>
-    </#if> -->
 
 
     <#-- Fetch NotifyParty Org Data -->
 
     <#assign notifyPartyOrgData = processRequestIfValueExists(
     orgMap,
-    json.childJobs[0].notify1.code,
-    "organizationCode",
+    addressMap,
+    "notify1",
+    "notifyParty",
     json.childJobs[0].notify1.code,
     json.childJobs[0].notify1.addressCode
 )>
 
-    <#-- <#if json.childJobs[0].notify1?? && json.childJobs[0].notify1.code?has_content>
-      <#assign requestPayloadMap = {
-        "Party": {
-            "id": 726703,
-            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
-        },
-         "AddressCode": "${addressMap[json.childJobs[0].notify1.addressCode!''][0].addressShortCode}", 
-        "OrgCode": "${orgMap[json.childJobs[0].notify1.code!''][0].organizationCode}"
-      }>
-      
-      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
-      
-      <#assign response = MdmApiUtil.connectHttp(
-          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
-          requestPayload,
-          httpHeaders
-      )/>
-      <#assign res = JsonUtil.getStringFromStream(response.body)>
-
-      <#assign notifyPartyOrgData = res>
-    </#if> -->
 
 
 
     <#-- Fetch sendingAgent Org Data -->
 
-    <#assign agentOrgData = processRequestIfValueExists(
+    <#assign sendingAgentOrgData = processRequestIfValueExists(
     orgMap,
-    json.childJobs[0].agent.code,
-    "organizationCode",
-    json.childJobs[0].agent.code,
-    json.childJobs[0].agent.addressCode
+    addressMap,
+    "agent",
+    "originAgent",
+    json.agent.code,
+    json.agent.addressCode
 )>
 
-    <#-- <#if json.agent?? && json.agent.code?has_content>
-      <#assign requestPayloadMap = {
-        "Party": {
-            "id": 726703,
-            "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
-        },
-       "AddressCode": "${addressMap[json.agent.addressCode!''][0].addressShortCode}", 
-        "OrgCode": "${orgMap[json.agent.code!''][0].organizationCode}"
-      }>
-      
-      <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
-      
-      <#assign response = MdmApiUtil.connectHttp(
-          "https://staging-runner.cargoes.com/shipment-service/api/v2/shipment/fetchOrgInfoFromV1?httpMethod=GET&getWithBody=true",
-          requestPayload,
-          httpHeaders
-      )/>
-      <#assign res = JsonUtil.getStringFromStream(response.body)>
+    <#if sendingAgentOrgData?has_content>
+      <#assign sendingAgentOrgDataMap = JsonUtil.jsonToMap(sendingAgentOrgData)>
+    <#else>
+      <#assign sendingAgentOrgDataMap = {}>
+    </#if>
 
-      <#assign agentOrgData = res>
-    </#if> -->
+
+    <#-- Fetch receivingAgent Org Data -->
+
+    <#assign receivingAgentOrgData = processRequestIfValueExists(
+    orgMap,
+    addressMap,
+    "destinationAgent",
+    "receivingAgent",
+    json.destinationAgent.code,
+    json.destinationAgent.addressCode
+)>
+
 
 
     <#-- Fetch destinationAgent Org Data -->
 
+    <#assign addressCodeValue = "">
+    <#assign orgCodeValue = "">
+    
+    <#-- Try resolving AddressCode safely -->
+    <#if json.destinationAgent?? && json.destinationAgent.addressCode?? 
+        && addressMap?has_content 
+        && (addressMap[json.destinationAgent.addressCode]??) 
+        && addressMap[json.destinationAgent.addressCode][0].addressShortCode??>
+        
+        <#assign addressCodeValue = addressMap[json.destinationAgent.addressCode][0].addressShortCode>
+    <#else>
+        <#assign hasMappingError = true>
+        <#assign fieldToMap += "destinationAgent.addressCode, ">
+        <#assign _ignore = ErrorUtil.logError(
+            "destinationAgent.addressCode",
+            (json.destinationAgent.addressCode)!"",
+            "AddressCode",
+            "",
+            "MissingMappingMasterData",
+            "The mapping for destinationAgent.addressCode doesn't exist.",
+            null, null, null
+        )>
+    </#if>
 
-    <#if json.destinationAgent?? && json.destinationAgent.code?has_content>
+
+    <#-- Try resolving OrgCode safely -->
+    <#if json.destinationAgent?? && json.destinationAgent.code?? 
+        && orgMap?has_content 
+        && (orgMap[json.destinationAgent.code]??) 
+        && orgMap[json.destinationAgent.code][0].organizationCode??>
+        
+        <#assign orgCodeValue = orgMap[json.destinationAgent.code][0].organizationCode>
+    <#else>
+        <#assign hasMappingError = true>
+        <#assign fieldToMap += "destinationAgent.code, ">
+        <#assign _ignore = ErrorUtil.logError(
+            "destinationAgent.code",
+            (json.destinationAgent.code)!"",
+            "OrgCode",
+            "",
+            "MissingMappingMasterData",
+            "The mapping for destinationAgent.code doesn't exist.",
+            null, null, null
+        )>
+    </#if>
+  
+
+
+    <#if json.destinationAgent?? && json.destinationAgent.code?has_content && addressCodeValue?has_content && orgCodeValue?has_content>
       <#assign requestPayloadMap = {
         "Party": {
             "id": 726703,
             "guid": "e8c489a2-f94e-4bc6-9930-b2bd1ea148db"
         },
-        "AddressCode": "${addressMap[json.destinationAgent.addressCode!''][0].addressShortCode}", 
-        "OrgCode": "${orgMap[json.destinationAgent.code!''][0].organizationCode}"
+        "AddressCode": addressCodeValue, 
+        "OrgCode": orgCodeValue
       }>
       
       <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap)>
@@ -462,16 +510,20 @@
     <#assign additionalDocs = []>
 
     <#list docs as doc>
+
+        <#assign newFileContentType = getContentType(doc.encodedFile, doc.fileName)>
+
         <#assign payload = {
             "entityType": doc.entityType,
             "entityId": doc.entityId,
             "source": doc.source,
-            "encodedFile": doc.encodedFile,
+            "encodedFile": newFileContentType,
             "fileName": doc.fileName,
-            "docType": doc.docType
+            "docType": doc.docType,
+            "docName": doc.fileName
         }>
 
-        <#assign requestPayload = JsonUtil.objectToJsonString(payload) />
+        <#assign requestPayload = JsonUtil.objectToJsonString(payload)/>
 
         <#assign response = MdmApiUtil.connectHttp(
             "https://staging-runner.cargoes.com/runner/v2/documentManagement/files-management/addFile?httpMethod=POST",
@@ -503,12 +555,6 @@
   <#assign consolAdditionalDocs = getAdditionalDocs(json.consolDocs, httpHeaders) />
 </#if>
 
-<#-- Fetch all shipment document guids -->
-<#assign shipmentAdditionalDocs = []>
-<#if json.shipmentDocs?? && (json.shipmentDocs?size > 0)>
-  <#assign shipmentAdditionalDocs = getAdditionalDocs(json.shipmentDocs, httpHeaders) />
-</#if>
-
 
  
 
@@ -534,15 +580,57 @@
 
 
 
-    
 
+<#-- Function to generate content-type as data:application/{fileExtension};base64,{data} -->
+<#function getContentType originalContentType fileName>
+    <#-- List of supported extensions -->
+    <#assign supportedExtensions = ["doc","docm","docx","dot","dotm","dotx","htm","html","msg","pdf","rtf","txt","wpd","xhtml","xps","bmp","gif","heic","jpg","jpeg","png","tif","tiff","pot","potx","pps","ppt","pptm","pptx","csv","xls","xlsm","xlsx","zip","rar","7z","tar","gz","eml"]>
+    
+    <#-- Extract file extension from fileName -->
+    <#if fileName?? && fileName?contains(".")>
+        <#assign fileExtension = fileName?lower_case?split(".")?last>
+        
+        <#-- Check if extension is in supported list -->
+        <#if supportedExtensions?seq_contains(fileExtension)>
+            <#-- Extract base64 data part -->
+            <#if originalContentType?contains("base64,")>
+                <#assign base64Data = originalContentType?split("base64,")[1]>
+                <#return "data:application/" + fileExtension + ";base64," + base64Data>
+            <#else>
+                <#-- If no base64 data, just return the content type part -->
+                <#return "data:application/" + fileExtension + ";base64,">
+            </#if>
+        <#else>
+            <#-- Extension not in supported list, return original -->
+            <#return originalContentType>
+        </#if>
+    <#else>
+        <#-- No valid fileName or extension, return original -->
+        <#return originalContentType>
+    </#if>
+</#function>
+
+
+
+
+
+<#assign houseBills = "">
+<#assign shipmentCount = 0>
+
+<#-- Create an empty map at the top/global scope -->
+<#assign globalDocsMap = {}>
+
+    
+<#assign transformedPayload>
 {
   "entityType": "CONSOLIDATION",
   "entityNumber": "${json.reference}",
   "transportMode": "SEA",
   "status": "TRANSFERRED",
   "jobType": "IMP",
-  "tenantId": 13497,
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.TenantId??>
+    "tenantId": ${destinationAgentOrgDataMap.data.orgData.TenantId},
+  </#if>
   "entityPayload":{
   "guid": "${json.guid}",
   "bol": "${json.masterBill!''}",
@@ -560,30 +648,32 @@
   "incoterms": "${(json.incoTerm.code)!'CFR'}",
   "isCharter": ${json.isCharter?c},
   "isDomestic": ${json.isDomestic?c},
+  "department": null,
   "marksnNums": "${json.marksAndNumbers!''}",
   "description": "${json.descriptionMaster!GoodsDescription!''}",
-  "deliveryMode": "${json.deliveryMode!'B.T/B.T'}",
+  "deliveryMode": null,
   "originBranch": "${json.originBranch!'0'}",
   "shipmentType": "IMP",
   "direction": "IMP",
   "source": "External",
   "isFrob": ${json.isFrob?c},
   "b2b": ${json.b2B?c},
-  "partner": "${(json.agent.code)!'CLD'}",
+  "partner": null,
   "coLoadCarrierName": "OOCL",
   "consolidationNumber": "${json.reference}",
   "referenceNumber": "${json.reference}",
-  "containerCategory": <#if json.shipmentMode == 5>"FCL"<#elseif json.shipmentMode == 2>"LCL"</#if>,
+  "containerCategory": <#if json.shipmentMode == 5>"FCL"<#elseif json.shipmentMode == 1>"LCL"</#if>,
   "transportMode": "SEA",
   "consolidationType": "STD",
   "openForAttachment": true,
+  "receivingAgent": ${receivingAgentOrgData!''},
   "allocations": {
     "packs": ${json.noOfPacks!"0"},
     "volume": ${json.volume!"0"},
     "weight": ${json.weight!"0"},
     "teuCount": ${json.teu!"0"},
     "chargable": ${json.chargeableWeight!0},
-    "packsType": "${json.units!'BAG'}",
+    "packsType": null,
     "volumeUnit": "M3",
     "weightUnit": "KG",
     "weightVolume": ${json.chargeableWeight!0},
@@ -595,19 +685,61 @@
   "routingsList": [
     <#list json.sailingLeg as leg>
       {
-        "leg": ${leg.legSequence + 1},
+        "leg": ${leg.legSequence},
         "mode": "SEA",
-        "ata": null,
-        "atd": "${leg.atd}",
-        "eta": "${leg.eta}",
-        "etd": "${leg.etd}",
-        "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
-        "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+        "ata": "${leg.ata!''}",
+        "atd": "${leg.atd!''}",
+        "eta": "${leg.eta!''}",
+        "etd": "${leg.etd!''}",
+        <#if unLocationMap?? && unLocationMap[leg.polPort.code]?has_content>
+          "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+        <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "leg.polPort.code" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "leg.polPort.code",
+              (leg.polPort.code)!"",
+              "pol",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in leg.polPort.code doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )>
+        </#if>
+        <#if unLocationMap?? && unLocationMap[leg.podPort.code]?has_content>
+          "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+        <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "leg.podPort.code" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "leg.podPort.code",
+              (leg.podPort.code)!"",
+              "pod",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in leg.podPort.code doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )>
+        </#if>
         "voyage": "${leg.voyage!''}",
         "carrier": "",
         "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
         "domestic": ${json.isDomestic?c},
-        "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+        <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+           "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+        <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "vesselName" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "json.vesselName",
+              (json.vesselName)!"",
+              "vessel",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in json.vesselName doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )>
+        </#if>
         "transitDays": 0
       }<#if leg_has_next>,</#if>
     </#list>
@@ -621,7 +753,21 @@
       "containerNumber": "${c.containerNumber}",
       "teu": ${c.teu!"1"},
       "carrierSealNumber": "${c.seal!''}",
-      "containerCode": "${c.type}",
+      <#if containerTypeMap?? && containerTypeMap[c.type]?has_content>
+          "containerCode": "${containerTypeMap[c.type][0].code}",
+      <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "equipment.type" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "json.equipment.type",
+              (c.type)!"",
+              "containerCode",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in json.equipment.type doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )>
+      </#if>
       "containerCount": 1,
       "isReefer": ${c.isGenSetRequired?c},
       "minTemp": <#if c.temperature??>${c.temperature}<#else>null</#if>,
@@ -633,8 +779,8 @@
       "grossVolume": ${volume!0},
       "marksNums": "${marksAndNumbers!''}",
       "packs": ${result.packs},
-      "packsType": "${units!'BAG'}",
-      "commodityCode": "${commodity!''}",
+      "packsType": "PKG",
+      "commodityCode": "${c.commodityCode!''}",
       "commodityGroup": "${c.commodityGroup!''}",
       "netWeightUnit": "KG",
       "grossWeightUnit": "KG",
@@ -644,44 +790,80 @@
     </#list>
   ],
   "carrierDetails": {
-    "ata": "${json.sailingLeg[0].ata!'2025-08-04 00:00:00'}",
-    "atd": "${json.sailingLeg[0].atd!'2025-08-03 00:00:00'}",
-    "eta": "${json.sailingLeg[0].eta!'2025-08-02 00:00:00'}",
-    "etd": "${json.sailingLeg[0].etd!'2025-08-01 00:00:00'}",
-    "origin": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
-    "destination": "${unLocationMap[json.sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
-    "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
-    "voyage": "${json.sailingLeg[0].voyage!'NA'}",
-    "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
-    "originPort": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
-    "destinationPort": "${unLocationMap[json.sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
-    "originLocCode": "${json.sailingLeg[0].polPort.code!'NA'}",
-    "destinationLocCode": "${json.sailingLeg[0].podPort.code!'NA'}"
+    "ata": "${json.sailingLeg[json.sailingLeg?size-1].ata!''}",
+    "atd": "${json.sailingLeg[0].atd!''}",
+    "eta": "${json.sailingLeg[json.sailingLeg?size-1].eta!''}",
+    "etd": "${json.sailingLeg[0].etd!''}",
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[0].polPort.code]?has_content>
+          "origin": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code]?has_content>
+          "destination": "${unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+          "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+    </#if>
+    "voyage": "${json.sailingLeg[0].voyage!''}",
+    <#if carrierMap?? && carrierMap[json.childJobs[0].legs[0].code]?has_content>
+          "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
+    <#else>
+      <#assign hasMappingError = true>
+      <#assign fieldToMap += "carrier code" + ", ">
+      <#assign _ignore = ErrorUtil.logError(
+          "json.childJobs[0].legs[0].code",
+          (json.childJobs[0].legs[0].code)!"",
+          "shippingLine",
+          "",
+          "MissingMappingMasterData",
+          "The mapping for the value in json.childJobs[0].legs[0].code doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+          null, null, null
+      )>
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[0].polPort.code]?has_content>
+          "originPort": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code]?has_content>
+          "destinationPort": "${unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    "originLocCode": "${json.sailingLeg[0].polPort.code!''}",
+    "originPortLocCode": "${json.sailingLeg[0].polPort.code!''}",
+    "destinationLocCode": "${json.sailingLeg[json.sailingLeg?size-1].podPort.code!''}",
+    "destinationPortLocCode": "${json.sailingLeg[json.sailingLeg?size-1].podPort.code!''}"
   },
   "shipmentsList": [
     <#list json.childJobs as child>
     {
+    <#-- Fetch all shipment document guids -->
+      <#assign shipmentAdditionalDocs = []>
+      <#if child.shipmentDocs?? && (child.shipmentDocs?size > 0)>
+          <#assign shipmentAdditionalDocs = getAdditionalDocs(child.shipmentDocs, httpHeaders) />
+      </#if>
+      <#-- Add to globalDocsMap -->
+      <#assign globalDocsMap = globalDocsMap + {child.reference : shipmentAdditionalDocs} />
+      <#assign shipmentCount += 1>
       "guid": "${child.guid}",
       "houseBill": "${child.houseBill}",
+      <#assign houseBills += "${child.houseBill}" + ", ">
       "shipmentId": "${child.reference}",
       "consolRef": "${child.reference}",
       "direction": "IMP",
       "jobType": "STD",
       "transportMode": "SEA",
-      "status" : 1,
+      "status" : 0,
       <#if child.shipmentMode == 5>
         "shipmentType": "FCL",
       <#else>
           "shipmentType": "LCL",
       </#if>
-      "serviceType": "${child.serviceType!'P2P'}",
-      "incoterms": "${child.incoTerm.code!'CFR'}",
+      "serviceType": "${child.serviceType!''}",
+      "incoterms": "${child.incoTerm.code!''}",
+      "department": null,
       "volume": ${child.volume!0},
       "weight": ${child.weight!0},
       "noOfPacks": ${child.noOfPacks!0},
-      "partner": "${child.agent.code!'CLD'}",
+      "partner": null,
       "isReefer": ${child.reefer?c},
-      "controlled": ${child.controlled?c},
+      "controlled": null,
       "isBorrowed": ${child.isBorrowed?c},
       "masterBill": "${masterBill!''}",
       "paymentTerms": <#if child.paymentTerms??><#if child.paymentTerms == "PPD">"PPD"<#elseif child.paymentTerms == "CCX">"CCX"<#else>"${child.paymentTerms}"</#if><#else>"CCX"</#if>,
@@ -692,11 +874,28 @@
       "weightUnit": "KG",
       "chargable": ${child.chargeableWeight!0},
       "chargeableUnit": "M3",
-      "client": ${consigneeOrgData},
-      "consigner": ${consignerOrgData},
-      "consignee": ${consigneeOrgData},
-      "notify1": ${notifyPartyOrgData},
-      "sendingAgent": ${agentOrgData},
+      "client": ${consigneeOrgData!''},
+      "consigner": ${consignerOrgData!''},
+      "consignee": ${consigneeOrgData!''},
+      "additionalDetails": {
+          "notifyParty": ${notifyPartyOrgData!''},
+          <#if masterListMap?? && masterListMap[child.billType.code]?has_content>
+            "releaseType": "${masterListMap[child.billType.code][0].itemValue}"
+          <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "billType.code" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "child.billType.code",
+              (child.billType.code)!"",
+              "releaseType",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in child.billType.code exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )>
+          </#if> 
+      },
+      "sendingAgent": ${sendingAgentOrgData},
       "packingList": [
           <#assign firstItem = true>
           <#list child.equipment as ce>
@@ -709,7 +908,7 @@
                 "volume": ${item.cbm!0},
                 "weight": ${item.weight!0},
                 "commodity": "${item.commodity!''}",
-                "packsType": "${item.packsType!'BAG'}",
+                "packsType": "${item.packsType!'PKG'}",
                 "volumeUnit": "${item.volumeUnit!'M3'}",
                 "weightUnit": "${item.weightUnit!'KG'}",
                 "goodsDescription": "${jsonEscape(item.description!'')}",
@@ -725,16 +924,25 @@
       "routingsList": [
         <#list child.sailingLeg as leg>
         {
-          "leg": ${leg.legSequence + 1},
+          "leg": ${leg.legSequence},
           "mode": "SEA",
-          "ata": null,
+          "ata": "${leg.ata!''}",
           "atd": "${leg.atd!''}",
           "eta": "${leg.eta!''}",
           "etd": "${leg.etd!''}",
-          "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
-          "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+          <#if carrierMap?? && carrierMap[child.legs[0].code]?has_content>
+            "carrier": "${carrierMap[child.legs[0].code][0].name}",
+          </#if>
+          <#if unLocationMap?? && unLocationMap[leg.polPort.code]?has_content>
+            "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+          </#if>
+          <#if unLocationMap?? && unLocationMap[leg.podPort.code]?has_content>
+            "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+          </#if>
           "voyage": "${leg.voyage!''}",
-          "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+          <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+            "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+          </#if>
           "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
           "domestic": false
         }<#if leg_has_next>,</#if>
@@ -747,7 +955,9 @@
 
           "containerNumber": "${ce.containerNumber}",
           "carrierSealNumber": "${ce.seal!''}",
-          "containerCode": "${ce.type}",
+          <#if containerTypeMap?? && containerTypeMap[ce.type]?has_content>
+            "containerCode": "${containerTypeMap[ce.type][0].code}",
+          </#if>
           "containerCount": 1,
           "teu": ${ce.teu!"1"},
           "tareWeight": ${ce.tareWeight!0},
@@ -767,19 +977,33 @@
         }
       ],
       "carrierDetails": {
-            "ata": "${json.childJobs[0].sailingLeg[0].ata!'2025-08-04 00:00:00'}",
-            "atd": "${json.childJobs[0].sailingLeg[0].atd!'2025-08-03 00:00:00'}",
-            "eta": "${json.childJobs[0].sailingLeg[0].eta!'2025-08-02 00:00:00'}",
-            "etd": "${json.childJobs[0].sailingLeg[0].etd!'2025-08-01 00:00:00'}",
-            "origin": "${unLocationMap[json.childJobs[0].sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
-            "destination": "${unLocationMap[json.childJobs[0].sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
-            "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
-            "voyage": "${json.childJobs[0].sailingLeg[0].voyage!'NA'}",
-            "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
-            "originPort": "${unLocationMap[json.childJobs[0].sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
-            "destinationPort": "${unLocationMap[json.childJobs[0].sailingLeg[0].podPort.code!''][0].locationsReferenceGuid}",
-            "originLocCode": "${json.childJobs[0].sailingLeg[0].polPort.code!'NA'}",
-            "destinationLocCode": "${json.childJobs[0].sailingLeg[0].podPort.code!'NA'}"
+            "ata": "${child.sailingLeg[child.sailingLeg?size-1].ata!''}",
+            "atd": "${child.sailingLeg[0].atd!''}",
+            "eta": "${child.sailingLeg[child.sailingLeg?size-1].eta!''}",
+            "etd": "${child.sailingLeg[0].etd!''}",
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[0].polPort.code]?has_content>
+              "origin": "${unLocationMap[child.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code]?has_content>
+              "destination": "${unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+              "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+            </#if>
+            "voyage": "${child.sailingLeg[0].voyage!''}",
+            <#if carrierMap?? && carrierMap[child.legs[0].code]?has_content>
+              "shippingLine": "${carrierMap[child.legs[0].code][0].name}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[0].polPort.code]?has_content>
+              "originPort": "${unLocationMap[child.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code]?has_content>
+              "destinationPort": "${unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            "originLocCode": "${child.sailingLeg[0].polPort.code!''}",
+            "originPortLocCode": "${child.sailingLeg[0].polPort.code!''}",
+            "destinationLocCode": "${child.sailingLeg[child.sailingLeg?size-1].podPort.code!''}",
+            "destinationPortLocCode": "${child.sailingLeg[child.sailingLeg?size-1].podPort.code!''}"
         },
       "additionalDocs": [<#list shipmentAdditionalDocs as doc>"${doc}"<#if doc_has_next>, </#if></#list>]
     }<#if child_has_next>,</#if>
@@ -792,27 +1016,36 @@
     }
   ],
   "achievedQuantities": {
-    "packs": ${json.noOfPacks!0},
+    "packs": ${result.packs!0},
     "teuCount": ${json.teu!0},
-    "packsType": "${json.units!'BAG'}",
+    "packsType": "${(result.packs?has_content && result.packs?number > 0)?then('PKG', '')}",
     "containerCount": ${json.equipment?size},
     "consolidatedVolume": ${json.volume!0},
-    "consolidatedWeight": ${json.weight!0},
+    "consolidatedWeight": ${result.totalNetWeight!0},
     "consolidationChargeQuantity": ${json.chargeableWeight!0},
-    "consolidationChargeQuantityUnit": "M3"
+    "consolidationChargeQuantityUnit": "M3",
+    "consolidatedVolumeUnit": "M3",
+    "consolidatedWeightUnit": "KG",
+    "weightVolumeUnit": "M3"
   },
-  "sendingAgent": ${agentOrgData},
+  "sendingAgent": ${sendingAgentOrgData},
   "additionalDocs": [<#list consolAdditionalDocs as doc>"${doc}"<#if doc_has_next>, </#if></#list>],
-  "receivingBranch": 938,
-  "sendToBranch": 938,
-  "sourceTenantId": 13497,
-  "sourceBranchTenantName": "${destinationAgentOrgDataMap.data.orgData.FullName}",
+  "receivingBranch": null,
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.TenantId??>
+    "sendToBranch": ${destinationAgentOrgDataMap.data.orgData.TenantId!''},
+  </#if>
+  "sourceTenantId": null,
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.FullName??>
+    "sourceBranchTenantName": "${destinationAgentOrgDataMap.data.orgData.FullName}",
+  </#if>
   "packingVsContainerGuid": {
+    <#assign firstItem = true>
     <#list json.childJobs as job>
       <#list job.equipment as eq>
           <#list eq.orderItems as oi>
+              <#if !firstItem>,</#if>
               "${oi.guid}" : "${eq.guid}"
-              <#if !(job?is_last && eq?is_last && oi?is_last)>,</#if>
+              <#assign firstItem = false>
           </#list>
       </#list>
     </#list>
@@ -828,3 +1061,495 @@
   }
 }
 }
+</#assign>
+
+
+
+<#assign masterDataMapForNetworkTransfer = {}>
+
+<#if !hasMappingError>
+
+ <#assign requestPayloadMap = JsonUtil.jsonToMap(transformedPayload)> 
+      
+  <#assign requestPayload = JsonUtil.objectToJsonString(requestPayloadMap.entityPayload)>
+
+  
+  <#assign response = MdmApiUtil.connectHttp(
+      "https://staging-runner.cargoes.com/shipment-service/api/v2/network-transfer/get/master-data?httpMethod=POST",
+      requestPayload,
+      httpHeaders
+  )/>
+  <#assign res = JsonUtil.getStringFromStream(response.body)>
+
+  <#assign ntMasterData = res>
+  <#assign ntMasterDataMap = JsonUtil.jsonToMap(ntMasterData)>
+
+  <#assign masterDataMapForNetworkTransfer = ntMasterDataMap.data>
+</#if>
+
+ 
+
+
+
+
+
+
+
+
+
+
+{
+  "entityType": "CONSOLIDATION",
+  "entityNumber": "${json.reference}",
+  "transportMode": "SEA",
+  "status": "TRANSFERRED",
+  "jobType": "IMP",
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.TenantId??>
+    "tenantId": ${destinationAgentOrgDataMap.data.orgData.TenantId},
+  </#if>
+  "entityPayload":{
+  "guid": "${json.guid}",
+  "bol": "${json.masterBill!''}",
+  "reefer": ${json.reefer?c},
+  "payment": <#if paymentTerms??>
+                <#if paymentTerms == "PPD">"PPD"
+                <#elseif paymentTerms == "CCX">"CCX"
+                <#else>"${json.paymentTerms}"</#if>
+             <#else>null</#if>,
+  "borrowed": ${json.isBorrowed?c},
+  "isInland": ${json.isInland?c},
+  "isLinked": ${json.isLinked?c},
+  "coLoadMBL": "${json.parentJobId!''}",
+  "hazardous": "${json.dangerousGoods!''}",
+  "incoterms": "${(json.incoTerm.code)!'CFR'}",
+  "isCharter": ${json.isCharter?c},
+  "isDomestic": ${json.isDomestic?c},
+  "department": null,
+  "marksnNums": "${json.marksAndNumbers!''}",
+  "description": "${json.descriptionMaster!GoodsDescription!''}",
+  "deliveryMode": null,
+  "originBranch": null,
+  "shipmentType": "IMP",
+  "direction": "IMP",
+  "source": "External",
+  "isFrob": ${json.isFrob?c},
+  "b2b": ${json.b2B?c},
+  "partner": null,
+  "coLoadCarrierName": "OOCL",
+  "consolidationNumber": "${json.reference}",
+  "referenceNumber": "${json.reference}",
+  "containerCategory": <#if json.shipmentMode == 5>"FCL"<#elseif json.shipmentMode == 1>"LCL"</#if>,
+  "transportMode": "SEA",
+  "consolidationType": "STD",
+  <#assign masterDataValue = JsonUtil.objectToJsonString((masterDataMapForNetworkTransfer?if_exists)[json.reference]?if_exists!{})>
+  "masterData": ${masterDataValue},
+  "receivingAgent": ${receivingAgentOrgData!''},
+  "openForAttachment": true,
+  "allocations": {
+    "packs": ${json.noOfPacks!"0"},
+    "volume": ${json.volume!"0"},
+    "weight": ${json.weight!"0"},
+    "teuCount": ${json.teu!"0"},
+    "chargable": ${json.chargeableWeight!0},
+    "packsType": null,
+    "volumeUnit": "M3",
+    "weightUnit": "KG",
+    "weightVolume": ${json.chargeableWeight!0},
+    "chargeableUnit": "M3",
+    "containerCount": ${json.equipment?size},
+    "dgContainerCount": 0,
+    "weightVolumeUnit": "M3"
+  },
+  "routingsList": [
+    <#list json.sailingLeg as leg>
+      {
+        "leg": ${leg.legSequence},
+        "mode": "SEA",
+        "ata": "${leg.ata!''}",
+        "atd": "${leg.atd!''}",
+        "eta": "${leg.eta!''}",
+        "etd": "${leg.etd!''}",
+        <#if unLocationMap?? && unLocationMap[leg.polPort.code]?has_content>
+          "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+        </#if>
+        <#if unLocationMap?? && unLocationMap[leg.podPort.code]?has_content>
+          "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+        </#if>
+        "voyage": "${leg.voyage!''}",
+        "carrier": "",
+        "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
+        "domestic": ${json.isDomestic?c},
+        <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+          "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+        </#if>
+        "transitDays": 0
+      }<#if leg_has_next>,</#if>
+    </#list>
+  ],
+  "containersList": [
+    <#list json.equipment as c>
+    {
+      <#assign result = calculateContainerWeights(c)>
+
+      "guid": "${c.guid}",
+      "containerNumber": "${c.containerNumber}",
+      "teu": ${c.teu!"1"},
+      "carrierSealNumber": "${c.seal!''}",
+      <#if containerTypeMap?? && containerTypeMap[c.type]?has_content>
+          "containerCode": "${containerTypeMap[c.type][0].code}",
+    <#--  <#else>
+          <#assign hasMappingError = true>
+          <#assign fieldToMap += "equipment.type" + ", ">
+          <#assign _ignore = ErrorUtil.logError(
+              "json.equipment.type",
+              (c.type)!"",
+              "containerCode",
+              "",
+              "MissingMappingMasterData",
+              "The mapping for the value in json.equipment doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
+              null, null, null
+          )> -->
+      </#if>
+      "containerCount": 1,
+      "isReefer": ${c.isGenSetRequired?c},
+      "minTemp": <#if c.temperature??>${c.temperature}<#else>null</#if>,
+      "isEmpty": ${(c.tareWeight == 0)?c},
+      "hazardous": "${json.dangerousGoods!''}",
+      "tareWeight": ${c.tareWeight!0},
+      "netWeight": ${result.totalNetWeight!0},
+      "grossWeight":  ${result.grossWeight!0},
+      "grossVolume": ${volume!0},
+      "marksNums": "${marksAndNumbers!''}",
+      "packs": ${result.packs},
+      "packsType": "${units!'PKG'}",
+      "commodityCode": "${c.commodityCode!''}",
+      "commodityGroup": "${c.commodityGroup!''}",
+      "netWeightUnit": "KG",
+      "grossWeightUnit": "KG",
+      "grossVolumeUnit": "M3",
+      "marinePollutant": ${json.marinePollutant?c}
+    }<#if c_has_next>,</#if>
+    </#list>
+  ],
+  "carrierDetails": {
+    "ata": "${json.sailingLeg[json.sailingLeg?size-1].ata!''}",
+    "atd": "${json.sailingLeg[0].atd!''}",
+    "eta": "${json.sailingLeg[json.sailingLeg?size-1].eta!''}",
+    "etd": "${json.sailingLeg[0].etd!''}",
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[0].polPort.code]?has_content>
+          "origin": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code]?has_content>
+          "destination": "${unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+          "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+    </#if>
+    "voyage": "${json.sailingLeg[0].voyage!''}",
+    <#if carrierMap?? && carrierMap[json.childJobs[0].legs[0].code]?has_content>
+          "shippingLine": "${carrierMap[json.childJobs[0].legs[0].code][0].name}",
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[0].polPort.code]?has_content>
+          "originPort": "${unLocationMap[json.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    <#if unLocationMap?? && unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code]?has_content>
+          "destinationPort": "${unLocationMap[json.sailingLeg[json.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+    </#if>
+    "originLocCode": "${json.sailingLeg[0].polPort.code!''}",
+    "destinationLocCode": "${json.sailingLeg[json.sailingLeg?size-1].podPort.code!''}",
+    "originPortLocCode": "${json.sailingLeg[0].polPort.code!''}",
+    "destinationPortLocCode": "${json.sailingLeg[json.sailingLeg?size-1].podPort.code!''}"
+  },
+  "shipmentsList": [
+    <#list json.childJobs as child>
+    {
+    <#-- Fetch all shipment document guids 
+      <#assign shipmentAdditionalDocs = []>
+      <#if child.shipmentDocs?? && (child.shipmentDocs?size > 0)>
+          <#assign shipmentAdditionalDocs = getAdditionalDocs(child.shipmentDocs, httpHeaders) />
+      </#if> -->
+      "guid": "${child.guid}",
+      "houseBill": "${child.houseBill}",
+      "shipmentId": "${child.reference}",
+      "consolRef": "${child.reference}",
+      "direction": "IMP",
+      "jobType": "STD",
+      "transportMode": "SEA",
+      "status" : 0,
+      <#if child.shipmentMode == 5>
+        "shipmentType": "FCL",
+      <#else>
+          "shipmentType": "LCL",
+      </#if>
+      "serviceType": "${child.serviceType!''}",
+      "incoterms": "${child.incoTerm.code!''}",
+      "volume": ${child.volume!0},
+      "weight": ${child.weight!0},
+      "noOfPacks": ${child.noOfPacks!0},
+      "partner": null,
+      "department": null,
+      "isReefer": ${child.reefer?c},
+      "controlled": null,
+      "isBorrowed": ${child.isBorrowed?c},
+      <#assign masterDataValue = JsonUtil.objectToJsonString((masterDataMapForNetworkTransfer?if_exists)[child.reference]?if_exists!{})>
+      "masterData": ${masterDataValue},
+      "masterBill": "${masterBill!''}",
+      "paymentTerms": <#if child.paymentTerms??><#if child.paymentTerms == "PPD">"PPD"<#elseif child.paymentTerms == "CCX">"CCX"<#else>"${child.paymentTerms}"</#if><#else>"CCX"</#if>,
+      "marksNum": "${child.marksAndNumbers!''}",
+      "goodsDescription": "${child.goodsDescription!''}",
+      "volumetricWeight": ${child.chargeableWeight!0},
+      "volumeUnit": "M3",
+      "weightUnit": "KG",
+      "chargable": ${child.chargeableWeight!0},
+      "chargeableUnit": "M3",
+      "client": ${consigneeOrgData!''},
+      "consigner": ${consignerOrgData!''},
+      "consignee": ${consigneeOrgData!''},
+      "additionalDetails": {
+          "notifyParty": ${notifyPartyOrgData!''},
+          <#if masterListMap?? && masterListMap[child.billType.code]?has_content>
+            "releaseType": "${masterListMap[child.billType.code][0].itemValue}"
+          </#if> 
+           
+      },
+      "sendingAgent": ${sendingAgentOrgData},
+      "packingList": [
+          <#assign firstItem = true>
+          <#list child.equipment as ce>
+            <#list ce.orderItems as item>
+              <#if !firstItem>,</#if>
+              <#assign firstItem = false>
+              {
+                "packs": "${item.quantity!0}",
+                "hscode": "${item.hscode!''}",
+                "volume": ${item.cbm!0},
+                "weight": ${item.weight!0},
+                "commodity": "${item.commodity!''}",
+                "packsType": "${item.packsType!'PKG'}",
+                "volumeUnit": "${item.volumeUnit!'M3'}",
+                "weightUnit": "${item.weightUnit!'KG'}",
+                "goodsDescription": "${jsonEscape(item.description!'')}",
+                <#if child.isTemperatureControlled??>
+                  "isTemperatureControlled": ${child.isTemperatureControlled?c}
+                <#else>
+                  "isTemperatureControlled": ""  
+                </#if>
+              }
+            </#list>
+          </#list>
+        ],
+      "routingsList": [
+        <#list child.sailingLeg as leg>
+        {
+          "leg": ${leg.legSequence},
+          "mode": "SEA",
+          "ata": "${leg.ata!''}",
+          "atd": "${leg.atd!''}",
+          "eta": "${leg.eta!''}",
+          "etd": "${leg.etd!''}",
+          <#if carrierMap?? && carrierMap[child.legs[0].code]?has_content>
+            "carrier": "${carrierMap[child.legs[0].code][0].name}",
+          </#if>
+          <#if unLocationMap?? && unLocationMap[leg.polPort.code]?has_content>
+            "pol": "${unLocationMap[leg.polPort.code!''][0].locationsReferenceGuid}",
+          </#if>
+          <#if unLocationMap?? && unLocationMap[leg.podPort.code]?has_content>
+            "pod": "${unLocationMap[leg.podPort.code!''][0].locationsReferenceGuid}",
+          </#if>
+          "voyage": "${leg.voyage!''}",
+          <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+            "vesselName": "${vesselsMap[json.vesselName!''][0].uuid}",
+          </#if>
+          "carriage": <#if leg.carriage?has_content>"${leg.carriage}"<#else>"MAIN_CARRIAGE"</#if>,
+          "domestic": false
+        }<#if leg_has_next>,</#if>
+        </#list>
+      ],
+      "containersList": [
+        <#list child.equipment as ce>
+        {
+          <#assign result = calculateContainerWeights(ce)>
+
+          "containerNumber": "${ce.containerNumber}",
+          "carrierSealNumber": "${ce.seal!''}",
+          <#if containerTypeMap?? && containerTypeMap[ce.type]?has_content>
+            "containerCode": "${containerTypeMap[ce.type][0].code}",
+          </#if>
+          "containerCount": 1,
+          "teu": ${ce.teu!"1"},
+          "tareWeight": ${ce.tareWeight!0},
+          "netWeight": ${result.totalNetWeight},
+          "netWeightUnit": "KG",
+          "grossWeight": ${result.grossWeight},
+          "grossWeightUnit": "KG",
+          "packs": ${result.packs},
+          "isReefer": ${ce.isGenSetRequired?c}
+        }<#if ce_has_next>,</#if>
+        </#list>
+      ],
+      "referenceNumbersList": [
+        {
+          "type": "AGR",
+          "referenceNumber": "${json.reference!''}"
+        }
+      ],
+      "carrierDetails": {
+            "ata": "${child.sailingLeg[child.sailingLeg?size-1].ata!''}",
+            "atd": "${child.sailingLeg[0].atd!''}",
+            "eta": "${child.sailingLeg[child.sailingLeg?size-1].eta!''}",
+            "etd": "${child.sailingLeg[0].etd!''}",
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[0].polPort.code]?has_content>
+              "origin": "${unLocationMap[child.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code]?has_content>
+              "destination": "${unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if vesselsMap?? && vesselsMap[json.vesselName]?has_content>
+              "vessel": "${vesselsMap[json.vesselName!''][0].uuid}",
+            </#if>
+            "voyage": "${child.sailingLeg[0].voyage!''}",
+            <#if carrierMap?? && carrierMap[child.legs[0].code]?has_content>
+              "shippingLine": "${carrierMap[child.legs[0].code][0].name}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[0].polPort.code]?has_content>
+              "originPort": "${unLocationMap[child.sailingLeg[0].polPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            <#if unLocationMap?? && unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code]?has_content>
+              "destinationPort": "${unLocationMap[child.sailingLeg[child.sailingLeg?size-1].podPort.code!''][0].locationsReferenceGuid}",
+            </#if>
+            "originLocCode": "${child.sailingLeg[0].polPort.code!''}",
+            "destinationLocCode": "${child.sailingLeg[child.sailingLeg?size-1].podPort.code!''}",
+            "originPortLocCode": "${child.sailingLeg[0].polPort.code!''}",
+            "destinationPortLocCode": "${child.sailingLeg[child.sailingLeg?size-1].podPort.code!''}"
+        },
+      "additionalDocs": [<#list globalDocsMap[child.reference] as doc>"${doc}"<#if doc_has_next>, </#if></#list>]
+    }<#if child_has_next>,</#if>
+    </#list>
+  ],
+  "referenceNumbersList": [
+    {
+      "type": "AGR",
+      "referenceNumber": "${json.reference!''}"
+    }
+  ],
+  "achievedQuantities": {
+    "packs": ${result.packs!0},
+    "teuCount": ${json.teu!0},
+    "packsType": "${(result.packs?has_content && result.packs?number > 0)?then('PKG', '')}",
+    "containerCount": ${json.equipment?size},
+    "consolidatedVolume": ${json.volume!0},
+    "consolidatedWeight": ${result.totalNetWeight!0},
+    "consolidationChargeQuantity": ${json.chargeableWeight!0},
+    "consolidationChargeQuantityUnit": "M3",
+    "consolidatedVolumeUnit": "M3",
+    "consolidatedWeightUnit": "KG",
+    "weightVolumeUnit": "M3"
+  },
+  "sendingAgent": ${sendingAgentOrgData},
+  "additionalDocs": [<#list consolAdditionalDocs as doc>"${doc}"<#if doc_has_next>, </#if></#list>],
+  "receivingBranch": null,
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.TenantId??>
+    "sendToBranch": ${destinationAgentOrgDataMap.data.orgData.TenantId!''},
+  </#if>
+  "sourceTenantId": null,
+  <#if destinationAgentOrgDataMap?? && destinationAgentOrgDataMap.data?? && destinationAgentOrgDataMap.data.orgData?? && destinationAgentOrgDataMap.data.orgData.FullName??>
+    "sourceBranchTenantName": "${destinationAgentOrgDataMap.data.orgData.FullName}",
+  </#if>
+  "packingVsContainerGuid": {
+  <#assign firstItem = true>
+  <#list json.childJobs as job>
+    <#list job.equipment as eq>
+        <#list eq.orderItems as oi>
+            <#if !firstItem>,</#if>
+            "${oi.guid}" : "${eq.guid}"
+            <#assign firstItem = false>
+        </#list>
+    </#list>
+  </#list>
+},
+ <#-- "packingVsContainerGuid": {
+    <#list json.childJobs as job>
+      <#list job.equipment as eq>
+          <#list eq.orderItems as oi>
+              "${oi.guid}" : "${eq.guid}"
+              <#if !(job?is_last && eq?is_last && oi?is_last)>,</#if>
+          </#list>
+      </#list>
+    </#list>
+  }, -->
+  "containerVsShipmentGuid": {
+    <#list json.childJobs as job>
+        <#list job.equipment as container>
+            "${container.guid}": [
+                "${job.guid}"
+            ]<#if !(job?is_last && container?is_last)>,</#if>
+        </#list>
+    </#list>
+  }
+}
+}
+
+
+
+
+
+
+<#if hasMappingError>
+
+    <#assign formData = {
+    "organizationId": "24",
+    "templateName": "workflow_email_template",
+    "metadata": "{
+        \"from\": \"noreply@staging.cargoflow.dpworld.com\",
+        \"subject\": \"System Alert: ${json.reference} - Master Data Mapping Error\",
+        \"data\": {
+            \"dataBody\": \"Dear User,<br><br>The mapping for the value in ${fieldToMap} doesn't exist. Global Shared Services (GSC) will look into the error. Operator will be informed when the file is ready for re-transfer to Destination.<br><br>Thanks,<br>Cargoes Runner Team\"
+        }
+    }",
+    "applicationId": "24",
+    "recipientEmails": "Aditya.Thakur@dpworld.com,reshma.kumari@dpworld.com,Mohammed.Suhail@dpworld.com,Dipti.Arya@dpworld.com,yogesh.malhotra@dpworld.com,Jabeer.Yusuf@dpworld.com",
+    "priority": "high",
+    "trackEmailEvents": "true"
+    } />
+
+
+    <#assign headers = {
+    "X-Api-Key": "NzZS6duBuf8YkmrDFTj24sbBIlKvcNmZ"
+    } />
+
+    <#assign response = MdmApiUtil.connectMultipartFormDataHttp(
+    "http://staging-notification-service-api.private-cargoes.com/emailTemplates/sendEmail",
+    headers,
+    formData
+    ) />
+
+</#if>
+
+<#if hasMappingError>
+    <#stop  "This transformation has errors, please go to integration dashboard to check and rectify.">
+
+<#else>
+
+    <#assign formData = {
+    "organizationId": "24",
+    "templateName": "workflow_email_template",
+    "metadata": "{ \"from\": \"noreply@staging.cargoflow.dpworld.com\", \"subject\": \"Consolidation Alert: ${json.reference} - Sent from London\", \"data\": { \"dataBody\": \"Dear user,<br><br>This is to inform you that a consolidation with <strong>${shipmentCount} shipments</strong> has been sent from London for you to import.<br><br>Below are its details:<br><br><b>Consolidation Details:</b><br><br>Sender: ${sendingAgentOrgDataMap.orgData.Email!'Unknown User'} from ${sendingAgentOrgDataMap.addressData.City!'Unknown City'}<br><br>Consolidation number: ${json.reference}<br><br>HBL Numbers: ${houseBills}<br><br>MBL Number: ${json.masterBill!''}<br><br>Sent date: ${.now?string('yyyy-MM-dd')}<br><br>This email contains confidential content, kindly treat with caution.<br><br>Regards,<br>CargoesRunner Team\" } }",
+    "applicationId": "24",
+    "recipientEmails": "Aditya.Thakur@dpworld.com,reshma.kumari@dpworld.com,Mohammed.Suhail@dpworld.com,Dipti.Arya@dpworld.com,yogesh.malhotra@dpworld.com,Jabeer.Yusuf@dpworld.com",
+    "priority": "high",
+    "trackEmailEvents": "true"
+    } />
+
+
+    <#assign headers = {
+    "X-Api-Key": "NzZS6duBuf8YkmrDFTj24sbBIlKvcNmZ"
+    } />
+
+    <#assign response = MdmApiUtil.connectMultipartFormDataHttp(
+    "http://staging-notification-service-api.private-cargoes.com/emailTemplates/sendEmail",
+    headers,
+    formData
+    ) />
+
+
+</#if>
