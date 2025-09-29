@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VGMContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
@@ -11,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.Notification
 
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,12 @@ class VerifiedGrossMassUtilTest {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private VerifiedGrossMass verifiedGrossMass;
+
+    @Mock
+    private EmailTemplatesRequest verifiedGrossMassTemplate;
 
     @BeforeEach
     void setUp() {
@@ -454,36 +462,13 @@ class VerifiedGrossMassUtilTest {
     }
 
     @Test
-    void testCompareVGMContainers_WeightDifferenceWithSubmitted_AddsWarning() {
-        CommonContainers current = createCommonContainer(1L, "C1",
-                BigDecimal.valueOf(110), "KG", // changed weight
-                BigDecimal.valueOf(50), "KG",
-                BigDecimal.valueOf(20), "KG");
-
-        CommonContainers submitted = createCommonContainer(1L, "C1",
-                BigDecimal.valueOf(100), "KG",
-                BigDecimal.valueOf(50), "KG",
-                BigDecimal.valueOf(20), "KG");
-
-        List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
-                List.of(current), List.of(submitted), Collections.emptyList());
-
-        assertNotNull(warnings);
-        assertEquals(1, warnings.size());
-        VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
-        assertEquals("110 KG", warning.getVgmNewWeightValue());
-        assertEquals("100 KG", warning.getVgmOldWeightValue());
-    }
-
-    @Test
     void testCompareVGMContainers_WeightDifferenceWithConsol_AddsWarning() {
-        CommonContainers current = createCommonContainer(1L, "C1",
-                BigDecimal.valueOf(110), "KG", // changed weight
+        CommonContainers current = createCommonContainer(1L, "1",
+                BigDecimal.valueOf(110), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        Containers consol = createConsolContainer(1L, "C1",
+        Containers consol = createConsolContainer(1L, "1",
                 BigDecimal.valueOf(100), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
@@ -494,24 +479,24 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("110 KG", warning.getVgmNewWeightValue());
         assertEquals("100 KG", warning.getVgmOldWeightValue());
     }
 
     @Test
     void testCompareVGMContainers_WeightDifferenceWithBothSubmittedAndConsol_AddsTwoWarnings() {
-        CommonContainers current = createCommonContainer(1L, "C1",
+        CommonContainers current = createCommonContainer(1L, "1",
                 BigDecimal.valueOf(110), "KG", // changed weight
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        CommonContainers submitted = createCommonContainer(1L, "C1",
+        CommonContainers submitted = createCommonContainer(1L, "1",
                 BigDecimal.valueOf(100), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
 
-        Containers consol = createConsolContainer(1L, "C1",
+        Containers consol = createConsolContainer(1L, "1",
                 BigDecimal.valueOf(90), "KG",
                 BigDecimal.valueOf(50), "KG",
                 BigDecimal.valueOf(20), "KG");
@@ -524,7 +509,7 @@ class VerifiedGrossMassUtilTest {
 
         Set<String> oldWeights = new HashSet<>();
         for (VGMContainerWarningResponse warning : warnings) {
-            assertEquals("C1", warning.getContainerNumber());
+            assertEquals("1", warning.getContainerNumber());
             oldWeights.add(warning.getVgmOldWeightValue());
             assertEquals("110 KG", warning.getVgmNewWeightValue());
         }
@@ -588,7 +573,8 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_ContainerNumberFromConsolWhenSubmittedIsNull() {
-        CommonContainers current = createCommonContainer(1L, null, new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
+        CommonContainers current = createCommonContainer(
+                1L, String.valueOf(1), new BigDecimal("12"), "KG", new BigDecimal("9"), "KG", new BigDecimal("3"), "KG");
         Containers consol = createConsolContainer(1L, "CONSOL_CONT1", new BigDecimal("10"), "KG", new BigDecimal("8"), "KG", new BigDecimal("2"), "KG");
 
         // submittedContainer is null, so buildVGMContainerWarning picks containerNumber from consolContainer
@@ -620,14 +606,14 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_OneContainerHasWeightDifference_ReturnsSingleWarning() {
-        CommonContainers current1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers current2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current1 = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current2 = createCommonContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
-        CommonContainers submitted1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted1 = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted2 = createCommonContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
-        Containers consol1 = createConsolContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol2 = createConsolContainer(2L, "C2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol1 = createConsolContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol2 = createConsolContainer(2L, "2", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current1, current2), List.of(submitted1, submitted2), List.of(consol1, consol2));
@@ -635,7 +621,7 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("100 KG", warning.getVgmNewWeightValue());
         assertEquals("110 KG", warning.getVgmOldWeightValue());
     }
@@ -654,8 +640,8 @@ class VerifiedGrossMassUtilTest {
 
     @Test
     void testCompareVGMContainers_OnlySubmittedContainersWithDifference_ReturnsWarning() {
-        CommonContainers current = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current), List.of(submitted), Collections.emptyList());
@@ -663,21 +649,21 @@ class VerifiedGrossMassUtilTest {
         assertNotNull(warnings);
         assertEquals(1, warnings.size());
         VGMContainerWarningResponse warning = warnings.get(0);
-        assertEquals("C1", warning.getContainerNumber());
+        assertEquals("1", warning.getContainerNumber());
         assertEquals("110 KG", warning.getVgmNewWeightValue());
         assertEquals("100 KG", warning.getVgmOldWeightValue());
     }
 
     @Test
     void testCompareVGMContainers_MultipleContainersWithWeightDifferences_ReturnsMultipleWarnings() {
-        CommonContainers current1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers current2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(120), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        CommonContainers current1 = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current2 = createCommonContainer(2L, "2", BigDecimal.valueOf(120), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
-        CommonContainers submitted1 = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted2 = createCommonContainer(2L, "C2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        CommonContainers submitted1 = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted2 = createCommonContainer(2L, "2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
-        Containers consol1 = createConsolContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol2 = createConsolContainer(2L, "C2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
+        Containers consol1 = createConsolContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol2 = createConsolContainer(2L, "2", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(60), "KG", BigDecimal.valueOf(30), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current1, current2), List.of(submitted1, submitted2), List.of(consol1, consol2));
@@ -691,15 +677,15 @@ class VerifiedGrossMassUtilTest {
             containerNumbers.add(warning.getContainerNumber());
         }
 
-        assertTrue(containerNumbers.contains("C1"));
-        assertTrue(containerNumbers.contains("C2"));
+        assertTrue(containerNumbers.contains("1"));
+        assertTrue(containerNumbers.contains("2"));
     }
 
     @Test
     void testCompareVGMContainers_WeightCalculation_HandledCorrectly() {
-        CommonContainers current = createCommonContainer(1L, "C1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        CommonContainers submitted = createCommonContainer(1L, "C1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
-        Containers consol = createConsolContainer(1L, "C1", BigDecimal.valueOf(90), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers current = createCommonContainer(1L, "1", BigDecimal.valueOf(110), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        CommonContainers submitted = createCommonContainer(1L, "1", BigDecimal.valueOf(100), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
+        Containers consol = createConsolContainer(1L, "1", BigDecimal.valueOf(90), "KG", BigDecimal.valueOf(50), "KG", BigDecimal.valueOf(20), "KG");
 
         List<VGMContainerWarningResponse> warnings = util.compareVGMContainers(
                 List.of(current), List.of(submitted), List.of(consol));
@@ -806,4 +792,179 @@ class VerifiedGrossMassUtilTest {
         // Assert that the result is null when both containers are null
         assertNull(result);
     }
+
+    @Test
+    void testGetSendEmailBaseRequest_AllFieldsPresent() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com,internal2@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("internal1@example.com,internal2@example.com,creator@example.com,submitter@example.com", request.getTo());
+        assertEquals("Subject", request.getSubject());
+        assertEquals("TemplateName", request.getTemplateName());
+        assertEquals("Body", request.getHtmlBody());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_InternalEmailsNull() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn(null);
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("creator@example.com,submitter@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_CreateAndSubmitEmailsSame() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("creator@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("internal1@example.com,creator@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_CreateByUserEmailBlank() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn(" ");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("internal1@example.com,submitter@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_SubmitByUserEmailBlank() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn(" ");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("internal1@example.com,creator@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_NoInternalEmails() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify the values
+        assertEquals("creator@example.com,submitter@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_SubmitByUserEmailNull() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn(null);
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn(null);
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn(null);
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify that submitByUserEmail is not included
+        assertEquals("", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_SubmitByUserEmailEmpty() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("");  // submitByUserEmail is empty string
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify that submitByUserEmail is not included
+        assertEquals("internal1@example.com,creator@example.com", request.getTo());
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_SubmitByUserEmailValid() {
+        // Mock the VerifiedGrossMass object
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        // Mock the EmailTemplatesRequest object
+        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
+        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
+        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+
+        // Call the method under test
+        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
+
+        // Verify that submitByUserEmail is included
+        assertEquals("internal1@example.com,creator@example.com,submitter@example.com", request.getTo());
+    }
+
 }
