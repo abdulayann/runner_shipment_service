@@ -150,9 +150,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
-            if (isUnLocationLocCodeRequired) {
-                commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(consolShipment, null);
-            }
+            processOriginAndDestinationPort(isUnLocationLocCodeRequired, consolShipment, null);
             List<Packing> packingList = consolShipment.getPackingList();
             List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
@@ -222,10 +220,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             log.error("Failed to deep clone Consolidation [guid={}]", consolGuid);
             throw new IllegalStateException("Failed to clone Consolidation object");
         }
-
-        if (isUnLocationLocCodeRequired) {
-            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, clonedConsole);
-        }
+        processOriginAndDestinationPort(isUnLocationLocCodeRequired, null, clonedConsole);
 
         setConsolidationFields(clonedConsole);
 
@@ -240,9 +235,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         for (ShipmentDetails shipment : shipmentDetailsList) {
 
-            if (isUnLocationLocCodeRequired) {
-                commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
-            }
+            processOriginAndDestinationPort(isUnLocationLocCodeRequired, shipment, null);
 
             UUID shipmentGuid = shipment.getGuid();
             guidToShipment.put(shipmentGuid, shipment);
@@ -279,7 +272,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
             for (ShipmentDetails shipment : shipmentDetailsList) {
                 try {
-                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid, canUpdateTransportInstructions);
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid, canUpdateTransportInstructions, isUnLocationLocCodeRequired);
                 } catch (Exception e) {
                     log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
                     throw new IllegalArgumentException("Shipment transformation failed", e);
@@ -303,6 +296,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         clonedConsole.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
         return clonedConsole;
+    }
+
+    private void processOriginAndDestinationPort(boolean isUnLocationLocCodeRequired, ShipmentDetails shipment, ConsolidationDetails console) {
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, console);
+        }
     }
 
     private void setConsolidationFields(ConsolidationDetails consolidationDetails) {

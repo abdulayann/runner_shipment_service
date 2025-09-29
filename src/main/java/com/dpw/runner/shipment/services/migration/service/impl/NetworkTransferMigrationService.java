@@ -86,6 +86,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
         log.info("Starting V2 to V3 migration for Network Transfer [id={}]", networkTransferId);
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
         Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findById(networkTransferId);
         if(networkTransferOptional.isEmpty()) {
             throw new DataRetrievalFailureException("No NetworkTransfer found with given id: " + networkTransferId);
@@ -93,13 +94,13 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         NetworkTransfer networkTransfer = networkTransferOptional.get();
         Map<String, Object> entityPayload = networkTransfer.getEntityPayload();
         if(Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)){
-            return migrateShipmentV2ToV3(networkTransfer, entityPayload);
+            return migrateShipmentV2ToV3(networkTransfer, entityPayload, isUnLocationLocCodeRequired);
         }else{
-            return migrateConsolidationV2ToV3(networkTransfer, entityPayload, codeTeuMap, weightDecimal, volumeDecimal);
+            return migrateConsolidationV2ToV3(networkTransfer, entityPayload, codeTeuMap, weightDecimal, volumeDecimal, isUnLocationLocCodeRequired);
         }
     }
 
-    private NetworkTransfer migrateShipmentV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) throws RunnerException {
+    private NetworkTransfer migrateShipmentV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, boolean isUnLocationLocCodeRequired) throws RunnerException {
         ShipmentDetails v2Shipment = jsonHelper.convertValue(entityPayload, ShipmentDetails.class);
         if (entityPayload != null) {
             MigrationStatus status = v2Shipment.getMigrationStatus();
@@ -110,7 +111,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                 return networkTransfer;
             }
         }
-        ShipmentDetails v3Shipment = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false);
+        ShipmentDetails v3Shipment = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false, isUnLocationLocCodeRequired);
         log.info("Mapping completed for Network Transfer -> Shipment [id={}]", networkTransfer.getId());
         StringBuilder text = notesUtil.getShipmentNotes(v2Shipment);
         Notes notes = notesUtil.getNotes(v2Shipment.getId(), "SHIPMENT", text);
@@ -128,10 +129,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         return networkTransfer;
     }
 
-    private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
+    private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal, boolean isUnLocationLocCodeRequired) {
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         MigrationStatus status = existingPayload.getMigrationStatus();
-        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
         if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
             log.info("Network transfer already migrated from v2 -> Consolidation [id={}]", networkTransfer.getId());
             networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V2);
