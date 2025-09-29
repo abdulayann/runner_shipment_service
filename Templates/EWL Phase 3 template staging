@@ -561,11 +561,13 @@
 <#function calculateContainerWeights equipment>
     <#assign totalNetWeight = 0>
     <#assign totalQuantity = 0>
+    <#assign totalVolume = 0>
 
     <#-- Sum weights and quantities from orderItems -->
     <#list equipment.orderItems as oi>
         <#assign totalNetWeight = totalNetWeight + (oi.weight?number!0)>
         <#assign totalQuantity = totalQuantity + (oi.quantity?number!0)>
+        <#assign totalVolume = totalVolume + (oi.cbm?number!0)>
     </#list>
 
     <#-- Add tareWeight for grossWeight -->
@@ -574,7 +576,8 @@
     <#return {
         "totalNetWeight": totalNetWeight,
         "grossWeight": grossWeight,
-        "packs": totalQuantity
+        "packs": totalQuantity,
+        "totalVolume": totalVolume
     } />
 </#function>
 
@@ -668,17 +671,17 @@
   "openForAttachment": true,
   "receivingAgent": ${receivingAgentOrgData!''},
   "allocations": {
-    "packs": ${json.noOfPacks!"0"},
-    "volume": ${json.volume!"0"},
-    "weight": ${json.weight!"0"},
-    "teuCount": ${json.teu!"0"},
+    "packs": ${achievedTotalPacksShipment!0},
+    "volume": ${achievedTotalVolumeShipment!0},
+    "weight": ${achievedTotalWeightShipmentt!0},
+    "teuCount": ${json.teu!1},
     "chargable": ${json.chargeableWeight!0},
-    "packsType": null,
+    "packsType": "PKG",
     "volumeUnit": "M3",
     "weightUnit": "KG",
     "weightVolume": ${json.chargeableWeight!0},
     "chargeableUnit": "M3",
-    "containerCount": ${json.equipment?size},
+    "containerCount": ${json.childJobs[0].equipment?size},
     "dgContainerCount": 0,
     "weightVolumeUnit": "M3"
   },
@@ -744,10 +747,16 @@
       }<#if leg_has_next>,</#if>
     </#list>
   ],
+  <#assign achievedTotalWeight = 0>
+  <#assign achievedTotalPacks = 0>
+  <#assign achievedTotalVolume = 0>
   "containersList": [
     <#list json.equipment as c>
     {
       <#assign result = calculateContainerWeights(c)>
+      <#assign achievedTotalWeight = achievedTotalWeight + (result.totalNetWeight?number!0)>
+      <#assign achievedTotalPacks = achievedTotalPacks + (result.packs?number!0)>
+      <#assign achievedTotalVolume = achievedTotalVolume + (result.totalVolume?number!0)>
 
       "guid": "${c.guid}",
       "containerNumber": "${c.containerNumber}",
@@ -776,7 +785,7 @@
       "tareWeight": ${c.tareWeight!0},
       "netWeight": ${result.totalNetWeight!0},
       "grossWeight":  ${result.grossWeight!0},
-      "grossVolume": ${volume!0},
+      "grossVolume": ${result.totalVolume!0},
       "marksNums": "${marksAndNumbers!''}",
       "packs": ${result.packs},
       "packsType": "PKG",
@@ -948,24 +957,34 @@
         }<#if leg_has_next>,</#if>
         </#list>
       ],
+      <#assign achievedTotalWeightShipment = 0>
+      <#assign achievedTotalPacksShipment = 0>
+      <#assign achievedTotalVolumeShipment = 0>
       "containersList": [
         <#list child.equipment as ce>
         {
           <#assign result = calculateContainerWeights(ce)>
+          <#assign achievedTotalWeightShipment = achievedTotalWeightShipment + (result.totalNetWeight?number!0)>
+          <#assign achievedTotalPacksShipment = achievedTotalPacksShipment + (result.packs?number!0)>
+          <#assign achievedTotalVolumeShipment = achievedTotalVolumeShipment + (result.totalVolume?number!0)>
 
+          "guid": "${ce.guid}",
           "containerNumber": "${ce.containerNumber}",
           "carrierSealNumber": "${ce.seal!''}",
           <#if containerTypeMap?? && containerTypeMap[ce.type]?has_content>
             "containerCode": "${containerTypeMap[ce.type][0].code}",
           </#if>
           "containerCount": 1,
-          "teu": ${ce.teu!"1"},
+          "teu": ${ce.teu!1},
           "tareWeight": ${ce.tareWeight!0},
           "netWeight": ${result.totalNetWeight},
           "netWeightUnit": "KG",
           "grossWeight": ${result.grossWeight},
           "grossWeightUnit": "KG",
+          "grossVolume": ${result.totalVolume!0},
+          "grossVolumeUnit": "M3",
           "packs": ${result.packs},
+          "packsType": "PKG",
           "isReefer": ${ce.isGenSetRequired?c}
         }<#if ce_has_next>,</#if>
         </#list>
@@ -1016,12 +1035,12 @@
     }
   ],
   "achievedQuantities": {
-    "packs": ${result.packs!0},
+    "packs": ${achievedTotalPacks!0},
     "teuCount": ${json.teu!0},
     "packsType": "${(result.packs?has_content && result.packs?number > 0)?then('PKG', '')}",
     "containerCount": ${json.equipment?size},
-    "consolidatedVolume": ${json.volume!0},
-    "consolidatedWeight": ${result.totalNetWeight!0},
+    "consolidatedVolume": ${achievedTotalVolume!0},
+    "consolidatedWeight": ${achievedTotalWeight!0},
     "consolidationChargeQuantity": ${json.chargeableWeight!0},
     "consolidationChargeQuantityUnit": "M3",
     "consolidatedVolumeUnit": "M3",
@@ -1146,17 +1165,17 @@
   "receivingAgent": ${receivingAgentOrgData!''},
   "openForAttachment": true,
   "allocations": {
-    "packs": ${json.noOfPacks!"0"},
-    "volume": ${json.volume!"0"},
-    "weight": ${json.weight!"0"},
-    "teuCount": ${json.teu!"0"},
+    "packs": ${achievedTotalPacksShipment!0},
+    "volume": ${achievedTotalVolumeShipment!0},
+    "weight": ${achievedTotalWeightShipmentt!0},
+    "teuCount": ${json.teu!1},
     "chargable": ${json.chargeableWeight!0},
-    "packsType": null,
+    "packsType": "PKG",
     "volumeUnit": "M3",
     "weightUnit": "KG",
     "weightVolume": ${json.chargeableWeight!0},
     "chargeableUnit": "M3",
-    "containerCount": ${json.equipment?size},
+    "containerCount": ${json.childJobs[0].equipment?size},
     "dgContainerCount": 0,
     "weightVolumeUnit": "M3"
   },
@@ -1197,18 +1216,6 @@
       "carrierSealNumber": "${c.seal!''}",
       <#if containerTypeMap?? && containerTypeMap[c.type]?has_content>
           "containerCode": "${containerTypeMap[c.type][0].code}",
-    <#--  <#else>
-          <#assign hasMappingError = true>
-          <#assign fieldToMap += "equipment.type" + ", ">
-          <#assign _ignore = ErrorUtil.logError(
-              "json.equipment.type",
-              (c.type)!"",
-              "containerCode",
-              "",
-              "MissingMappingMasterData",
-              "The mapping for the value in json.equipment doesn't exist. Global Shared Services will look into the error. You will be informed when the file is ready for re-transfer.",
-              null, null, null
-          )> -->
       </#if>
       "containerCount": 1,
       "isReefer": ${c.isGenSetRequired?c},
@@ -1218,7 +1225,7 @@
       "tareWeight": ${c.tareWeight!0},
       "netWeight": ${result.totalNetWeight!0},
       "grossWeight":  ${result.grossWeight!0},
-      "grossVolume": ${volume!0},
+      "grossVolume": ${result.totalVolume!0},
       "marksNums": "${marksAndNumbers!''}",
       "packs": ${result.packs},
       "packsType": "${units!'PKG'}",
@@ -1283,9 +1290,9 @@
       </#if>
       "serviceType": "${child.serviceType!''}",
       "incoterms": "${child.incoTerm.code!''}",
-      "volume": ${child.volume!0},
-      "weight": ${child.weight!0},
-      "noOfPacks": ${child.noOfPacks!0},
+      "volume": ${achievedTotalVolumeShipment!0},
+      "weight": ${achievedTotalWeightShipment!0},
+      "noOfPacks": ${achievedTotalPacksShipment!0},
       "partner": null,
       "department": null,
       "isReefer": ${child.reefer?c},
@@ -1370,19 +1377,23 @@
         {
           <#assign result = calculateContainerWeights(ce)>
 
+          "guid": "${ce.guid}",
           "containerNumber": "${ce.containerNumber}",
           "carrierSealNumber": "${ce.seal!''}",
           <#if containerTypeMap?? && containerTypeMap[ce.type]?has_content>
             "containerCode": "${containerTypeMap[ce.type][0].code}",
           </#if>
           "containerCount": 1,
-          "teu": ${ce.teu!"1"},
+          "teu": ${ce.teu!1},
           "tareWeight": ${ce.tareWeight!0},
           "netWeight": ${result.totalNetWeight},
           "netWeightUnit": "KG",
           "grossWeight": ${result.grossWeight},
           "grossWeightUnit": "KG",
+          "grossVolume": ${result.totalVolume!0},
+          "grossVolumeUnit": "M3",
           "packs": ${result.packs},
+          "packsType": "PKG",
           "isReefer": ${ce.isGenSetRequired?c}
         }<#if ce_has_next>,</#if>
         </#list>
@@ -1432,13 +1443,13 @@
       "referenceNumber": "${json.reference!''}"
     }
   ],
-  "achievedQuantities": {
-    "packs": ${result.packs!0},
+ "achievedQuantities": {
+    "packs": ${achievedTotalPacks!0},
     "teuCount": ${json.teu!0},
     "packsType": "${(result.packs?has_content && result.packs?number > 0)?then('PKG', '')}",
     "containerCount": ${json.equipment?size},
-    "consolidatedVolume": ${json.volume!0},
-    "consolidatedWeight": ${result.totalNetWeight!0},
+    "consolidatedVolume": ${achievedTotalVolume!0},
+    "consolidatedWeight": ${achievedTotalWeight!0},
     "consolidationChargeQuantity": ${json.chargeableWeight!0},
     "consolidationChargeQuantityUnit": "M3",
     "consolidatedVolumeUnit": "M3",
