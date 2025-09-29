@@ -177,7 +177,7 @@ class ShippingInstructionsServiceImplTest {
         return si;
     }
 
-    private void setupInttraSubmitMocks() {
+    private void setupInttraSubmitMocks() throws RunnerException {
         when(carrierBookingInttraUtil.getInttraRemoteId(any())).thenReturn("2342324");
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionInttraRequest.class)))
                 .thenReturn(new ShippingInstructionInttraRequest());
@@ -288,7 +288,7 @@ class ShippingInstructionsServiceImplTest {
     // ========== SUBMIT TESTS ==========
 
     @Test
-    void submitShippingInstruction_success_whenCarrierBookingConfirmed() {
+    void submitShippingInstruction_success_whenCarrierBookingConfirmed() throws RunnerException {
         Long id = 1L;
         ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Draft, EntityType.CARRIER_BOOKING, 100L);
         si.setId(id);
@@ -326,7 +326,7 @@ class ShippingInstructionsServiceImplTest {
     }
 
     @Test
-    void submitShippingInstruction_success_whenConsolidationAndDraft() {
+    void submitShippingInstruction_success_whenConsolidationAndDraft() throws RunnerException {
         Long id = 3L;
         ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Draft, EntityType.CONSOLIDATION, 200L);
         si.setId(id);
@@ -358,7 +358,7 @@ class ShippingInstructionsServiceImplTest {
     // ========== AMEND TESTS ==========
 
     @Test
-    void amendShippingInstruction_success_changesStatusAndSendsDownstream() {
+    void amendShippingInstruction_success_changesStatusAndSendsDownstream() throws RunnerException {
         Long id = 5L;
         ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CONSOLIDATION, 100L);
         si.setId(id);

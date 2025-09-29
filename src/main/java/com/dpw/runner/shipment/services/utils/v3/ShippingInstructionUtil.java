@@ -392,46 +392,85 @@ public class ShippingInstructionUtil {
         }
     }
 
-    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse, String inttraId) {
-        // Calculate total number of equipments
-        if (instructionInttraResponse.getCommonContainersList() != null) {
-            instructionInttraResponse.setTotalNumberOfEquipments(instructionInttraResponse.getCommonContainersList().stream()
-                    .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
-                    .sum());
-        } else {
-            instructionInttraResponse.setTotalNumberOfEquipments(0);
+    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse, String inttraId) throws RunnerException {
+        List<CommonContainerResponse> containers = instructionInttraResponse.getCommonContainersList();
+
+        if (containers == null) {
+            setDefaultTotals(instructionInttraResponse);
+            instructionInttraResponse.setInttraOrgId(inttraId);
+            return;
         }
 
-        // Calculate total number of packages
-        if (instructionInttraResponse.getCommonContainersList() != null) {
-            instructionInttraResponse.setTotalNoOfPackages(instructionInttraResponse.getCommonContainersList().stream()
-                    .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
-                    .sum());
-        } else {
-            instructionInttraResponse.setTotalNoOfPackages(0);
-        }
-
-        // Calculate total gross weight
-        if (instructionInttraResponse.getCommonContainersList() != null) {
-            instructionInttraResponse.setTotalGrossWeight(instructionInttraResponse.getCommonContainersList().stream()
-                    .filter(container -> container.getGrossWeight() != null)
-                    .mapToDouble(container -> container.getGrossWeight().doubleValue())
-                    .sum());
-        } else {
-            instructionInttraResponse.setTotalGrossWeight(0.0);
-        }
-
-        // Calculate total gross volume
-        if (instructionInttraResponse.getCommonContainersList() != null) {
-            instructionInttraResponse.setTotalGrossVolume(instructionInttraResponse.getCommonContainersList().stream()
-                    .filter(container -> container.getVolume() != null)
-                    .mapToDouble(container -> container.getVolume().doubleValue())
-                    .sum());
-        } else {
-            instructionInttraResponse.setTotalGrossVolume(0.0);
-        }
-
+        calculateEquipmentTotals(instructionInttraResponse, containers);
+        convertUnitsAndCalculateTotals(instructionInttraResponse, containers);
         instructionInttraResponse.setInttraOrgId(inttraId);
+    }
+
+    private void setDefaultTotals(ShippingInstructionInttraRequest response) {
+        response.setTotalNumberOfEquipments(0);
+        response.setTotalNoOfPackages(0);
+        response.setTotalGrossWeight(0.0);
+        response.setTotalGrossVolume(0.0);
+    }
+
+    private void calculateEquipmentTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) {
+        int totalEquipments = containers.stream()
+                .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                .sum();
+
+        int totalPackages = containers.stream()
+                .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
+                .sum();
+
+        response.setTotalNumberOfEquipments(totalEquipments);
+        response.setTotalNoOfPackages(totalPackages);
+    }
+
+    private void convertUnitsAndCalculateTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) throws RunnerException {
+        double totalWeight = 0.0;
+        double totalVolume = 0.0;
+
+        for (CommonContainerResponse container : containers) {
+            totalWeight += convertAndUpdateWeight(container);
+            totalVolume += convertAndUpdateVolume(container);
+        }
+
+        response.setTotalGrossWeight(totalWeight);
+        response.setTotalGrossVolume(totalVolume);
+    }
+
+    private double convertAndUpdateWeight(CommonContainerResponse container) throws RunnerException {
+        double totalWeight = 0.0;
+
+        // Convert and update gross weight
+        if (container.getGrossWeight() != null) {
+            BigDecimal convertedWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(),
+                    container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setGrossWeight(convertedWeight);
+            container.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+            totalWeight = convertedWeight.doubleValue();
+        }
+
+        // Convert and update net weight
+        if (container.getNetWeight() != null) {
+            BigDecimal convertedNetWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(),
+                    container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setNetWeight(convertedNetWeight);
+            container.setNetWeightUnit(Constants.WEIGHT_UNIT_KG);
+        }
+
+        return totalWeight;
+    }
+
+    private double convertAndUpdateVolume(CommonContainerResponse container) throws RunnerException {
+        if (container.getVolume() != null) {
+            BigDecimal convertedVolume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(),
+                    container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
+            container.setVolume(convertedVolume);
+            container.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+            return convertedVolume.doubleValue();
+        }
+        return 0.0;
     }
 
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, ShippingInstructionInttraRequest shippingInstructionInttraRequest) {
@@ -448,21 +487,6 @@ public class ShippingInstructionUtil {
             // Set the fetched details in the VerifiedGrossMassInttraResponse
             shippingInstructionInttraRequest.setCarrierScacCode(carrierScacCode);
             shippingInstructionInttraRequest.setCarrierDescription(carrierDescription);
-        }
-    }
-
-    private void convertWeightVolumeToRequiredUnit(ShippingInstructionInttraRequest shippingInstructionInttraRequest) throws RunnerException {
-        if (shippingInstructionInttraRequest == null || shippingInstructionInttraRequest.getCommonContainersList() == null || shippingInstructionInttraRequest.getCommonContainersList().isEmpty()) {
-            return;
-        }
-
-        for (CommonContainerResponse container : shippingInstructionInttraRequest.getCommonContainersList()) {
-            BigDecimal weight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
-            BigDecimal netWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(), container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
-            BigDecimal volume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(), container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
-            container.setVolume(volume);
-            container.setGrossWeight(weight);
-            container.setNetWeight(netWeight);
         }
     }
 

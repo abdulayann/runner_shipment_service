@@ -637,13 +637,21 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         // Step 3: Mark SI as submitted
         si.setStatus(ShippingInstructionStatus.SiSubmitted);
         si.setPayloadJson(createPackageAndContainerPayload(si));
-        ShippingInstruction saved = repository.save(si);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(si));
-        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        try {
+            shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        } catch (Exception e) {
+            log.error("Error in setting volume/mass details", e);
+        }
         shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
-
-        callBridge(instructionInttraRequest, "SI_CREATE");
+        try {
+            callBridge(instructionInttraRequest, "SI_CREATE");
+        } catch (Exception e) {
+            log.error("Error in calling bridge", e);
+            throw e;
+        }
+        ShippingInstruction saved = repository.save(si);
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
     }
@@ -655,7 +663,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         List<CarrierBookingInfoProjection> projectionList = repository.findConfimedBookingByConsolId(si.getEntityNumber());
-        if (projectionList.size() > 1 ) {
+        if (projectionList.size() > 1) {
             throw new ValidationException("Only one booking of all booking linked with a consolidation can be in confirmed state!!");
         }
     }
@@ -713,7 +721,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
-        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING) ;
+        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING);
         validateSIRequest(shippingInstruction);
 
         if (booking != null) {
@@ -726,7 +734,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction saved = repository.save(shippingInstruction);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(shippingInstruction));
-        shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        try {
+            shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        } catch (Exception e) {
+            log.error("Exception during conversion of volume / mass ", e);
+        }
         shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
 
         try {
@@ -750,7 +762,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
-        if (!isStandAlone && booking!=null && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
+        if (!isStandAlone && booking != null && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
             throw new ValidationException("Amendment not allowed. Carrier booking is not submitted.");
         }
     }
