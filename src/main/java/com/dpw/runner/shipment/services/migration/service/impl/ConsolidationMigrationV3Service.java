@@ -150,7 +150,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
-            processOriginAndDestinationPort(isUnLocationLocCodeRequired, consolShipment, null);
             List<Packing> packingList = consolShipment.getPackingList();
             List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
@@ -234,8 +233,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>(); // shipmentGuid → shipment
 
         for (ShipmentDetails shipment : shipmentDetailsList) {
-
-            processOriginAndDestinationPort(isUnLocationLocCodeRequired, shipment, null);
 
             UUID shipmentGuid = shipment.getGuid();
             guidToShipment.put(shipmentGuid, shipment);
