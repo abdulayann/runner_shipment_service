@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -192,6 +193,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private ShippingInstructionUtil shippingInstructionUtil;
+
+    @Autowired
+    PackingV3Service self;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -543,6 +547,42 @@ public class PackingV3Service implements IPackingV3Service {
         return packsType != null
                 ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
                 : String.format("Packing %s deleted successfully!", packs);
+    }
+
+    @Override
+    @Transactional
+    public BulkPackingResponse orderLineCreateUpdateDeleteBulk(OrderLineCreateUpdateDeleteRequest request, String module, boolean fromQuote) throws RunnerException {
+        if (ObjectUtils.isNotEmpty(request.getCreateOrderLines()) || ObjectUtils.isNotEmpty(request.getUpdateOrderLines())) {
+            List<PackingV3Request> orderLineCreateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getCreateOrderLines());
+            List<PackingV3Request> orderLineUpdateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getUpdateOrderLines());
+            updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineUpdateRequestList);
+
+            List<PackingV3Request> combinedOrderLineCreateRequestList = new ArrayList<>();
+            combinedOrderLineCreateRequestList.addAll(orderLineCreateRequestList);
+            combinedOrderLineCreateRequestList.addAll(orderLineUpdateRequestList);
+
+            return self.updateBulk(combinedOrderLineCreateRequestList, module, fromQuote);
+        }
+
+        if (ObjectUtils.isNotEmpty(request.getDeleteOrderLines())) {
+            List<PackingV3Request> orderLineDeleteRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getDeleteOrderLines());
+            updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineDeleteRequestList);
+            return self.deleteBulk(orderLineDeleteRequestList, module);
+        }
+
+        throw new RunnerException("No create, update, delete was performed");
+    }
+
+    private void updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(List<PackingV3Request> packingUpdateRequestList) throws RunnerException{
+        for (PackingV3Request packingRequest : packingUpdateRequestList) {
+            Optional<Packing> packing = packingDao.findByOrderLineGuid(packingRequest.getOrderLineGuid());
+            if (packing.isPresent() && packing.get().getId() != null) {
+                packingRequest.setId(packing.get().getId());
+                packingRequest.setGuid(packing.get().getGuid());
+            } else {
+                throw new RunnerException("Packing Id not found for orderLine with id: " + packingRequest.getOrderLineId() + " guid: " + packingRequest.getOrderLineGuid());
+            }
+        }
     }
 
     @Override

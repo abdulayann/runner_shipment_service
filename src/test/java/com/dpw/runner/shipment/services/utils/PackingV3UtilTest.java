@@ -939,8 +939,6 @@ class PackingV3UtilTest extends CommonMocks {
         assertEquals(1, result.size(), "Null elements should be filtered out");
         PackingV3Request mapped = result.get(0);
 
-        assertEquals(orderLine.getId(), mapped.getId());
-        assertEquals(orderLine.getGuid(), mapped.getGuid());
         assertEquals(orderLine.getCommodityGroup(), mapped.getCommodityGroup());
         assertEquals(orderLine.getContainerId(), mapped.getContainerId());
         assertEquals(orderLine.getGoodsDescription(), mapped.getGoodsDescription());
@@ -985,8 +983,6 @@ class PackingV3UtilTest extends CommonMocks {
         PackingV3Request packingReq = packingV3Util.mapOrderLineToPackingV3Request(orderLineRes);
         assertNotNull(packingReq);
 
-        assertEquals(orderLineRes.getId(), packingReq.getId());
-        assertEquals(orderLineRes.getGuid(), packingReq.getGuid());
         assertEquals(orderLineRes.getCommodityGroup(), packingReq.getCommodityGroup());
         assertEquals(orderLineRes.getContainerId(), packingReq.getContainerId());
         assertEquals(orderLineRes.getGoodsDescription(), packingReq.getGoodsDescription());

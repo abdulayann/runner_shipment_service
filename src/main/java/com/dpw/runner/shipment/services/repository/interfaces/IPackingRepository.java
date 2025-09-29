@@ -29,6 +29,8 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
         return findOne(spec);
     }
 
+    Optional<Packing> findByOrderLineGuid(String orderLineGuid);
+
     List<Packing> findAll();
 
     Page<Packing> findAll(Specification<Packing> spec, Pageable pageable);

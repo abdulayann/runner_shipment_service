@@ -22,6 +22,8 @@ public interface IPackingDao {
 
     Optional<Packing> findByGuid(UUID id);
 
+    Optional<Packing> findByOrderLineGuid(String guid);
+
     void delete(Packing packing);
 
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws RunnerException;

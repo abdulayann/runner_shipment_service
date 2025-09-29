@@ -146,6 +146,24 @@ class PackingDaoTest {
     }
 
     @Test
+    void findByOrderLineGuid() {
+        Optional<Packing> optionalPacking = Optional.of(testPacking);
+        when(packingRepository.findByOrderLineGuid(anyString())).thenReturn(optionalPacking);
+
+        Optional<Packing> packing = packingDao.findByOrderLineGuid("test-guid");
+
+        assertTrue(packing.isPresent());
+        assertEquals(testPacking, packing.get());
+    }
+
+    @Test
+    void findByOrderLineGuid_notFound() {
+        when(packingRepository.findByOrderLineGuid(anyString())).thenReturn(Optional.empty());
+        Optional<Packing> packing = packingDao.findByOrderLineGuid("test-guid");
+        assertTrue(packing.isEmpty());
+    }
+
+    @Test
     void findByIdWithQuery() {
         Optional<Packing> optionalPacking = Optional.of(testPacking);
         when(packingRepository.findByIdWithQuery(anyLong())).thenReturn(optionalPacking);
