@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,6 +39,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -1011,6 +1013,68 @@ class PackingDaoTest {
         packingDao.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
         verify(packingRepository, times(1))
                 .revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
+    }
+
+    @Test
+    void testSaveEntityFromShipmentOrder_packingPageWIthoutId_throws() {
+        Packing fakePacking = new Packing();
+        fakePacking.setId(1L);
+
+        List<Packing> fakePackingsList = List.of(fakePacking);
+        Long shipmentOrderId = 11L;
+
+        Page<Packing> packingPage = mock(Page.class);
+        when(packingRepository.findAll((Specification<Packing>) any(), (Pageable) any())).thenReturn(packingPage);
+
+        assertThrows(DataRetrievalFailureException.class, () -> packingDao.saveEntityFromShipmentOrder(fakePackingsList, shipmentOrderId));
+    }
+
+    @Test
+    void testSaveEntityFromShipmentOrder_() {
+        Packing fakePacking = new Packing();
+        fakePacking.setId(1L);
+
+        List<Packing> fakePackingsList = List.of(fakePacking);
+        Long shipmentOrderId = 11L;
+
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setOrderLineGuid("guid-123");
+        Page<Packing> packingPage = mock(Page.class);
+        when(packingPage.stream()).thenReturn(Stream.of(packing));
+        when(packingRepository.findAll((Specification<Packing>) any(), (Pageable) any())).thenReturn(packingPage);
+
+        List<Packing> result = packingDao.saveEntityFromShipmentOrder(fakePackingsList, shipmentOrderId);
+
+        verify(packingRepository, times(1)).save(any());
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testSaveEntityFromShipmentOrderThrows() throws Exception {
+        Packing fakePacking = new Packing();
+        fakePacking.setId(1L);
+
+        List<Packing> fakePackingsList = List.of(fakePacking);
+        Long shipmentOrderId = 11L;
+
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setOrderLineGuid("guid-123");
+        Page<Packing> packingPage = mock(Page.class);
+        when(packingPage.stream()).thenReturn(Stream.of(packing));
+        when(packingRepository.findAll((Specification<Packing>) any(), (Pageable) any())).thenReturn(packingPage);
+        when(jsonHelper.convertToJson(any())).thenReturn("previousValue");
+        doThrow(new RunnerException("msg"))
+                .when(auditLogService)
+                .addAuditLog(any());
+
+        List<Packing> result = packingDao.saveEntityFromShipmentOrder(fakePackingsList, shipmentOrderId);
+
+        verify(packingRepository, times(1)).save(any());
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
 
 }

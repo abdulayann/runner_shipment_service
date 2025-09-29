@@ -24,11 +24,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDele
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -1905,5 +1901,55 @@ class PackingV3ServiceTest extends CommonMocks {
         assertNull(result.getPackingResponseList());
 
         verify(packingDao, times(1)).findByOrderLineGuidIn(List.of(orderLineGuid));
+    }
+
+    @Test
+    void testCreatePacking_entiryInstanceOfShipmentDetails_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
+        testShipment.setDirection("EXP");
+
+        when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
+        when(packingDao.save(packing)).thenReturn(packing);
+        when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
+        when(packingDao.findByShipmentId(null)).thenReturn(List.of(packing));
+        doNothing().when(auditLogService).addAuditLog(any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
+        mockShipmentSettings();
+
+        ShipmentDetails fakeSd = ShipmentDetails.builder().build();
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(fakeSd);
+
+        PackingResponse actual = packingV3Service.create(request, SHIPMENT_ORDER);
+
+        assertEquals(response.getId(), actual.getId());
+        verify(packingDao).save(packing);
+    }
+
+    @Test
+    void testCreatePacking_entiryInstanceOfShipmentOrders_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
+        testShipment.setDirection("EXP");
+
+        when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        when(packingDao.save(packing)).thenReturn(packing);
+        when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
+        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
+        mockShipmentSettings();
+        ShipmentOrder fakeSo = ShipmentOrder.builder().build();
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(fakeSo);
+
+        PackingResponse actual = packingV3Service.create(request, "SHIPMENT");
+
+        assertEquals(response.getId(), actual.getId());
+        verify(packingDao).save(packing);
     }
 }

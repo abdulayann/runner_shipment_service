@@ -994,5 +994,34 @@ class PackingV3UtilTest extends CommonMocks {
         assertEquals(0, packingReq.getLength().compareTo(orderLineRes.getLength()));
     }
 
+    @Test
+    void test_mapPackingV3RequestListToOrderLineList_nullOrEmpty() {
+        assertTrue(packingV3Util.mapPackingV3RequestListToOrderLineList(null).isEmpty());
+        assertTrue(packingV3Util.mapPackingV3RequestListToOrderLineList(List.of()).isEmpty());
+    }
+
+    @Test
+    void test_mapPackingV3RequestListToOrderLineList_withData() {
+        PackingV3Request req = PackingV3Request.builder()
+                .id(1L)
+                .guid(UUID.randomUUID())
+                .packs("10")
+                .packsType("BOX")
+                .commodityGroup("CG")
+                .goodsDescription("desc")
+                .build();
+
+        List<OrderLineV3Response> result = packingV3Util.mapPackingV3RequestListToOrderLineList(List.of(req));
+
+        assertEquals(1, result.size());
+        assertEquals(req.getId(), result.get(0).getId());
+        assertEquals(req.getCommodityGroup(), result.get(0).getCommodityGroup());
+    }
+
+    @Test
+    void test_mapPackingV3RequestToOrderLine_null() {
+        assertNull(packingV3Util.mapPackingV3RequestToOrderLine(null));
+    }
+
 
 }

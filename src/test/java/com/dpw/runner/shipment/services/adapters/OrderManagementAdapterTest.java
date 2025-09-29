@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -754,5 +755,47 @@ class OrderManagementAdapterTest {
         assertThrows(RunnerException.class, () -> {
             orderManagementAdapter.getOrderManagementDTOByGuid("1234-5678-9123-4567");
         });
+    }
+
+    @Test
+    void test_fetchReferenceNumberResponseListForOrderV3() throws RunnerException {
+        String fakeOrderId = "1";
+        OrderManagementResponse restResponse = new OrderManagementResponse();
+
+        ReferencesResponse refResponse = new ReferencesResponse();
+        restResponse.setOrder(OrderManagementDTO.builder()
+                        .guid(UUID.randomUUID())
+                        .orderId("ORD-123")
+                .references(List.of(refResponse))
+                .build());
+        ResponseEntity<OrderManagementResponse> entity = ResponseEntity.ok(restResponse);
+
+        when(restTemplate.exchange(anyString(), any(), isNull(), eq(OrderManagementResponse.class))).thenReturn(entity);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+
+        CustomerBookingV3Response response = orderManagementAdapter.getOrderForBookingV3(fakeOrderId);
+
+        assertNotNull(response);
+        assertEquals(1, response.getReferenceNumbersList().size());
+    }
+
+    @Test
+    void test_fetchReferenceNumberResponseListForOrderV3_nullReferences() throws RunnerException {
+        String fakeOrderId = "1";
+        OrderManagementResponse restResponse = new OrderManagementResponse();
+
+        restResponse.setOrder(OrderManagementDTO.builder()
+                .guid(UUID.randomUUID())
+                .orderId("ORD-123")
+                .build());
+        ResponseEntity<OrderManagementResponse> entity = ResponseEntity.ok(restResponse);
+
+        when(restTemplate.exchange(anyString(), any(), isNull(), eq(OrderManagementResponse.class))).thenReturn(entity);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+
+        CustomerBookingV3Response response = orderManagementAdapter.getOrderForBookingV3(fakeOrderId);
+
+        assertNotNull(response);
+        assertNull(response.getReferenceNumbersList());
     }
 }
