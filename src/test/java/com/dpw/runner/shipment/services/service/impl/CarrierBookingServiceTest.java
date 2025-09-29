@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookin
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -37,10 +38,12 @@ import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.InttraFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
@@ -66,6 +69,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,6 +94,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -99,9 +105,11 @@ import java.util.concurrent.ExecutorService;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_INTTRA_CREATE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
+import static com.dpw.runner.shipment.services.entity.enums.IntegrationType.BRIDGE_CB_SUBMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -112,7 +120,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -175,6 +185,25 @@ class CarrierBookingServiceTest extends CommonMocks {
     private static ShippingInstruction shippingInstruction;
     private static VerifiedGrossMass verifiedGrossMass;
     private static ReferenceNumbers referenceNumbers;
+    private static final String INTTRA_ERROR_RESPONSE_JSON = """
+            [{
+              "code": "215047",
+              "message": "Place/Port of Load UN location code 'EGDAM_INR' is invalid."
+            }, {
+              "code": "215171",
+              "message": "The equipment Size / Type Code '' is invalid."
+            }]
+            """;
+    private static final String INTTRA_SUCCESS_RESPONSE_JSON = """
+            {
+              "bookingDetails": [{
+                  "payload": {
+                    "inttraReference": "2001251803",
+                    "carrierReferenceNumber": "247002840"
+                  }
+                }]
+              }
+            """;
 
     @BeforeAll
     static void init() {
@@ -1035,14 +1064,22 @@ class CarrierBookingServiceTest extends CommonMocks {
 
     @Test
     void submitAmend_Submit() throws RunnerException {
-        carrierBooking.setForwardingAgent(createForwardingAgent());
+        carrierBooking.setRequester(createRequesterParty());
+        carrierBooking.setId(1L);
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
         submitAmendInttraRequest.setOperationType(OperationType.SUBMIT);
 
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
-
+        doReturn("2342324").when(carrierBookingInttraUtil).getInttraRemoteId(any());
         when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
+
+        BridgeServiceResponse successBridgeResponse = createSuccessBridgeResponseWithValidJson();
+        when(carrierBookingInttraUtil.sendPayloadToBridge(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(successBridgeResponse);
+
+        JsonNode mockJsonNode = createMockSuccessJsonNode();
+        when(jsonHelper.readTreeFromJson(anyString())).thenReturn(mockJsonNode);
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = carrierBooking;
@@ -1053,11 +1090,49 @@ class CarrierBookingServiceTest extends CommonMocks {
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
 
         verify(carrierBookingDao).findById(any());
+        verify(carrierBookingDao, atLeastOnce()).save(any(CarrierBooking.class));
+        verify(jsonHelper).readTreeFromJson(anyString());
+        verify(carrierBookingInttraUtil).createTransactionHistory(
+                anyString(),
+                any(),
+                anyString(),
+                any(),
+                eq(1L),
+                any()
+        );
+    }
+
+    @Test
+    void submitAmend_Submit_InttraError() throws Exception {
+
+        carrierBooking.setRequester(createRequesterParty());
+        carrierBooking.setId(1L);
+        when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
+        SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
+        submitAmendInttraRequest.setOperationType(OperationType.SUBMIT);
+        doReturn("2342324").when(carrierBookingInttraUtil).getInttraRemoteId(any());
+        when(jsonHelper.convertValue(any(), eq(CarrierBookingBridgeRequest.class))).thenReturn(new CarrierBookingBridgeRequest());
+
+        doNothing().when(carrierBookingUtil).populateCarrierDetails(any(), any());
+        doNothing().when(carrierBookingUtil).populateIntegrationCode(any(), any());
+
+        when(carrierBookingInttraUtil.sendPayloadToBridge(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(createErrorBridgeResponse());
+        when(jsonHelper.readTreeFromJson(anyString())).thenReturn(createMockErrorJsonNode());
+
+        // Execute & Verify
+        InttraFailureException exception = assertThrows(InttraFailureException.class,
+                () -> carrierBookingService.submitOrAmend(submitAmendInttraRequest));
+
+        assertTrue(exception.getMessage().contains("Place/Port of Load UN location"));
+        assertTrue(exception.getMessage().contains("The equipment Size / Type Code '' is invalid."));
     }
 
     @Test
     void submitAmend_Amend() throws RunnerException {
 
+        carrierBooking.setRequester(createRequesterParty());
+        carrierBooking.setId(1L);
         CommonContainerResponse commonContainerResponse = new CommonContainerResponse();
         commonContainerResponse.setGrossWeight(BigDecimal.valueOf(1));
         commonContainerResponse.setVolume(BigDecimal.valueOf(1));
@@ -1065,13 +1140,20 @@ class CarrierBookingServiceTest extends CommonMocks {
         commonContainerResponse.setVolumeUnit(VOLUME_UNIT_M3);
 
         List<CommonContainerResponse> commonContainerResponses = List.of(commonContainerResponse);
-
+        doReturn("2342324").when(carrierBookingInttraUtil).getInttraRemoteId(any());
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = new CarrierBookingBridgeRequest();
         carrierBookingBridgeRequest.setContainersList(commonContainerResponses);
 
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
         submitAmendInttraRequest.setOperationType(OperationType.AMEND);
+
+        BridgeServiceResponse successBridgeResponse = createSuccessBridgeResponseWithValidJson();
+        when(carrierBookingInttraUtil.sendPayloadToBridge(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(successBridgeResponse);
+
+        JsonNode mockJsonNode = createMockSuccessJsonNode();
+        when(jsonHelper.readTreeFromJson(anyString())).thenReturn(mockJsonNode);
 
         when(carrierBookingDao.save(any())).thenReturn(carrierBooking);
 
@@ -1080,9 +1162,30 @@ class CarrierBookingServiceTest extends CommonMocks {
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
 
         verify(carrierBookingDao, times(1)).save(any());
+        verify(jsonHelper).readTreeFromJson(anyString());
+        verify(carrierBookingInttraUtil).createTransactionHistory(
+                anyString(),
+                any(),
+                anyString(),
+                any(),
+                eq(1L),
+                any()
+        );
     }
 
-    private Parties createForwardingAgent() {
+    @Test
+    void convertWeightVolumeToRequiredUnit_EarlyReturnConditions_ShouldReturn() throws RunnerException {
+        carrierBookingService.convertWeightVolumeToRequiredUnit(null);
+        CarrierBookingBridgeRequest requestWithNullList = new CarrierBookingBridgeRequest();
+        requestWithNullList.setContainersList(null);
+        carrierBookingService.convertWeightVolumeToRequiredUnit(requestWithNullList);
+        CarrierBookingBridgeRequest requestWithEmptyList = new CarrierBookingBridgeRequest();
+        requestWithEmptyList.setContainersList(new ArrayList<>());
+        carrierBookingService.convertWeightVolumeToRequiredUnit(requestWithEmptyList);
+    }
+
+
+    private Parties createRequesterParty() {
         return Parties.builder()
                 .orgData(Map.of(
                         "RemoteIdType", "INTRA_COMPANY_ID",
@@ -1096,5 +1199,46 @@ class CarrierBookingServiceTest extends CommonMocks {
                         "ContactPhone", "9898776611"
                 ))
                 .build();
+    }
+
+    private JsonNode createMockErrorJsonNode() {
+        try {
+            return new ObjectMapper().readTree(INTTRA_ERROR_RESPONSE_JSON);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create mock error JSON node", e);
+        }
+    }
+
+    private JsonNode createMockSuccessJsonNode() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readTree(INTTRA_SUCCESS_RESPONSE_JSON);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create mock JSON node", e);
+        }
+    }
+
+    private BridgeServiceResponse createErrorBridgeResponse() {
+        BridgeServiceResponse response = new BridgeServiceResponse();
+        response.setTransactionId("test-transaction-123");
+
+        Map<String, Object> extraParams = new HashMap<>();
+        extraParams.put("SERVICE_HTTP_STATUS_CODE", "422"); // Bridge succeeded
+        extraParams.put("SERVICE_RESPONSE", INTTRA_ERROR_RESPONSE_JSON); // INTTRA business errors
+        response.setExtraResponseParams(extraParams);
+
+        return response;
+    }
+
+    private BridgeServiceResponse createSuccessBridgeResponseWithValidJson() {
+        BridgeServiceResponse response = new BridgeServiceResponse();
+        response.setTransactionId("test-transaction-123");
+
+        Map<String, Object> extraParams = new HashMap<>();
+        extraParams.put("SERVICE_HTTP_STATUS_CODE", "200");
+        extraParams.put("SERVICE_RESPONSE", INTTRA_SUCCESS_RESPONSE_JSON);
+        response.setExtraResponseParams(extraParams);
+
+        return response;
     }
 }
