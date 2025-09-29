@@ -144,6 +144,7 @@ public class ConsolidationV3Util {
         }
     }
 
+
     private boolean checkForAwbUpdate(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) return false;
         if(!Objects.equals(consolidationDetails.getSci(), oldEntity.getSci())) return true;
