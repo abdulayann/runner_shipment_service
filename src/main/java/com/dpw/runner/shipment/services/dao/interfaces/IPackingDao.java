@@ -22,7 +22,7 @@ public interface IPackingDao {
 
     Optional<Packing> findByGuid(UUID id);
 
-    Optional<Packing> findByOrderLineGuid(String guid);
+    List<Packing> findByOrderLineGuidIn(List<String> orderLineGuidList);
 
     void delete(Packing packing);
 

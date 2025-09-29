@@ -29,7 +29,7 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
         return findOne(spec);
     }
 
-    Optional<Packing> findByOrderLineGuid(String orderLineGuid);
+    List<Packing> findByOrderLineGuidIn(List<String> orderLineGuidList);
 
     List<Packing> findAll();
 
