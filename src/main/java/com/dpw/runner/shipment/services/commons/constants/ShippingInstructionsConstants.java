@@ -118,7 +118,10 @@ public class ShippingInstructionsConstants {
                     .dataType(String.class)
                     .fieldName("pod")
                     .isContainsText(true)
-                    .build())
+                    .build()),
+            Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.SHIPPER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.SHIPPER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build())
+
     );
 
 }
