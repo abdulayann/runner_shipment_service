@@ -1683,6 +1683,7 @@ public class ReportService implements IReportService {
             case ReportConstants.SHIPMENT_CAN_DOCUMENT -> setDocPagesForCanMainPageAir(row, adminRow, objectType);
             case ReportConstants.SHIPMENT_HOUSE_BILL ->
                     setDocPagesForHouseBill(row, adminRow, printType, frontTemplateCode, backTemplateCode);
+            case ReportConstants.SEAWAY_BILL -> setDocPagesForSeaWayBill(row, adminRow);
             case ReportConstants.ARRIVAL_NOTICE -> setDocPagesForArrivalNotice(row, adminRow, objectType);
             case ReportConstants.FREIGHT_CERTIFICATION -> setDocPagesForFreightCertification(row, adminRow, objectType);
             case ReportConstants.PRE_ALERT -> setDocPagesForPreAlert(row, adminRow, objectType);
@@ -1707,8 +1708,7 @@ public class ReportService implements IReportService {
     }
 
     private boolean isSimpleDocument(String docKey) {
-        return docKey.equals(ReportConstants.SEAWAY_BILL) ||
-                docKey.equals(ReportConstants.SHIP_TRUCKWAY_BILL) ||
+        return  docKey.equals(ReportConstants.SHIP_TRUCKWAY_BILL) ||
                 docKey.equals(ReportConstants.CONS_TRUCKWAY_BILL) ||
                 docKey.equals(ReportConstants.SHIP_TRUCK_DRIVER_PROOF) ||
                 docKey.equals(ReportConstants.CONS_TRUCK_DRIVER_PROOF) ||
@@ -1743,10 +1743,6 @@ public class ReportService implements IReportService {
         boolean isLogoFixed;
 
         switch (docKey) {
-            case ReportConstants.SEAWAY_BILL:
-                mainPageId = getMainOrLastPageId(row.getSeawayMainPage(), adminRow.getSeawayMainPage());
-                isLogoFixed = getIsLogoFixed(row.getSeawayMainPage());
-                break;
             case ReportConstants.SHIP_TRUCKWAY_BILL:
                 mainPageId = getMainOrLastPageId(row.getShipTruckWayBillMainPage(), adminRow.getShipTruckWayBillMainPage());
                 isLogoFixed = getIsLogoFixed(row.getShipTruckWayBillMainPage());
@@ -2019,6 +2015,11 @@ public class ReportService implements IReportService {
                 row.getHouseMainPage() == null ? adminRow.getHouseMainPage() : row.getHouseMainPage(),
                 row.getHblFooter() == null ? adminRow.getHblFooter() : row.getHblFooter(), row.getHouseMainPage() != null, null, null, row);
     }
+    private DocPages setDocPagesForSeaWayBill(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow) {
+        return setDocPages(null,
+                row.getSeawayMainPage() == null ? adminRow.getSeawayMainPage() : row.getSeawayMainPage(),
+                row.getSeaWayBillBackPage() == null ? adminRow.getSeaWayBillBackPage() : row.getSeaWayBillBackPage(), row.getSeawayMainPage() != null, null, null, row);
+    }
 
     private DocPages setDocPagesForCanMainPageAir(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
         if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
@@ -2259,7 +2260,8 @@ public class ReportService implements IReportService {
             pdfConcat.addPages(pdfReader1);
         }
 
-        if (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPage())) {
+        if ((reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPage()))
+         || (reportInfo.equalsIgnoreCase(SEAWAY_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPageSeaWayBill()))) {
             PdfReader pdfReader = new PdfReader(mainDoc);
             int totalPages = pdfReader.getNumberOfPages();
             for (int i = 1; i <= totalPages; i++) {
