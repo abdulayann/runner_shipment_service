@@ -29,6 +29,7 @@ public class VerifiedGrossMassConstants {
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Verified Gross Mass Retrieval";
     public static final String VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL = "Bulk update successful";
+    public static final String VERIFIED_GROSS_MASS = "VERIFIED_GROSS_MASS";
 
     private VerifiedGrossMassConstants() {
         // private constructor to prevent instantiation
@@ -54,6 +55,7 @@ public class VerifiedGrossMassConstants {
     public static final String GROSS_WEIGHT = "Gross Weight";
     public static final String NET_WEIGHT = "Net Weight";
     public static final String TARE_WEIGHT = "Tare Weight";
+    public static final String VERIFIED_GROSS_MASS_EMAIL_TEMPLATE = "VERIFIED_GROSS_MASS";
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries();
     public static final List<String> serviceTypes = List.of("P2P","D2D","D2P","P2D");

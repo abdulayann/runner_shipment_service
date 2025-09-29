@@ -4,6 +4,7 @@ public class ApiConstants {
 
     public static final String API_DEFAULT_BOOKING = "/getDefaultBooking";
     public static final String SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS = "/update/transport-status";
+    public static final String CONSOLIDATED_API_LIST = "/consolidatedList";
 
     private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";

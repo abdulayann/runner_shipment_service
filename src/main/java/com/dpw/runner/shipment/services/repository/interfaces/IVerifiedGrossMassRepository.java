@@ -4,4 +4,5 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 
 public interface IVerifiedGrossMassRepository extends MultiTenancyRepository<VerifiedGrossMass> {
+    VerifiedGrossMass findByCarrierBookingNo(String carrierBookingNo);
 }
