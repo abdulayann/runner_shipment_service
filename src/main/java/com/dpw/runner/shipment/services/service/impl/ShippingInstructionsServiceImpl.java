@@ -622,10 +622,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
-            // Step 1: Check booking status
-            if (!(CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) || CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
-                throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
-            }
+            validateSubmissionCriteria(booking, si);
         } else if (si.getEntityType() == EntityType.CONSOLIDATION) {
             if (si.getStatus() != ShippingInstructionStatus.Draft) {
                 throw new ValidationException("Submit not allowed. Shipping Instruction not in draft state.");
@@ -649,6 +646,18 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         callBridge(instructionInttraRequest, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    private void validateSubmissionCriteria(CarrierBooking booking, ShippingInstruction si) {
+        // Step 1: Check booking status
+        if (!(CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) || CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
+            throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+        }
+
+        List<CarrierBookingInfoProjection> projectionList = repository.findConfimedBookingByConsolId(si.getEntityNumber());
+        if (projectionList.size() > 1 ) {
+            throw new ValidationException("Only one booking of all booking linked with a consolidation can be in confirmed state!!");
+        }
     }
 
     private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {

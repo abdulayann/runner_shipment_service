@@ -87,5 +87,9 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
         return shippingInstructionRepository.findByConsolidationNo(consolidationNumber);
     }
 
+    @Override
+    public List<CarrierBookingInfoProjection> findConfimedBookingByConsolId(String consolidationNumber) {
+        return shippingInstructionRepository.findConfirmedBookingsByConsolidationNo(consolidationNumber);
+    }
 
 }
