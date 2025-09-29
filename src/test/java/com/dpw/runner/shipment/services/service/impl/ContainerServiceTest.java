@@ -234,6 +234,7 @@ class ContainerServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
+        TenantContext.setCurrentTenant(1);
         mockUser.setUsername("user");
         TenantContext.setCurrentTenant(1);
         UserContext.setUser(mockUser);

@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.ContractIdMapUtil;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.CountryListHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.google.common.base.Strings;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
@@ -96,6 +98,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     private MigrationUtil migrationUtil;
     @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
     private ContractIdMapUtil contractIdMapUtil;
     @Value("${spring.profiles.active}")
     private String currentEnvironment;
@@ -123,7 +127,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
 
     @Override
-    public ShipmentDetails migrateShipmentV2ToV3(Long shipId) throws RunnerException {
+    public ShipmentDetails migrateShipmentV2ToV3(Long shipId, boolean isUnLocationLocCodeRequired) throws RunnerException {
         log.info("Starting V2 to V3 migration for Shipment [id={}]", shipId);
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipId);
@@ -134,7 +138,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         notesUtil.addNotesForShipment(shipment);
         log.info("Notes added for Shipment [id={}]", shipment.getId());
-        mapShipmentV2ToV3(shipment, new HashMap<>(), true);
+        mapShipmentV2ToV3(shipment, new HashMap<>(), true, isUnLocationLocCodeRequired);
         log.info("Mapped V2 Shipment to V3 [id={}]", shipment.getId());
 
         // Save packing details
@@ -161,8 +165,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     @Override
-    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException {
-
+    public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions, boolean isUnLocationLocCodeRequired) throws RunnerException {
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipmentDetails, null);
+        }
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
