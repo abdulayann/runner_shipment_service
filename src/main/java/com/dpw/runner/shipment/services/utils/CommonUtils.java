@@ -1724,6 +1724,14 @@ public class CommonUtils {
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
     }
+    public String replaceDefaultTagsFromData(Map<String, Object> map, String val) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
+                val = val.replace("{" + entry.getKey() + "}", entry.getKey()+ ":" +entry.getValue().toString());
+        }
+        val = val.replaceAll("\\{.*?\\}", "");
+        return val;
+    }
 
     public void getEmailTemplate(Map<ShipmentRequestedType, EmailTemplatesRequest> response) {
         List<String> requests = new ArrayList<>(List.of(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE, SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE, SHIPMENT_PUSH_REJECTED_EMAIL_TYPE, SHIPMENT_PULL_REJECTED_EMAIL_TYPE,

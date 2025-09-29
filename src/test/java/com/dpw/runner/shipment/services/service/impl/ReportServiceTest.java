@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -74,6 +75,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityF
 import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
+import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -141,6 +143,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -4108,6 +4111,16 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));
+    }
+
+    @Test
+    void getDefaultEmailTemplateData(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
     }
 
     @Test

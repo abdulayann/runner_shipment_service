@@ -155,6 +155,8 @@ public class ReportConstants {
     public static final String ETD = "Etd";
     public static final String ETD_MDY = "EtdMDY";
     public static final String ETD_CAPS = "ETD";
+    public static final String ATD_CAPS = "ATD";
+    public static final String ATA_CAPS = "ATA";
     public static final String ATA = "Ata";
     public static final String ATD = "Atd";
     public static final String ATD_MDY = "AtdMDY";
@@ -957,6 +959,7 @@ public class ReportConstants {
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
+    public static final String EMAIL_TEMPLATE_DATA = "/getEmailTemplateData";
     public static final String VALIDATE_HOUSE_BILL = "/validate-house-bill";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
@@ -1463,6 +1466,21 @@ public class ReportConstants {
     public static final String DA_PHONE = "DAPhone";
     public static final String DA_EMAIL = "DAemail";
     public static final String PHONE = "Phone";
+    //default template constants
+    public static final String TEMPLATE_PAYMENT_TERMS = "Payment Terms";
+    public static final String OA_EMAIL_CAPS = "OAEmail";
+    public static final String DA_EMAIL_CAPS = "DAEmail";
+    public static final String DST = "Dst";
+    public static final String CARRIER_REF = "CarrierRef";
+    public static final String HBL_NO = "HBLNo";
+    public static final String MBL_NO = "MBLNo";
+    public static final String CONTAINER_NOS = "ContainerNos";
+    public static final String PACKAGE_COUNT = "PackageCount";
+    public static final String CUSTOMER_REF = "CustomerRef";
+    public static final String SALES_BRANCH = "SalesBranch";
+    public static final String SUMMARY_DOCUMENTS = "Summary_Documents";
+    public static final String LIST_ALL_DOCUMENTS = "List_All_Documents";
+
 
     public static final String ZIP_POSTCODE = "Zip_PostCode";
 
