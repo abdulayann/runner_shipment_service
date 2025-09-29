@@ -234,6 +234,7 @@ class ContainerServiceTest extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
+        TenantContext.setCurrentTenant(1);
         mockUser.setUsername("user");
         TenantContext.setCurrentTenant(1);
         UserContext.setUser(mockUser);
@@ -1546,6 +1547,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);
@@ -1582,6 +1584,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesForNewContainers() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setGuid(UUID.randomUUID());
@@ -1625,6 +1628,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServicesWithEmptyBookingRef() {
         // Arrange
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);

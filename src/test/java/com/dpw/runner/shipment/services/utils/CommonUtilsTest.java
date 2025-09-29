@@ -100,6 +100,7 @@ import com.dpw.runner.shipment.services.notification.response.NotificationServic
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
@@ -309,6 +310,9 @@ class CommonUtilsTest {
 
     @Mock
     private EntityTransferAddress entityTransferAddress;
+
+    @Mock
+    private IApplicationConfigService applicationConfigService;
 
 
     private PdfContentByte dc;
@@ -5764,5 +5768,189 @@ class CommonUtilsTest {
                 Arguments.of((short)123, 123L),
                 Arguments.of((byte)123, 123L)
         );
+    }
+    @Test
+    void testConvertSeconds_OnlySeconds() {
+        // Test cases where result should only show seconds (less than 60 seconds)
+        String result1 = commonUtils.convertSeconds(45L);
+        assertEquals("The export will be available in approximately 45 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(30L);
+        assertEquals("The export will be available in approximately 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(59L);
+        assertEquals("The export will be available in approximately 59 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(1L);
+        assertEquals("The export will be available in approximately 1 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_OnlyMinutes() {
+        // Test cases where result should only show minutes (exact minutes, no remaining seconds)
+        String result1 = commonUtils.convertSeconds(60L);
+        assertEquals("The export will be available in approximately 1 minutes. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(120L);
+        assertEquals("The export will be available in approximately 2 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(300L);
+        assertEquals("The export will be available in approximately 5 minutes. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(3600L);
+        assertEquals("The export will be available in approximately 60 minutes. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_MinutesAndSeconds() {
+        // Test cases where result should show both minutes and seconds
+        String result1 = commonUtils.convertSeconds(90L);
+        assertEquals("The export will be available in approximately 1 minutes and 30 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(150L);
+        assertEquals("The export will be available in approximately 2 minutes and 30 seconds. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(3661L);
+        assertEquals("The export will be available in approximately 61 minutes and 1 seconds. Please try again after that time.", result3);
+
+        String result4 = commonUtils.convertSeconds(125L);
+        assertEquals("The export will be available in approximately 2 minutes and 5 seconds. Please try again after that time.", result4);
+    }
+
+    @Test
+    void testConvertSeconds_EdgeCases() {
+        // Test edge cases
+        String result1 = commonUtils.convertSeconds(0L);
+        assertEquals("The export will be available in approximately 0 seconds. Please try again after that time.", result1);
+
+        // Test large values
+        String result2 = commonUtils.convertSeconds(7200L); // 2 hours = 120 minutes
+        assertEquals("The export will be available in approximately 120 minutes. Please try again after that time.", result2);
+
+        String result3 = commonUtils.convertSeconds(7201L); // 2 hours and 1 second
+        assertEquals("The export will be available in approximately 120 minutes and 1 seconds. Please try again after that time.", result3);
+    }
+
+    @Test
+    void testConvertSeconds_LargeValues() {
+        // Test very large long values
+        String result1 = commonUtils.convertSeconds(100000L);
+        assertEquals("The export will be available in approximately 1666 minutes and 40 seconds. Please try again after that time.", result1);
+
+        String result2 = commonUtils.convertSeconds(Long.MAX_VALUE);
+        long expectedMinutes = Long.MAX_VALUE / 60;
+        long expectedSeconds = Long.MAX_VALUE % 60;
+        String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
+        assertEquals(expected, result2);
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromShipment() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR1");
+        carrier.setDestinationPort("DS1");
+
+        Routings routing = new Routings();
+        routing.setPol("POL1");
+        routing.setPod("POD1");
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR1_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("DS1_CODE");
+        UnlocationsResponse un3 = new UnlocationsResponse();
+        un3.setLocCode("POL1_CODE");
+        UnlocationsResponse un4 = new UnlocationsResponse();
+        un4.setLocCode("POD1_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = new HashMap<>();
+        mockMap.put("OR1", un1);
+        mockMap.put("DS1", un2);
+        mockMap.put("POL1", un3);
+        mockMap.put("POD1", un4);
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then
+        assertEquals("OR1_CODE", carrier.getOriginPortLocCode());
+        assertEquals("DS1_CODE", carrier.getDestinationPortLocCode());
+        assertEquals("POL1_CODE", routing.getOriginPortLocCode());
+        assertEquals("POD1_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromConsole() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR2");
+
+        Routings routing = new Routings();
+        routing.setPod("POD2");
+
+        ConsolidationDetails console = new ConsolidationDetails();
+        console.setCarrierDetails(carrier);
+        console.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR2_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("POD2_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = Map.of(
+                "OR2", un1,
+                "POD2", un2
+        );
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, console);
+
+        // then
+        assertEquals("OR2_CODE", carrier.getOriginPortLocCode());
+        assertEquals("POD2_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_NoPlcData() {
+        CarrierDetails carrier = new CarrierDetails(); // empty, no ports
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(Collections.emptyList());
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then → no interaction with masterDataUtils
+        verify(masterDataUtils, never()).getLocationData(anySet());
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_null() {
+        when(applicationConfigService.getValue("key1")).thenReturn(null);
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key1"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_true() {
+        when(applicationConfigService.getValue("key2")).thenReturn("true");
+
+        assertTrue(commonUtils.getBooleanConfigFromAppConfig("key2"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_false() {
+        when(applicationConfigService.getValue("key3")).thenReturn("false");
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key3"));
     }
 }

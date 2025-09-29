@@ -4066,26 +4066,30 @@ public class ShipmentService implements IShipmentService {
         key = key.append(EXPORT_EXCEL_CACHE_KEY).append(username).append(UserContext.getUser().getTenantId());
         Object value = redisTemplate.opsForValue().get(key.toString());
         if (Objects.nonNull(value)) {
-            Long minutes = redisTemplate.getExpire(key.toString(), TimeUnit.MINUTES);
-            throw new ValidationException("The export will be available in approximately "+ minutes + " minutes. Please try again after that time.");
+            Long seconds = redisTemplate.getExpire(key.toString(), TimeUnit.SECONDS);
+            String message = commonUtils.convertSeconds(seconds);
+            throw new ValidationException(message);
         }
         redisTemplate.opsForValue().set(key.toString(), username, Duration.ofMinutes(defaultTime));
 
         String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
         Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
         request.setPageSize(exportExcelLimit);
-        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(request);
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.TENANT_ID, UserContext.getUser().getTenantId(), Constants.EQ, request);
+        log.info("{}", jsonHelper.convertToJson(listCommonRequest.getFilterCriteria()));
+        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(listCommonRequest);
         long shipmentCount = shipmentDetailsPage.getTotalElements();
 
         if(shipmentCount <= exportExcelLimit){
             downloadShipmentListExcel(response, shipmentDetailsPage);
         } else {
             exportExcelResponse.setEmailSent(true);
-            request.setPageSize(Integer.MAX_VALUE);
+            listCommonRequest.setPageSize((int)shipmentCount);
+            listCommonRequest.setContainsText(request.getContainsText());
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
                 TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
                 txTemplate.execute(status -> {
-                    emailShipmentListExcel(response, request);
+                    emailShipmentListExcel(response, listCommonRequest);
                     return null;
                 });
             }), executorService);
@@ -4103,7 +4107,7 @@ public class ShipmentService implements IShipmentService {
     private void emailShipmentListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
         log.info("Starting email of shipment list Excel. Request model: {}", listCommonRequest);
 
-        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(listCommonRequest);
+        Page<ShipmentDetails> shipmentDetailsPage =  fetchShipmentsPage(listCommonRequest);
         log.info("Fetched {} shipment(s) for Excel email.", shipmentDetailsPage.getTotalElements());
 
         exportShipmentListToExcel(shipmentDetailsPage, response, true);
@@ -4307,7 +4311,6 @@ public class ShipmentService implements IShipmentService {
         itemRow.createCell(headerMap.get("20s Count")).setCellValue(String.valueOf(shipment.getContainer20Count()));
         itemRow.createCell(headerMap.get("40s Count")).setCellValue(String.valueOf(shipment.getContainer40Count()));
         itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount() != null ? shipment.getTeuCount().toString() : null);
-        itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
         itemRow.createCell(headerMap.get("POL")).setCellValue(originPort);
         itemRow.createCell(headerMap.get("POD")).setCellValue(destinationPort);
         itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(String.valueOf(shipment.getWayBillNumber()));

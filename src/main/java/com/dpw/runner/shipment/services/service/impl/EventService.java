@@ -1190,7 +1190,7 @@ public class EventService implements IEventService {
 
         String shipmentNumber = Optional.ofNullable(container.getContainerBase())
                 .map(ContainerBase::getShipmentReference)
-                .orElse(null);
+                .orElse(container.getShipmentReference());
 
         log.info("Shipment number extracted: {} messageId {}", shipmentNumber, messageId);
 

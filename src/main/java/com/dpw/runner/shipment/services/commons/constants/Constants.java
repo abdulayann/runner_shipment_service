@@ -732,6 +732,8 @@ public class Constants {
     public static final String DEMO_ENV = "demo";
     public static final String CONTRACT_TYPE = "CONTRACT";
     public static final String DESTINATION_CONTRACT_TYPE = "DESTINATION_CONTRACT";
+    public static final String EXPORT_EXCEL_MESSAGE = "The export will be available in approximately ";
+
     private Constants() {
     }
 
