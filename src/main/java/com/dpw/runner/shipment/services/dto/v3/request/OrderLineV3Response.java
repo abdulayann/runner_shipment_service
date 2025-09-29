@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@ApiModel(value = "Order line V3 request model")
+@ApiModel(value = "Order line V3 response model")
 @ToString
 @Builder
 @AllArgsConstructor
@@ -78,7 +78,10 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
 
     private Long shipmentOrderId;
 
+    @JsonProperty("itemId")
     private Long orderLineId;
 
     private String orderLineGuid;
+
+    private Long shipmentId;
 }

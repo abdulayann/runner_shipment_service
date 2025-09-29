@@ -79,6 +79,11 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
+    public List<Packing> findByOrderLineGuidIn(List<String> orderLineGuidList) {
+        return packingRepository.findByOrderLineGuidIn(orderLineGuidList);
+    }
+
+    @Override
     public Optional<Packing> findByGuid(UUID id) {
         return packingRepository.findByGuid(id);
     }

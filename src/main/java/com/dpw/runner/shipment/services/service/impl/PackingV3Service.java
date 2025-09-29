@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -192,6 +193,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private ShippingInstructionUtil shippingInstructionUtil;
+
+    @Autowired
+    PackingV3Service self;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -543,6 +547,64 @@ public class PackingV3Service implements IPackingV3Service {
         return packsType != null
                 ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
                 : String.format("Packing %s deleted successfully!", packs);
+    }
+
+    @Override
+    @Transactional
+    public BulkPackingResponse orderLineCreateUpdateDeleteBulk(OrderLineCreateUpdateDeleteRequest request, String module, boolean fromQuote) throws RunnerException {
+        log.info("Order Lines Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        if (ObjectUtils.isNotEmpty(request.getCreateOrderLines()) || ObjectUtils.isNotEmpty(request.getUpdateOrderLines())) {
+            List<PackingV3Request> orderLineCreateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getCreateOrderLines());
+            List<PackingV3Request> orderLineUpdateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getUpdateOrderLines());
+            log.info("Update Packing id and guid for order line update request with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineUpdateRequestList);
+
+            List<PackingV3Request> combinedOrderLineCreateRequestList = new ArrayList<>();
+            combinedOrderLineCreateRequestList.addAll(orderLineCreateRequestList);
+            combinedOrderLineCreateRequestList.addAll(orderLineUpdateRequestList);
+
+            log.info("Combine create request list with count {} and update request list with count {} Request Id {}", orderLineCreateRequestList.size(), orderLineUpdateRequestList.size(), LoggerHelper.getRequestIdFromMDC());
+            return self.updateBulk(combinedOrderLineCreateRequestList, module, fromQuote);
+        }
+
+        if (ObjectUtils.isNotEmpty(request.getDeleteOrderLines())) {
+            List<PackingV3Request> orderLineDeleteRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getDeleteOrderLines());
+            log.info("Update Packing id and guid for order line delete request list with count {} with Request Id {}", orderLineDeleteRequestList.size(), LoggerHelper.getRequestIdFromMDC());
+            updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineDeleteRequestList);
+            return self.deleteBulk(orderLineDeleteRequestList, module);
+        }
+
+        throw new RunnerException("No create, update, delete was performed");
+    }
+
+    private void updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(List<PackingV3Request> packingRequestList) throws RunnerException {
+        log.info("Update Packing id and guid based on order lines guid existing in db with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        Map<String, Packing> mappings = fetchMappingForPackagesWithOrderLineGuid(packingRequestList);
+        for (PackingV3Request packingRequest : packingRequestList) {
+            Packing packing = mappings.get(packingRequest.getOrderLineGuid());
+            if (packing != null && packing.getId() != null) {
+                packingRequest.setId(packing.getId());
+                packingRequest.setGuid(packing.getGuid());
+            } else {
+                throw new RunnerException("Packing Id not found for order line with id: " + packingRequest.getOrderLineId() + " guid: " + packingRequest.getOrderLineGuid());
+            }
+        }
+    }
+
+    private Map<String, Packing> fetchMappingForPackagesWithOrderLineGuid(List<PackingV3Request> packingRequestList) throws RunnerException {
+        log.info("Create orderLineGuid to Package mappings for request list with size {} with Request Id {}", packingRequestList.size(), LoggerHelper.getRequestIdFromMDC());
+        List<String> orderLineGuidList = packingRequestList.stream()
+                .map(PackingV3Request::getOrderLineGuid)
+                .filter(Objects::nonNull)
+                .filter(guid -> !guid.isBlank())
+                .toList();
+        log.info("Fetch packing from DB for orderLineGuid list with size {} with Request Id {}", orderLineGuidList.size(), LoggerHelper.getRequestIdFromMDC());
+        List<Packing> packings = packingDao.findByOrderLineGuidIn(orderLineGuidList);
+        return packings.stream()
+                .collect(Collectors.toMap(
+                        Packing::getOrderLineGuid,
+                        Function.identity()
+                ));
     }
 
     @Override

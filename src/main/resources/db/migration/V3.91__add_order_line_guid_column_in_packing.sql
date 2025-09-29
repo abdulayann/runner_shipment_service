@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS packing
+    ADD COLUMN IF NOT EXISTS order_line_guid VARCHAR(64);

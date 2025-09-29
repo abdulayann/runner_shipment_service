@@ -601,7 +601,6 @@ public class PackingV3Util {
         if (packingRequest == null) {
             return null;
         }
-
         return OrderLineV3Response.builder()
                 .id(packingRequest.getId())
                 .guid(packingRequest.getGuid())
@@ -672,8 +671,6 @@ public class PackingV3Util {
         }
 
         return PackingV3Request.builder()
-                .id(orderLineResponse.getId())
-                .guid(orderLineResponse.getGuid())
                 .commodityGroup(orderLineResponse.getCommodityGroup())
                 .containerNumber(orderLineResponse.getContainerNumber())
                 .containerId(orderLineResponse.getContainerId())
@@ -699,6 +696,9 @@ public class PackingV3Util {
                 .subLineNo(orderLineResponse.getSubLineNo())
                 .productCode(orderLineResponse.getProductCode())
                 .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .orderLineGuid(orderLineResponse.getOrderLineGuid())
+                .shipmentId(orderLineResponse.getShipmentId())
                 .build();
     }
 }

@@ -292,5 +292,8 @@ public class Packing extends MultiTenancy {
     @Column(name = "shipment_order_id")
     private Long shipmentOrderId;
 
+    @Column(name = "order_line_guid")
+    private String orderLineGuid;
+
 }
 
