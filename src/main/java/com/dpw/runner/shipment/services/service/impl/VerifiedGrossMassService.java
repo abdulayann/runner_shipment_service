@@ -583,8 +583,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             // Building Submit Containers
             submittedContainersList.add(verifiedGrossMassUtil.buildSubmittedContainer(container));
 
-            verifiedGrossMass.setSubmitByUserEmail("raksha.jain@dpworld.com");
-            verifiedGrossMass.setCreateByUserEmail("raksha.jain@dpworld.com");
             sendNotification(verifiedGrossMass);
         }
 
