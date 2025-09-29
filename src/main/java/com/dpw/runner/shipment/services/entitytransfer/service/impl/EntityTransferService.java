@@ -328,7 +328,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         EntityTransferV3ShipmentDetails v2Payload = null;
         EntityTransferV3ShipmentDetails v3Payload = null;
-
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
         for (Map.Entry<Integer, Boolean> entry : v2V3Map.entrySet()) {
             Integer tenantId = entry.getKey();
             Boolean isV3 = entry.getValue();
@@ -338,7 +338,7 @@ public class EntityTransferService implements IEntityTransferService {
             if (Boolean.TRUE.equals(isV3)) {
                 if (v3Payload == null) {
                     ShipmentDetails v2Shipment = jsonHelper.convertValue(shipment, ShipmentDetails.class);
-                    ShipmentDetails v3ShipmentDetails = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false);
+                    ShipmentDetails v3ShipmentDetails = shipmentMigrationV3Service.mapShipmentV2ToV3(v2Shipment, null, false, isUnLocationLocCodeRequired);
                     addNotesInShipment(v2Shipment, v3ShipmentDetails);
                     var entityTransferPayload = prepareShipmentPayload(v3ShipmentDetails);
                     entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
