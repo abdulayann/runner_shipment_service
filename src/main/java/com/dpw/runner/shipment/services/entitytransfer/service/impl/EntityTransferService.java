@@ -519,7 +519,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         Integer weightDecimalPlace = getWeightDecimalPlace(tenantSettingsResponse);
         Integer volumeDecimalPlace = getVolumeDecimalPlace(tenantSettingsResponse);
-
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
 
         for (Map.Entry<Integer, Boolean> entry : v2V3Map.entrySet()) {
             Integer tenantId = entry.getKey();
@@ -534,7 +534,7 @@ public class EntityTransferService implements IEntityTransferService {
                     setNotesInConsol(v2Consol);
                     Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
 
-                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, new HashMap<>(), weightDecimalPlace, volumeDecimalPlace);
+                    ConsolidationDetails v3ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, new HashMap<>(), weightDecimalPlace, volumeDecimalPlace, isUnLocationLocCodeRequired);
                     var entityTransferConsolePayload = prepareConsolidationPayload(v3ConsolidationDetails, sendConsolidationRequest, true);
                     entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
                     setPackingVsContainerGuid(entityTransferConsolePayload, packingVsContainerGuid);

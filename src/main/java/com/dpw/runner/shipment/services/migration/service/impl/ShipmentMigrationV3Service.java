@@ -127,7 +127,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
 
     @Override
-    public ShipmentDetails migrateShipmentV2ToV3(Long shipId, boolean isUnLocationLocCodeRequired) throws RunnerException {
+    public ShipmentDetails migrateShipmentV2ToV3(Long shipId) throws RunnerException {
         log.info("Starting V2 to V3 migration for Shipment [id={}]", shipId);
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipId);
@@ -136,9 +136,6 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipId);
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
-        if (isUnLocationLocCodeRequired) {
-            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
-        }
         notesUtil.addNotesForShipment(shipment);
         log.info("Notes added for Shipment [id={}]", shipment.getId());
         mapShipmentV2ToV3(shipment, new HashMap<>(), true);
@@ -170,6 +167,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Override
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid, Boolean canUpdateTransportInstructions) throws RunnerException {
 
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
+        if (isUnLocationLocCodeRequired) {
+            commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipmentDetails, null);
+        }
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 

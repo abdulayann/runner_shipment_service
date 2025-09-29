@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +79,9 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Autowired
     private INetworkTransferBackupRepository networkTransferBackupRepository;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
 
     @Override
     public NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) throws RunnerException {
@@ -127,6 +131,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     private NetworkTransfer migrateConsolidationV2ToV3(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, Map<String, BigDecimal> codeTeuMap, Integer weightDecimal, Integer volumeDecimal) {
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         MigrationStatus status = existingPayload.getMigrationStatus();
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
         if (status != null && !status.equals(MigrationStatus.CREATED_IN_V2) && !status.equals(MigrationStatus.MIGRATED_FROM_V3)) {
             log.info("Network transfer already migrated from v2 -> Consolidation [id={}]", networkTransfer.getId());
             networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V2);
@@ -148,7 +153,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         }
         log.info("Notes added for Network Transfer Consolidation [id={}]", networkTransfer.getId());
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, codeTeuMap, weightDecimal, volumeDecimal);
+        ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid, false, codeTeuMap, weightDecimal, volumeDecimal, isUnLocationLocCodeRequired);
         setMigrationStatus(v3Consol);
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v3Consol, EntityTransferV3ConsolidationDetails.class);
         log.info("Mapping completed for Network Transfer -> Consolidation [id={}]", networkTransfer.getId());
