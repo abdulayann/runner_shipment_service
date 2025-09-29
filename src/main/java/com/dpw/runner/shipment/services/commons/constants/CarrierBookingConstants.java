@@ -266,6 +266,12 @@ public class CarrierBookingConstants {
                     .fieldName("updatedBy")
                     .isContainsText(true)
                     .build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING_TABLE)
+                    .dataType(String.class)
+                    .fieldName("createdBy")
+                    .isContainsText(true)
+                    .build()),
 
             Map.entry("pol", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
