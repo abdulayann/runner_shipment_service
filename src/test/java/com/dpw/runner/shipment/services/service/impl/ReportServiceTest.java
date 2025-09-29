@@ -8,19 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
@@ -133,7 +122,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
@@ -4100,6 +4091,76 @@ class ReportServiceTest extends CommonMocks {
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
     }
+    @Test
+    void getDefaultEmailTemplateDataForShipment() throws RunnerException {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        String demoTemplate = "\"Hi ,\n" +
+                "    \n" +
+                "    Please find the attached documents for the {CBN Number}\n" +
+                "    \n" +
+                "    {Mode}\n" +
+                "    {Origin}\n" +
+                "    {Dstn}\n" +
+                "    {ETD}\n" +
+                "    {ETA}\n" +
+                "    {HBLNo}\n" +
+                "    {HAWBNo}\n" +
+                "    {MBLNo}\n" +
+                "    {MAWBNo}\n" +
+                "    {Carrier}\n" +
+                "    {Airline}\n" +
+                "    \n" +
+                "    Sender (Origin)\n" +
+                "    {OABranch}\n" +
+                "    {OABranchAdd}\n" +
+                "    {OAName}\n" +
+                "    {OAEmail}\n" +
+                "    {OAPhone}\n" +
+                "    \n" +
+                "    Recipient (Destination)\n" +
+                "    {DABranch}\n" +
+                "    {DABranchAdd}\n" +
+                "    {DAName}\n" +
+                "    {DAEmail}\n" +
+                "    {DAPhone}\n" +
+                "    Sales Branch: {SalesBranch}\n" +
+                "    \n" +
+                "    {List_All_Documents}\n" +
+                "    \n" +
+                "    Regards,\n" +
+                "    Team DPW\"";
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+
+                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
+                @SuppressWarnings("unchecked")
+                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+
+                // Add test data to the list
+                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
+                request1.setSubject(demoTemplate);
+                request1.setBody("Test Body 1");
+
+                emailTemplatesRequests.add(request1);
+
+                return null; // Required for void methods
+            }
+        }).when(reportService).populateShipmentsTagsAndEmailTemplate(
+                any(ShipmentDetails.class),
+                anyMap(),
+                any(DefaultEmailTemplateRequest.class),
+                anyList()
+        );
+        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+        assertNotNull(response);
+    }
 
     @Test
     void getDefaultEmailTemplateDataForConsol(){
@@ -4112,6 +4173,77 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void getDefaultEmailTemplateDataForConsol2() throws RunnerException {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        String demoTemplate = "\"Hi ,\n" +
+                "    \n" +
+                "    Please find the attached documents for the {CBN Number}\n" +
+                "    \n" +
+                "    {Mode}\n" +
+                "    {Origin}\n" +
+                "    {Dstn}\n" +
+                "    {ETD}\n" +
+                "    {ETA}\n" +
+                "    {HBLNo}\n" +
+                "    {HAWBNo}\n" +
+                "    {MBLNo}\n" +
+                "    {MAWBNo}\n" +
+                "    {Carrier}\n" +
+                "    {Airline}\n" +
+                "    \n" +
+                "    Sender (Origin)\n" +
+                "    {OABranch}\n" +
+                "    {OABranchAdd}\n" +
+                "    {OAName}\n" +
+                "    {OAEmail}\n" +
+                "    {OAPhone}\n" +
+                "    \n" +
+                "    Recipient (Destination)\n" +
+                "    {DABranch}\n" +
+                "    {DABranchAdd}\n" +
+                "    {DAName}\n" +
+                "    {DAEmail}\n" +
+                "    {DAPhone}\n" +
+                "    Sales Branch: {SalesBranch}\n" +
+                "    \n" +
+                "    {List_All_Documents}\n" +
+                "    \n" +
+                "    Regards,\n" +
+                "    Team DPW\"";
+        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+
+                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
+                @SuppressWarnings("unchecked")
+                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+
+                // Add test data to the list
+                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
+                request1.setSubject(demoTemplate);
+                request1.setBody("Test Body 1");
+
+                emailTemplatesRequests.add(request1);
+
+                return null; // Required for void methods
+            }
+        }).when(reportService).populateConsolTagsAndEmailTemplate(
+                any(ConsolidationDetails.class),
+                anyMap(),
+                any(DefaultEmailTemplateRequest.class),
+                anyList()
+        );
+        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+        assertNotNull(response);
+    }
+
+    @Test
     void getDefaultEmailTemplateDataForBooking(){
         DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Booking",1L, 2L, List.of( "Commercial Incoice",
                 "Console Manifest",
@@ -4119,6 +4251,77 @@ class ReportServiceTest extends CommonMocks {
         when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForBooking2() throws RunnerException {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Booking",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        String demoTemplate = "\"Hi ,\n" +
+                "    \n" +
+                "    Please find the attached documents for the {CBN Number}\n" +
+                "    \n" +
+                "    {Mode}\n" +
+                "    {Origin}\n" +
+                "    {Dstn}\n" +
+                "    {ETD}\n" +
+                "    {ETA}\n" +
+                "    {HBLNo}\n" +
+                "    {HAWBNo}\n" +
+                "    {MBLNo}\n" +
+                "    {MAWBNo}\n" +
+                "    {Carrier}\n" +
+                "    {Airline}\n" +
+                "    \n" +
+                "    Sender (Origin)\n" +
+                "    {OABranch}\n" +
+                "    {OABranchAdd}\n" +
+                "    {OAName}\n" +
+                "    {OAEmail}\n" +
+                "    {OAPhone}\n" +
+                "    \n" +
+                "    Recipient (Destination)\n" +
+                "    {DABranch}\n" +
+                "    {DABranchAdd}\n" +
+                "    {DAName}\n" +
+                "    {DAEmail}\n" +
+                "    {DAPhone}\n" +
+                "    Sales Branch: {SalesBranch}\n" +
+                "    \n" +
+                "    {List_All_Documents}\n" +
+                "    \n" +
+                "    Regards,\n" +
+                "    Team DPW\"";
+        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+
+                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
+                @SuppressWarnings("unchecked")
+                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+
+                // Add test data to the list
+                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
+                request1.setSubject(demoTemplate);
+                request1.setBody("Test Body 1");
+
+                emailTemplatesRequests.add(request1);
+
+                return null; // Required for void methods
+            }
+        }).when(reportService).populateBookingTagsAndEmailTemplate(
+                any(CustomerBooking.class),
+                anyMap(),
+                any(DefaultEmailTemplateRequest.class),
+                anyList()
+        );
+        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+        assertNotNull(response);
     }
 
     @Test
