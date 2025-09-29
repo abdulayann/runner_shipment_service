@@ -27,6 +27,7 @@ public class ShippingInstructionsConstants {
     public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Type";
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
     public static final String SI_TABLE = "ShippingInstruction";
+    public static final String SAILING_INFORMATION = "sailingInformation";
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("status", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
@@ -87,6 +88,36 @@ public class ShippingInstructionsConstants {
                     .dataType(LocalDateTime.class)
                     .fieldName("createdAt")
                     .isContainsText(false)
+                    .build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder()
+                    .tableName(SI_TABLE)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("createdBy")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("verifiedGrossMassCutoff")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("carrier", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("carrier")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("pol", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("pol")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("pod", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("pod")
+                    .isContainsText(true)
                     .build())
     );
 
