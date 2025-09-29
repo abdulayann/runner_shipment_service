@@ -194,6 +194,7 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.impl.ApplicationConfigServiceImpl;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
@@ -7720,4 +7721,114 @@ class CommonUtilsTest {
     }
 
 
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromShipment() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR1");
+        carrier.setDestinationPort("DS1");
+
+        Routings routing = new Routings();
+        routing.setPol("POL1");
+        routing.setPod("POD1");
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR1_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("DS1_CODE");
+        UnlocationsResponse un3 = new UnlocationsResponse();
+        un3.setLocCode("POL1_CODE");
+        UnlocationsResponse un4 = new UnlocationsResponse();
+        un4.setLocCode("POD1_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = new HashMap<>();
+        mockMap.put("OR1", un1);
+        mockMap.put("DS1", un2);
+        mockMap.put("POL1", un3);
+        mockMap.put("POD1", un4);
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then
+        assertEquals("OR1_CODE", carrier.getOriginPortLocCode());
+        assertEquals("DS1_CODE", carrier.getDestinationPortLocCode());
+        assertEquals("POL1_CODE", routing.getOriginPortLocCode());
+        assertEquals("POD1_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromConsole() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR2");
+
+        Routings routing = new Routings();
+        routing.setPod("POD2");
+
+        ConsolidationDetails console = new ConsolidationDetails();
+        console.setCarrierDetails(carrier);
+        console.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR2_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("POD2_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = Map.of(
+                "OR2", un1,
+                "POD2", un2
+        );
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, console);
+
+        // then
+        assertEquals("OR2_CODE", carrier.getOriginPortLocCode());
+        assertEquals("POD2_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_NoPlcData() {
+        CarrierDetails carrier = new CarrierDetails(); // empty, no ports
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(Collections.emptyList());
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then → no interaction with masterDataUtils
+        verify(masterDataUtils, never()).getLocationData(anySet());
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_null() {
+        when(applicationConfigService.getValue("key1")).thenReturn(null);
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key1"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_true() {
+        when(applicationConfigService.getValue("key2")).thenReturn("true");
+
+        assertTrue(commonUtils.getBooleanConfigFromAppConfig("key2"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_false() {
+        when(applicationConfigService.getValue("key3")).thenReturn("false");
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key3"));
+    }
 }
