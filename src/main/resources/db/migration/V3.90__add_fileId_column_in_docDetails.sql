@@ -1,0 +1,2 @@
+ALTER TABLE doc_details
+ADD COLUMN IF NOT EXISTS file_id VARCHAR(64);

@@ -24,4 +24,9 @@ public class DocDetailsDao implements IDocDetailsDao {
     public List<DocDetails> findByEntityIdAndType(Long entityId, DocDetailsTypes type) {
         return docDetailsRepository.findByEntityIdAndType(entityId, type);
     }
+
+    @Override
+    public DocDetails findByFileId(String fileId) {
+        return docDetailsRepository.findByFileId(fileId);
+    }
 }
