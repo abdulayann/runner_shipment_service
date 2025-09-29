@@ -1189,7 +1189,7 @@ public class ReportService implements IReportService {
             } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
                 long shipmentId = Long.parseLong(reportRequest.getReportId());
                 ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                        .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
+                        .orElseThrow(() -> new ValidationException(NO_SHIPMENT_FOUND + shipmentId));
 
                 // Check if the shipment type is DRT and has a DPS implication (MAWBPR)
                 if (Constants.SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType()) &&
@@ -2554,10 +2554,10 @@ public class ReportService implements IReportService {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                .orElseThrow(() -> new DataRetrievalFailureException("No Shipment found with Id: " + shipmentId));
+                .orElseThrow(() -> new DataRetrievalFailureException(NO_SHIPMENT_FOUND + shipmentId));
         populateTagsAndEmailTemplate(shipmentDetails, map, emailTemplateId, emailTemplatesRequests, toEmailIds, ccEmailIds);
         if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
-            throw new RunnerException("No Template Found!");
+            throw new RunnerException(NO_TEMPLATE_FOUND);
 
         response.setSubject(commonUtils.replaceTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
         response.setBody(commonUtils.replaceTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
@@ -2575,16 +2575,14 @@ public class ReportService implements IReportService {
         EmailBodyResponse response = new EmailBodyResponse();
         Map<String, Object> map = new HashMap<>();
         List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
-        Set<String> toEmailIds = new HashSet<>();
-        Set<String> ccEmailIds = new HashSet<>();
         if(defaultEmailTemplateRequest.getModule().equalsIgnoreCase("Shipment")){
 
             ShipmentDetails shipmentDetails = shipmentDao.findById(defaultEmailTemplateRequest.getId())
-                    .orElseThrow(() -> new DataRetrievalFailureException("No Shipment found with Id: " + defaultEmailTemplateRequest.getId()));
+                    .orElseThrow(() -> new DataRetrievalFailureException(NO_SHIPMENT_FOUND + defaultEmailTemplateRequest.getId()));
 
-            populateShipmentsTagsAndEmailTemplate(shipmentDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, toEmailIds, ccEmailIds);
+            populateShipmentsTagsAndEmailTemplate(shipmentDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
-                throw new RunnerException("No Template Found!");
+                throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
@@ -2593,9 +2591,9 @@ public class ReportService implements IReportService {
                     () -> new DataRetrievalFailureException("No Consolidation found with Id: "+ defaultEmailTemplateRequest.getId())
             );
 
-            populateConsolTagsAndEmailTemplate(consolidationDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, toEmailIds, ccEmailIds);
+            populateConsolTagsAndEmailTemplate(consolidationDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
-                throw new RunnerException("No Template Found!");
+                throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
@@ -2603,9 +2601,9 @@ public class ReportService implements IReportService {
         else{
             CustomerBooking booking = customerBookingDao.findById(defaultEmailTemplateRequest.getId()).orElseThrow(
                     () -> new DataRetrievalFailureException("No Booking found with Id: "+ defaultEmailTemplateRequest.getId()));
-            populateBookingTagsAndEmailTemplate(booking, map, defaultEmailTemplateRequest, emailTemplatesRequests, toEmailIds, ccEmailIds);
+            populateBookingTagsAndEmailTemplate(booking, map, defaultEmailTemplateRequest, emailTemplatesRequests);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
-                throw new RunnerException("No Template Found!");
+                throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
@@ -2613,7 +2611,7 @@ public class ReportService implements IReportService {
         return response;
     }
 
-    public void populateShipmentsTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> to, Set<String> cc) {
+    public void populateShipmentsTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
         map.put(CBN_NUMBER, shipmentDetails.getBookingReference());
         map.put(MODE, shipmentDetails.getTransportMode());
         map.put(LOAD, shipmentDetails.getShipmentType());
@@ -2648,7 +2646,10 @@ public class ReportService implements IReportService {
         map.put(CUSTOMER_REF, "");
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
-        String notifyPartyName = Optional.ofNullable(getNotifyPartyName(shipmentDetails))
+        String notifyPartyName = Optional.of(shipmentDetails).map(ShipmentDetails::getAdditionalDetails)
+                .map(AdditionalDetails::getNotifyParty)
+                .map(Parties::getOrgData)
+                .map(orgData -> (String) orgData.get(FULL_NAME))
                 .orElse("");
 
         if (!notifyPartyName.isEmpty()) {
@@ -2661,7 +2662,7 @@ public class ReportService implements IReportService {
             map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
             map.put(OA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting origin Agent Data");
+            log.error(ORIGIN_ERROR);
         }
         try {
             map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
@@ -2670,7 +2671,7 @@ public class ReportService implements IReportService {
             map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
             map.put(DA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting destination Agent Data");
+            log.error(DSTN_ERROR);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
@@ -2696,27 +2697,7 @@ public class ReportService implements IReportService {
             map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
     }
 
-    private String getNotifyPartyName(ShipmentDetails shipmentDetails) {
-        try {
-            if (shipmentDetails == null) return null;
-
-            var additionalDetails = shipmentDetails.getAdditionalDetails();
-            if (additionalDetails == null) return null;
-
-            var notifyParty = additionalDetails.getNotifyParty();
-            if (notifyParty == null) return null;
-
-            var orgData = notifyParty.getOrgData();
-            if (orgData == null) return null;
-
-            return (String)orgData.get(FULL_NAME);
-        } catch (Exception e) {
-            // Log the exception if needed
-            return null;
-        }
-    }
-
-    public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> to, Set<String> cc) {
+    public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
         map.put(MODE, consolidationDetails.getTransportMode());
         map.put(LOAD, consolidationDetails.getConsolidationType());
         map.put(ETD_CAPS, consolidationDetails.getCarrierDetails().getEtd());
@@ -2748,7 +2729,7 @@ public class ReportService implements IReportService {
             map.put(OA_PHONE, consolidationDetails.getSendingAgent().getOrgData().get(PHONE));
             map.put(OA_EMAIL_CAPS, consolidationDetails.getSendingAgent().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting origin Agent Data");
+            log.error(ORIGIN_ERROR);
         }
         try {
             map.put(DA_BRANCH, consolidationDetails.getReceivingAgent().getOrgData().get(FULL_NAME));
@@ -2757,11 +2738,9 @@ public class ReportService implements IReportService {
             map.put(DA_PHONE, consolidationDetails.getReceivingAgent().getOrgData().get(PHONE));
             map.put(DA_EMAIL_CAPS, consolidationDetails.getReceivingAgent().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting destination Agent Data");
+            log.error(DSTN_ERROR);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
-
-        Map<String, String> usernameEmailsMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
                 consolidationDetails.getCarrierDetails().getDestinationPort(),
                 consolidationDetails.getCarrierDetails().getOrigin(),
@@ -2780,7 +2759,7 @@ public class ReportService implements IReportService {
 
     }
 
-    public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> to, Set<String> cc) {
+    public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
         map.put(CBN_NUMBER, booking.getBookingNumber());
         map.put(MODE, booking.getTransportType());
         map.put(LOAD, booking.getCargoType());
@@ -2814,7 +2793,6 @@ public class ReportService implements IReportService {
         if (!notifyPartyName.isEmpty()) {
             map.put(NOTIFY_PARTY, notifyPartyName);
         }
-//        map.put(NOTIFY_PARTY, booking.getNotifyParty().getOrgData().get(FULL_NAME));
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
 
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
@@ -2908,7 +2886,7 @@ public class ReportService implements IReportService {
             map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
             map.put(OA_EMAIL, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting origin Agent Data");
+            log.error(ORIGIN_ERROR);
         }
         try {
             map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
@@ -2917,7 +2895,7 @@ public class ReportService implements IReportService {
             map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
             map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting destination Agent Data");
+            log.error(DSTN_ERROR);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
@@ -2953,14 +2931,6 @@ public class ReportService implements IReportService {
             usernamesList.add(shipmentDetails.getCreatedBy());
         if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()))
             usernamesList.add(shipmentDetails.getAssignedTo());
-        return usernamesList;
-    }
-    private Set<String> getUsernamesListForConsol(ConsolidationDetails consol) {
-        Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(consol.getCreatedBy()))
-            usernamesList.add(consol.getCreatedBy());
-        if (!CommonUtils.isStringNullOrEmpty(consol.getAssignedTo()))
-            usernamesList.add(consol.getAssignedTo());
         return usernamesList;
     }
 

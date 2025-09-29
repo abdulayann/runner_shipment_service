@@ -60,13 +60,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
-import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
-import com.dpw.runner.shipment.services.dao.impl.EventDao;
-import com.dpw.runner.shipment.services.dao.impl.HblDao;
-import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
-import com.dpw.runner.shipment.services.dao.impl.HblTermsConditionTemplateDao;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -83,26 +77,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.DocDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TiLegs;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
@@ -246,6 +221,9 @@ class ReportServiceTest extends CommonMocks {
 
     @Mock
     private ShipmentDao shipmentDao;
+
+    @Mock
+    private CustomerBookingDao bookingDao;
 
     @Mock
     private EventDao eventDao;
@@ -4119,6 +4097,26 @@ class ReportServiceTest extends CommonMocks {
                 "Console Manifest",
                 "Pre Alert") );
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForConsol(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForBooking(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Booking",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
     }

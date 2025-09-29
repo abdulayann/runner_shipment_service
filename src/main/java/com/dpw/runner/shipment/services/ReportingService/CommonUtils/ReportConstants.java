@@ -1593,4 +1593,8 @@ public class ReportConstants {
 
     public static final String PACKAGE_STRING = "PACKAGE(S)";
     public static final String CONTAINERS_STRING = "CONTAINERS";
+    public static final String NO_SHIPMENT_FOUND = "No Shipment found with Id: ";
+    public static final String NO_TEMPLATE_FOUND = "No Template Found!";
+    public static final String ORIGIN_ERROR = "Error while getting origin Agent Data";
+    public static final String DSTN_ERROR = "Error while getting destination Agent Data";
 }

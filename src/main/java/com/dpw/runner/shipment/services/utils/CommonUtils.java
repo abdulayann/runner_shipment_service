@@ -1724,6 +1724,7 @@ public class CommonUtils {
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
     }
+    @SuppressWarnings("java:S5857")
     public String replaceDefaultTagsFromData(Map<String, Object> map, String val) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
