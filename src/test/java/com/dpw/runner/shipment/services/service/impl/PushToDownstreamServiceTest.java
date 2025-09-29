@@ -281,7 +281,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.CUSTOMER_BOOKING);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -354,7 +354,7 @@ class PushToDownstreamServiceTest {
                         .isCreate(true).build())
                 .build();
 
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -368,7 +368,7 @@ class PushToDownstreamServiceTest {
                         .isCreate(true).build())
                 .build();
 
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
