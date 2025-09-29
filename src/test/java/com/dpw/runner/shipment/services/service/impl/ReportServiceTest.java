@@ -1,16 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -18,26 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBod
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -70,11 +40,8 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -87,27 +54,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,10 +65,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -129,6 +73,20 @@ import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -4161,6 +4119,125 @@ class ReportServiceTest extends CommonMocks {
         EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
         assertNotNull(response);
     }
+
+    @Test
+    void getDefaultEmailTemplateDataForShipment2() throws RunnerException {
+        // Arrange
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
+
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
+
+        // Mock shipment data
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .build())
+                        .build()));
+
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+
+            // FIXED: Mock CompletableFuture.runAsync to execute synchronously
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return CompletableFuture.completedFuture(null);
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return CompletableFuture.completedFuture(null);
+                    });
+
+            // FIXED: Proper varargs mocking for CompletableFuture.allOf()
+            completableFutureMock.when(() -> CompletableFuture.allOf(any(CompletableFuture.class)))
+                    .thenAnswer(invocation -> CompletableFuture.completedFuture(null));
+
+            // Alternative approach - match multiple varargs
+            completableFutureMock.when(() -> CompletableFuture.allOf(
+                            any(CompletableFuture.class),
+                            any(CompletableFuture.class),
+                            any(CompletableFuture.class)))
+                    .thenAnswer(invocation -> CompletableFuture.completedFuture(null));
+
+            // Rest of your mocks...
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock other methods
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            lenient().doAnswer(invocation -> {
+                @SuppressWarnings("unchecked")
+                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) invocation.getArguments()[3];
+
+                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
+                request1.setSubject("Test Subject");
+                request1.setBody(demoTemplate);
+                emailTemplatesRequests.add(request1);
+
+                return null;
+            }).when(reportService).populateShipmentsTagsAndEmailTemplate(
+                    any(ShipmentDetails.class),
+                    anyMap(),
+                    any(DefaultEmailTemplateRequest.class),
+                    anyList()
+            );
+
+            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+        }
+    }
+
 
     @Test
     void getDefaultEmailTemplateDataForConsol(){

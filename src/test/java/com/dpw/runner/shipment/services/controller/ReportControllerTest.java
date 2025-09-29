@@ -1,12 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
+import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
@@ -16,10 +11,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
-import java.io.IOException;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +22,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.UnexpectedRollbackException;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {ReportController.class})
 @ExtendWith(MockitoExtension.class)
@@ -162,6 +165,22 @@ class ReportControllerTest {
     void createAuditLog1() throws Exception {
         when(reportService.getPreAlertEmailTemplateData(any(), any())).thenThrow(new RunnerException());
         var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void getDefaultTemplate() throws Exception {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipement", 1L, 2L, List.of());
+        when(reportService.getDefaultEmailTemplateData(any())).thenReturn(new EmailBodyResponse());
+        var response = reportController.getEmailTemplateData(request);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void getDefaultTemplate2() throws Exception {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipement", 1L, 2L, List.of());
+        when(reportService.getDefaultEmailTemplateData(any())).thenThrow(new RunnerException());
+        var response = reportController.getEmailTemplateData(request);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
