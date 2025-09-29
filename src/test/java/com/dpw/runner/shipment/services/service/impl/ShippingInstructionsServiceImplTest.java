@@ -186,7 +186,6 @@ class ShippingInstructionsServiceImplTest {
         doNothing().when(siUtil).populateInttraSpecificData(any(), any());
         doNothing().when(siUtil).populateCarrierDetails(any(), any());
         when(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(any())).thenReturn(null);
-        // doNothing().when(bridgeServiceAdapter).bridgeApiIntegration(any(), any(), any(), any());
         doNothing().when(carrierBookingInttraUtil).createTransactionHistory(any(), any(), any(), any(), any(), any());
     }
 
@@ -899,27 +898,27 @@ class ShippingInstructionsServiceImplTest {
 
 // ========== MISSING AMEND TESTS ==========
 
-//    @Test
-//    void amendShippingInstruction_success_forCarrierBookingType() {
-//        Long id = 7L;
-//        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CARRIER_BOOKING, 100L);
-//        si.setId(id);
-//        CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
-//
-//        when(repository.findById(id)).thenReturn(Optional.of(si));
-//        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
-//        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
-//        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
-//                .thenReturn(new ShippingInstructionResponse());
-//
-//        setupInttraSubmitMocks();
-//
-//        ShippingInstructionResponse resp = service.amendShippingInstruction(id);
-//
-//        assertNotNull(resp);
-//        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
-//        verify(bridgeServiceAdapter).bridgeApiIntegration(any(), eq("SI_AMEND"), any(), any());
-//    }
+    @Test
+    void amendShippingInstruction_success_forCarrierBookingType() throws RunnerException {
+        Long id = 7L;
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CARRIER_BOOKING, 100L);
+        si.setId(id);
+        CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
+
+        when(repository.findById(id)).thenReturn(Optional.of(si));
+        when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        setupInttraSubmitMocks();
+
+        ShippingInstructionResponse resp = service.amendShippingInstruction(id);
+
+        assertNotNull(resp);
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
+        verify(bridgeServiceAdapter).bridgeApiIntegration(any(), eq("SI_AMEND"), any(), any());
+    }
 
     @Test
     void amendShippingInstruction_handlesBridgeException() throws RunnerException {
@@ -1099,5 +1098,54 @@ class ShippingInstructionsServiceImplTest {
         assertThatThrownBy(() -> service.updateShippingInstructions(request))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Invalid value of Shipping Instruction Type");
+    }
+
+    @Test
+    void setReferenceNumber_handlesNullReferenceList() {
+        ShippingInstruction si = new ShippingInstruction();
+        CarrierBooking cb = new CarrierBooking();
+        cb.setId(100L);
+        cb.setReferenceNumbersList(null);
+
+        // This should not throw exception and should handle gracefully
+        assertDoesNotThrow(() -> {
+            // Use reflection to call private method for testing
+            Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setReferenceNumber", ShippingInstruction.class, CarrierBooking.class);
+            method.setAccessible(true);
+            method.invoke(service, si, cb);
+        });
+
+        // Reference numbers should remain null/empty
+        assertTrue(si.getReferenceNumbers() == null || si.getReferenceNumbers().isEmpty());
+    }
+
+    @Test
+    void setCommonContainers_convertsAllContainerFields() {
+        Containers container = new Containers();
+        container.setContainerCode("20GP");
+        container.setContainerNumber("CONT123");
+        container.setPacks("5");
+        container.setPacksType("BOX");
+        container.setHsCode("HS123");
+        container.setCommodityCode("COMM123");
+        container.setGuid(UUID.randomUUID());
+
+        try {
+            Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setCommonContainers", List.class);
+            method.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            List<CommonContainers> result = (List<CommonContainers>) method.invoke(service, List.of(container));
+
+            assertThat(result).hasSize(1);
+            CommonContainers common = result.get(0);
+            assertEquals("20GP", common.getContainerCode());
+            assertEquals("CONT123", common.getContainerNo());
+            assertEquals(5, common.getPacks());
+            assertEquals("BOX", common.getPacksUnit());
+            assertEquals("HS123", common.getHsCode());
+        } catch (Exception e) {
+            fail("Reflection failed: " + e.getMessage());
+        }
     }
 }
