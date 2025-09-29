@@ -112,6 +112,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     IPartiesRepository partiesRepository;
 
+    @Autowired
+    private IRoutingsRepository routingsRepository;
+
 
     @Transactional
     @Override
@@ -150,6 +153,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
+
             List<Packing> packingList = consolShipment.getPackingList();
             List<ReferenceNumbers> referenceNumbersList = consolShipment.getReferenceNumbersList();
             for (Packing packing : packingList) {
@@ -165,6 +169,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             packingRepository.saveAll(packingList);
             if(consolShipment.getShipmentAddresses()!=null && !consolShipment.getShipmentAddresses().isEmpty())
                 partiesRepository.saveAll(consolShipment.getShipmentAddresses());
+            if(!CommonUtils.listIsNullOrEmpty(consolShipment.getRoutingsList()))
+                routingsRepository.saveAll(consolShipment.getRoutingsList());
             log.info("Saved {} packing(s) for Shipment [id={}]", packingList.size(), consolShipment.getId());
         }
 
@@ -184,6 +190,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             log.info("Updated consolidation Addresses for Consolidation [id={}]", consolidationId);
         }
 
+        if(!CommonUtils.listIsNullOrEmpty(console.getRoutingsList())) {
+            routingsRepository.saveAll(console.getRoutingsList());
+            log.info("Updated consolidation Routing for Consolidation [id={}]", consolidationId);
+        }
 
         // Step 8: Mark consolidation itself as migrated and save
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
