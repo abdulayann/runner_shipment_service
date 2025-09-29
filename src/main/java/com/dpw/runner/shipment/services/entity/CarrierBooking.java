@@ -114,6 +114,9 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "delivery_to_contact_no")
     private String deliveryToContactNo;
 
+    @Column(name = "inttra_reference")
+    private String inttraReference;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "requester_id", referencedColumnName = "id")
     @OrganizationData

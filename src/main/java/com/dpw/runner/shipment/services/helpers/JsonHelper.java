@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -209,4 +210,13 @@ public class JsonHelper {
         return mapper.updateValue(valueToUpdate, overrides);
     }
 
+    public JsonNode readTreeFromJson(String jsonString) {
+        try {
+            return mapper.readTree(jsonString);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse given JSON string: {}", jsonString);
+            log.info("Exception thrown while parsing json: {}", e.toString());
+            throw new JsonParseException(e);
+        }
+    }
 }

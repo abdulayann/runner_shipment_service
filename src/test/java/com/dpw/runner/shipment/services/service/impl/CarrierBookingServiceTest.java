@@ -91,6 +91,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -1038,7 +1039,7 @@ class CarrierBookingServiceTest extends CommonMocks {
 
     @Test
     void submitAmend_Submit() throws RunnerException {
-
+        carrierBooking.setForwardingAgent(createForwardingAgent());
         when(carrierBookingDao.findById(any())).thenReturn(Optional.of(carrierBooking));
         SubmitAmendInttraRequest submitAmendInttraRequest = new SubmitAmendInttraRequest();
         submitAmendInttraRequest.setOperationType(OperationType.SUBMIT);
@@ -1087,5 +1088,21 @@ class CarrierBookingServiceTest extends CommonMocks {
         carrierBookingService.submitOrAmend(submitAmendInttraRequest);
 
         verify(carrierBookingDao, times(1)).save(any());
+    }
+
+    private Parties createForwardingAgent() {
+        return Parties.builder()
+                .orgData(Map.of(
+                        "RemoteIdType", "INTRA_COMPANY_ID",
+                        "RemoteId", "123"
+                ))
+                .addressData(Map.of(
+                        "Address1", "Chandni Chowk",
+                        "City", "Delhi",
+                        "Country", "IND",
+                        "ZipPostCode", "110006",
+                        "ContactPhone", "9898776611"
+                ))
+                .build();
     }
 }
