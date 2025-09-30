@@ -50,5 +50,10 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private SailingInformationResponse sailingInformation;
     private List<ShippingInstructionContainerWarningResponse> containerDiff;
     private List<ShippingInstructionContainerWarningResponse> packageDiff;
-
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
+    private String createByUserEmail;
+    private String submitByUserEmail;
 }

@@ -51,4 +51,6 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     private String updatedBy;
     private LocalDateTime updatedAt;
+    private String createByUserEmail;
+    private String submitByUserEmail;
 }

@@ -149,4 +149,7 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "si_payload")
     private String payloadJson;
+
+    @Column(name = "si_comments")
+    private String comments;
 }
