@@ -2260,8 +2260,7 @@ public class ReportService implements IReportService {
             pdfConcat.addPages(pdfReader1);
         }
 
-        if ((reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPage()))
-         || (reportInfo.equalsIgnoreCase(SEAWAY_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPageSeaWayBill()))) {
+        if (isHblOrSeaWayBillBackPrint(reportInfo, tenantRow)) {
             PdfReader pdfReader = new PdfReader(mainDoc);
             int totalPages = pdfReader.getNumberOfPages();
             for (int i = 1; i <= totalPages; i++) {
@@ -2306,6 +2305,11 @@ public class ReportService implements IReportService {
         byte[] data = destinationDocumentStream.toByteArray();
         destinationDocumentStream.reset();
         return addImage(data, logoPath);
+    }
+
+    private boolean isHblOrSeaWayBillBackPrint(String reportInfo, ShipmentSettingsDetails tenantRow) {
+        return (reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPage()))
+                || (reportInfo.equalsIgnoreCase(SEAWAY_BILL) && Boolean.TRUE.equals(tenantRow.getPrintAfterEachPageSeaWayBill()));
     }
 
     private Boolean isHblType(String type, String key) {
