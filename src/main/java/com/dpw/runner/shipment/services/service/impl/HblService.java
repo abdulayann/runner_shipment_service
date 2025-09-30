@@ -60,7 +60,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REGEX_S_COMMA_S;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -1179,7 +1179,7 @@ public class HblService implements IHblService {
         return masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toSet()), EntityTransferConstants.LOCATION_SERVICE_GUID);
     }
 
-    private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) {
+    private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) { //NOSONAR
         switch (onField) {
             case "PortOfLoad":
                 if (!Objects.isNull(carrierDetails))
@@ -1257,17 +1257,17 @@ public class HblService implements IHblService {
         name = name.toUpperCase();
         if (location.getState() != null && !location.getState().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getState().trim())) {
             String state = location.getState().toUpperCase();
-            return String.format("%s, %s", name, state);
+            return String.format(REGEX_S_COMMA_S, name, state);
         }
         // Fallback to country if state is not available
         if (location.getCountry() != null && !location.getCountry().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getCountry().trim())) {
             String country = location.getCountry().toUpperCase();
-            return String.format("%s, %s", name, country);
+            return String.format(REGEX_S_COMMA_S, name, country);
         }
         // Final fallback to country code from LocCode
         if (location.getLocCode() != null && location.getLocCode().length() >= 2) {
             String countryCode = location.getLocCode().substring(0, 2).toUpperCase();
-            return String.format("%s, %s", name, countryCode);
+            return String.format(REGEX_S_COMMA_S, name, countryCode);
         }
         return name;
     }
