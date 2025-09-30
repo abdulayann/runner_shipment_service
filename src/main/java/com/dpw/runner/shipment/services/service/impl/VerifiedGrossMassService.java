@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
@@ -87,6 +88,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -108,12 +110,13 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
     private final INotificationService notificationService;
     private final ITransactionHistoryDao transactionHistoryDao;
+    private final IContainerDao containerDao;
 
 
     public VerifiedGrossMassService(IVerifiedGrossMassDao verifiedGrossMassDao, JsonHelper jsonHelper, CarrierBookingDao carrierBookingDao, IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils,
                                     MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper,
                                     ICommonContainersRepository commonContainersRepository, VerifiedGrossMassValidationUtil verifiedGrossMassValidationUtil, INotificationService notificationService,
-                                    VerifiedGrossMassUtil verifiedGrossMassUtil, CarrierBookingInttraUtil carrierBookingInttraUtil, ITransactionHistoryDao transactionHistoryDao) {
+                                    VerifiedGrossMassUtil verifiedGrossMassUtil, CarrierBookingInttraUtil carrierBookingInttraUtil, ITransactionHistoryDao transactionHistoryDao, IContainerDao containerDao) {
         this.verifiedGrossMassDao = verifiedGrossMassDao;
         this.jsonHelper = jsonHelper;
         this.carrierBookingDao = carrierBookingDao;
@@ -128,6 +131,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         this.verifiedGrossMassUtil = verifiedGrossMassUtil;
         this.carrierBookingInttraUtil = carrierBookingInttraUtil;
         this.transactionHistoryDao = transactionHistoryDao;
+        this.containerDao = containerDao;
     }
 
     @Override
@@ -139,8 +143,38 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         verifiedGrossMass.setCreateByUserEmail(UserContext.getUser().getEmail());
         verifiedGrossMass.setSubmitByUserEmail(UserContext.getUser().getEmail());
+
+        // Pre-populate Internal and External emails from Carrier Booking if VGM is not standalone
+        if (EntityType.CARRIER_BOOKING.equals(verifiedGrossMass.getEntityType())) {
+            Optional<CarrierBooking> carrierBookingOpt = carrierBookingDao.findById(verifiedGrossMass.getEntityId());
+
+            if (carrierBookingOpt.isPresent()) {
+                CarrierBooking carrierBooking = carrierBookingOpt.get();
+
+                // Internal Emails
+                verifiedGrossMass.setInternalEmails(populateEmailsFromCarrierBooking(
+                        verifiedGrossMass.getInternalEmails(), carrierBooking.getInternalEmails()));
+
+                // External Emails
+                verifiedGrossMass.setExternalEmails(populateEmailsFromCarrierBooking(
+                        verifiedGrossMass.getExternalEmails(), carrierBooking.getExternalEmails()));
+            }
+        }
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
         return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+    }
+
+    private String populateEmailsFromCarrierBooking(String existingEmails, String newEmails) {
+
+        if (Objects.nonNull(newEmails) && !newEmails.trim().isEmpty()) {
+            if (Objects.nonNull(existingEmails) && !existingEmails.trim().isEmpty()) {
+                existingEmails += ",";
+            } else {
+                existingEmails = "";
+            }
+            existingEmails += newEmails.trim();
+        }
+        return existingEmails;
     }
 
     @Override
@@ -485,6 +519,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         commonContainers.setCustomsSealNumber(containers.getCustomsSealNumber());
         commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
         commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
+        commonContainers.setContainerRefGuid(containers.getGuid());
         return commonContainers;
     }
 
@@ -533,6 +568,11 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 commonContainersRepository.findAllByIdIn(submitAmendInttraRequest.getContainerIds());
         VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
 
+        // Set Status to Draft
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
+        sendNotification(verifiedGrossMass);
+        saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
+
         // Creating List of submittedContainers
         List<CommonContainers> submittedContainersList = new ArrayList<>();
 
@@ -566,7 +606,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
             verifiedGrossMassUtil.populateCarrierDetails(
                     verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
-                    verifiedGrossMassInttraResponse);
+                    verifiedGrossMassInttraResponse, verifiedGrossMass.getExternalEmails());
 
             // Generates number between 10000 and 99999 and set fileName
             SecureRandom random = new SecureRandom();
@@ -688,6 +728,54 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         } catch (Exception e) {
             log.error("Error in sending verified gross mass email: {}", e.getMessage());
         }
+    }
+
+    public List<CommonContainerResponse> syncContainersByIds(List<Long> commonContainerIds) {
+        List<CommonContainers> commonContainersList = commonContainersRepository.findAllById(commonContainerIds);
+
+        // Extract all containerRefGuids
+        List<UUID> refGuids = commonContainersList.stream()
+                .map(CommonContainers::getContainerRefGuid)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // Fetch all matching Containers by GUID
+        Map<UUID, Containers> containersMap = containerDao.findAllByGuid(refGuids).stream()
+                .collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+
+        for (CommonContainers commonContainers : commonContainersList) {
+            UUID refGuid = commonContainers.getContainerRefGuid();
+            // No matching container to sync from
+            if (Objects.isNull(refGuid) || !containersMap.containsKey(refGuid)) {
+                continue;
+            }
+
+            Containers container = containersMap.get(refGuid);
+
+            // Field sync
+            commonContainers.setContainerCode(container.getContainerCode());
+            commonContainers.setContainerNo(container.getContainerNumber());
+
+            // Setting Cargo Weight (i.e Net weight)
+            commonContainers.setNetWeight(container.getNetWeight());
+
+            commonContainers.setTareWeight(container.getTareWeight());
+            commonContainers.setTareWeightUnit(container.getTareWeightUnit());
+            commonContainers.setGrossWeight(container.getGrossWeight());
+            commonContainers.setGrossWeightUnit(container.getGrossWeightUnit());
+            commonContainers.setSealNumber(container.getCarrierSealNumber());
+            commonContainers.setShipperSealNumber(container.getShipperSealNumber());
+            commonContainers.setCustomsSealNumber(container.getCustomsSealNumber());
+            commonContainers.setVeterinarySealNumber(container.getVeterinarySealNumber());
+            commonContainers.setVgmWeight(container.getGrossWeight());
+            commonContainers.setVgmWeightUnit(container.getGrossWeightUnit());
+        }
+
+        // Save updated entities
+        commonContainersRepository.saveAll(commonContainersList);
+        return commonContainersList.stream()
+                .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
+                .toList();
     }
 }
 
