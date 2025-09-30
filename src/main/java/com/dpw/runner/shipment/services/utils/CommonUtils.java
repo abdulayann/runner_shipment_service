@@ -3764,14 +3764,26 @@ public class CommonUtils {
         return null;
     }
 
-    public static String constructAddress(Map<String, Object> addressData) {
+    public static String constructAddress(Map<String, Object> addressData, Map<String, Object> orgData) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
 
         if (addressData != null) {
+            // Name
+            if (addressData.containsKey(PartiesConstants.COMPANY_NAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME))
+                ));
+            }
+            else if (Objects.nonNull(orgData) && orgData.containsKey(PartiesConstants.FULLNAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(orgData.get(PartiesConstants.FULLNAME))
+                ));
+            }
+
             // Address1
             if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
-                sb.append(StringUtility.toUpperCase(
+                sb.append(newLine).append(StringUtility.toUpperCase(
                         StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
                 ));
             }
