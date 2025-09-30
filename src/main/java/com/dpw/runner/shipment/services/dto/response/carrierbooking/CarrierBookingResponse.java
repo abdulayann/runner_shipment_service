@@ -61,4 +61,8 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private List<ReferenceNumberResponse> referenceNumbersList;
     private List<CarrierRoutingResponse> carrierRoutingList;
     private List<ContainerMisMatchWarning> containerMismatchWarningList;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
 }
