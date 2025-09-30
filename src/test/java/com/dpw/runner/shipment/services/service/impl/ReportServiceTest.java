@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
@@ -50,6 +51,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,6 +84,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -4119,7 +4122,6 @@ class ReportServiceTest extends CommonMocks {
         EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
         assertNotNull(response);
     }
-
     @Test
     void getDefaultEmailTemplateDataForShipment2() throws RunnerException {
         // Arrange
@@ -4131,7 +4133,21 @@ class ReportServiceTest extends CommonMocks {
                 "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
                 "Regards, Team DPW";
 
-        // Mock shipment data
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
+
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
+
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+
+        // Mock shipment data with complete broker information
         when(shipmentDao.findById(any())).thenReturn(Optional.of(
                 ShipmentDetails.builder()
                         .carrierDetails(CarrierDetails.builder()
@@ -4140,43 +4156,67 @@ class ReportServiceTest extends CommonMocks {
                                 .originPort("INSA")
                                 .destinationPort("UAE")
                                 .build())
+                        .additionalDetails(new AdditionalDetails()
+                                .setExportBroker(exportBroker)
+                                .setImportBroker(importBroker))
+                        .containersList(Set.of(container))
                         .build()));
 
-        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
-             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
 
-            // FIXED: Mock CompletableFuture.runAsync to execute synchronously
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<IReport> iReportMock = mockStatic(IReport.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            // Mock IReport.getPartyAddress
+            iReportMock.when(() -> IReport.getPartyAddress(any(PartiesModel.class)))
+                    .thenReturn(expectedAddress);
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
             completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
                     .thenAnswer(invocation -> {
                         Runnable runnable = invocation.getArgument(0);
                         runnable.run();
-                        return CompletableFuture.completedFuture(null);
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
                     });
 
             completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
                     .thenAnswer(invocation -> {
                         Runnable runnable = invocation.getArgument(0);
                         runnable.run();
-                        return CompletableFuture.completedFuture(null);
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
                     });
 
-            // FIXED: Proper varargs mocking for CompletableFuture.allOf()
-            completableFutureMock.when(() -> CompletableFuture.allOf(any(CompletableFuture.class)))
-                    .thenAnswer(invocation -> CompletableFuture.completedFuture(null));
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
 
-            // Alternative approach - match multiple varargs
-            completableFutureMock.when(() -> CompletableFuture.allOf(
-                            any(CompletableFuture.class),
-                            any(CompletableFuture.class),
-                            any(CompletableFuture.class)))
-                    .thenAnswer(invocation -> CompletableFuture.completedFuture(null));
-
-            // Rest of your mocks...
+            // Mock masterDataUtils.withMdc
             lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
                 Runnable originalRunnable = invocation.getArgument(0);
                 return originalRunnable;
             });
 
+            // Mock location data cache - ensure all location codes are populated
             lenient().doAnswer(invocation -> {
                 Set<String> locationCodes = invocation.getArgument(0);
                 Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
@@ -4195,6 +4235,7 @@ class ReportServiceTest extends CommonMocks {
                 return null;
             }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
 
+            // Mock tenant data
             lenient().doAnswer(invocation -> {
                 Map<String, TenantModel> tenantMap = invocation.getArgument(1);
                 TenantModel tenant = new TenantModel();
@@ -4208,36 +4249,42 @@ class ReportServiceTest extends CommonMocks {
             lenient().when(mockUser.getTenantId()).thenReturn(123);
             userContextMock.when(UserContext::getUser).thenReturn(mockUser);
 
-            // Mock other methods
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
             lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
 
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
             lenient().doAnswer(invocation -> {
-                @SuppressWarnings("unchecked")
-                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) invocation.getArguments()[3];
-
-                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
-                request1.setSubject("Test Subject");
-                request1.setBody(demoTemplate);
-                emailTemplatesRequests.add(request1);
-
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
                 return null;
-            }).when(reportService).populateShipmentsTagsAndEmailTemplate(
-                    any(ShipmentDetails.class),
-                    anyMap(),
-                    any(DefaultEmailTemplateRequest.class),
-                    anyList()
-            );
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
 
-            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
-
-            // Act
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
             EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
 
             // Assert
             assertNotNull(response);
+
+            // Correct verification for static mock
+            iReportMock.verify(() -> IReport.getPartyAddress(any(PartiesModel.class)), atLeast(2));
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
         }
     }
-
 
     @Test
     void getDefaultEmailTemplateDataForConsol(){
@@ -4251,73 +4298,172 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getDefaultEmailTemplateDataForConsol2() throws RunnerException {
-        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations",1L, 2L, List.of( "Commercial Incoice",
-                "Console Manifest",
-                "Pre Alert") );
-        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
+//        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
         lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        String demoTemplate = "\"Hi ,\n" +
-                "    \n" +
-                "    Please find the attached documents for the {CBN Number}\n" +
-                "    \n" +
-                "    {Mode}\n" +
-                "    {Origin}\n" +
-                "    {Dstn}\n" +
-                "    {ETD}\n" +
-                "    {ETA}\n" +
-                "    {HBLNo}\n" +
-                "    {HAWBNo}\n" +
-                "    {MBLNo}\n" +
-                "    {MAWBNo}\n" +
-                "    {Carrier}\n" +
-                "    {Airline}\n" +
-                "    \n" +
-                "    Sender (Origin)\n" +
-                "    {OABranch}\n" +
-                "    {OABranchAdd}\n" +
-                "    {OAName}\n" +
-                "    {OAEmail}\n" +
-                "    {OAPhone}\n" +
-                "    \n" +
-                "    Recipient (Destination)\n" +
-                "    {DABranch}\n" +
-                "    {DABranchAdd}\n" +
-                "    {DAName}\n" +
-                "    {DAEmail}\n" +
-                "    {DAPhone}\n" +
-                "    Sales Branch: {SalesBranch}\n" +
-                "    \n" +
-                "    {List_All_Documents}\n" +
-                "    \n" +
-                "    Regards,\n" +
-                "    Team DPW\"";
-        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
-        doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                Object[] args = invocation.getArguments();
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
 
-                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
-                @SuppressWarnings("unchecked")
-                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
 
-                // Add test data to the list
-                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
-                request1.setSubject(demoTemplate);
-                request1.setBody("Test Body 1");
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
 
-                emailTemplatesRequests.add(request1);
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
 
-                return null; // Required for void methods
-            }
-        }).when(reportService).populateConsolTagsAndEmailTemplate(
-                any(ConsolidationDetails.class),
-                anyMap(),
-                any(DefaultEmailTemplateRequest.class),
-                anyList()
-        );
-        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
-        assertNotNull(response);
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+
+        // Mock shipment data with complete broker information
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .build())
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .build())
+                        .achievedQuantities(AchievedQuantities.builder().containerCount(1).build())
+                        .receivingAgent(importBroker)
+                        .sendingAgent(exportBroker)
+                        .build()));
+
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
+
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<IReport> iReportMock = mockStatic(IReport.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            // Mock IReport.getPartyAddress
+            iReportMock.when(() -> IReport.getPartyAddress(any(PartiesModel.class)))
+                    .thenReturn(expectedAddress);
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock masterDataUtils.withMdc
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            // Mock location data cache - ensure all location codes are populated
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            // Mock tenant data
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
+            lenient().doAnswer(invocation -> {
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
+                return null;
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+
+            // Correct verification for static mock
+            iReportMock.verify(() -> IReport.getPartyAddress(any(PartiesModel.class)), atLeast(2));
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
+        }
     }
 
     @Test
@@ -4332,73 +4478,159 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getDefaultEmailTemplateDataForBooking2() throws RunnerException {
-        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Booking",1L, 2L, List.of( "Commercial Incoice",
-                "Console Manifest",
-                "Pre Alert") );
-        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+//        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
         lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-        String demoTemplate = "\"Hi ,\n" +
-                "    \n" +
-                "    Please find the attached documents for the {CBN Number}\n" +
-                "    \n" +
-                "    {Mode}\n" +
-                "    {Origin}\n" +
-                "    {Dstn}\n" +
-                "    {ETD}\n" +
-                "    {ETA}\n" +
-                "    {HBLNo}\n" +
-                "    {HAWBNo}\n" +
-                "    {MBLNo}\n" +
-                "    {MAWBNo}\n" +
-                "    {Carrier}\n" +
-                "    {Airline}\n" +
-                "    \n" +
-                "    Sender (Origin)\n" +
-                "    {OABranch}\n" +
-                "    {OABranchAdd}\n" +
-                "    {OAName}\n" +
-                "    {OAEmail}\n" +
-                "    {OAPhone}\n" +
-                "    \n" +
-                "    Recipient (Destination)\n" +
-                "    {DABranch}\n" +
-                "    {DABranchAdd}\n" +
-                "    {DAName}\n" +
-                "    {DAEmail}\n" +
-                "    {DAPhone}\n" +
-                "    Sales Branch: {SalesBranch}\n" +
-                "    \n" +
-                "    {List_All_Documents}\n" +
-                "    \n" +
-                "    Regards,\n" +
-                "    Team DPW\"";
-        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
-        doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                Object[] args = invocation.getArguments();
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("booking", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
 
-                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
-                @SuppressWarnings("unchecked")
-                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
 
-                // Add test data to the list
-                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
-                request1.setSubject(demoTemplate);
-                request1.setBody("Test Body 1");
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
 
-                emailTemplatesRequests.add(request1);
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
 
-                return null; // Required for void methods
-            }
-        }).when(reportService).populateBookingTagsAndEmailTemplate(
-                any(CustomerBooking.class),
-                anyMap(),
-                any(DefaultEmailTemplateRequest.class),
-                anyList()
-        );
-        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
-        assertNotNull(response);
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+        // Mock shipment data with complete broker information
+        when(bookingDao.findById(any())).thenReturn(Optional.of(
+                CustomerBooking.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .build())
+                        .containersList(List.of(container))
+                        .build()));
+
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
+
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock masterDataUtils.withMdc
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            // Mock location data cache - ensure all location codes are populated
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            // Mock tenant data
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
+            lenient().doAnswer(invocation -> {
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
+                return null;
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+
+            // Correct verification for static mock
+
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
+        }
     }
 
     @Test

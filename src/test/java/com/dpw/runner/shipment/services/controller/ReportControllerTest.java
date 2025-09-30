@@ -170,7 +170,7 @@ class ReportControllerTest {
 
     @Test
     void getDefaultTemplate() throws Exception {
-        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipement", 1L, 2L, List.of());
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipment", 1L, 2L, List.of());
         when(reportService.getDefaultEmailTemplateData(any())).thenReturn(new EmailBodyResponse());
         var response = reportController.getEmailTemplateData(request);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -178,7 +178,7 @@ class ReportControllerTest {
 
     @Test
     void getDefaultTemplate2() throws Exception {
-        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipement", 1L, 2L, List.of());
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("shipment", 1L, 2L, List.of());
         when(reportService.getDefaultEmailTemplateData(any())).thenThrow(new RunnerException());
         var response = reportController.getEmailTemplateData(request);
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
