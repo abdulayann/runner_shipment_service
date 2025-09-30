@@ -5433,9 +5433,6 @@ public abstract class IReport {
         }
 
         List<Parties> partiesList = Stream.of(
-                        consolidationDetails.getBorrowedFrom(),
-                        consolidationDetails.getCreditor(),
-                        consolidationDetails.getCoLoadWith(),
                         consolidationDetails.getSendingAgent(),
                         consolidationDetails.getReceivingAgent()
                 )
@@ -5461,7 +5458,7 @@ public abstract class IReport {
         Set<String> orgIds = getOrgIdsForAllParties(partiesToGetFirmsCode);
         Map<String, String> orgToFirmsCodeMap = mdmServiceAdapter.getFirmsCodeListFromCache(orgIds);
 
-        addPartyDetails(dict, partiesList, orgToFirmsCodeMap);
+        addPartyDetails(dict, partiesList, orgToFirmsCodeMap, consolidationDetails);
         addAgentDetails(dict, C_ORIGIN_AGENT, consolidationDetails.getSendingAgent());
         addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
@@ -5546,17 +5543,19 @@ public abstract class IReport {
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties, Map<String, String> orgToFirmsCodeMap) {
-        if (parties == null) {
-            return;
-        }
-
-        for (Parties party : parties) {
-            if (party != null && party.getType() != null) {
-                dict.put("C_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party, orgToFirmsCodeMap));
-                dict.put("C_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
+    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties, Map<String, String> orgToFirmsCodeMap, ConsolidationDetails consolidationDetails) {
+        if (parties != null) {
+            for (Parties party : parties) {
+                if (party != null && party.getType() != null) {
+                    dict.put("C_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party, orgToFirmsCodeMap));
+                    dict.put("C_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
+                }
             }
         }
+
+        dict.put("C_BorrowedFrom", buildPartyMap(consolidationDetails.getBorrowedFrom(), null));
+        dict.put("C_Creditor", buildPartyMap(consolidationDetails.getCreditor(), null));
+        dict.put("C_CoLoadWith", buildPartyMap(consolidationDetails.getCoLoadWith(), null));
     }
 
     // Adds single agent party (either origin or destination) using a provided key
@@ -5680,7 +5679,7 @@ public abstract class IReport {
             dict = new HashMap<>();
         }
 
-        List<Parties> partiesList = Stream.concat(
+        List<Parties> partiesToFetchFirmsCode = Stream.concat(
                         // base parties
                         Stream.of(
                                 shipmentDetails.getClient(),
@@ -5698,15 +5697,17 @@ public abstract class IReport {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
+        List<Parties> partiesList = new ArrayList<>();
         Optional.ofNullable(shipmentDetails.getShipmentAddresses())
-                .ifPresent(partiesList::addAll);
+                .ifPresent(list -> {
+                    partiesList.addAll(list);
+                    partiesToFetchFirmsCode.addAll(list);
+                });
 
         // Add various grouped information into the map
         addBasicShipmentFields(dict, shipmentDetails);
         addShipmentReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
         addShipmentRoutingDetails(dict, shipmentDetails.getRoutingsList());
-
-        List<Parties> partiesToFetchFirmsCode = new ArrayList<>(partiesList);
 
         addPartiesToFetchFirmsCode(partiesToFetchFirmsCode, shipmentTransportInstruction);
 
@@ -5714,7 +5715,7 @@ public abstract class IReport {
         Set<String> orgIds = getOrgIdsForAllParties(partiesToFetchFirmsCode);
         Map<String, String> orgToFirmsCodeMap = mdmServiceAdapter.getFirmsCodeListFromCache(orgIds);
 
-        addShipmentPartyDetails(dict, partiesList, orgToFirmsCodeMap);
+        addShipmentPartyDetails(dict, partiesList, orgToFirmsCodeMap, shipmentDetails);
 
         // Firms Code Handling for Shipment Transport Instruction
         processTransportInstructionsForFirmsCode(shipmentTransportInstruction, dict, orgToFirmsCodeMap);
@@ -5911,17 +5912,24 @@ public abstract class IReport {
     }
 
     // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
-    private void addShipmentPartyDetails(Map<String, Object> dict, List<Parties> parties, Map<String, String> orgToFirmsCodeMap) {
-        if (parties == null) {
-            return;
-        }
-
-        for (Parties party : parties) {
-            if (party != null && party.getType() != null) {
-                dict.put("S_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party,orgToFirmsCodeMap));
-                dict.put("S_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
+    private void addShipmentPartyDetails(Map<String, Object> dict, List<Parties> parties, Map<String, String> orgToFirmsCodeMap, ShipmentDetails shipmentDetails) {
+        if (parties != null) {
+            for (Parties party : parties) {
+                if (party != null && party.getType() != null) {
+                    dict.put("S_" + party.getType().replaceAll("\\s+", ""), buildPartyMap(party, orgToFirmsCodeMap));
+                    dict.put("S_" + party.getType().replaceAll("\\s+", "") + CONTACT, buildPartyContact(party));
+                }
             }
         }
+
+        dict.put("S_Client", buildPartyMap(shipmentDetails.getClient(), orgToFirmsCodeMap));
+        dict.put("S_Client" + CONTACT, buildPartyContact(shipmentDetails.getClient()));
+        dict.put("S_Consignee", buildPartyMap(shipmentDetails.getConsignee(), orgToFirmsCodeMap));
+        dict.put("S_Consignee" + CONTACT, buildPartyContact(shipmentDetails.getConsignee()));
+        dict.put("S_Shipper", buildPartyMap(shipmentDetails.getConsigner(), orgToFirmsCodeMap));
+        dict.put("S_Shipper" + CONTACT, buildPartyContact(shipmentDetails.getConsigner()));
+        dict.put("S_NotifyParty", buildPartyMap(shipmentDetails.getAdditionalDetails().getNotifyParty(), orgToFirmsCodeMap));
+        dict.put("S_NotifyParty" + CONTACT, buildPartyContact(shipmentDetails.getAdditionalDetails().getNotifyParty()));
     }
 
     // Adds single agent party (either origin or destination) using a provided key
