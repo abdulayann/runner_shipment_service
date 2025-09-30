@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -77,7 +78,7 @@ public class ProductIdentifierUtility {
   }
 
   public String getCommonSequenceNumber(
-      String transportMode, ProductProcessTypes productProcessTypes) {
+      String transportMode, ProductProcessTypes productProcessTypes) throws RunnerException {
     var sequenceNumber = "";
     var productSequence = getCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
@@ -273,7 +274,7 @@ public class ProductIdentifierUtility {
   }
 
   private String regexToSequenceNumber(
-      ProductSequenceConfig productSequence, String transportMode) {
+      ProductSequenceConfig productSequence, String transportMode) throws RunnerException {
     StringBuilder result = new StringBuilder();
     var regexValue = productSequence.getPrefix();
 
@@ -291,6 +292,8 @@ public class ProductIdentifierUtility {
     }
     // Filter out empty or whitespace-only segments
     segments = segments.stream().filter(s -> !s.trim().isEmpty()).toList();
+
+    String resetFreq = GetNextNumberHelper.determineResetFrequency(segments);
 
     for (var segment : segments) {
       if (segment.contains(";")) {
@@ -311,7 +314,7 @@ public class ProductIdentifierUtility {
                   .map(StringBuilder::new)
                   .orElse(null);
           case "seq" -> {
-            result = getSequenceNumberForSequenceCase(productSequence, format, numberOfCharactersToRetain, result);
+            result = getSequenceNumberForSequenceCase(productSequence, format, numberOfCharactersToRetain, result, resetFreq);
             log.info("CR-ID {} || Calling event {} from RegexToSequenceNumber", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PRODUCT_SEQ_SAVE);
 
 
@@ -332,7 +335,14 @@ public class ProductIdentifierUtility {
   }
 
   @NotNull
-  private StringBuilder getSequenceNumberForSequenceCase(ProductSequenceConfig productSequence, String format, Integer numberOfCharactersToRetain, StringBuilder result) {
+  private StringBuilder getSequenceNumberForSequenceCase(ProductSequenceConfig productSequence, String format, Integer numberOfCharactersToRetain, StringBuilder result, String resetFreq) throws RunnerException {
+    boolean resetCounter = GetNextNumberHelper.needResetCounter(productSequence, resetFreq);
+
+    if(resetCounter) {
+      productSequence.setSerialCounter(0);
+      productSequence.setSequenceStartTime(LocalDateTime.now(Clock.systemUTC()));
+    }
+
     productSequence.setSerialCounter(
         productSequence.getSerialCounter() == null
             ? 1
