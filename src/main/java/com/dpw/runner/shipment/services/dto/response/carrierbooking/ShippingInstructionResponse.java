@@ -56,4 +56,5 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private LocalDateTime updatedAt;
     private String createByUserEmail;
     private String submitByUserEmail;
+    private String comments;
 }
