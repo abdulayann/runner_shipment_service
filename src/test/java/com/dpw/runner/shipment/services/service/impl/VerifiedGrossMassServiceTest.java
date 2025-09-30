@@ -9,8 +9,8 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -1350,7 +1350,7 @@ class VerifiedGrossMassServiceTest {
 
         // Mocking fetchEmailTemplate to return the email template
         when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
-        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm, emailTemplate)).thenReturn(new SendEmailBaseRequest());
+        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm)).thenReturn(new ArrayList<>());
 
         // Mock the email sending
         when(notificationService.sendEmail(any(SendEmailBaseRequest.class))).thenReturn(new NotificationServiceResponse());
@@ -1398,7 +1398,7 @@ class VerifiedGrossMassServiceTest {
 
         // Mock fetchEmailTemplate to return the email template
         when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
-        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm, emailTemplate)).thenReturn(new SendEmailBaseRequest());
+        when(verifiedGrossMassUtil.getSendEmailBaseRequest(vgm)).thenReturn(new ArrayList<>());
 
         // Mock the email sending to throw an exception
         doThrow(new RuntimeException("Email sending failed")).when(notificationService).sendEmail(any(SendEmailBaseRequest.class));

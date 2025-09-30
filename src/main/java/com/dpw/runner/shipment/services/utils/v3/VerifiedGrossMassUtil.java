@@ -24,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -333,32 +334,39 @@ public class VerifiedGrossMassUtil {
         return !StringUtils.equals(currentValue, previousValue);
     }
 
-    public SendEmailBaseRequest getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass, EmailTemplatesRequest verifiedGrossMassTemplate) {
-        String toEmails = verifiedGrossMass.getInternalEmails() == null ? "" : verifiedGrossMass.getInternalEmails();
+    public List<String> getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass) {
+        StringBuilder toEmails = new StringBuilder();
+
+        // Add internal emails if present
+        if (Objects.nonNull(verifiedGrossMass.getInternalEmails()) && !verifiedGrossMass.getInternalEmails().trim().isEmpty()) {
+            toEmails.append(verifiedGrossMass.getInternalEmails());
+        }
 
         // Add the 'createByUserEmail' only if it's not blank
         String createByUserEmail = verifiedGrossMass.getCreateByUserEmail();
         if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
             if (!toEmails.isEmpty()) {
-                toEmails += ",";
+                toEmails.append(",");
             }
-            toEmails += createByUserEmail;
+            toEmails.append(createByUserEmail);
         }
 
         // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
         String submitByUserEmail = verifiedGrossMass.getSubmitByUserEmail();
-        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty() && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty()
+                && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
             if (!toEmails.isEmpty()) {
-                toEmails += ",";
+                toEmails.append(",");
             }
-            toEmails += submitByUserEmail;
+            toEmails.append(submitByUserEmail);
         }
 
-        SendEmailBaseRequest request = new SendEmailBaseRequest();
-        request.setTo(toEmails);
-        request.setSubject(verifiedGrossMassTemplate.getSubject());
-        request.setTemplateName(verifiedGrossMassTemplate.getName());
-        request.setHtmlBody(verifiedGrossMassTemplate.getBody());
-        return request;
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(toEmails.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // remove duplicates if any
+                .toList();
     }
+
 }

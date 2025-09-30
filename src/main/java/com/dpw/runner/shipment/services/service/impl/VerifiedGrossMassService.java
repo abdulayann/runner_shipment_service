@@ -705,8 +705,8 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                     .findFirst()
                     .orElse(null);
             if (Objects.nonNull(verifiedGrossMassEmailTemplate)) {
-                SendEmailBaseRequest request = verifiedGrossMassUtil.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassEmailTemplate);
-                notificationService.sendEmail(request);
+                List<String> toEmails = verifiedGrossMassUtil.getSendEmailBaseRequest(verifiedGrossMass);
+                notificationService.sendEmail(verifiedGrossMassEmailTemplate.getBody(), verifiedGrossMassEmailTemplate.getSubject(), toEmails, new ArrayList<>());
                 log.info("Email Notification sent successfully for State Change of VGM Id: {}", verifiedGrossMass.getId());
             }
         } catch (Exception e) {
