@@ -2935,12 +2935,15 @@ public class ReportService implements IReportService {
         boolean isShipmentBLRated = shipmentDetails.getAdditionalDetails() != null &&
                                     Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsRatedBL());
         DocDetailsTypes docDetailsType = fetchDocDetailsTypeFor(reportInfo, isShipmentBLRated);
-        DocDetails docDetail = DocDetails.builder()
-                .type(docDetailsType)
-                .entityId(reportId)
-                .fileId(fileId)
-                .build();
-        docDetailsDao.save(docDetail);
+        DocDetails oldDocDetail = docDetailsDao.findByFileId(fileId);
+        DocDetails newDocDetail = DocDetails.builder().build();
+        if (oldDocDetail != null) {
+            newDocDetail = oldDocDetail;
+        }
+        newDocDetail.setType(docDetailsType);
+        newDocDetail.setEntityId(reportId);
+        newDocDetail.setFileId(fileId);
+        docDetailsDao.save(newDocDetail);
     }
 
     private DocDetailsTypes fetchDocDetailsTypeFor(String reportInfo, boolean isShipmentBLRated) {
