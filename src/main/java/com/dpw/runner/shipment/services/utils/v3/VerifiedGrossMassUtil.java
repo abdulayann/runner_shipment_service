@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
@@ -30,12 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.GROSS_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.NET_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.TARE_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VGM_WEIGHT;
 
 @Slf4j
 @Component
@@ -152,7 +155,8 @@ public class VerifiedGrossMassUtil {
         return response;
     }
 
-    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map,
+                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse, String externalEmails) {
 
         if (Objects.isNull(carrierDatav1Map)) return;
 
@@ -170,6 +174,15 @@ public class VerifiedGrossMassUtil {
             verifiedGrossMassInttraResponse.setCarrierDescription(carrierDescription);
             NotificationContactResponse notificationContactResponse = new NotificationContactResponse();
             notificationContactResponse.setUsername(carrierContactPerson);
+
+            // Adding Inttra emails (VGM external emails) to carrierNotificationContact with comma separation
+            if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+                if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
+                    carrierNotificationContact += "," + externalEmails;
+                } else {
+                    carrierNotificationContact = externalEmails;
+                }
+            }
             notificationContactResponse.setEmails(carrierNotificationContact);
             verifiedGrossMassInttraResponse.setCarrierNotificationContact(notificationContactResponse);
         }
@@ -188,22 +201,22 @@ public class VerifiedGrossMassUtil {
             if (Objects.isNull(consolContainersList)) consolContainersList = Collections.emptyList();
 
             Map<Long, CommonContainers> submittedContainersVGMMap = submittedVGMContainersList.stream()
-                    .collect(Collectors.toMap(container -> Long.parseLong(container.getContainerNo()), Function.identity(), (a, b) -> a));
+                    .collect(Collectors.toMap(CommonContainers::getId, Function.identity(), (a, b) -> a));
 
-            Map<Long, Containers> consolContainersMap = consolContainersList.stream()
-                    .collect(Collectors.toMap(Containers::getId, Function.identity(), (a, b) -> a));
+            Map<UUID, Containers> consolContainersMap = consolContainersList.stream()
+                    .collect(Collectors.toMap(BaseEntity::getGuid, Function.identity(), (a, b) -> a));
 
             for (CommonContainers currentContainer : currentVGMContainersList) {
 
                 // Compare with previous submitted VGM (if exists)
-                CommonContainers submittedContainer = submittedContainersVGMMap.get(Long.parseLong(currentContainer.getContainerNo()));
+                CommonContainers submittedContainer = submittedContainersVGMMap.get(currentContainer.getId());
                 if (Objects.nonNull(submittedContainer) && hasAnyWeightDifference(currentContainer, submittedContainer)) {
                     warnings.add(buildVGMContainerWarning(submittedContainer, currentContainer, null));
                     
                 }
 
                 // Compare with consol container (if exists)
-                Containers consolContainer = consolContainersMap.get(Long.parseLong(currentContainer.getContainerNo()));
+                Containers consolContainer = consolContainersMap.get(currentContainer.getContainerRefGuid());
                 if (Objects.nonNull(consolContainer) && hasAnyWeightDifference(currentContainer, consolContainer)) {
                     warnings.add(buildVGMContainerWarning(null, currentContainer, consolContainer));
                 }
@@ -225,10 +238,10 @@ public class VerifiedGrossMassUtil {
         String containerNo = getContainerNumber(submittedContainer, consolContainer);
         vgmContainerWarningResponse.setContainerNumber(containerNo);
 
-        // Extracted logic for VGM weight (Gross Weight) comparison
-        String vgmOldWeight = getWeight(submittedContainer, consolContainer, GROSS_WEIGHT);
+        // Extracted logic for VGM weight
+        String vgmOldWeight = getWeight(submittedContainer, consolContainer, VGM_WEIGHT);
         vgmContainerWarningResponse.setVgmOldWeightValue(vgmOldWeight);
-        String vgmNewWeight = formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit());
+        String vgmNewWeight = formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit());
         vgmContainerWarningResponse.setVgmNewWeightValue(vgmNewWeight);
 
         // Set Gross Weight Value
@@ -262,29 +275,38 @@ public class VerifiedGrossMassUtil {
     }
 
     private String getWeight(CommonContainers submittedContainer, Containers consolContainer, String weightType) {
-        switch (weightType) {
-            case GROSS_WEIGHT :
-                return getFormattedWeight(submittedContainer, consolContainer);
-            case NET_WEIGHT:
-                return getFormattedWeight(submittedContainer, consolContainer);
-            case TARE_WEIGHT:
-                return getFormattedWeight(submittedContainer, consolContainer);
-            default:
-                return null;
-        }
-    }
-
-    private String getFormattedWeight(CommonContainers submittedContainer, Containers consolContainer) {
         if (Objects.nonNull(submittedContainer)) {
-            return formatWeight(submittedContainer.getGrossWeight(), submittedContainer.getGrossWeightUnit());
+            switch (weightType) {
+                case VGM_WEIGHT:
+                    return formatWeight(submittedContainer.getVgmWeight(), submittedContainer.getVgmWeightUnit());
+                case GROSS_WEIGHT:
+                    return formatWeight(submittedContainer.getGrossWeight(), submittedContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(submittedContainer.getNetWeight(), submittedContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(submittedContainer.getTareWeight(), submittedContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
         } else if (Objects.nonNull(consolContainer)) {
-            return formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit());
+            switch (weightType) {
+                case VGM_WEIGHT, GROSS_WEIGHT:
+                    return formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(consolContainer.getTareWeight(), consolContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
         }
         return null;
     }
 
     private boolean hasAnyWeightDifference(CommonContainers currentVGMContainer, CommonContainers submittedVGMContainer) {
-        return hasWeightChanged(formatWeight(currentVGMContainer.getGrossWeight(), currentVGMContainer.getGrossWeightUnit()),
+        return hasWeightChanged(formatWeight(currentVGMContainer.getVgmWeight(), currentVGMContainer.getVgmWeightUnit()),
+                formatWeight(submittedVGMContainer.getVgmWeight(), submittedVGMContainer.getVgmWeightUnit()))
+                || hasWeightChanged(formatWeight(currentVGMContainer.getGrossWeight(), currentVGMContainer.getGrossWeightUnit()),
                 formatWeight(submittedVGMContainer.getGrossWeight(), submittedVGMContainer.getGrossWeightUnit()))
                 || hasWeightChanged(formatWeight(currentVGMContainer.getNetWeight(), currentVGMContainer.getNetWeightUnit()),
                 formatWeight(submittedVGMContainer.getNetWeight(), submittedVGMContainer.getNetWeightUnit()))
@@ -293,7 +315,9 @@ public class VerifiedGrossMassUtil {
     }
 
     private boolean hasAnyWeightDifference(CommonContainers currentContainer, Containers consolContainer) {
-        return hasWeightChanged(formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit()),
+        return hasWeightChanged(formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit()),
+                formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
+                || hasWeightChanged(formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit()),
                 formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
                 || hasWeightChanged(formatWeight(currentContainer.getNetWeight(), currentContainer.getNetWeightUnit()),
                 formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit()))

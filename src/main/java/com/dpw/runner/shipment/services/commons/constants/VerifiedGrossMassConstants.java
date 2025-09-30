@@ -43,6 +43,7 @@ public class VerifiedGrossMassConstants {
     public static final String CARRIER_BOOKING_LIST_SUCCESSFUL = "Successful Verified Gross Mass Data List Retrieval";
     public static final String VERIFIED_GROSS_MASS_DELETE_SUCCESSFUL = "Successful Verified Gross Mass Delete";
     public static final String VERIFIED_GROSS_MASS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Verified Gross Mass Data Retrieval By Id";
+    public static final String VERIFIED_GROSS_MASS_SYNC_CONTAINERS_SUCCESSFUL = "Successful Verified Gross Mass Sync Containers From Consolidation";
     public static final String VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL = "Successful Verified Gross Mass Operation: ";
 
     public static final String CARRIER_BOOKING_ID = "Verified Gross Mass Id";
@@ -54,6 +55,7 @@ public class VerifiedGrossMassConstants {
     public static final String VERIFIED_GROSS_MASS_LIST_REQUEST_NULL_ERROR = "Carrier List Request is Null";
     public static final String VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
     public static final String GROSS_WEIGHT = "Gross Weight";
+    public static final String VGM_WEIGHT = "VGM Weight";
     public static final String NET_WEIGHT = "Net Weight";
     public static final String TARE_WEIGHT = "Tare Weight";
     public static final String VERIFIED_GROSS_MASS_EMAIL_TEMPLATE = "VERIFIED_GROSS_MASS";

@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITransactionHistoryDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -67,6 +68,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +77,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
@@ -150,6 +154,9 @@ class VerifiedGrossMassServiceTest {
     @Mock
     private ResponseHelper responseHelper;
 
+    @Mock
+    private IContainerDao containerDao;
+
     private VerifiedGrossMassRequest testRequest;
     private VerifiedGrossMass testEntity;
     private VerifiedGrossMassResponse testResponse;
@@ -164,6 +171,208 @@ class VerifiedGrossMassServiceTest {
         testResponse = createTestResponse();
         testCarrierBooking = createTestCarrierBooking();
         testConsolidationDetails = createTestConsolidationDetails();
+    }
+
+    @Test
+    void testCreate_WhenCarrierBookingExists_ShouldPopulateEmails() {
+        // Arrange
+        VerifiedGrossMass testEntity = new VerifiedGrossMass();
+        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
+        testEntity.setEntityId(1L);
+        testEntity.setInternalEmails("existingInternalEmail1@example.com");
+        testEntity.setExternalEmails("existingExternalEmail1@example.com");
+
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setEntityId(1L);
+        carrierBooking.setCarrierBookingNo("ABC123");
+        carrierBooking.setCarrierBlNo("BL123");
+        carrierBooking.setBookingNo("BOOK123");
+        carrierBooking.setInternalEmails("carrierInternalEmail@example.com");
+        carrierBooking.setExternalEmails("carrierExternalEmail@example.com");
+
+        when(verifiedGrossMassValidationUtil.validateRequest(EntityType.CARRIER_BOOKING, 1L))
+                .thenReturn(carrierBooking);
+
+        VerifiedGrossMassRequest testRequest = new VerifiedGrossMassRequest();
+        testRequest.setEntityType(EntityType.CARRIER_BOOKING);
+        testRequest.setEntityId(1L);
+
+        when(jsonHelper.convertValue(testRequest, VerifiedGrossMass.class)).thenReturn(testEntity);
+        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
+        when(verifiedGrossMassDao.save(any(VerifiedGrossMass.class))).thenReturn(testEntity);
+        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+
+        // Mock UserContext.getUser()
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("user@example.com");
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            userContext.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Act
+            VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals("existingInternalEmail1@example.com,carrierInternalEmail@example.com", testEntity.getInternalEmails());
+            assertEquals("existingExternalEmail1@example.com,carrierExternalEmail@example.com", testEntity.getExternalEmails());
+        }
+    }
+
+    @Test
+    void testPopulateEmailsFromCarrierBooking_ShouldHandleEmptyInputs() throws Exception {
+        // Arrange
+        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
+        method.setAccessible(true);
+
+        // Test when both existing and new emails are empty
+        String result = (String) method.invoke(verifiedGrossMassService, "", "");
+        assertEquals("", result);
+
+        // Test when only new emails are empty
+        result = (String) method.invoke(verifiedGrossMassService, "existingEmail@example.com", "");
+        assertEquals("existingEmail@example.com", result);
+
+        // Test when only existing emails are empty
+        result = (String) method.invoke(verifiedGrossMassService, "", "newEmail@example.com");
+        assertEquals("newEmail@example.com", result);
+
+        // Test when both are non-empty
+        result = (String) method.invoke(verifiedGrossMassService, "existingEmail@example.com", "newEmail@example.com");
+        assertEquals("existingEmail@example.com,newEmail@example.com", result);
+    }
+
+    @Test
+    void testPopulateEmailsFromCarrierBooking_ShouldConcatenateEmails() throws Exception {
+        // Arrange
+        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
+        method.setAccessible(true);
+
+        String existingEmails = "existingEmail@example.com";
+        String newEmails = "newEmail@example.com";
+
+        // Act
+        String result = (String) method.invoke(verifiedGrossMassService, existingEmails, newEmails);
+
+        // Assert
+        assertEquals("existingEmail@example.com,newEmail@example.com", result);
+    }
+
+    @Test
+    void testPopulateEmailsFromCarrierBooking_ShouldHandleNullInputs() throws Exception {
+        // Arrange
+        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
+        method.setAccessible(true);
+
+        VerifiedGrossMassService service = new VerifiedGrossMassService(verifiedGrossMassDao, jsonHelper, carrierBookingDao, consolidationDetailsDao,
+                commonUtils, masterDataUtils, executorServiceMasterData, verifiedGrossMassMasterDataHelper, commonContainersRepository,
+                verifiedGrossMassValidationUtil, notificationService, verifiedGrossMassUtil, carrierBookingInttraUtil,
+                transactionHistoryDao, containerDao);
+
+        // Test when both existing and new emails are null
+        String result = (String) method.invoke(service, null, null);
+        assertEquals(null, result);
+
+        // Test when only existing emails are null
+        result = (String) method.invoke(service, null, "newEmail@example.com");
+        assertEquals("newEmail@example.com", result);
+
+        // Test when only new emails are null
+        result = (String) method.invoke(service, "existingEmail@example.com", null);
+        assertEquals("existingEmail@example.com", result);
+    }
+
+    @Test
+    void syncContainersByIds_ShouldSyncMatchingContainers() {
+        UUID refGuid = UUID.randomUUID();
+        Long containerId = 1L;
+
+        CommonContainers common = new CommonContainers();
+        common.setId(containerId);
+        common.setContainerRefGuid(refGuid);
+
+        List<CommonContainers> commonContainersList = List.of(common);
+
+        Containers container = new Containers();
+        container.setGuid(refGuid);
+        container.setContainerCode("CODE123");
+        container.setContainerNumber("NUM456");
+        container.setNetWeight(new BigDecimal("100.5"));
+        container.setTareWeight(new BigDecimal("10.0"));
+        container.setTareWeightUnit("KG");
+        container.setGrossWeight(new BigDecimal("110.5"));
+        container.setGrossWeightUnit("KG");
+        container.setCarrierSealNumber("CS123");
+        container.setShipperSealNumber("SS456");
+        container.setCustomsSealNumber("CUS789");
+        container.setVeterinarySealNumber("VET000");
+
+        when(commonContainersRepository.findAllById(List.of(containerId))).thenReturn(commonContainersList);
+        when(containerDao.findAllByGuid(List.of(refGuid))).thenReturn(List.of(container));
+        when(commonContainersRepository.saveAll(commonContainersList)).thenReturn(commonContainersList);
+
+        CommonContainerResponse response = new CommonContainerResponse();
+        response.setId(containerId);
+        when(jsonHelper.convertValue(common, CommonContainerResponse.class)).thenReturn(response);
+
+        List<CommonContainerResponse> result = verifiedGrossMassService.syncContainersByIds(List.of(containerId));
+
+        assertEquals(1, result.size());
+        assertEquals(containerId, result.get(0).getId());
+
+        // Validate data is updated from container
+        assertEquals("CODE123", common.getContainerCode());
+        assertEquals("NUM456", common.getContainerNo());
+        assertEquals(new BigDecimal("100.5"), common.getNetWeight());
+        assertEquals(new BigDecimal("110.5"), common.getGrossWeight());
+        assertEquals("KG", common.getGrossWeightUnit());
+        assertEquals("CS123", common.getSealNumber());
+    }
+
+    @Test
+    void syncContainersByIds_ShouldSkipWhenRefGuidIsNull() {
+        CommonContainers common = new CommonContainers();
+        common.setId(1L);
+        common.setContainerRefGuid(null); // null guid
+
+        List<CommonContainers> list = List.of(common);
+
+        when(commonContainersRepository.findAllById(List.of(1L))).thenReturn(list);
+        when(containerDao.findAllByGuid(List.of())).thenReturn(List.of());
+        when(commonContainersRepository.saveAll(list)).thenReturn(list);
+
+        CommonContainerResponse response = new CommonContainerResponse();
+        response.setId(1L);
+        when(jsonHelper.convertValue(common, CommonContainerResponse.class)).thenReturn(response);
+
+        List<CommonContainerResponse> result = verifiedGrossMassService.syncContainersByIds(List.of(1L));
+
+        assertEquals(1, result.size());
+        verify(containerDao).findAllByGuid(List.of());
+    }
+
+    @Test
+    void syncContainersByIds_ShouldSkipWhenContainerNotFound() {
+        UUID refGuid = UUID.randomUUID();
+        CommonContainers common = new CommonContainers();
+        common.setId(1L);
+        common.setContainerRefGuid(refGuid);
+
+        List<CommonContainers> list = List.of(common);
+
+        when(commonContainersRepository.findAllById(List.of(1L))).thenReturn(list);
+        when(containerDao.findAllByGuid(List.of(refGuid))).thenReturn(List.of()); // no matching containers
+        when(commonContainersRepository.saveAll(list)).thenReturn(list);
+
+        CommonContainerResponse response = new CommonContainerResponse();
+        response.setId(1L);
+        when(jsonHelper.convertValue(common, CommonContainerResponse.class)).thenReturn(response);
+
+        List<CommonContainerResponse> result = verifiedGrossMassService.syncContainersByIds(List.of(1L));
+
+        assertEquals(1, result.size());
+        // Check that no update happened
+        assertNull(common.getContainerCode());
+        assertNull(common.getGrossWeight());
     }
 
     @Test

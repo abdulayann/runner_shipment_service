@@ -185,5 +185,27 @@ class VerifiedGrossMassControllerTest {
         ResponseEntity<?> responseResponseEntity = controller.list(listCommonRequest, false);
         assertEquals(responseResponseEntity.getStatusCodeValue(), HttpStatus.OK.value());
     }
+
+    @Test
+    void syncContainersByIds_Success() {
+        List<Long> containerIds = Arrays.asList(1L, 2L, 3L);
+        List<CommonContainerResponse> mockResponse = Arrays.asList(
+                new CommonContainerResponse(), new CommonContainerResponse()
+        );
+
+        when(jsonHelper.convertToJson(containerIds)).thenReturn("[1,2,3]");
+        when(jsonHelper.convertToJson(mockResponse)).thenReturn("[{},{}]");
+        when(verifiedGrossMassService.syncContainersByIds(containerIds)).thenReturn(mockResponse);
+
+        ResponseEntity<IRunnerResponse> response = controller.syncContainersByIds(containerIds);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        verify(jsonHelper).convertToJson(containerIds);
+        verify(jsonHelper).convertToJson(mockResponse);
+        verify(verifiedGrossMassService).syncContainersByIds(containerIds);
+    }
+
 }
 
