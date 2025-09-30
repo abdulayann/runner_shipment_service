@@ -154,6 +154,10 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean PrintAfterEachPage;
     @JsonProperty("SeawayMainPage")
     private String SeawayMainPage;
+    @JsonProperty("SeaWayBillBackPage")
+    private String seaWayBillBackPage;
+    @JsonProperty("PrintAfterEachPageSeaWayBill")
+    private Boolean printAfterEachPageSeaWayBill;
     @JsonProperty("ShipTruckWayBillMainPage")
     private String ShipTruckWayBillMainPage;
     @JsonProperty("ConsTruckWayBillMainPage")

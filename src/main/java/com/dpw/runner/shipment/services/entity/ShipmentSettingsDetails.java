@@ -283,6 +283,12 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "sea_way_main_page")
     private String seawayMainPage;
 
+    @Column(name = "sea_way_bill_back_page")
+    private String seaWayBillBackPage;
+
+    @Column(name = "print_after_each_page_sea_way_bill")
+    private Boolean printAfterEachPageSeaWayBill;
+
     @Column(name = "ship_truck_way_bill_main_page")
     private String shipTruckWayBillMainPage;
 
