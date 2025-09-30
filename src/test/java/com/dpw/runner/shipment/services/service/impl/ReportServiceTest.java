@@ -5066,6 +5066,34 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void saveDocDetails_HouseBill_RatedBL_existsInDB() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_HOUSE_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+        when(docDetailsDao.findByFileId(anyString())).thenReturn(docDetail);
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
     void saveDocDetails_HouseBill_NotRatedBL() {
         String fakeFieldId = "fakeFileId";
 

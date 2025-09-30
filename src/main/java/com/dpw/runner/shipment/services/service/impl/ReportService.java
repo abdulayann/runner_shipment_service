@@ -2913,13 +2913,16 @@ public class ReportService implements IReportService {
     }
 
     public void saveDocDetailsAfterPushToDocumentMaster(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        log.info("Save doc details in DB after push to Document Master with request ID {}", LoggerHelper.getRequestIdFromMDC());
         if (reportRequest.getReportInfo().equals(HOUSE_BILL) || reportRequest.getReportInfo().equals(SEAWAY_BILL)) {
             saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
         }
     }
 
     private void saveDocDetailsIfHblOrSeawayBill(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        log.info("Save doc details when reportInfo is {} with request ID {}", reportRequest.getReportInfo(), LoggerHelper.getRequestIdFromMDC());
         if (documentServiceResponse.get("fileId") == null) {
+            log.info("Did not save file id is null with request ID {}", LoggerHelper.getRequestIdFromMDC());
             return;
         }
         Long reportId = fetchReportIdFromReportRequest(reportRequest);
@@ -2927,19 +2930,29 @@ public class ReportService implements IReportService {
     }
 
     private void saveDocDetailsWithFileIdAndShipmentBLCheck(Long reportId, String fileId, String reportInfo) {
+        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", reportId, fileId, reportInfo, LoggerHelper.getRequestIdFromMDC());
         Optional<ShipmentDetails> shipmentDetailsOpt = shipmentDao.findById(reportId);
         if (shipmentDetailsOpt.isEmpty()) {
+            log.info("Shipment details not found for reportId: {} with request ID {}", reportId, LoggerHelper.getRequestIdFromMDC());
             return;
         }
         ShipmentDetails shipmentDetails = shipmentDetailsOpt.get();
         boolean isShipmentBLRated = shipmentDetails.getAdditionalDetails() != null &&
                                     Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsRatedBL());
         DocDetailsTypes docDetailsType = fetchDocDetailsTypeFor(reportInfo, isShipmentBLRated);
-        DocDetails docDetail = DocDetails.builder()
-                .type(docDetailsType)
-                .entityId(reportId)
-                .fileId(fileId)
-                .build();
+        DocDetails docDetail = docDetailsDao.findByFileId(fileId);
+
+        if (docDetail != null) {
+            log.info("Doc detail for fileId: {} exists in DB with request ID {}", fileId, LoggerHelper.getRequestIdFromMDC());
+            docDetail.setType(docDetailsType);
+        } else {
+            docDetail = DocDetails.builder()
+                    .type(docDetailsType)
+                    .entityId(reportId)
+                    .fileId(fileId)
+                    .build();
+        }
+        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", fileId, docDetailsType, LoggerHelper.getRequestIdFromMDC());
         docDetailsDao.save(docDetail);
     }
 
