@@ -5218,14 +5218,20 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
 
+        Set<String> orgIds = new HashSet<>();
+        addOrgIdIfNotNull(orgIds, ti.getTransporterDetail());
+        addOrgIdIfNotNull(orgIds, ti.getSourceDetail());
+        addOrgIdIfNotNull(orgIds, ti.getDestinationDetail());
+        Map<String, String> orgToFirmsCode = mdmServiceAdapter.getFirmsCodeListFromCache(orgIds);
+
         dictionary.put(TI_TRANSPORTCOMPANY, ti.getTransporterDetail() != null && ti.getTransporterDetail().getOrgData() != null ? ti.getTransporterDetail().getOrgData().get(FULL_NAME) : "");
         dictionary.put(TI_PICKUPFROM, ti.getSourceDetail() != null && ti.getSourceDetail().getOrgData() != null ? ti.getSourceDetail().getOrgData().get(FULL_NAME) : "");
         dictionary.put(TI_DELIVERTO, ti.getDestinationDetail() != null && ti.getDestinationDetail().getOrgData() != null ? ti.getDestinationDetail().getOrgData().get(FULL_NAME) : "");
-        dictionary.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail(),false));
+        dictionary.put(TI_TRANSPORTCOMPANYADDRESS, getFormattedAddress(ti.getTransporterDetail(),false, orgToFirmsCode));
         dictionary.put(TI_TRANSPORTCOMPANYCONTACT, ti.getTransporterDetail() != null ? ReportHelper.getValueFromMap(ti.getTransporterDetail().getAddressData(), CONTACT_PHONE) : "");
-        dictionary.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail(),false));
+        dictionary.put(TI_PICKUPFROMADDRESS, getFormattedAddress(ti.getSourceDetail(),false, orgToFirmsCode));
         dictionary.put(TI_PICKUPFROMCONTACT, ti.getSourceDetail() != null ? ReportHelper.getValueFromMap(ti.getSourceDetail().getAddressData(), CONTACT_PHONE) : "");
-        dictionary.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail(),false));
+        dictionary.put(TI_DELIVERTOADDRESS, getFormattedAddress(ti.getDestinationDetail(),false, orgToFirmsCode));
         dictionary.put(TI_DELIVERTOCONTACT, ti.getDestinationDetail() != null ? ReportHelper.getValueFromMap(ti.getDestinationDetail().getAddressData(), CONTACT_PHONE) : "");
         dictionary.put(TI_REMARKS, ti.getRemarks());
         dictionary.put(TI_PORTTRANSPORTADVISED, convertToDPWDateFormat(ti.getPortTransportAdvised(), tsDateTimeFormat, true));
@@ -5244,17 +5250,23 @@ public abstract class IReport {
         }
     }
 
+    private void addOrgIdIfNotNull(Set<String> orgIds, PartiesModel party) {
+        if(party != null && party.getOrgId() != null) {
+            orgIds.add(party.getOrgId());
+        }
+    }
+
     private void addTIAgentTags(Map<String, Object> dictionary, Optional<PartiesModel> exportAgent, Optional<PartiesModel> importAgent, Optional<PartiesModel> deliveryAgent) {
         dictionary.put(ReportConstants.TI_EXPORT_AGENT, exportAgent.isPresent() && exportAgent.get().getOrgData() != null ? exportAgent.get().getOrgData().get(FULL_NAME) : "");
-        dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, exportAgent.isPresent() ? getFormattedAddress(exportAgent.get(),false) : "");
+        dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, exportAgent.isPresent() ? getFormattedAddress(exportAgent.get(),false, null) : "");
         dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT,  exportAgent.isPresent() ? ReportHelper.getValueFromMap(exportAgent.get().getAddressData(), ReportConstants.CONTACT_PHONE) : "");
 
         dictionary.put(ReportConstants.TI_IMPORT_AGENT , importAgent.isPresent() && importAgent.get().getOrgData() != null ? importAgent.get().getOrgData().get(FULL_NAME) : "");
-        dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, importAgent.isPresent() ? getFormattedAddress(importAgent.get(),false) : "");
+        dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, importAgent.isPresent() ? getFormattedAddress(importAgent.get(),false, null) : "");
         dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT,  importAgent.isPresent() ? ReportHelper.getValueFromMap(importAgent.get().getAddressData(), ReportConstants.CONTACT_PHONE) : "");
 
         dictionary.put(TI_DELIVERY_AGENT, deliveryAgent.isPresent() && deliveryAgent.get().getOrgData() != null ? deliveryAgent.get().getOrgData().get(FULL_NAME) : "");
-        dictionary.put(TI_DELIVERY_AGENT_ADDRESS, deliveryAgent.isPresent() ? getFormattedAddress(deliveryAgent.get(),false) : "");
+        dictionary.put(TI_DELIVERY_AGENT_ADDRESS, deliveryAgent.isPresent() ? getFormattedAddress(deliveryAgent.get(),false, null) : "");
         dictionary.put(TI_DELIVERY_AGENT_CONTACT, deliveryAgent.isPresent() ? ReportHelper.getValueFromMap(deliveryAgent.get().getAddressData(), ReportConstants.CONTACT_PHONE) : "");
     }
 
@@ -5665,7 +5677,10 @@ public abstract class IReport {
             return;
         }
 
-        List <PickupDeliveryDetails> shipmentTransportInstruction = new ArrayList<>();
+        List <PickupDeliveryDetails> shipmentTransportInstruction = shipmentDetails.getPickupDeliveryDetailsInstructions();
+        if (shipmentTransportInstruction == null) {
+            shipmentTransportInstruction = new ArrayList<>();
+        }
 
         if (shipmentId != null) {
             Optional<ShipmentDetails> byId = shipmentDao.findById(shipmentId);
@@ -5709,7 +5724,7 @@ public abstract class IReport {
         addShipmentReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
         addShipmentRoutingDetails(dict, shipmentDetails.getRoutingsList());
 
-        addPartiesToFetchFirmsCode(partiesToFetchFirmsCode, shipmentTransportInstruction);
+        addPartiesToFetchFirmsCode(partiesToFetchFirmsCode, shipmentTransportInstruction, false);
 
         // fetch FIRMS code based on orgIds for diff parties
         Set<String> orgIds = getOrgIdsForAllParties(partiesToFetchFirmsCode);
@@ -5718,7 +5733,7 @@ public abstract class IReport {
         addShipmentPartyDetails(dict, partiesList, orgToFirmsCodeMap, shipmentDetails);
 
         // Firms Code Handling for Shipment Transport Instruction
-        processTransportInstructionsForFirmsCode(shipmentTransportInstruction, dict, orgToFirmsCodeMap);
+        processTransportInstructionsForFirmsCode(shipmentTransportInstruction, dict, orgToFirmsCodeMap, false);
 
         addShipmentAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getSendingAgent(), orgToFirmsCodeMap);
         addShipmentAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getReceivingAgent(), orgToFirmsCodeMap);
@@ -5990,21 +6005,23 @@ public abstract class IReport {
         }
     }
 
-    private void addPartiesToFetchFirmsCode(List<Parties> partiesToFetchFirmsCode, List <PickupDeliveryDetails> shipmentTransportInstruction){
+    private void addPartiesToFetchFirmsCode(List<Parties> partiesToFetchFirmsCode, List <PickupDeliveryDetails> shipmentTransportInstruction, boolean isTagsEnabled){
         for (PickupDeliveryDetails sti : shipmentTransportInstruction) {
             if(sti == null) continue;
 
             addPartyListIfNotNull(sti.getPartiesList(), partiesToFetchFirmsCode);
 
-            // add transporter party
-            addPartiesIfNotNull(sti.getTransporterDetail(), partiesToFetchFirmsCode);
+            if(isTagsEnabled) {
+                // add transporter party
+                addPartiesIfNotNull(sti.getTransporterDetail(), partiesToFetchFirmsCode);
 
-            if(sti.getTiLegsList() != null){
-                for(TiLegs leg: sti.getTiLegsList()){
-                    // add leg origin party
-                    addPartiesIfNotNull(leg.getOrigin(), partiesToFetchFirmsCode);
-                    // add leg destination party
-                    addPartiesIfNotNull(leg.getDestination(), partiesToFetchFirmsCode);
+                if(sti.getTiLegsList() != null) {
+                    for(TiLegs leg: sti.getTiLegsList()) {
+                        // add leg origin party
+                        addPartiesIfNotNull(leg.getOrigin(), partiesToFetchFirmsCode);
+                        // add leg destination party
+                        addPartiesIfNotNull(leg.getDestination(), partiesToFetchFirmsCode);
+                    }
                 }
             }
         }
@@ -6022,16 +6039,18 @@ public abstract class IReport {
         }
     }
 
-    private void processTransportInstructionsForFirmsCode(List <PickupDeliveryDetails> shipmentTransportInstruction, Map<String, Object> dict, Map<String, String> orgToFirmsCodeMap){
+    private void processTransportInstructionsForFirmsCode(List <PickupDeliveryDetails> shipmentTransportInstruction, Map<String, Object> dict, Map<String, String> orgToFirmsCodeMap, boolean isTagsEnabled) {
         for (PickupDeliveryDetails transportInstruction : shipmentTransportInstruction) {
             if(!validateTIType(transportInstruction)) continue;
             String instructionType = transportInstruction.getType().getDescription();
 
-            // handle transporterDetails party
-            putTransporterPartyForTI(dict, instructionType, transportInstruction.getTransporterDetail(), orgToFirmsCodeMap);
+            if(isTagsEnabled) {
+                // handle transporterDetails, originDetails and destination details
+                putPartiesForTI(dict, instructionType, transportInstruction, orgToFirmsCodeMap);
 
-            // handle legs for TI
-            processLegsForTI(transportInstruction, orgToFirmsCodeMap, dict, instructionType);
+                // handle legs for TI
+                processLegsForTI(transportInstruction, orgToFirmsCodeMap, dict, instructionType);
+            }
 
             // handle additional TI parties
             addTransportInstructionPartyDetails(dict, instructionType, transportInstruction.getPartiesList(), orgToFirmsCodeMap);
@@ -6060,28 +6079,32 @@ public abstract class IReport {
                 // handle legs for origin in TI
                 if(validateFieldsForTI(tiLeg.getOrigin(), orgToFirmsCodeMap)) {
                     Parties origin = tiLeg.getOrigin();
-                    dict.put("TI_" + instructionType + "_Leg_" + sequenceNumber + "_" + origin.getType().replaceAll("\\s+", "") + FIRMS_CODE_SUFFIX, orgToFirmsCodeMap.get(origin.getOrgId()));
+                    dict.put("TI_" + instructionType + "_Leg_" + sequenceNumber + "_OriginAgent" + FIRMS_CODE_SUFFIX, orgToFirmsCodeMap.get(origin.getOrgId()));
                 }
 
                 // handle legs for destinations in TI
                 if(validateFieldsForTI(tiLeg.getDestination(), orgToFirmsCodeMap)){
                     Parties destination = tiLeg.getDestination();
-                    dict.put("TI_" + instructionType + "_Leg_" + sequenceNumber + "_" + destination.getType().replaceAll("\\s+", "") + FIRMS_CODE_SUFFIX, orgToFirmsCodeMap.get(destination.getOrgId()));
+                    dict.put("TI_" + instructionType + "_Leg_" + sequenceNumber + "_DestinationAgent" + FIRMS_CODE_SUFFIX, orgToFirmsCodeMap.get(destination.getOrgId()));
                 }
             }
         }
     }
 
-    private void putTransporterPartyForTI(Map<String, Object> dict, String instructionType, Parties transporterDetail, Map<String, String> orgToFirmsCodeMap){
-            if(transporterDetail == null || orgToFirmsCodeMap == null) return;
-            if(transporterDetail.getOrgId() == null || transporterDetail.getType() == null) return;
-            String firmsCode = orgToFirmsCodeMap.get(transporterDetail.getOrgId());
-            if(firmsCode == null) return;
-            dict.put("TI_" + instructionType + "_" + transporterDetail.getType().replaceAll("\\s+", "") + FIRMS_CODE_SUFFIX, firmsCode);
+    private void putPartiesForTI(Map<String, Object> dict, String instructionType, PickupDeliveryDetails transportInstruction, Map<String, String> orgToFirmsCodeMap){
+        putTIPartyInDictionary(dict, instructionType, transportInstruction.getTransporterDetail(), orgToFirmsCodeMap, "_Transporter_");
+        putTIPartyInDictionary(dict, instructionType, transportInstruction.getSourceDetail(), orgToFirmsCodeMap, "_Source_");
+        putTIPartyInDictionary(dict, instructionType, transportInstruction.getDestinationDetail(), orgToFirmsCodeMap, "_Destination_");
+    }
+
+    private void putTIPartyInDictionary(Map<String, Object> dict, String instructionType, Parties party, Map<String, String> orgToFirmsCodeMap, String partyType){
+        if(validateFieldsForTI(party, orgToFirmsCodeMap)){
+            dict.put("TI_" + instructionType + partyType + FIRMS_CODE_SUFFIX, orgToFirmsCodeMap.get(party.getOrgId()));
+        }
     }
 
     private boolean validateFieldsForTI(Parties party, Map<String, String> orgToFirmsCodeMap){
-        return party != null && party.getType() != null && party.getOrgId() != null && orgToFirmsCodeMap != null && orgToFirmsCodeMap.containsKey(party.getOrgId());
+        return party != null && party.getOrgId() != null && orgToFirmsCodeMap != null && orgToFirmsCodeMap.containsKey(party.getOrgId());//
 
     }
 

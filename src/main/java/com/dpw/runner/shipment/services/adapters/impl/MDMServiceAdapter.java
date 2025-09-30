@@ -342,6 +342,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public Map<String, String> getFirmsCodeListFromCache(Set<String> orgIds) {
         if(Objects.isNull(orgIds))
             return new HashMap<>();
+        orgIds = orgIds.stream().filter(orgId -> orgId != null && !orgId.trim().isEmpty()).collect(Collectors.toSet());
         Map<String, String> responseMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
         if (cache == null) {

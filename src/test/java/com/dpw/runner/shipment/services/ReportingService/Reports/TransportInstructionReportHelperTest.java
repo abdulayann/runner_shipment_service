@@ -81,7 +81,7 @@ class TransportInstructionReportHelperTest extends CommonMocks {
 
         Map<String, Object> legsDictionary = new HashMap<>();
 
-        transportInstructionReportHelper.addTransportInstructionLegsDataIntoDictionary(legs, legsDictionary);
+        transportInstructionReportHelper.addTransportInstructionLegsDataIntoDictionary(legs, legsDictionary, null);
 
         assertEquals(true, legsDictionary.get(ReportConstants.HAS_LEGS));
         assertSame(legsModel, legsDictionary.get(ReportConstants.TI_LEGS));
