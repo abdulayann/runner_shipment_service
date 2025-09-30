@@ -1,13 +1,9 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -18,13 +14,13 @@ import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationTyp
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +29,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Component
@@ -96,7 +90,7 @@ public class CarrierBookingUtil {
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .collect(toList());
+                .toList();
     }
 
     public void generateBookingNumber(CarrierBooking carrierBookingEntity) {
@@ -198,17 +192,24 @@ public class CarrierBookingUtil {
     }
 
 
-    public SendEmailBaseRequest getSendEmailBaseRequest(CarrierBooking carrierBooking, EmailTemplatesRequest carrierBookingTemplate) {
-        String toEmails = carrierBooking.getInternalEmails() == null ? "" : carrierBooking.getInternalEmails() + ",";
-        toEmails += carrierBooking.getCreateByUserEmail();
-        if (!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())) {
-            toEmails += "," + carrierBooking.getSubmitByUserEmail();
+    public List<String> getSendEmailBaseRequest(CarrierBooking carrierBooking) {
+        StringBuilder emailsBuilder = new StringBuilder();
+
+        if (carrierBooking.getInternalEmails() != null) {
+            emailsBuilder.append(carrierBooking.getInternalEmails()).append(",");
         }
-        SendEmailBaseRequest request = new SendEmailBaseRequest();
-        request.setTo(toEmails);
-        request.setSubject(carrierBookingTemplate.getSubject());
-        request.setTemplateName(carrierBookingTemplate.getName());
-        request.setHtmlBody(carrierBookingTemplate.getBody());
-        return request;
+
+        emailsBuilder.append(carrierBooking.getCreateByUserEmail());
+
+        if (!carrierBooking.getCreateByUserEmail().equalsIgnoreCase(carrierBooking.getSubmitByUserEmail())) {
+            emailsBuilder.append(",").append(carrierBooking.getSubmitByUserEmail());
+        }
+
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(emailsBuilder.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // optional: removes duplicates
+                .toList();
     }
 }

@@ -23,8 +23,8 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendIn
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNum
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -77,7 +76,6 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -1041,8 +1039,8 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
-                notificationService.sendEmail(request);
+                List<String> toEmails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails ,new ArrayList<>());
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {
