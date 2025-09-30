@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -42,4 +43,10 @@ public class VerifiedGrossMassResponse implements IRunnerResponse {
     private List<CommonContainerResponse> submittedContainersList;
     private List<VGMContainerWarningResponse> consolContainerWarningResponseList;
     private List<VGMContainerWarningResponse> vgmContainerWarningResponseList;
+    private String createByUserEmail;
+    private String submitByUserEmail;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
 }
