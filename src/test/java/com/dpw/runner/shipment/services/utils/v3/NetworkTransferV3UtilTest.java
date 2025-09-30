@@ -88,30 +88,45 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(2L).build();
         TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(3L).build();
         TriangulationPartner triangulationPartner3 = TriangulationPartner.builder().triangulationPartner(4L).build();
-        // Arrange
+
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setReceivingBranch(1L);
-        shipmentDetails.setDirection("Inbound");
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
         shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setShipmentType(DIRECTION_EXP);
+        shipmentDetails.setReceivingBranch(100L);
         shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1, triangulationPartner2));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
-        oldEntity.setReceivingBranch(1L);
+        oldEntity.setReceivingBranch(200L);
         oldEntity.setTriangulationPartnerList(List.of(triangulationPartner2, triangulationPartner3));
+
         when(commonUtils.getTriangulationPartnerList(shipmentDetails.getTriangulationPartnerList())).thenReturn(List.of(1L, 2L, 3L));
         when(commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())).thenReturn(List.of(3L, 4L));
+
         // Act
         networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
 
-        // Verify new tenant IDs processing
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        // Assert
+        verify(networkTransferService).processNetworkTransferEntity(
+                eq(100L),               // new tenantId
+                eq(200L),               // old tenantId
+                eq(Constants.SHIPMENT),
+                eq(shipmentDetails),
+                isNull(),
+                eq(DIRECTION_IMP),
+                isNull(),
+                eq(false)
+        );
 
-        // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        verify(networkTransferService).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+        verify(networkTransferService).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+        verify(networkTransferService).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+
+        verify(networkTransferService, times(4)).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
+
+
 
     @Test
     void testCreateOrUpdateNetworkTransferEntity_NotEligibleForNetworkTransfer() {

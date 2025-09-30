@@ -2698,7 +2698,7 @@ public class CommonUtils {
         return tenantIds.stream().filter(Objects::nonNull).toList();
     }
 
-    private void addTenantDataFromParentGuid(UUID parentGuid, Set<Long> tenantIds, String entity) {
+    public void addTenantDataFromParentGuid(UUID parentGuid, Set<Long> tenantIds, String entity) {
         if (parentGuid == null) {
             return;
         }
@@ -2733,7 +2733,7 @@ public class CommonUtils {
         }
     }
 
-    private void addTenantIdAndTriangulationData(Set<Long> tenantIds, Integer tenantId, List<TriangulationPartner> triangulationPartnerList) {
+    public void addTenantIdAndTriangulationData(Set<Long> tenantIds, Integer tenantId, List<TriangulationPartner> triangulationPartnerList) {
         if (tenantId != null) {
             tenantIds.add(Long.valueOf(tenantId));
         }
@@ -2743,13 +2743,13 @@ public class CommonUtils {
         }
     }
 
-    void handleInterbranchConsolidation(Set<Long> tenantIds, ConsolidationDetails parentConsolidationDetails) {
+    public void handleInterbranchConsolidation(Set<Long> tenantIds, ConsolidationDetails parentConsolidationDetails) {
         if(Boolean.TRUE.equals(parentConsolidationDetails.getInterBranchConsole())) {
             parentConsolidationDetails.getShipmentsList().forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
         }
     }
 
-    void handleParentEntity(Set<Long> tenantIds, Integer tenantId, Long receivingBranch, Long originBranch, List<TriangulationPartner> triangulationPartnerList) {
+    public void handleParentEntity(Set<Long> tenantIds, Integer tenantId, Long receivingBranch, Long originBranch, List<TriangulationPartner> triangulationPartnerList) {
         if (receivingBranch != null) {
             tenantIds.add(receivingBranch);
         }

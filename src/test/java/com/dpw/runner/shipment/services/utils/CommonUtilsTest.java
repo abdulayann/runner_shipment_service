@@ -7257,4 +7257,238 @@ class CommonUtilsTest {
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
     }
+    @Test
+    void testAddTenantIdAndTriangulationData_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build(),
+                TriangulationPartner.builder().triangulationPartner(300L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+
+        assertEquals(3, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullTenantId() {
+        Set<Long> tenantIds = new HashSet<>();
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, null, partners);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, null);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_emptyPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, Collections.emptyList());
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testHandleParentEntity_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        Long receivingBranch = 200L;
+        Long originBranch = 300L;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, receivingBranch, originBranch, partners);
+
+        assertEquals(2, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleParentEntity_nullBranches() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, null, null, partners);
+
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchFalse() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(false);
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_noShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+        consolidation.setShipmentsList(new HashSet<>());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_withShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setTenantId(101);
+        shipment1.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(102L).build()));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setTenantId(201);
+        shipment2.setTriangulationPartnerList(Collections.emptyList());
+
+        consolidation.setShipmentsList(new HashSet<>(Arrays.asList(shipment1, shipment2)));
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 101, shipment1.getTriangulationPartnerList());
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 201, shipment2.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_nullGuid() {
+        Set<Long> tenantIds = new HashSet<>();
+        commonUtils.addTenantDataFromParentGuid(null, tenantIds, "SHIPMENT");
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(shipmentDao).findShipmentByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_noRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(Collections.emptyList());
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(shipmentDao).findByParentGuid(parentGuid);
+        verify(commonUtils, never()).handleInterbranchConsolidation(anySet(), any());
+        verify(commonUtils, times(0)).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+
+        ShipmentDetails relatedShipment = new ShipmentDetails();
+        relatedShipment.setTenantId(10);
+        relatedShipment.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(11L).build()));
+
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedShipment));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 10, relatedShipment.getTriangulationPartnerList());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails parentConsolidation = new ConsolidationDetails();
+        parentConsolidation.setTenantId(1);
+
+        ConsolidationDetails relatedConsolidation = new ConsolidationDetails();
+        relatedConsolidation.setTenantId(20);
+        relatedConsolidation.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(21L).build()));
+
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentConsolidation));
+        when(consolidationDetailsDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedConsolidation));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).handleInterbranchConsolidation(anySet(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).handleInterbranchConsolidation(tenantIds, parentConsolidation);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 20, relatedConsolidation.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(consolidationDetailsDao).findConsolidationByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
 }

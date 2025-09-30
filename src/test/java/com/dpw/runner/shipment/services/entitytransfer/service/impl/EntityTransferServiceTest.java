@@ -4733,5 +4733,181 @@ class EntityTransferServiceTest extends CommonMocks {
         assertTrue(CollectionUtils.isEmpty(response.getTriangulationShipmentList()));
     }
 
-    
+    @Test
+    void testSendConsolidationValidation_Air_AllConsoleFieldsMissing() {
+        // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType("AGT"); // Not STD or DRT
+        consolidationDetails.setShipmentType(Constants.IMP);
+        consolidationDetails.setBol(null); // MAWB is null
+        consolidationDetails.getCarrierDetails().setFlightNumber(null);
+        consolidationDetails.getCarrierDetails().setEta(null);
+        consolidationDetails.getCarrierDetails().setEtd(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
+        consolidationDetails.getShipmentsList().clear(); // No shipments to avoid HAWB errors
+
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert
+        // The code adds "MAWB Number" twice because two conditions are met. The test must reflect this.
+        String expectedMessage = "Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section, MAWB Number, MAWB Number for the consolidation to transfer the files.";
+        assertEquals(expectedMessage, exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Air_MawbGenerationError() {
+        // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.getCarrierDetails().setFlightNumber("FL123");
+        consolidationDetails.getShipmentsList().clear(); // No shipments to avoid HAWB errors
+
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(Collections.emptyList());
+
+        // Act
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert
+        String expectedMessage = "Please generate MAWB for the consolidation to transfer the files.";
+        assertEquals(expectedMessage, exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Air_HawbErrors() {
+        // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.getCarrierDetails().setFlightNumber("FL123"); // Satisfy console-level validation
+
+        // Setup Shipment 1: Fails HAWB generation check ONLY
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setShipmentId("SHIP001");
+        shipment1.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment1.setDirection(Constants.DIRECTION_EXP);
+        shipment1.setHouseBill("HAWB001"); // Has a number, so it should pass the number check
+
+        // Setup Shipment 2: Fails HAWB number check ONLY
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setShipmentId("SHIP002");
+        shipment2.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment2.setDirection(Constants.DIRECTION_IMP);
+        shipment2.setHouseBill(null); // Missing HAWB number, so it should fail the number check
+
+        consolidationDetails.setShipmentsList(new LinkedHashSet<>(Arrays.asList(shipment1, shipment2)));
+
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(new Awb())); // MAWB is generated
+
+        // Mocks to isolate the two error conditions
+        when(awbDao.findByShipmentId(shipment1.getId())).thenReturn(Collections.emptyList()); // Fails generation check
+        when(awbDao.findByShipmentId(shipment2.getId())).thenReturn(List.of(new Awb())); // Passes generation check
+
+        // Act
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert
+        String expectedMessage = "Please generate HAWB for the shipment/s SHIP001, SHIP002 and enter the HAWB number for the shipment/s SHIP001, SHIP002 to transfer the files.";
+        assertEquals(expectedMessage, exception.getMessage());
+    }
+
+
+    @Test
+    void testSendConsolidationValidation_Air_CombinedConsoleAndShipmentErrors() {
+        // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.getCarrierDetails().setFlightNumber(null); // Missing console field
+
+        // Setup Shipment for HAWB generation error
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setShipmentId("SHIP001");
+        shipment1.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment1.setDirection(Constants.DIRECTION_EXP);
+        consolidationDetails.setShipmentsList(new HashSet<>(Collections.singletonList(shipment1)));
+
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(new Awb())); // MAWB is generated
+        when(awbDao.findByShipmentId(shipment1.getId())).thenReturn(Collections.emptyList()); // HAWB not generated
+
+        // Act
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert
+        String expectedMessage = "Please enter the Flight Number for the consolidation and generate HAWB for the shipment/s SHIP001 to transfer the files.";
+        assertEquals(expectedMessage, exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Sea_HblNumberError() {
+        // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        // Setup a shipment that will fail the HBL number check
+        ShipmentDetails impShipment = new ShipmentDetails();
+        impShipment.setId(1L);
+        impShipment.setShipmentId("SHIP_IMP_001");
+        impShipment.setDirection(Constants.DIRECTION_IMP); // Non-EXP direction
+        impShipment.setHouseBill(null); // Missing HBL number
+        impShipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        consolidationDetails.setShipmentsList(new HashSet<>(Collections.singletonList(impShipment)));
+
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert - This covers the 'else' branch where errorMsg is initially empty
+        String expectedMessage = "Please enter the HBL number for the shipment/s SHIP_IMP_001 to transfer the files.";
+        assertEquals(expectedMessage, exception.getMessage());
+
+        // Arrange for the second part: make a console field invalid
+        consolidationDetails.setBol(null); // Missing MBL
+
+        // Act for the second part
+        Exception exceptionWithConsoleError = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+
+        // Assert for the second part
+        String expectedCombinedMessage = "Please enter the MBL for the consolidation and enter the HBL number for the shipment/s SHIP_IMP_001 to transfer the files.";
+        assertEquals(expectedCombinedMessage, exceptionWithConsoleError.getMessage());
+    }
+
+
 }

@@ -2650,13 +2650,13 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         mockTenantResponses.addAll(List.of(tenant1, tenant2, tenant3));
 
         when(v1Service.tenantNameByTenantId(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
-        when(jsonHelper.convertValueToList(eq("mockEntities"), eq(V1TenantResponse.class)))
+        when(jsonHelper.convertValueToList("mockEntities", V1TenantResponse.class))
                 .thenReturn(mockTenantResponses);
         List<String> result = ReflectionTestUtils.invokeMethod(entityTransferService,"getTenantName",tenantIds);
         assertNotNull(result);
         assertEquals(3, result.size());
         assertEquals(List.of("Tenant1", "Tenant2", "Tenant3"), result);
         verify(v1Service).tenantNameByTenantId(any(CommonV1ListRequest.class));
-        verify(jsonHelper).convertValueToList(eq("mockEntities"), eq(V1TenantResponse.class));
+        verify(jsonHelper).convertValueToList("mockEntities", V1TenantResponse.class);
     }
 }
