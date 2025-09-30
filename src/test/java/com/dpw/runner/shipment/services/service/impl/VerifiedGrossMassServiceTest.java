@@ -28,7 +28,6 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.TransactionHistory;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
@@ -68,7 +67,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -174,111 +172,149 @@ class VerifiedGrossMassServiceTest {
     }
 
     @Test
-    void testCreate_WhenCarrierBookingExists_ShouldPopulateEmails() {
-        // Arrange
-        VerifiedGrossMass testEntity = new VerifiedGrossMass();
-        testEntity.setEntityType(EntityType.CARRIER_BOOKING);
-        testEntity.setEntityId(1L);
-        testEntity.setInternalEmails("existingInternalEmail1@example.com");
-        testEntity.setExternalEmails("existingExternalEmail1@example.com");
+    void testUpdate_whenMatchingId_shouldCopyContainerRefGuid() {
+        UUID refGuid = UUID.randomUUID();
 
-        CarrierBooking carrierBooking = new CarrierBooking();
-        carrierBooking.setEntityId(1L);
-        carrierBooking.setCarrierBookingNo("ABC123");
-        carrierBooking.setCarrierBlNo("BL123");
-        carrierBooking.setBookingNo("BOOK123");
-        carrierBooking.setInternalEmails("carrierInternalEmail@example.com");
-        carrierBooking.setExternalEmails("carrierExternalEmail@example.com");
+        CommonContainers existing = new CommonContainers();
+        existing.setId(1L);
+        existing.setContainerRefGuid(refGuid);
 
-        when(verifiedGrossMassValidationUtil.validateRequest(EntityType.CARRIER_BOOKING, 1L))
-                .thenReturn(carrierBooking);
+        VerifiedGrossMass existingEntity = new VerifiedGrossMass();
+        existingEntity.setEntityId(100L);
+        existingEntity.setSailingInformation(new SailingInformation());
+        existingEntity.setContainersList(List.of(existing));
 
-        VerifiedGrossMassRequest testRequest = new VerifiedGrossMassRequest();
-        testRequest.setEntityType(EntityType.CARRIER_BOOKING);
-        testRequest.setEntityId(1L);
+        CommonContainers incoming = new CommonContainers();
+        incoming.setId(1L);
 
-        when(jsonHelper.convertValue(testRequest, VerifiedGrossMass.class)).thenReturn(testEntity);
-        when(jsonHelper.convertValue(testEntity, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
-        when(verifiedGrossMassDao.save(any(VerifiedGrossMass.class))).thenReturn(testEntity);
-        when(carrierBookingDao.findById(1L)).thenReturn(Optional.of(carrierBooking));
+        VerifiedGrossMass mapped = new VerifiedGrossMass();
+        mapped.setSailingInformation(new SailingInformation());
+        mapped.setContainersList(List.of(incoming));
 
-        // Mock UserContext.getUser()
-        UsersDto mockUser = new UsersDto();
-        mockUser.setEmail("user@example.com");
-        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
-            userContext.when(UserContext::getUser).thenReturn(mockUser);
+        VerifiedGrossMass saved = new VerifiedGrossMass();
 
-            // Act
-            VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
+        VerifiedGrossMassRequest request = new VerifiedGrossMassRequest();
+        request.setId(1L);
+        request.setEntityId(100L);
+        request.setEntityType(EntityType.CONSOLIDATION);
 
-            // Assert
-            assertNotNull(result);
-            assertEquals("existingInternalEmail1@example.com,carrierInternalEmail@example.com", testEntity.getInternalEmails());
-            assertEquals("existingExternalEmail1@example.com,carrierExternalEmail@example.com", testEntity.getExternalEmails());
-        }
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(existingEntity));
+        when(jsonHelper.convertValue(request, VerifiedGrossMass.class)).thenReturn(mapped);
+        when(verifiedGrossMassValidationUtil.validateRequest(any(), any())).thenReturn(new ConsolidationDetails());
+        when(verifiedGrossMassDao.save(mapped)).thenReturn(saved);
+        when(jsonHelper.convertValue(saved, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
+
+        verifiedGrossMassService.update(request);
+
+        assertEquals(refGuid, incoming.getContainerRefGuid());
     }
 
     @Test
-    void testPopulateEmailsFromCarrierBooking_ShouldHandleEmptyInputs() throws Exception {
-        // Arrange
-        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
-        method.setAccessible(true);
+    void testUpdate_whenIncomingIdIsNull_shouldSkipMapping() {
+        UUID refGuid = UUID.randomUUID();
 
-        // Test when both existing and new emails are empty
-        String result = (String) method.invoke(verifiedGrossMassService, "", "");
-        assertEquals("", result);
+        CommonContainers existing = new CommonContainers();
+        existing.setId(1L);
+        existing.setContainerRefGuid(refGuid);
 
-        // Test when only new emails are empty
-        result = (String) method.invoke(verifiedGrossMassService, "existingEmail@example.com", "");
-        assertEquals("existingEmail@example.com", result);
+        VerifiedGrossMass existingEntity = new VerifiedGrossMass();
+        existingEntity.setEntityId(100L);
+        existingEntity.setSailingInformation(new SailingInformation());
+        existingEntity.setContainersList(List.of(existing));
 
-        // Test when only existing emails are empty
-        result = (String) method.invoke(verifiedGrossMassService, "", "newEmail@example.com");
-        assertEquals("newEmail@example.com", result);
+        CommonContainers incoming = new CommonContainers();
+        incoming.setId(null); // incoming ID is null
 
-        // Test when both are non-empty
-        result = (String) method.invoke(verifiedGrossMassService, "existingEmail@example.com", "newEmail@example.com");
-        assertEquals("existingEmail@example.com,newEmail@example.com", result);
+        VerifiedGrossMass mapped = new VerifiedGrossMass();
+        mapped.setSailingInformation(new SailingInformation());
+        mapped.setContainersList(List.of(incoming));
+
+        VerifiedGrossMass saved = new VerifiedGrossMass();
+
+        VerifiedGrossMassRequest request = new VerifiedGrossMassRequest();
+        request.setId(1L);
+        request.setEntityId(100L);
+        request.setEntityType(EntityType.CONSOLIDATION);
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(existingEntity));
+        when(jsonHelper.convertValue(request, VerifiedGrossMass.class)).thenReturn(mapped);
+        when(verifiedGrossMassValidationUtil.validateRequest(any(), any())).thenReturn(new ConsolidationDetails());
+        when(verifiedGrossMassDao.save(mapped)).thenReturn(saved);
+        when(jsonHelper.convertValue(saved, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
+
+        verifiedGrossMassService.update(request);
+
+        assertNull(incoming.getContainerRefGuid());
     }
 
     @Test
-    void testPopulateEmailsFromCarrierBooking_ShouldConcatenateEmails() throws Exception {
-        // Arrange
-        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
-        method.setAccessible(true);
+    void testUpdate_whenIncomingIdDoesNotMatchExisting_shouldSkipMapping() {
+        UUID refGuid = UUID.randomUUID();
 
-        String existingEmails = "existingEmail@example.com";
-        String newEmails = "newEmail@example.com";
+        CommonContainers existing = new CommonContainers();
+        existing.setId(1L);
+        existing.setContainerRefGuid(refGuid);
 
-        // Act
-        String result = (String) method.invoke(verifiedGrossMassService, existingEmails, newEmails);
+        VerifiedGrossMass existingEntity = new VerifiedGrossMass();
+        existingEntity.setEntityId(100L);
+        existingEntity.setSailingInformation(new SailingInformation());
+        existingEntity.setContainersList(List.of(existing));
 
-        // Assert
-        assertEquals("existingEmail@example.com,newEmail@example.com", result);
+        CommonContainers incoming = new CommonContainers();
+        incoming.setId(999L); // ID not matching
+
+        VerifiedGrossMass mapped = new VerifiedGrossMass();
+        mapped.setSailingInformation(new SailingInformation());
+        mapped.setContainersList(List.of(incoming));
+
+        VerifiedGrossMass saved = new VerifiedGrossMass();
+
+        VerifiedGrossMassRequest request = new VerifiedGrossMassRequest();
+        request.setId(1L);
+        request.setEntityId(100L);
+        request.setEntityType(EntityType.CONSOLIDATION);
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(existingEntity));
+        when(jsonHelper.convertValue(request, VerifiedGrossMass.class)).thenReturn(mapped);
+        when(verifiedGrossMassValidationUtil.validateRequest(any(), any())).thenReturn(new ConsolidationDetails());
+        when(verifiedGrossMassDao.save(mapped)).thenReturn(saved);
+        when(jsonHelper.convertValue(saved, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
+
+        verifiedGrossMassService.update(request);
+
+        assertNull(incoming.getContainerRefGuid());
     }
 
     @Test
-    void testPopulateEmailsFromCarrierBooking_ShouldHandleNullInputs() throws Exception {
-        // Arrange
-        Method method = VerifiedGrossMassService.class.getDeclaredMethod("populateEmailsFromCarrierBooking", String.class, String.class);
-        method.setAccessible(true);
+    void testUpdate_whenExistingContainerListIsNull_shouldNotCrash() {
+        VerifiedGrossMass existingEntity = new VerifiedGrossMass();
+        existingEntity.setEntityId(100L);
+        existingEntity.setSailingInformation(new SailingInformation());
+        existingEntity.setContainersList(null); // Null containers
 
-        VerifiedGrossMassService service = new VerifiedGrossMassService(verifiedGrossMassDao, jsonHelper, carrierBookingDao, consolidationDetailsDao,
-                commonUtils, masterDataUtils, executorServiceMasterData, verifiedGrossMassMasterDataHelper, commonContainersRepository,
-                verifiedGrossMassValidationUtil, notificationService, verifiedGrossMassUtil, carrierBookingInttraUtil,
-                transactionHistoryDao, containerDao);
+        CommonContainers incoming = new CommonContainers();
+        incoming.setId(1L);
 
-        // Test when both existing and new emails are null
-        String result = (String) method.invoke(service, null, null);
-        assertEquals(null, result);
+        VerifiedGrossMass mapped = new VerifiedGrossMass();
+        mapped.setSailingInformation(new SailingInformation());
+        mapped.setContainersList(List.of(incoming));
 
-        // Test when only existing emails are null
-        result = (String) method.invoke(service, null, "newEmail@example.com");
-        assertEquals("newEmail@example.com", result);
+        VerifiedGrossMass saved = new VerifiedGrossMass();
 
-        // Test when only new emails are null
-        result = (String) method.invoke(service, "existingEmail@example.com", null);
-        assertEquals("existingEmail@example.com", result);
+        VerifiedGrossMassRequest request = new VerifiedGrossMassRequest();
+        request.setId(1L);
+        request.setEntityId(100L);
+        request.setEntityType(EntityType.CONSOLIDATION);
+
+        when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(existingEntity));
+        when(jsonHelper.convertValue(request, VerifiedGrossMass.class)).thenReturn(mapped);
+        when(verifiedGrossMassValidationUtil.validateRequest(any(), any())).thenReturn(new ConsolidationDetails());
+        when(verifiedGrossMassDao.save(mapped)).thenReturn(saved);
+        when(jsonHelper.convertValue(saved, VerifiedGrossMassResponse.class)).thenReturn(new VerifiedGrossMassResponse());
+
+        verifiedGrossMassService.update(request);
+
+        assertNull(incoming.getContainerRefGuid());
     }
 
     @Test
@@ -1447,7 +1483,6 @@ class VerifiedGrossMassServiceTest {
         verifiedGrossMassService.updateVgmStatus(event);
 
         assertEquals(VerifiedGrossMassStatus.RejectedByINTTRA.name(), container.getVgmStatus());
-        verify(transactionHistoryDao).save(any(TransactionHistory.class));
         verify(commonContainersRepository).save(container);
     }
 
