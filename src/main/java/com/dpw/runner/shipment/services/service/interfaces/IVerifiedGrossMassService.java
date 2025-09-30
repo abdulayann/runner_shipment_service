@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGros
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 
@@ -61,5 +62,15 @@ public interface IVerifiedGrossMassService {
      *
      */
     void submitOrAmendVerifiedGrossMass(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
+
+    void updateVgmStatus(VgmEventDto vgm);
+
+    /**
+     * Sync Verified Gross mass Containers from Console.
+     *
+     * @param commonContainerIds list of container ids
+     * @return list of CommonContainerResponse
+     */
+    List<CommonContainerResponse> syncContainersByIds(List<Long> commonContainerIds);
 }
 

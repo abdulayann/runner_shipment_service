@@ -53,4 +53,5 @@ public class CommonContainerRequest implements Serializable {
     private String commodityGroup;
     private String marksNums;
     private PartiesRequest weighingParty;
+    private UUID containerRefGuid;
 }

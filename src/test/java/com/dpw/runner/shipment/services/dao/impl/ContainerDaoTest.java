@@ -334,6 +334,26 @@ class ContainerDaoTest {
     }
 
     @Test
+    void testFindAllByGuid_WithValidGuidList_ShouldReturnMatchingContainers() {
+        // Arrange
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+        List<UUID> guids = List.of(guid1, guid2);
+        List<Containers> mockContainers = List.of(testContainer);
+
+        when(containerRepository.findAllByGuidIn(guids)).thenReturn(mockContainers);
+
+        // Act
+        List<Containers> result = containerDao.findAllByGuid(guids);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(testContainer, result.get(0));
+        verify(containerRepository).findAllByGuidIn(guids);
+    }
+
+    @Test
     void deleteById() {
         assertDoesNotThrow(() -> containerDao.deleteById(6L));
     }

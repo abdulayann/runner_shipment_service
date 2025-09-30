@@ -56,7 +56,7 @@ class PlatformServiceAdapterTest {
         when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
                 .thenReturn(ResponseEntity.ok("abc"));
         when(jsonHelper.convertToJson(Mockito.any())).thenReturn("hello");
-        ResponseEntity<IRunnerResponse> response = platformServiceAdapter.updateAtPlaform(CommonRequestModel.buildRequest(platformUpdateRequest));
+        ResponseEntity<IRunnerResponse> response = platformServiceAdapter.updateAtPlatform(CommonRequestModel.buildRequest(platformUpdateRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

@@ -11,7 +11,9 @@ public enum ModuleValidationFieldType {
     CARRIER_ETD("Carrier ETD Details missing"),
     CONTAINER_DETAILS("Container Details missing"),
     MAWB_DETAILS("MAWB Details missing"),
-    MBL_DETAILS("MBL Details missing");
+    MBL_DETAILS("MBL Details missing"),
+    SHIPMENT_ORIGIN_AGENT("Shipment origin agent details missing"),
+    SHIPMENT_DESTINATION_AGENT("Shipment Destination agent details missing");
 
     private final String description;
 }

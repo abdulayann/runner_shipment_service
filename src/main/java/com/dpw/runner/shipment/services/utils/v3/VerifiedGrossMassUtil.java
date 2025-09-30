@@ -1,28 +1,44 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VGMContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.GROSS_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.NET_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.TARE_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VGM_WEIGHT;
 
 @Slf4j
 @Component
@@ -139,7 +155,8 @@ public class VerifiedGrossMassUtil {
         return response;
     }
 
-    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map,
+                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse, String externalEmails) {
 
         if (Objects.isNull(carrierDatav1Map)) return;
 
@@ -157,8 +174,191 @@ public class VerifiedGrossMassUtil {
             verifiedGrossMassInttraResponse.setCarrierDescription(carrierDescription);
             NotificationContactResponse notificationContactResponse = new NotificationContactResponse();
             notificationContactResponse.setUsername(carrierContactPerson);
+
+            // Adding Inttra emails (VGM external emails) to carrierNotificationContact with comma separation
+            if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+                if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
+                    carrierNotificationContact += "," + externalEmails;
+                } else {
+                    carrierNotificationContact = externalEmails;
+                }
+            }
             notificationContactResponse.setEmails(carrierNotificationContact);
             verifiedGrossMassInttraResponse.setCarrierNotificationContact(notificationContactResponse);
         }
+    }
+
+
+    public List<VGMContainerWarningResponse> compareVGMContainers(List<CommonContainers> currentVGMContainersList,
+                                                                  List<CommonContainers> submittedVGMContainersList,
+                                                                  List<Containers> consolContainersList) {
+
+        List<VGMContainerWarningResponse> warnings = new ArrayList<>();
+
+        try {
+            if (Objects.isNull(currentVGMContainersList)) currentVGMContainersList = Collections.emptyList();
+            if (Objects.isNull(submittedVGMContainersList)) submittedVGMContainersList = Collections.emptyList();
+            if (Objects.isNull(consolContainersList)) consolContainersList = Collections.emptyList();
+
+            Map<Long, CommonContainers> submittedContainersVGMMap = submittedVGMContainersList.stream()
+                    .collect(Collectors.toMap(CommonContainers::getId, Function.identity(), (a, b) -> a));
+
+            Map<UUID, Containers> consolContainersMap = consolContainersList.stream()
+                    .collect(Collectors.toMap(BaseEntity::getGuid, Function.identity(), (a, b) -> a));
+
+            for (CommonContainers currentContainer : currentVGMContainersList) {
+
+                // Compare with previous submitted VGM (if exists)
+                CommonContainers submittedContainer = submittedContainersVGMMap.get(currentContainer.getId());
+                if (Objects.nonNull(submittedContainer) && hasAnyWeightDifference(currentContainer, submittedContainer)) {
+                    warnings.add(buildVGMContainerWarning(submittedContainer, currentContainer, null));
+                    
+                }
+
+                // Compare with consol container (if exists)
+                Containers consolContainer = consolContainersMap.get(currentContainer.getContainerRefGuid());
+                if (Objects.nonNull(consolContainer) && hasAnyWeightDifference(currentContainer, consolContainer)) {
+                    warnings.add(buildVGMContainerWarning(null, currentContainer, consolContainer));
+                }
+            }
+
+        } catch (Exception exception) {
+            log.error("Exception during comparing VGM container details {}", exception.getMessage(), exception);
+        }
+
+        return warnings;
+    }
+
+    private VGMContainerWarningResponse buildVGMContainerWarning(CommonContainers submittedContainer,
+                                                                 CommonContainers currentContainer,
+                                                                 Containers consolContainer) {
+        VGMContainerWarningResponse vgmContainerWarningResponse = new VGMContainerWarningResponse();
+
+        // Extracted logic for container number determination
+        String containerNo = getContainerNumber(submittedContainer, consolContainer);
+        vgmContainerWarningResponse.setContainerNumber(containerNo);
+
+        // Extracted logic for VGM weight
+        String vgmOldWeight = getWeight(submittedContainer, consolContainer, VGM_WEIGHT);
+        vgmContainerWarningResponse.setVgmOldWeightValue(vgmOldWeight);
+        String vgmNewWeight = formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit());
+        vgmContainerWarningResponse.setVgmNewWeightValue(vgmNewWeight);
+
+        // Set Gross Weight Value
+        String grossOldWeight = getWeight(submittedContainer, consolContainer, GROSS_WEIGHT);
+        vgmContainerWarningResponse.setOldGrossWeightValue(grossOldWeight);
+        String grossNewWeight = formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit());
+        vgmContainerWarningResponse.setNewGrossWeightValue(grossNewWeight);
+
+        // Set Net weight Value
+        String netOldWeight = getWeight(submittedContainer, consolContainer, NET_WEIGHT);
+        vgmContainerWarningResponse.setOldNetWeightValue(netOldWeight);
+        String netNewWeight = formatWeight(currentContainer.getNetWeight(), currentContainer.getNetWeightUnit());
+        vgmContainerWarningResponse.setNewNetWeightValue(netNewWeight);
+
+        // Tare weight comparison
+        String tareOldWeight = getWeight(submittedContainer, consolContainer, TARE_WEIGHT);
+        vgmContainerWarningResponse.setOldTareWeightValue(tareOldWeight);
+        String tareNewWeight = formatWeight(currentContainer.getTareWeight(), currentContainer.getTareWeightUnit());
+        vgmContainerWarningResponse.setNewTareWeightValue(tareNewWeight);
+
+        return vgmContainerWarningResponse;
+    }
+
+    private String getContainerNumber(CommonContainers submittedContainer, Containers consolContainer) {
+        if (Objects.nonNull(submittedContainer)) {
+            return submittedContainer.getContainerNo();
+        } else if (Objects.nonNull(consolContainer)) {
+            return consolContainer.getContainerNumber();
+        }
+        return null;
+    }
+
+    private String getWeight(CommonContainers submittedContainer, Containers consolContainer, String weightType) {
+        if (Objects.nonNull(submittedContainer)) {
+            switch (weightType) {
+                case VGM_WEIGHT:
+                    return formatWeight(submittedContainer.getVgmWeight(), submittedContainer.getVgmWeightUnit());
+                case GROSS_WEIGHT:
+                    return formatWeight(submittedContainer.getGrossWeight(), submittedContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(submittedContainer.getNetWeight(), submittedContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(submittedContainer.getTareWeight(), submittedContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
+        } else if (Objects.nonNull(consolContainer)) {
+            switch (weightType) {
+                case VGM_WEIGHT, GROSS_WEIGHT:
+                    return formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(consolContainer.getTareWeight(), consolContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasAnyWeightDifference(CommonContainers currentVGMContainer, CommonContainers submittedVGMContainer) {
+        return hasWeightChanged(formatWeight(currentVGMContainer.getVgmWeight(), currentVGMContainer.getVgmWeightUnit()),
+                formatWeight(submittedVGMContainer.getVgmWeight(), submittedVGMContainer.getVgmWeightUnit()))
+                || hasWeightChanged(formatWeight(currentVGMContainer.getGrossWeight(), currentVGMContainer.getGrossWeightUnit()),
+                formatWeight(submittedVGMContainer.getGrossWeight(), submittedVGMContainer.getGrossWeightUnit()))
+                || hasWeightChanged(formatWeight(currentVGMContainer.getNetWeight(), currentVGMContainer.getNetWeightUnit()),
+                formatWeight(submittedVGMContainer.getNetWeight(), submittedVGMContainer.getNetWeightUnit()))
+                || hasWeightChanged(formatWeight(currentVGMContainer.getTareWeight(), currentVGMContainer.getTareWeightUnit()),
+                formatWeight(submittedVGMContainer.getTareWeight(), submittedVGMContainer.getTareWeightUnit()));
+    }
+
+    private boolean hasAnyWeightDifference(CommonContainers currentContainer, Containers consolContainer) {
+        return hasWeightChanged(formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit()),
+                formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
+                || hasWeightChanged(formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit()),
+                formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
+                || hasWeightChanged(formatWeight(currentContainer.getNetWeight(), currentContainer.getNetWeightUnit()),
+                formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit()))
+                || hasWeightChanged(formatWeight(currentContainer.getTareWeight(), currentContainer.getTareWeightUnit()),
+                formatWeight(consolContainer.getTareWeight(), consolContainer.getTareWeightUnit()));
+    }
+
+    private String formatWeight(BigDecimal weight, String unit) {
+        return (Objects.nonNull(weight) ? weight.toPlainString() : "") + " " + (Objects.nonNull(unit) ? unit : "");
+    }
+
+    private boolean hasWeightChanged(String currentValue, String previousValue) {
+        return !StringUtils.equals(currentValue, previousValue);
+    }
+
+    public SendEmailBaseRequest getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass, EmailTemplatesRequest verifiedGrossMassTemplate) {
+        String toEmails = verifiedGrossMass.getInternalEmails() == null ? "" : verifiedGrossMass.getInternalEmails();
+
+        // Add the 'createByUserEmail' only if it's not blank
+        String createByUserEmail = verifiedGrossMass.getCreateByUserEmail();
+        if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
+            if (!toEmails.isEmpty()) {
+                toEmails += ",";
+            }
+            toEmails += createByUserEmail;
+        }
+
+        // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
+        String submitByUserEmail = verifiedGrossMass.getSubmitByUserEmail();
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty() && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+            if (!toEmails.isEmpty()) {
+                toEmails += ",";
+            }
+            toEmails += submitByUserEmail;
+        }
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setTo(toEmails);
+        request.setSubject(verifiedGrossMassTemplate.getSubject());
+        request.setTemplateName(verifiedGrossMassTemplate.getName());
+        request.setHtmlBody(verifiedGrossMassTemplate.getBody());
+        return request;
     }
 }

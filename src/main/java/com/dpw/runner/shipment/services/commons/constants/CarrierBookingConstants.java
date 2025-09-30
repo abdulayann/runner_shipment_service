@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,10 +27,17 @@ public class CarrierBookingConstants {
     public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Carrier Booking Retrieval";
+    public static final String CLONE_CARRIER_BOOKING_SUCCESS = "Successful Carrier Booking clone Retrieval";
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
     public static final String SUBMIT_AMEND_SUCCESSFUL = "Carrier Booking submitted/Amended successfully.";
     public static final String CON = "CON";
-
+    public static final String MESSAGE = "message";
+    public static final String PAYLOAD = "payload";
+    public static final String INTTRA_REFERENCE = "inttraReference";
+    public static final String CARRIER_REFERENCE_NUMBER = "carrierReferenceNumber";
+    public static final String BOOKING_DETAILS= "bookingDetails";
+    public static final String SERVICE_RESPONSE= "SERVICE_RESPONSE";
+    public static final String SERVICE_HTTP_STATUS_CODE= "SERVICE_HTTP_STATUS_CODE";
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation
@@ -63,7 +73,7 @@ public class CarrierBookingConstants {
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
-                    .dataType(String.class)   // CarrierBookingStatus is an enum stored as string
+                    .dataType(CarrierBookingStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
@@ -217,14 +227,14 @@ public class CarrierBookingConstants {
                     .build()),
             Map.entry("siStatus", RunnerEntityMapping.builder()
                     .tableName(SHIPPING_INSTRUCTION)
-                    .dataType(String.class)
+                    .dataType(ShippingInstructionStatus.class)
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
 
             Map.entry("vgmStatus", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS)
-                    .dataType(String.class)
+                    .dataType(VerifiedGrossMassStatus.class)
                     .fieldName(STATUS)
                     .isContainsText(true)
                     .build()),
@@ -256,6 +266,12 @@ public class CarrierBookingConstants {
                     .fieldName("updatedBy")
                     .isContainsText(true)
                     .build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder()
+                    .tableName(CARRIER_BOOKING_TABLE)
+                    .dataType(String.class)
+                    .fieldName("createdBy")
+                    .isContainsText(true)
+                    .build()),
 
             Map.entry("pol", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
@@ -270,6 +286,8 @@ public class CarrierBookingConstants {
                     .fieldName("pod")
                     .isContainsText(true)
                     .build()),
+            Map.entry(Constants.SHIPPER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.SHIPPER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("createdAt", RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(LocalDateTime.class)
@@ -278,4 +296,6 @@ public class CarrierBookingConstants {
                     .build())
     );
 
+    //ERROR messages
+    public static final String ERR_INTTRA_MISSING_KEY = "Invalid inttraa response: %s is missing or empty";
 }

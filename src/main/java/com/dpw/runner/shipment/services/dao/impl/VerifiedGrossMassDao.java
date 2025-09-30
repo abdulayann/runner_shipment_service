@@ -53,4 +53,9 @@ public class VerifiedGrossMassDao implements IVerifiedGrossMassDao {
     public boolean existsById(Long id) {
         return verifiedGrossMassRepository.existsById(id);
     }
+
+    @Override
+    public VerifiedGrossMass findByCarrierBookingNo(String carrierBookingNo) {
+        return verifiedGrossMassRepository.findByCarrierBookingNo(carrierBookingNo);
+    }
 }

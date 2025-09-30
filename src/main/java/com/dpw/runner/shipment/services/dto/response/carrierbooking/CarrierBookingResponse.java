@@ -22,6 +22,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String status;
     private String bookingNo;
     private String carrierBookingNo;
+    private String inttraReference;
     private String carrierBlNo;
     private String consolidationNo;
     private EntityType entityType;
@@ -29,6 +30,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String entityNumber;
     private String serviceType;
     private String bookingOffice;
+    private String bookingOfficeLocCode;
     private LocalDateTime pickupFromReqEmptyPositioningDate;
     private LocalDateTime pickupFromReqFullPickupDate;
     private String pickupFromContactName;
