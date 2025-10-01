@@ -110,6 +110,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S3776")
 public class EventService implements IEventService {
 
     private IEventDao eventDao;
