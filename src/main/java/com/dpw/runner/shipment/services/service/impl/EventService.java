@@ -783,6 +783,16 @@ public class EventService implements IEventService {
             return true;
         }
 
+        if (EventConstants.CACO.contains(eventCode)
+                || EventConstants.FCGI.contains(eventCode)
+                || EventConstants.INTR.contains(eventCode)
+                || EventConstants.CAFS.contains(eventCode)
+                || EventConstants.PRDE.contains(eventCode)) {
+
+            log.info("Event code {} matches messageId {}", eventCode, messageId);
+            return true;
+        }
+
         log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
         return false;
     }
